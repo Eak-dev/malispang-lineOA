@@ -1,0 +1,104 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#6B3F2A",
+    "paddingAll": "20px",
+    "contents": [
+      {
+        "type": "text",
+        "text": "MALI'S PANG • มะลิปัง",
+        "color": "#FFFFFF",
+        "size": "sm",
+        "weight": "bold",
+        "align": "center"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#FFF8EC",
+    "paddingAll": "22px",
+    "spacing": "md",
+    "contents": [
+      {
+        "type": "text",
+        "text": "สวัสดีค่ะ มะลิปังยินดีให้บริการ",
+        "color": "#6B3F2A",
+        "size": "xl",
+        "weight": "bold",
+        "wrap": true,
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "เลือกหัวข้อด้านล่าง หรือพิมพ์คำถามถึงเราได้เลยนะคะ 😊",
+        "color": "#5C4B43",
+        "size": "sm",
+        "weight": "regular",
+        "wrap": true,
+        "align": "center"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#FFFFFF",
+    "paddingAll": "18px",
+    "spacing": "sm",
+    "contents": [
+      {
+        "type": "button",
+        "style": "secondary",
+        "color": "#D89B3C",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "🥖 เมนูและราคา",
+          "data": "action=MENU_PRICE",
+          "displayText": "🥖 เมนูและราคา"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "color": "#D89B3C",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "🧾 สั่ง/จองล่วงหน้า",
+          "data": "action=ADVANCE_ORDER",
+          "displayText": "🧾 สั่ง/จองล่วงหน้า"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "color": "#D89B3C",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "📍 ที่ตั้งร้าน",
+          "data": "action=LOCATION",
+          "displayText": "📍 ที่ตั้งร้าน"
+        }
+      },
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#6B3F2A",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "💬 คุยกับพนักงาน",
+          "data": "action=HUMAN_HANDOFF",
+          "displayText": "💬 คุยกับพนักงาน"
+        }
+      }
+    ]
+  }
+}

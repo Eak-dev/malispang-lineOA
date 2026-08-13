@@ -1,0 +1,28 @@
+{
+  "name": "malispang-line-oa-phase-1a",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm validate:flex && pnpm preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "preview": "node --import tsx scripts/generate-flex-preview.ts",
+    "secret:scan": "node --import tsx scripts/secret-scan.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "validate:flex": "node --import tsx scripts/validate-flex.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@types/node": "^24.2.1",
+    "eslint": "^9.33.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.1",
+    "vitest": "^3.2.4"
+  }
+}
