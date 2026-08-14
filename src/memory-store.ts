@@ -5,7 +5,18 @@ export class MemoryStore {
   readonly conversations = new Map<string, ConversationState>();
   readonly outbox = new Map<string, ReplyEnvelope>();
 
+  constructor(private available = true) {}
+
+  setAvailable(available: boolean): void {
+    this.available = available;
+  }
+
+  assertAvailable(): void {
+    if (!this.available) throw new Error("PERSISTENCE_UNAVAILABLE");
+  }
+
   conversation(id: string): ConversationState {
+    this.assertAvailable();
     const existing = this.conversations.get(id);
     if (existing) return existing;
     const created: ConversationState = {

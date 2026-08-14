@@ -63,37 +63,61 @@
       {
         "type": "button",
         "style": "secondary",
-        "color": "#D89B3C",
+        "color": "#E5A65B",
         "height": "sm",
         "action": {
           "type": "postback",
-          "label": "🥖 เมนูและราคา",
+          "label": "🥖 ดูเมนู",
           "data": "action=show_menu",
-          "displayText": "🥖 เมนูและราคา"
+          "displayText": "🥖 ดูเมนู"
         }
       },
       {
         "type": "button",
         "style": "secondary",
-        "color": "#D89B3C",
+        "color": "#E5A65B",
         "height": "sm",
         "action": {
           "type": "postback",
-          "label": "🧾 สั่ง/จองล่วงหน้า",
-          "data": "action=start_draft_order",
-          "displayText": "🧾 สั่ง/จองล่วงหน้า"
+          "label": "🏷️ ดูราคา",
+          "data": "action=show_price",
+          "displayText": "🏷️ ดูราคา"
         }
       },
       {
         "type": "button",
         "style": "secondary",
-        "color": "#D89B3C",
+        "color": "#E5A65B",
         "height": "sm",
         "action": {
           "type": "postback",
           "label": "📍 ที่ตั้งร้าน",
           "data": "action=show_location",
           "displayText": "📍 ที่ตั้งร้าน"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "color": "#E5A65B",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "🕒 เวลาทำการ",
+          "data": "action=show_hours",
+          "displayText": "🕒 เวลาทำการ"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "color": "#E5A65B",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "📦 ราคาส่ง",
+          "data": "action=show_wholesale",
+          "displayText": "📦 ราคาส่ง"
         }
       },
       {

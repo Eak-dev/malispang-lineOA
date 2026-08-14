@@ -9,8 +9,8 @@ export function validateFlexMenu(value: FlexBubble): ValidationResult {
   const errors: string[] = [];
   if (value.type !== "bubble") errors.push("root.type must be bubble");
   if (value.size !== "mega") errors.push("root.size must be mega");
-  if (value.footer.contents.length !== 4)
-    errors.push("footer must contain four buttons");
+  if (value.footer.contents.length !== 6)
+    errors.push("footer must contain six buttons");
 
   const postbackData = new Set<string>();
   for (const [index, component] of value.footer.contents.entries()) {

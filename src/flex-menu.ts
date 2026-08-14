@@ -2,16 +2,18 @@ import type { FlexBubble, FlexComponent } from "./types.js";
 
 const BRAND_BROWN = "#6B3F2A";
 const BRAND_CREAM = "#FFF8EC";
-const BRAND_GOLD = "#D89B3C";
+const BRAND_ORANGE = "#E5A65B";
 
 const buttons: ReadonlyArray<{
   label: string;
   data: string;
   primary?: boolean;
 }> = [
-  { label: "🥖 เมนูและราคา", data: "action=show_menu" },
-  { label: "🧾 สั่ง/จองล่วงหน้า", data: "action=start_draft_order" },
+  { label: "🥖 ดูเมนู", data: "action=show_menu" },
+  { label: "🏷️ ดูราคา", data: "action=show_price" },
   { label: "📍 ที่ตั้งร้าน", data: "action=show_location" },
+  { label: "🕒 เวลาทำการ", data: "action=show_hours" },
+  { label: "📦 ราคาส่ง", data: "action=show_wholesale" },
   {
     label: "💬 คุยกับพนักงาน",
     data: "action=human_handoff",
@@ -27,7 +29,7 @@ function flexButton(
   return {
     type: "button",
     style: primary ? "primary" : "secondary",
-    color: primary ? BRAND_BROWN : BRAND_GOLD,
+    color: primary ? BRAND_BROWN : BRAND_ORANGE,
     height: "sm",
     action: {
       type: "postback",

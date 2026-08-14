@@ -1,12 +1,15 @@
 export type ConversationMode = "BOT_ACTIVE" | "HUMAN_HANDOFF";
 
 export type CustomerAction =
+  | "OPEN_FLEX_MENU"
   | "SHOW_MENU"
   | "MENU_PRICE"
   | "CHECK_TODAY"
   | "ADVANCE_ORDER"
   | "REWARDS_INFO"
   | "LOCATION"
+  | "OPENING_HOURS"
+  | "WHOLESALE"
   | "HUMAN_HANDOFF";
 
 export interface CustomerEvent {
