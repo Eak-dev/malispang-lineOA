@@ -1,7 +1,13 @@
 export type ConversationMode = "BOT_ACTIVE" | "HUMAN_HANDOFF";
 
 export type CustomerAction =
-  "SHOW_MENU" | "MENU_PRICE" | "ADVANCE_ORDER" | "LOCATION" | "HUMAN_HANDOFF";
+  | "SHOW_MENU"
+  | "MENU_PRICE"
+  | "CHECK_TODAY"
+  | "ADVANCE_ORDER"
+  | "REWARDS_INFO"
+  | "LOCATION"
+  | "HUMAN_HANDOFF";
 
 export interface CustomerEvent {
   readonly kind: "customer";

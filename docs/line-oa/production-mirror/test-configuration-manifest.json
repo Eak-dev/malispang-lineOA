@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-08-14T00:00:00+07:00",
+  "destinationAccount": "มะลิปัง TEST",
+  "environment": "TEST_ONLY",
+  "profile": {
+    "accountName": "มะลิปัง TEST",
+    "profileImage": {
+      "status": "PUBLISHED",
+      "localPath": "assets/brand/malispang-logo.jpeg",
+      "sha256": "fb3a749a2e44bca592d53270197fb1fc37616984d28dd519acd47675e51ae324"
+    },
+    "requestedWarning": "บัญชีทดสอบระบบเท่านั้น — ไม่รับออเดอร์ ไม่รับชำระเงินจริง",
+    "publishedStatusMessage": "TEST—ไม่รับเงินจริง",
+    "previousStatusMessage": "",
+    "statusMessageLimit": "19/20 characters",
+    "coverImage": "NOT_COPIED",
+    "businessHours": "NOT_COPIED",
+    "location": "NOT_COPIED",
+    "priceAndPromotionData": "NOT_COPIED"
+  },
+  "greeting": {
+    "contentStatus": "SAVED",
+    "toggleTarget": "ON",
+    "firstTimeOnly": false,
+    "media": [],
+    "actions": [],
+    "previousTextNormalized": "สวัสดี คุณ [USER_DISPLAY_NAME] นี่คือบัญชีทางการของ [ACCOUNT_NAME] ขอบคุณที่เป็นเพื่อนกับเรา [moon wink] เราจะส่งข่าวสารล่าสุดผ่านบัญชีทางการนี้เป็นระยะ [love letter] เตรียมรับได้เลย! [gift] [2 stars]",
+    "text": "👋 สวัสดีค่ะ ยินดีต้อนรับสู่มะลิปัง TEST\n\nบัญชีนี้ใช้สำหรับทดสอบระบบเท่านั้น\nไม่รับออเดอร์และไม่รับชำระเงินจริงนะคะ\n\nสามารถทดลองกดเมนูหรือพิมพ์คำถามได้เลยค่ะ 😊"
+  },
+  "responseSettings": {
+    "chat": "ON",
+    "responseHours": "ON",
+    "duringResponseHours": "MANUAL_CHAT",
+    "outsideResponseHours": "AUTO_RESPONSE_WITH_NO_ACTIVE_RULES",
+    "webhook": "OFF_UNAVAILABLE",
+    "messagingApi": "DISABLED"
+  },
+  "autoResponses": {
+    "Default": {
+      "present": true,
+      "status": "OFF",
+      "evidence": "edit screen changed from Deactivate to Activate after confirmation"
+    },
+    "Add Friend": { "present": false, "status": "NOT_CREATED" },
+    "Menu": { "present": false, "status": "NOT_CREATED_PENDING_APPROVAL" },
+    "Facebook อั่งเปา": {
+      "present": false,
+      "status": "NOT_CREATED_PENDING_OWNER_DECISION"
+    },
+    "activeGlobalRules": 0
+  },
+  "richMenu": {
+    "nativeTestRichMenu": "NOT_CREATED_OR_PUBLISHED",
+    "localImage": "assets/test/malispang-test-rich-menu.png",
+    "localActionMap": "docs/line-oa/production-mirror/test-rich-menu-action-map.json",
+    "publishable": false
+  },
+  "flexMenu": {
+    "json": "artifacts/flex-menu.json",
+    "preview": "artifacts/flex-menu-preview.html",
+    "sentToLine": false
+  },
+  "safety": {
+    "productionChanged": false,
+    "messagesSent": 0,
+    "credentialsCreatedOrViewed": 0,
+    "customerChatsOpened": 0,
+    "realOrdersOrPayments": 0
+  }
+}

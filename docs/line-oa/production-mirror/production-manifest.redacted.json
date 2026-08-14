@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-14T00:00:00+07:00",
+  "sourceAccount": "มะลิปัง",
+  "mode": "READ_ONLY",
+  "redaction": {
+    "internalAccountIds": "OMITTED",
+    "credentials": "OMITTED",
+    "customerAndFollowerData": "NOT_INSPECTED",
+    "signedOrPrivateUrls": "OMITTED"
+  },
+  "profile": {
+    "profileImage": {
+      "present": true,
+      "localPath": "assets/brand/malispang-logo.jpeg",
+      "sha256": "fb3a749a2e44bca592d53270197fb1fc37616984d28dd519acd47675e51ae324"
+    },
+    "statusMessage": "อบ สด ใหม่",
+    "publicDisplayText": "มะลิปัง \"อบสดใหม่ ไส้เต็มคำ\"",
+    "coverImage": {
+      "present": true,
+      "classification": "OWNER_DECISION_REQUIRED",
+      "reason": "ไม่คัดลอกก่อนตรวจว่าไม่มีราคา โปรโมชัน หรือข้อมูลที่หมดอายุ"
+    },
+    "businessCategory": "NOT_VISIBLE_IN_CAPTURE",
+    "publicBusinessHours": "ทุกวัน 08:00-07:00 (พบใน profile แต่ยังไม่ยืนยันความถูกต้อง)",
+    "publicLinks": {
+      "locationCandidate": "https://maps.app.goo.gl/mLTyUC1891a4uu7D9?g_st=ic",
+      "facebookCandidate": "https://www.facebook.com/share/18jLnt8dVY/?mibextid=wwXIfr"
+    }
+  },
+  "responseSettings": {
+    "chat": "ON",
+    "greeting": "ON",
+    "responseHours": {
+      "status": "ON",
+      "exactSchedule": "NOT_EXPOSED_IN_CAPTURE",
+      "timezone": "Asia/Bangkok"
+    },
+    "duringResponseHours": "MANUAL_CHAT_PLUS_AUTO_RESPONSE",
+    "outsideResponseHours": "AUTO_RESPONSE",
+    "webhook": "OFF",
+    "messagingApi": "DISABLED"
+  },
+  "greeting": {
+    "status": "ON",
+    "firstTimeOnly": false,
+    "media": [],
+    "actions": [],
+    "text": "👋 สวัสดีค่ะ ยินดีต้อนรับสู่ [ACCOUNT_NAME]\n🍞 ขนมปังโฮมเมด นุ่มหอม ไส้แน่น อบสดใหม่ทุกวัน 💕\n💵 ราคาเริ่มต้นเพียง 39 บาท\nขอบคุณที่แอดมาหาเรา อย่าลืมสั่งความอร่อยไปฟินกันนะคะ ✨\nอดใจรอสักครู่นะคะ เราจะตอบกลับข้อความของคุณให้เร็วที่สุดค่ะ"
+  },
+  "autoResponses": [
+    {
+      "name": "Default",
+      "status": "OFF",
+      "responseType": "FIXED",
+      "trigger": "ANY_MESSAGE",
+      "schedule": "ALWAYS",
+      "classification": "DO_NOT_COPY",
+      "text": "ขอบคุณที่ส่งข้อความถึงเรา\nต้องขออภัยเป็นอย่างยิ่งที่บัญชีนี้ไม่สามารถตอบข้อความใดๆ ได้\nโปรดรอรับข่าวสารใหม่ๆ จากเราผ่านช่องทางนี้"
+    },
+    {
+      "name": "Add Friend",
+      "status": "OFF",
+      "responseType": "FIXED",
+      "trigger": "ANY_MESSAGE",
+      "schedule": "ALWAYS",
+      "classification": "DO_NOT_COPY",
+      "contentEvidence": "ขึ้นต้นด้วย 🧾 สั่ง/จองล่วงหน้า (คัดลอกไปกรอกได้เลย); เนื้อหาส่วนที่เหลือไม่เก็บเพราะไม่ใช้ซ้ำ"
+    },
+    {
+      "name": "Menu",
+      "status": "ON",
+      "responseType": "KEYWORD",
+      "keywords": ["เมนูขนมปัง"],
+      "schedule": "ALWAYS",
+      "classification": "RECREATE_FOR_TEST",
+      "assets": [
+        "docs/line-oa/production-mirror/assets/source-menu-01.jpeg",
+        "docs/line-oa/production-mirror/assets/source-menu-02.jpeg",
+        "docs/line-oa/production-mirror/assets/source-menu-03.jpeg"
+      ],
+      "activationGate": "ราคา รายการสินค้า และเบอร์ที่อยู่ในภาพยังไม่ผ่าน owner approval"
+    },
+    {
+      "name": "Facebook อั่งเปา",
+      "status": "ON",
+      "responseType": "KEYWORD",
+      "keywords": ["อั่งเปา"],
+      "schedule": "ALWAYS",
+      "classification": "OWNER_DECISION_REQUIRED",
+      "text": "🧧 รับคำขออั่งเปาแล้วค่ะ! ถ้ากดติดตาม Facebook เรียบร้อยแล้ว พิมพ์ “เรียบร้อย” หรือส่งรูปแคปหน้าจอมาได้เลยนะคะ เดี๋ยวร้านส่ง “โบนัส/คูปองเพิ่ม” ให้ค่ะ 🎁"
+    }
+  ],
+  "richMenu": {
+    "name": "RM-1",
+    "displayPeriod": "2026-06-01 00:00 through 2026-12-31 23:59",
+    "image": "docs/line-oa/production-mirror/assets/source-rich-menu-rm-1.jpeg",
+    "dimensions": { "width": 2500, "height": 1686 },
+    "chatBarLabel": "รู้จักมะลิปัง",
+    "defaultDisplay": "SHOWN",
+    "layout": "2_ROWS_X_3_COLUMNS",
+    "areas": [
+      {
+        "id": "A",
+        "action": "PRODUCTION_REWARD_CARD",
+        "classification": "DO_NOT_COPY"
+      },
+      {
+        "id": "B",
+        "action": "PUBLIC_LOCATION_CANDIDATE",
+        "classification": "OWNER_DECISION_REQUIRED"
+      },
+      {
+        "id": "C",
+        "action": "TEXT: พบกันเร็ว ๆ นี้",
+        "classification": "RECREATE_FOR_TEST"
+      },
+      { "id": "D", "action": "NONE", "classification": "RECREATE_FOR_TEST" },
+      {
+        "id": "E",
+        "action": "TEXT: เมนูขนมปัง",
+        "classification": "RECREATE_FOR_TEST"
+      },
+      {
+        "id": "F",
+        "action": "PUBLIC_FACEBOOK_CANDIDATE",
+        "classification": "OWNER_DECISION_REQUIRED"
+      }
+    ]
+  }
+}

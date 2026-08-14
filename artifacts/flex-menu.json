@@ -41,6 +41,15 @@
         "weight": "regular",
         "wrap": true,
         "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "TEST — ไม่รับออเดอร์/ชำระเงินจริง",
+        "color": "#B42318",
+        "size": "sm",
+        "weight": "bold",
+        "wrap": true,
+        "align": "center"
       }
     ]
   },
@@ -59,7 +68,7 @@
         "action": {
           "type": "postback",
           "label": "🥖 เมนูและราคา",
-          "data": "action=MENU_PRICE",
+          "data": "action=show_menu",
           "displayText": "🥖 เมนูและราคา"
         }
       },
@@ -71,7 +80,7 @@
         "action": {
           "type": "postback",
           "label": "🧾 สั่ง/จองล่วงหน้า",
-          "data": "action=ADVANCE_ORDER",
+          "data": "action=start_draft_order",
           "displayText": "🧾 สั่ง/จองล่วงหน้า"
         }
       },
@@ -83,7 +92,7 @@
         "action": {
           "type": "postback",
           "label": "📍 ที่ตั้งร้าน",
-          "data": "action=LOCATION",
+          "data": "action=show_location",
           "displayText": "📍 ที่ตั้งร้าน"
         }
       },
@@ -95,7 +104,7 @@
         "action": {
           "type": "postback",
           "label": "💬 คุยกับพนักงาน",
-          "data": "action=HUMAN_HANDOFF",
+          "data": "action=human_handoff",
           "displayText": "💬 คุยกับพนักงาน"
         }
       }

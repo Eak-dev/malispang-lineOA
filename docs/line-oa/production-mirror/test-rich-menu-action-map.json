@@ -1,0 +1,75 @@
+{
+  "account": "มะลิปัง TEST",
+  "name": "MalisPang TEST Safe Mirror v1",
+  "chatBarLabel": "เมนู TEST",
+  "defaultDisplay": "shown",
+  "imagePath": "assets/test/malispang-test-rich-menu.png",
+  "image": {
+    "width": 2500,
+    "height": 1686
+  },
+  "publishable": false,
+  "publishBlockers": [
+    "Owner-approved public location URL is missing",
+    "Menu and price data are not approved",
+    "Promotion and reward-card fixtures are not approved"
+  ],
+  "areas": [
+    {
+      "id": "A_REWARDS",
+      "label": "โปรโมชั่น/สะสมแต้ม",
+      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "action=show_rewards",
+        "enabled": true
+      }
+    },
+    {
+      "id": "B_LOCATION",
+      "label": "ที่ตั้งร้าน",
+      "bounds": { "x": 833, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "uri", "uri": null, "enabled": false }
+    },
+    {
+      "id": "C_CHECK_TODAY",
+      "label": "เช็กขนมวันนี้",
+      "bounds": { "x": 1666, "y": 0, "width": 834, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "action=check_today",
+        "enabled": true
+      }
+    },
+    {
+      "id": "D_DRAFT_ORDER",
+      "label": "สั่งล่วงหน้า",
+      "bounds": { "x": 0, "y": 843, "width": 833, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "action=start_draft_order",
+        "enabled": true
+      }
+    },
+    {
+      "id": "E_MENU",
+      "label": "เมนูและราคา",
+      "bounds": { "x": 833, "y": 843, "width": 833, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "action=show_menu",
+        "enabled": true
+      }
+    },
+    {
+      "id": "F_HANDOFF",
+      "label": "คุยกับพนักงาน",
+      "bounds": { "x": 1666, "y": 843, "width": 834, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "action=human_handoff",
+        "enabled": true
+      }
+    }
+  ]
+}

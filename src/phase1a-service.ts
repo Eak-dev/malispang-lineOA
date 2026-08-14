@@ -10,6 +10,12 @@ import type { MemoryStore } from "./memory-store.js";
 export const HANDOFF_ACKNOWLEDGEMENT =
   "รับทราบค่ะ กำลังส่งต่อให้พนักงานมะลิปังช่วยดูแลนะคะ 😊";
 
+export const MOCK_DRAFT_ORDER_NOTICE =
+  "โหมด TEST: เริ่มร่างคำสั่งซื้อจำลองเท่านั้น ยังไม่มีการสร้างออเดอร์จริงและไม่รับชำระเงินจริงค่ะ";
+
+export const MOCK_REWARDS_NOTICE =
+  "โหมด TEST: ข้อมูลโปรโมชั่นและสะสมแต้มเป็นข้อมูลทดสอบเท่านั้น ไม่เชื่อมบัตร Production และไม่ให้แต้มจริงค่ะ";
+
 export interface Phase1AOptions {
   readonly environment: "test";
   readonly authorizedStaffIds: ReadonlySet<string>;
@@ -57,13 +63,12 @@ export class Phase1AService {
       return this.enterHandoff(event.eventId, event.conversationId);
     }
 
-    return [
-      this.enqueue(event.conversationId, `flex:${event.eventId}`, {
-        type: "flex",
-        altText: FLEX_MENU_ALT_TEXT,
-        contents: buildFlexMenu(),
-      }),
-    ];
+    if (isMenuRequest(event.content.text)) {
+      return this.flexMenu(event.eventId, event.conversationId);
+    }
+
+    // Ambiguous messages must not open a form or cause a global menu response.
+    return [];
   }
 
   private routeAction(
@@ -72,18 +77,42 @@ export class Phase1AService {
     action: CustomerAction,
   ): readonly ReplyEnvelope[] {
     if (action === "SHOW_MENU") {
+      return this.flexMenu(eventId, conversationId);
+    }
+
+    if (action === "ADVANCE_ORDER") {
       return [
-        this.enqueue(conversationId, `flex:${eventId}`, {
-          type: "flex",
-          altText: FLEX_MENU_ALT_TEXT,
-          contents: buildFlexMenu(),
+        this.enqueue(conversationId, `draft:${eventId}`, {
+          type: "text",
+          text: MOCK_DRAFT_ORDER_NOTICE,
         }),
       ];
     }
 
-    // These actions require owner-approved business data or a staff decision.
-    // Phase 1A deliberately fails closed instead of inventing an answer/form.
+    if (action === "REWARDS_INFO") {
+      return [
+        this.enqueue(conversationId, `rewards:${eventId}`, {
+          type: "text",
+          text: MOCK_REWARDS_NOTICE,
+        }),
+      ];
+    }
+
+    // Menu, stock and location require owner-approved data or staff review.
     return this.enterHandoff(eventId, conversationId);
+  }
+
+  private flexMenu(
+    eventId: string,
+    conversationId: string,
+  ): readonly ReplyEnvelope[] {
+    return [
+      this.enqueue(conversationId, `flex:${eventId}`, {
+        type: "flex",
+        altText: FLEX_MENU_ALT_TEXT,
+        contents: buildFlexMenu(),
+      }),
+    ];
   }
 
   private enterHandoff(
@@ -121,5 +150,12 @@ function isHumanRequest(text: string): boolean {
   const normalized = text.trim().toLocaleLowerCase("th-TH");
   return ["คุยกับพนักงาน", "ขอคุยกับพนักงาน", "แอดมิน", "เจ้าหน้าที่"].some(
     (keyword) => normalized.includes(keyword),
+  );
+}
+
+function isMenuRequest(text: string): boolean {
+  const normalized = text.trim().toLocaleLowerCase("th-TH");
+  return ["เมนู", "ช่วยเหลือ", "ตัวเลือก", "help"].some((keyword) =>
+    normalized.includes(keyword),
   );
 }

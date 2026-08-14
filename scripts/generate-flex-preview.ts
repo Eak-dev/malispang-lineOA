@@ -7,6 +7,8 @@ const title =
   flex.body.contents[0]?.type === "text" ? flex.body.contents[0].text : "";
 const message =
   flex.body.contents[1]?.type === "text" ? flex.body.contents[1].text : "";
+const warning =
+  flex.body.contents[2]?.type === "text" ? flex.body.contents[2].text : "";
 const buttons = flex.footer.contents
   .filter((item) => item.type === "button")
   .map((item) => `<button>${escapeHtml(item.action.label)}</button>`)
@@ -18,10 +20,10 @@ const html = `<!doctype html>
 body{margin:0;background:#e8eef4;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans Thai",sans-serif;color:#35261f}
 main{width:min(420px,calc(100% - 32px));margin:40px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 18px 48px #0002}
 header{background:#6b3f2a;color:#fff;text-align:center;padding:20px;font-size:14px;font-weight:700;letter-spacing:.08em}
-section{background:#fff8ec;text-align:center;padding:28px 22px}h1{color:#6b3f2a;font-size:24px;line-height:1.35;margin:0 0 12px}p{line-height:1.65;margin:0}
+section{background:#fff8ec;text-align:center;padding:28px 22px}h1{color:#6b3f2a;font-size:24px;line-height:1.35;margin:0 0 12px}p{line-height:1.65;margin:0}.warning{color:#b42318;font-weight:750;margin-top:12px}
 footer{display:grid;gap:10px;padding:18px}button{border:2px solid #d89b3c;background:#fff;color:#6b3f2a;border-radius:12px;padding:13px;font-size:16px;font-weight:650}button:last-child{background:#6b3f2a;border-color:#6b3f2a;color:#fff}
 .note{text-align:center;color:#6b7280;font-size:12px;margin:0 auto 24px}
-</style></head><body><main><header>MALI'S PANG • มะลิปัง</header><section><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p></section><footer>${buttons}</footer></main><p class="note">Local mock preview • ไม่มีการเชื่อมต่อ LINE OA</p></body></html>`;
+</style></head><body><main><header>MALI'S PANG • มะลิปัง TEST</header><section><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p><p class="warning">${escapeHtml(warning)}</p></section><footer>${buttons}</footer></main><p class="note">Local mock preview • ไม่มีการเชื่อมต่อ LINE OA</p></body></html>`;
 
 await mkdir("artifacts", { recursive: true });
 await writeFile("artifacts/flex-menu-preview.html", html, "utf8");

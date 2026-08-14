@@ -39,3 +39,11 @@
 ## คำตอบที่ต้องแนบกลับ
 
 สำหรับแต่ละข้อระบุ: decision, owner, approval date, effective date, source link/file, Test-only หรือ Production-ready และ review date
+
+## Safe Test mirror — รายการเพิ่มจากการตรวจ 14 สิงหาคม 2026
+
+26. ยืนยัน menu/price artwork ปัจจุบันหรือส่งไฟล์ใหม่; source ที่พบยังมีราคาและเบอร์ที่ไม่ได้รับรอง
+27. ยืนยัน campaign `Facebook อั่งเปา` ว่ายัง active หรือ retired
+28. ยืนยัน public location URL สำหรับปุ่ม TEST
+29. ยืนยัน cover image และ business/response hours ที่ต้อง mirror
+30. อนุมัติแยกเพื่อกด `Enable Messaging API` ใน `มะลิปัง TEST`; การอนุมัตินี้ยังไม่รวม provider terms, token, Webhook URL หรือ deployment

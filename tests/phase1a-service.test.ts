@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   HANDOFF_ACKNOWLEDGEMENT,
   MemoryStore,
+  MOCK_DRAFT_ORDER_NOTICE,
+  MOCK_REWARDS_NOTICE,
   Phase1AService,
   type MockEvent,
 } from "../src/index.js";
@@ -27,19 +29,27 @@ function customer(
 }
 
 describe("Phase1AService", () => {
-  it("returns the branded Flex menu for an ambiguous message without an order form", () => {
+  it("stays silent for an ambiguous message and never opens an order form", () => {
     const fixture = service();
     const replies = fixture.service.process(
       customer("E1", { kind: "text", text: "สอบถามค่ะ" }),
     );
+    expect(replies).toEqual([]);
+    expect(JSON.stringify(replies)).not.toContain("ชื่อ:");
+  });
+
+  it("returns the branded Flex menu only for an explicit menu/help request", () => {
+    const fixture = service();
+    const replies = fixture.service.process(
+      customer("E1", { kind: "text", text: "ขอเมนูช่วยเหลือค่ะ" }),
+    );
     expect(replies).toHaveLength(1);
     expect(replies[0]?.message.type).toBe("flex");
-    expect(JSON.stringify(replies)).not.toContain("ชื่อ:");
   });
 
   it("deduplicates webhook events", () => {
     const fixture = service();
-    const event = customer("E1", { kind: "text", text: "สวัสดี" });
+    const event = customer("E1", { kind: "text", text: "ขอเมนู" });
     expect(fixture.service.process(event)).toHaveLength(1);
     expect(fixture.service.process(event)).toEqual([]);
     expect(fixture.store.outbox.size).toBe(1);
@@ -107,7 +117,7 @@ describe("Phase1AService", () => {
     });
     expect(fixture.store.conversation("CUST-TEST-1").mode).toBe("BOT_ACTIVE");
     expect(
-      fixture.service.process(customer("E3", { kind: "text", text: "สวัสดี" })),
+      fixture.service.process(customer("E3", { kind: "text", text: "ขอเมนู" })),
     ).toHaveLength(1);
   });
 
@@ -130,7 +140,7 @@ describe("Phase1AService", () => {
     expect(fixture.store.conversation("CUST-TEST-1").handoffWindow).toBe(2);
   });
 
-  it.each(["MENU_PRICE", "ADVANCE_ORDER", "LOCATION"] as const)(
+  it.each(["MENU_PRICE", "CHECK_TODAY", "LOCATION"] as const)(
     "fails closed for unapproved %s data",
     (action) => {
       const fixture = service();
@@ -146,4 +156,28 @@ describe("Phase1AService", () => {
       );
     },
   );
+
+  it("creates only a clearly marked mock draft order notice", () => {
+    const fixture = service();
+    const replies = fixture.service.process(
+      customer("E1", { kind: "action", action: "ADVANCE_ORDER" }),
+    );
+    expect(replies[0]?.message).toEqual({
+      type: "text",
+      text: MOCK_DRAFT_ORDER_NOTICE,
+    });
+    expect(fixture.store.conversation("CUST-TEST-1").mode).toBe("BOT_ACTIVE");
+  });
+
+  it("keeps Test rewards isolated from Production", () => {
+    const fixture = service();
+    const replies = fixture.service.process(
+      customer("E1", { kind: "action", action: "REWARDS_INFO" }),
+    );
+    expect(replies[0]?.message).toEqual({
+      type: "text",
+      text: MOCK_REWARDS_NOTICE,
+    });
+    expect(JSON.stringify(replies)).not.toContain("https://");
+  });
 });

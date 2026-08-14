@@ -9,6 +9,7 @@ describe("Flex menu", () => {
     expect(JSON.stringify(flex)).toContain(
       "เลือกหัวข้อด้านล่าง หรือพิมพ์คำถามถึงเราได้เลยนะคะ 😊",
     );
+    expect(JSON.stringify(flex)).toContain("TEST — ไม่รับออเดอร์/ชำระเงินจริง");
     expect(flex.footer.contents).toHaveLength(4);
     expect(
       flex.footer.contents.map((item) =>
@@ -19,6 +20,16 @@ describe("Flex menu", () => {
       "🧾 สั่ง/จองล่วงหน้า",
       "📍 ที่ตั้งร้าน",
       "💬 คุยกับพนักงาน",
+    ]);
+    expect(
+      flex.footer.contents.map((item) =>
+        item.type === "button" ? item.action.data : "",
+      ),
+    ).toEqual([
+      "action=show_menu",
+      "action=start_draft_order",
+      "action=show_location",
+      "action=human_handoff",
     ]);
   });
 

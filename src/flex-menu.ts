@@ -1,26 +1,38 @@
-import type { CustomerAction, FlexBubble, FlexComponent } from "./types.js";
+import type { FlexBubble, FlexComponent } from "./types.js";
 
 const BRAND_BROWN = "#6B3F2A";
 const BRAND_CREAM = "#FFF8EC";
 const BRAND_GOLD = "#D89B3C";
 
-const buttons: ReadonlyArray<{ label: string; action: CustomerAction }> = [
-  { label: "🥖 เมนูและราคา", action: "MENU_PRICE" },
-  { label: "🧾 สั่ง/จองล่วงหน้า", action: "ADVANCE_ORDER" },
-  { label: "📍 ที่ตั้งร้าน", action: "LOCATION" },
-  { label: "💬 คุยกับพนักงาน", action: "HUMAN_HANDOFF" },
+const buttons: ReadonlyArray<{
+  label: string;
+  data: string;
+  primary?: boolean;
+}> = [
+  { label: "🥖 เมนูและราคา", data: "action=show_menu" },
+  { label: "🧾 สั่ง/จองล่วงหน้า", data: "action=start_draft_order" },
+  { label: "📍 ที่ตั้งร้าน", data: "action=show_location" },
+  {
+    label: "💬 คุยกับพนักงาน",
+    data: "action=human_handoff",
+    primary: true,
+  },
 ];
 
-function flexButton(label: string, action: CustomerAction): FlexComponent {
+function flexButton(
+  label: string,
+  data: string,
+  primary = false,
+): FlexComponent {
   return {
     type: "button",
-    style: action === "HUMAN_HANDOFF" ? "primary" : "secondary",
-    color: action === "HUMAN_HANDOFF" ? BRAND_BROWN : BRAND_GOLD,
+    style: primary ? "primary" : "secondary",
+    color: primary ? BRAND_BROWN : BRAND_GOLD,
     height: "sm",
     action: {
       type: "postback",
       label,
-      data: `action=${action}`,
+      data,
       displayText: label,
     },
   };
@@ -71,6 +83,15 @@ export function buildFlexMenu(): FlexBubble {
           wrap: true,
           align: "center",
         },
+        {
+          type: "text",
+          text: "TEST — ไม่รับออเดอร์/ชำระเงินจริง",
+          color: "#B42318",
+          size: "sm",
+          weight: "bold",
+          wrap: true,
+          align: "center",
+        },
       ],
     },
     footer: {
@@ -79,9 +100,11 @@ export function buildFlexMenu(): FlexBubble {
       backgroundColor: "#FFFFFF",
       paddingAll: "18px",
       spacing: "sm",
-      contents: buttons.map(({ label, action }) => flexButton(label, action)),
+      contents: buttons.map(({ label, data, primary }) =>
+        flexButton(label, data, primary),
+      ),
     },
   };
 }
 
-export const FLEX_MENU_ALT_TEXT = "เมนูช่วยเหลือจากมะลิปัง";
+export const FLEX_MENU_ALT_TEXT = "เมนูช่วยเหลือมะลิปัง TEST";
