@@ -1,0 +1,5 @@
+# TEST ONLY. Copy to .dev.vars for local development and provide mock values.
+LINE_CHANNEL_SECRET=
+LINE_CHANNEL_ACCESS_TOKEN=
+LINE_BOT_USER_ID=
+TEST_ADMIN_KEY=

@@ -6,7 +6,7 @@ import {
 } from "../src/index.js";
 
 const mapPath = "docs/line-oa/production-mirror/test-rich-menu-action-map.json";
-const imagePath = "assets/test/malispang-test-rich-menu.png";
+const imagePath = "assets/test/malispang-test-rich-menu-original.png";
 
 const map = JSON.parse(await readFile(mapPath, "utf8")) as RichMenuActionMap;
 const result = validateRichMenuActionMap(map);

@@ -15,17 +15,15 @@ const map = JSON.parse(
 ) as RichMenuActionMap;
 
 describe("Test Rich Menu action map", () => {
-  it("covers the complete 2500x1686 image with six safe, non-overlapping areas", () => {
+  it("maps the original 2500x1686 five-panel image with safe, non-overlapping areas", () => {
     expect(validateRichMenuActionMap(map)).toEqual({ valid: true, errors: [] });
   });
 
-  it("is blocked from publishing while location and business data are unresolved", () => {
+  it("stays blocked from publishing while visual business claims are unresolved", () => {
     expect(map.publishable).toBe(false);
-    expect(map.areas.find((area) => area.id === "B_LOCATION")?.action).toEqual({
-      type: "uri",
-      uri: null,
-      enabled: false,
-    });
+    expect(map.areas.every((area) => area.action.type === "postback")).toBe(
+      true,
+    );
   });
 
   it("uses only stable Test postbacks for enabled actions", () => {
@@ -33,11 +31,25 @@ describe("Test Rich Menu action map", () => {
       .filter((area) => area.action.type === "postback")
       .map((area) => area.action.data);
     expect(postbacks).toEqual([
-      "action=show_rewards",
-      "action=check_today",
-      "action=start_draft_order",
-      "action=show_menu",
-      "action=human_handoff",
+      "test:show_rewards",
+      "test:show_location",
+      "test:show_delivery",
+      "test:show_menu",
+      "test:show_facebook",
     ]);
+  });
+
+  it("keeps staff contact outside the original five panels as a Quick Reply", () => {
+    const staffQuickReply = (
+      map as RichMenuActionMap & {
+        staffQuickReply: { label: string; data: string };
+      }
+    ).staffQuickReply;
+    expect(staffQuickReply).toEqual(
+      expect.objectContaining({
+        label: "คุยกับพนักงาน",
+        data: "test:human_handoff",
+      }),
+    );
   });
 });

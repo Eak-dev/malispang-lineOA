@@ -8,6 +8,7 @@ export default tseslint.config(
       "coverage/**",
       "artifacts/**",
       "node_modules/**",
+      "worker-configuration.d.ts",
       "eslint.config.js",
     ],
   },

@@ -1,73 +1,72 @@
 {
   "account": "มะลิปัง TEST",
-  "name": "MalisPang TEST Safe Mirror v1",
+  "name": "MalisPang TEST Original Menu + Staff Quick Reply",
   "chatBarLabel": "เมนู TEST",
   "defaultDisplay": "shown",
-  "imagePath": "assets/test/malispang-test-rich-menu.png",
+  "imagePath": "assets/test/malispang-test-rich-menu-original.png",
   "image": {
     "width": 2500,
     "height": 1686
   },
   "publishable": false,
   "publishBlockers": [
-    "Owner-approved public location URL is missing",
-    "Menu and price data are not approved",
-    "Promotion and reward-card fixtures are not approved"
+    "ภาพระบุราคาเริ่มต้น 59 บาท แต่ TEST_SEED ที่อนุมัติไว้ระบุ 39 บาท",
+    "สถานะโปรโมชัน/สะสมแต้มยังไม่ได้รับการยืนยันว่าเป็นข้อมูลปัจจุบัน",
+    "ปลายทาง Delivery และ Facebook ยังไม่ได้รับการยืนยันเป็น Test-safe destination"
   ],
+  "staffQuickReply": {
+    "label": "คุยกับพนักงาน",
+    "data": "test:human_handoff",
+    "behavior": "แสดงใต้คำตอบของบอตและหายเมื่อกดหรือเมื่อมีข้อความใหม่; หลังเริ่ม handoff จะไม่แสดงซ้ำ"
+  },
   "areas": [
     {
       "id": "A_REWARDS",
-      "label": "โปรโมชั่น/สะสมแต้ม",
-      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "label": "สะสมแต้มและโปรโมชัน",
+      "bounds": { "x": 0, "y": 0, "width": 825, "height": 1686 },
       "action": {
         "type": "postback",
-        "data": "action=show_rewards",
+        "data": "test:show_rewards",
         "enabled": true
       }
     },
     {
       "id": "B_LOCATION",
-      "label": "ที่ตั้งร้าน",
-      "bounds": { "x": 833, "y": 0, "width": 833, "height": 843 },
-      "action": { "type": "uri", "uri": null, "enabled": false }
-    },
-    {
-      "id": "C_CHECK_TODAY",
-      "label": "เช็กขนมวันนี้",
-      "bounds": { "x": 1666, "y": 0, "width": 834, "height": 843 },
+      "label": "ที่อยู่ร้าน",
+      "bounds": { "x": 850, "y": 0, "width": 825, "height": 800 },
       "action": {
         "type": "postback",
-        "data": "action=check_today",
+        "data": "test:show_location",
         "enabled": true
       }
     },
     {
-      "id": "D_DRAFT_ORDER",
-      "label": "สั่งล่วงหน้า",
-      "bounds": { "x": 0, "y": 843, "width": 833, "height": 843 },
+      "id": "C_DELIVERY",
+      "label": "Delivery",
+      "bounds": { "x": 1675, "y": 0, "width": 825, "height": 800 },
       "action": {
         "type": "postback",
-        "data": "action=start_draft_order",
+        "data": "test:show_delivery",
         "enabled": true
       }
     },
     {
-      "id": "E_MENU",
-      "label": "เมนูและราคา",
-      "bounds": { "x": 833, "y": 843, "width": 833, "height": 843 },
+      "id": "D_MENU",
+      "label": "เมนูของเรา",
+      "bounds": { "x": 850, "y": 850, "width": 825, "height": 836 },
       "action": {
         "type": "postback",
-        "data": "action=show_menu",
+        "data": "test:show_menu",
         "enabled": true
       }
     },
     {
-      "id": "F_HANDOFF",
-      "label": "คุยกับพนักงาน",
-      "bounds": { "x": 1666, "y": 843, "width": 834, "height": 843 },
+      "id": "E_FACEBOOK",
+      "label": "Facebook",
+      "bounds": { "x": 1675, "y": 850, "width": 825, "height": 836 },
       "action": {
         "type": "postback",
-        "data": "action=human_handoff",
+        "data": "test:show_facebook",
         "enabled": true
       }
     }

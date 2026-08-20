@@ -28,12 +28,12 @@ describe("Flex menu", () => {
         item.type === "button" ? item.action.data : "",
       ),
     ).toEqual([
-      "action=show_menu",
-      "action=show_price",
-      "action=show_location",
-      "action=show_hours",
-      "action=show_wholesale",
-      "action=human_handoff",
+      "test:show_menu",
+      "test:show_price",
+      "test:show_location",
+      "test:show_hours",
+      "test:show_wholesale",
+      "test:human_handoff",
     ]);
   });
 

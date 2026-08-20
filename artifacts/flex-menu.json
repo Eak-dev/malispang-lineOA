@@ -68,7 +68,7 @@
         "action": {
           "type": "postback",
           "label": "🥖 ดูเมนู",
-          "data": "action=show_menu",
+          "data": "test:show_menu",
           "displayText": "🥖 ดูเมนู"
         }
       },
@@ -80,7 +80,7 @@
         "action": {
           "type": "postback",
           "label": "🏷️ ดูราคา",
-          "data": "action=show_price",
+          "data": "test:show_price",
           "displayText": "🏷️ ดูราคา"
         }
       },
@@ -92,7 +92,7 @@
         "action": {
           "type": "postback",
           "label": "📍 ที่ตั้งร้าน",
-          "data": "action=show_location",
+          "data": "test:show_location",
           "displayText": "📍 ที่ตั้งร้าน"
         }
       },
@@ -104,7 +104,7 @@
         "action": {
           "type": "postback",
           "label": "🕒 เวลาทำการ",
-          "data": "action=show_hours",
+          "data": "test:show_hours",
           "displayText": "🕒 เวลาทำการ"
         }
       },
@@ -116,7 +116,7 @@
         "action": {
           "type": "postback",
           "label": "📦 ราคาส่ง",
-          "data": "action=show_wholesale",
+          "data": "test:show_wholesale",
           "displayText": "📦 ราคาส่ง"
         }
       },
@@ -128,7 +128,7 @@
         "action": {
           "type": "postback",
           "label": "💬 คุยกับพนักงาน",
-          "data": "action=human_handoff",
+          "data": "test:human_handoff",
           "displayText": "💬 คุยกับพนักงาน"
         }
       }

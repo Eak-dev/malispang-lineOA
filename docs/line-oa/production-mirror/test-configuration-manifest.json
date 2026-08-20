@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-08-14T00:00:00+07:00",
+  "verifiedAt": "2026-08-20T00:00:00+07:00",
   "destinationAccount": "มะลิปัง TEST",
   "environment": "TEST_ONLY",
   "profile": {
@@ -33,8 +33,8 @@
     "responseHours": "ON",
     "duringResponseHours": "MANUAL_CHAT",
     "outsideResponseHours": "AUTO_RESPONSE_WITH_NO_ACTIVE_RULES",
-    "webhook": "OFF_UNAVAILABLE",
-    "messagingApi": "DISABLED"
+    "webhook": "OFF_NOT_CONFIGURED",
+    "messagingApi": "ENABLED_CHANNEL_CREATED"
   },
   "autoResponses": {
     "Default": {
@@ -52,9 +52,11 @@
   },
   "richMenu": {
     "nativeTestRichMenu": "NOT_CREATED_OR_PUBLISHED",
-    "localImage": "assets/test/malispang-test-rich-menu.png",
+    "localImage": "assets/test/malispang-test-rich-menu-original.png",
     "localActionMap": "docs/line-oa/production-mirror/test-rich-menu-action-map.json",
-    "publishable": false
+    "publishable": false,
+    "staffEntryPoint": "LINE Quick Reply: คุยกับพนักงาน",
+    "publishBlockers": "ราคาในภาพ 59 บาทขัดกับ TEST_SEED 39 บาท และ promotion/destination ยังไม่ยืนยัน"
   },
   "flexMenu": {
     "json": "artifacts/flex-menu.json",
@@ -64,7 +66,7 @@
   "safety": {
     "productionChanged": false,
     "messagesSent": 0,
-    "credentialsCreatedOrViewed": 0,
+    "lineCredentialValuesViewedOrStoredInRepository": 0,
     "customerChatsOpened": 0,
     "realOrdersOrPayments": 0
   }

@@ -36,7 +36,9 @@ export function validateRichMenuActionMap(
   if (value.image.width !== 2500 || value.image.height !== 1686) {
     errors.push("rich menu image must be 2500x1686");
   }
-  if (value.areas.length !== 6) errors.push("rich menu must contain six areas");
+  if (value.areas.length !== 5) {
+    errors.push("original rich menu must contain five areas");
+  }
 
   for (const [index, area] of value.areas.entries()) {
     if (ids.has(area.id)) errors.push(`area ${index} has a duplicate id`);
@@ -51,9 +53,12 @@ export function validateRichMenuActionMap(
     }
     if (
       area.action.type === "postback" &&
-      !area.action.data?.startsWith("action=")
+      !area.action.data?.startsWith("test:")
     ) {
       errors.push(`area ${area.id} has invalid postback data`);
+    }
+    if (area.action.type === "uri") {
+      errors.push(`area ${area.id} uses a URI instead of a Test postback`);
     }
     if (
       area.action.type === "uri" &&
@@ -72,14 +77,6 @@ export function validateRichMenuActionMap(
         errors.push(`areas ${a.id} and ${b.id} overlap`);
       }
     }
-  }
-
-  const areaTotal = value.areas.reduce(
-    (sum, area) => sum + area.bounds.width * area.bounds.height,
-    0,
-  );
-  if (areaTotal !== value.image.width * value.image.height) {
-    errors.push("rich menu areas must cover the full image");
   }
 
   return { valid: errors.length === 0, errors };

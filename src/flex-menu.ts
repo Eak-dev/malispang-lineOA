@@ -9,14 +9,14 @@ const buttons: ReadonlyArray<{
   data: string;
   primary?: boolean;
 }> = [
-  { label: "🥖 ดูเมนู", data: "action=show_menu" },
-  { label: "🏷️ ดูราคา", data: "action=show_price" },
-  { label: "📍 ที่ตั้งร้าน", data: "action=show_location" },
-  { label: "🕒 เวลาทำการ", data: "action=show_hours" },
-  { label: "📦 ราคาส่ง", data: "action=show_wholesale" },
+  { label: "🥖 ดูเมนู", data: "test:show_menu" },
+  { label: "🏷️ ดูราคา", data: "test:show_price" },
+  { label: "📍 ที่ตั้งร้าน", data: "test:show_location" },
+  { label: "🕒 เวลาทำการ", data: "test:show_hours" },
+  { label: "📦 ราคาส่ง", data: "test:show_wholesale" },
   {
     label: "💬 คุยกับพนักงาน",
-    data: "action=human_handoff",
+    data: "test:human_handoff",
     primary: true,
   },
 ];

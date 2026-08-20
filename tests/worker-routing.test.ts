@@ -1,0 +1,104 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  HANDOFF_ACKNOWLEDGEMENT,
+  SAFE_FALLBACK,
+  SLIP_ACKNOWLEDGEMENT,
+  STAFF_QUICK_REPLY,
+  classifyPostback,
+  classifyText,
+  replyMessage,
+} from "../worker/routing.js";
+
+describe("deployed Test routing", () => {
+  it.each([
+    ["สอบถามค่ะ", "SAFE_FALLBACK"],
+    ["มีเมนูอะไรบ้าง", "MENU"],
+    ["ขนมปังราคาเท่าไหร่", "PRICE"],
+    ["ร้านอยู่ที่ไหน", "LOCATION"],
+    ["เปิดกี่โมง", "HOURS"],
+    ["เก็บได้กี่วัน", "STORAGE"],
+    ["ราคาส่งเท่าไหร่", "WHOLESALE"],
+    ["สั่งล่วงหน้าอย่างไร", "ADVANCE_ORDER"],
+    ["เมนูหลัก", "FLEX_MENU"],
+  ])("routes %s safely", (text, expected) => {
+    expect(classifyText(text).replyKind).toBe(expected);
+  });
+
+  it.each([
+    "มีของไหม",
+    "มีโปรอะไร",
+    "คุยกับพนักงาน",
+    "ขอร้องเรียนสินค้า",
+    "แพ้อาหารค่ะ",
+    "แจ้งโอนเงิน",
+    "ขอคืนเงิน",
+    "งานจัดเลี้ยง 200 ชิ้น",
+    "รับสินค้าวันไหนดี",
+    "ส่งที่บ้านเลขที่ 123",
+    "โทร 0812345678",
+  ])("routes high-risk text to handoff: %s", (text) => {
+    expect(classifyText(text)).toMatchObject({
+      replyKind: "HANDOFF_ACK",
+      handoff: true,
+    });
+  });
+
+  it.each([
+    ["test:show_menu", "MENU"],
+    ["test:show_price", "PRICE"],
+    ["test:show_location", "LOCATION"],
+    ["test:show_hours", "HOURS"],
+    ["test:show_wholesale", "WHOLESALE"],
+    ["test:show_rewards", "WHOLESALE"],
+    ["test:show_delivery", "ADVANCE_ORDER"],
+    ["test:show_facebook", "SAFE_FALLBACK"],
+    ["test:human_handoff", "HANDOFF_ACK"],
+  ])("supports Test-only postback %s", (data, expected) => {
+    expect(classifyPostback(data).replyKind).toBe(expected);
+  });
+
+  it("fails closed for a Production-like or unknown postback", () => {
+    expect(classifyPostback("action=show_menu")).toMatchObject({
+      replyKind: "SAFE_FALLBACK",
+      handoff: false,
+    });
+  });
+
+  it("uses the exact safe fallback and handoff messages", () => {
+    expect(replyMessage("SAFE_FALLBACK")).toEqual({
+      type: "text",
+      text: SAFE_FALLBACK,
+      quickReply: STAFF_QUICK_REPLY,
+    });
+    expect(replyMessage("HANDOFF_ACK")).toEqual({
+      type: "text",
+      text: HANDOFF_ACKNOWLEDGEMENT,
+    });
+    expect(replyMessage("SLIP_ACK")).toEqual({
+      type: "text",
+      text: SLIP_ACKNOWLEDGEMENT,
+    });
+  });
+
+  it("adds one temporary staff quick reply to bot answers but not handoff replies", () => {
+    expect(replyMessage("MENU")?.quickReply).toEqual(STAFF_QUICK_REPLY);
+    expect(STAFF_QUICK_REPLY.items).toHaveLength(1);
+    expect(STAFF_QUICK_REPLY.items[0]?.action).toMatchObject({
+      type: "postback",
+      label: "คุยกับพนักงาน",
+      data: "test:human_handoff",
+    });
+    expect(replyMessage("HANDOFF_ACK")?.quickReply).toBeUndefined();
+    expect(replyMessage("SLIP_ACK")?.quickReply).toBeUndefined();
+  });
+
+  it("labels seed answers and never claims current stock", () => {
+    const menu = replyMessage("MENU");
+    expect(JSON.stringify(menu)).toContain("TEST_SEED");
+    expect(JSON.stringify(menu)).toContain(
+      "รายชื่อเมนูไม่ใช่ข้อมูลสต๊อกปัจจุบัน",
+    );
+    expect(JSON.stringify(menu)).not.toContain("มีพร้อมขาย");
+  });
+});

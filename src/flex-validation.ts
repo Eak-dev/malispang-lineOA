@@ -20,7 +20,7 @@ export function validateFlexMenu(value: FlexBubble): ValidationResult {
     }
     if (!component.action.label.trim())
       errors.push(`button ${index} has no label`);
-    if (!component.action.data.startsWith("action=")) {
+    if (!component.action.data.startsWith("test:")) {
       errors.push(`button ${index} has invalid postback data`);
     }
     if (postbackData.has(component.action.data)) {
