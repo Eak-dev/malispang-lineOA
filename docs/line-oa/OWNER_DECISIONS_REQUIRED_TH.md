@@ -46,4 +46,7 @@
 27. ยืนยัน campaign `Facebook อั่งเปา` ว่ายัง active หรือ retired
 28. ยืนยัน public location URL สำหรับปุ่ม TEST
 29. ยืนยัน cover image และ business/response hours ที่ต้อง mirror
-30. อนุมัติแยกเพื่อกด `Enable Messaging API` ใน `มะลิปัง TEST`; การอนุมัตินี้ยังไม่รวม provider terms, token, Webhook URL หรือ deployment
+30. **RESOLVED 20 สิงหาคม 2026:** เปิด Messaging API, สร้าง Test Provider/Channel, ตั้ง encrypted credentials, deploy Test Worker และเปิด verified Webhook เฉพาะ `มะลิปัง TEST` แล้ว
+31. ทำ Owner live UAT จาก LINE ส่วนตัวเพื่อยืนยัน reply token จริง, Quick Reply, handoff silence และ authorized staff-close
+32. ยืนยันว่า TEST_SEED ราคา 39 บาท, ที่ตั้ง, เวลา 08:00–19:00 และการเก็บประมาณ 2 วันถูกต้อง ก่อนเปลี่ยนสถานะเป็น authoritative
+33. ตัดสินใจ Rich Menu conflict: ภาพ Owner ระบุราคาเริ่ม 59 บาท แต่ TEST_SEED ระบุ 39 บาท; ต้องยืนยัน promotion/loyalty, Facebook URL และ Delivery destination ก่อน Publish

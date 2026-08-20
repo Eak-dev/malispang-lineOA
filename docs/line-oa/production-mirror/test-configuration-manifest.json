@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-08-20T00:00:00+07:00",
+  "verifiedAt": "2026-08-20T20:35:00+07:00",
   "destinationAccount": "มะลิปัง TEST",
   "environment": "TEST_ONLY",
   "profile": {
@@ -33,8 +33,9 @@
     "responseHours": "ON",
     "duringResponseHours": "MANUAL_CHAT",
     "outsideResponseHours": "AUTO_RESPONSE_WITH_NO_ACTIVE_RULES",
-    "webhook": "OFF_NOT_CONFIGURED",
-    "messagingApi": "ENABLED_CHANNEL_CREATED"
+    "webhook": "ON_VERIFIED_TEST_ENDPOINT",
+    "messagingApi": "ENABLED_CHANNEL_CREATED",
+    "collisionCheck": "PASS_NO_ACTIVE_GLOBAL_AUTO_RESPONSE"
   },
   "autoResponses": {
     "Default": {
@@ -62,6 +63,23 @@
     "json": "artifacts/flex-menu.json",
     "preview": "artifacts/flex-menu-preview.html",
     "sentToLine": false
+  },
+  "deployment": {
+    "platform": "Cloudflare Workers",
+    "workerName": "malispang-lineoa-test",
+    "persistence": "Durable Objects with SQLite",
+    "requiredSecretsConfigured": [
+      "LINE_CHANNEL_SECRET",
+      "LINE_CHANNEL_ACCESS_TOKEN",
+      "LINE_BOT_USER_ID",
+      "TEST_ADMIN_KEY"
+    ],
+    "credentialValuesStoredInRepository": false,
+    "lineWebhookVerification": "PASS",
+    "signedEmptyWebhook": "HTTP_200",
+    "invalidSignature": "HTTP_401",
+    "unauthenticatedAdmin": "HTTP_401",
+    "authenticatedAdmin": "HTTP_200"
   },
   "safety": {
     "productionChanged": false,

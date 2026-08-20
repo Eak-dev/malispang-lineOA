@@ -4,7 +4,7 @@
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **WORKER_DEPLOYED / LINE_WEBHOOK_NOT_YET_ENABLED**
+สถานะ: **TEST_WEBHOOK_LIVE / OWNER_LIVE_UAT_PENDING**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -14,9 +14,26 @@
 - Cloudflare Worker: `malispang-lineoa-test`
 - Test endpoint: `https://malispang-lineoa-test.eakkachai-dev.workers.dev`
 - Persistence: Durable Objects with SQLite
-- Webhook: ยังไม่ตั้ง URL, ยังไม่ Verify และยังไม่เปิด Use webhook
-- Cloudflare encrypted secrets: มีเฉพาะ `TEST_ADMIN_KEY`; ยังไม่มี LINE secret/token/bot identifier
+- Webhook: ตั้ง Test URL แล้ว, LINE Verify สำเร็จ และ `Use webhook` เปิดอยู่
+- Cloudflare encrypted secrets: ตั้งครบ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_BOT_USER_ID` และ `TEST_ADMIN_KEY` แล้ว (บันทึกเฉพาะชื่อ ไม่บันทึกค่า)
+- Channel Access Token ผ่านการตรวจชื่อบอตเป็น `มะลิปัง TEST`
+- Live safety checks: health `200`, invalid signature `401`, unauthenticated admin `401`, authenticated admin `200`, signed empty webhook `200`
 - Production `มะลิปัง`: ไม่ได้เปิดและไม่ได้เปลี่ยนแปลง
+
+## Response settings — ก่อน/หลังเปิด Webhook
+
+| รายการ                 | ก่อน                   | หลัง                   | หมายเหตุ                               |
+| ---------------------- | ---------------------- | ---------------------- | -------------------------------------- |
+| Chat                   | ON                     | ON                     | คงไว้สำหรับพนักงาน                     |
+| Greeting message       | ON                     | ON                     | ทำงานเมื่อเพิ่มเพื่อน ไม่ใช่ทุกข้อความ |
+| Response hours         | ON                     | ON                     | ไม่เปลี่ยน                             |
+| ระหว่าง response hours | Manual chat            | Manual chat            | ไม่เปลี่ยน                             |
+| นอก response hours     | Auto-response messages | Auto-response messages | ไม่มี active rule จึงไม่ตอบซ้ำ         |
+| `Default`              | OFF                    | OFF                    | ข้อความ misleading ไม่ทำงาน            |
+| `Add Friend`           | ไม่พบ                  | ไม่พบ                  | ไม่ได้สร้าง                            |
+| Webhook                | OFF/ยังไม่ตั้ง URL     | ON/Verified            | เปลี่ยนเฉพาะบัญชี TEST                 |
+
+Collision check ยืนยันว่า active global Auto-response rules = 0 จึงไม่มี native global reply ชนกับ Worker; Rich Menu และ Flex Menu ยังไม่ถูก Publish/ส่งจริง
 
 ## พฤติกรรมตอบลูกค้า
 
@@ -62,17 +79,12 @@
 
 ห้ามบันทึกค่าจริงใน `.dev.vars`, `.env`, log, screenshot, Git หรือเอกสาร
 
-## ขั้นตอนคงเหลือหลัง Owner login LINE Developers
+## ขั้นตอนคงเหลือ
 
-1. ยืนยัน Channel name `มะลิปัง TEST` และ Provider `MalisPang TEST Sandbox`
-2. ออก/อ่าน Channel Secret และเก็บตรงเข้า Keychain + Cloudflare encrypted secret
-3. ออก Test Channel Access Token, ตรวจ bot display name ว่าเป็น `มะลิปัง TEST`, แล้วเก็บตรงเข้า secret manager
-4. เก็บ Test bot identifier แบบไม่แสดงค่า
-5. Deploy final bundle ที่มี required-secret gate
-6. ตั้ง Webhook URL เป็น Test endpoint `/webhook`, Verify และเปิด Use webhook
-7. ตรวจ LINE OA Test response settings ไม่ให้ native auto-response ชนกับ webhook
-8. ทำ live UAT เฉพาะบัญชี Test
-9. Publish Rich Menu เฉพาะเมื่อ Owner ยืนยันข้อมูลที่ขัดแย้งครบ
+1. Owner ส่ง UAT messages จาก LINE ส่วนตัวเข้าบัญชี `มะลิปัง TEST` เพื่อทดสอบ reply token จริง, Quick Reply, handoff silence และ authorized staff-close
+2. Owner ยืนยันว่า TEST_SEED ราคา 39 บาท, ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
+3. Owner ตัดสินใจข้อมูลที่ขัดแย้งในภาพ Rich Menu (ภาพระบุ 59 บาท) รวมถึงโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
+4. Publish Rich Menu ได้เฉพาะเมื่อข้อ 3 ผ่านครบ; ขณะนี้ `publishable=false`
 
 ## Rollback
 
