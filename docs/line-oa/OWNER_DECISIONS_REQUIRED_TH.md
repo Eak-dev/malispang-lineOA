@@ -47,7 +47,8 @@
 28. ยืนยัน public location URL สำหรับปุ่ม TEST
 29. ยืนยัน cover image และ business/response hours ที่ต้อง mirror
 30. **RESOLVED 20 สิงหาคม 2026:** เปิด Messaging API, สร้าง Test Provider/Channel, ตั้ง encrypted credentials, deploy Test Worker และเปิด verified Webhook เฉพาะ `มะลิปัง TEST` แล้ว
-31. ทำ Owner live UAT จาก LINE ส่วนตัวเพื่อยืนยัน reply token จริง, Quick Reply, handoff silence และ authorized staff-close
+31. **RESOLVED 21 สิงหาคม 2026:** Owner live UAT จาก LINE ส่วนตัวผ่าน Rich Menu, Quick Reply, acknowledgement ครั้งเดียว และ handoff silence ครบ 8 ข้อ; authorized staff-close เคยผ่าน UAT ก่อนหน้า
 32. ยืนยันว่า TEST_SEED ราคา 39 บาท, ที่ตั้ง, เวลา 08:00–19:00 และการเก็บประมาณ 2 วันถูกต้อง ก่อนเปลี่ยนสถานะเป็น authoritative
 33. **RESOLVED 21 สิงหาคม 2026:** Rich Menu ใช้ราคาเริ่มต้น 39 บาท, กติกา 50 บาท = 1 แต้ม, Maps URL, Facebook URL และข้อความ Delivery ตาม GitHub Issue #1; action แต้มต้อง fail closed จน Reward Card พร้อม
 34. กำหนด Reward Card TEST: Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown; ห้ามเชื่อม Production Reward Card
+35. อนุมัติการหมุน `TEST_ADMIN_KEY` เฉพาะ Worker `malispang-lineoa-test` เนื่องจาก local Keychain ไม่มีกุญแจเดิม เพื่อปิด handoff ของผู้ทดสอบหลัง UAT และยืนยัน active handoff = `0`; ห้ามเปลี่ยน LINE credential หรือ Production

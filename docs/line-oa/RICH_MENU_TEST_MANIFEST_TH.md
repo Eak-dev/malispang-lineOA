@@ -2,7 +2,7 @@
 
 อัปเดตล่าสุด: 21 สิงหาคม 2026
 
-สถานะ: `PUBLISHED_CURRENT_MENU / OWNER_UAT_PENDING / REWARD_FAIL_CLOSED`
+สถานะ: `PUBLISHED_CURRENT_MENU / OWNER_UAT_PASS / REWARD_FAIL_CLOSED`
 
 ## ขอบเขตและไฟล์
 
@@ -43,6 +43,12 @@
 | F Facebook             | `1667,843,833,843` | Link                        | Facebook URL ที่ Owner ระบุ                                                 |
 
 พื้นที่ทั้งหกครอบคลุมภาพเต็มพอดี ไม่มีช่องว่าง ไม่มีพื้นที่ซ้อน และไม่เกินขอบภาพ
+
+## Owner live UAT
+
+Owner ยืนยัน `PASS` ครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok): Rich Menu แสดงอัตโนมัติ, chat bar ถูกต้อง, reward fail closed แสดงกติกา 50 บาทต่อ 1 แต้ม, Maps/Delivery/Menu/Facebook ถูกต้อง, acknowledgement ส่งครั้งเดียว และบอตเงียบหลัง handoff
+
+Reward Card TEST จริงยังไม่ได้สร้าง และการปิด handoff ของผู้ทดสอบหลัง UAT ยังรอการอนุมัติหมุน `TEST_ADMIN_KEY` เฉพาะ Worker TEST เพื่อคง authentication boundary
 
 ## Reward Card fail-closed
 

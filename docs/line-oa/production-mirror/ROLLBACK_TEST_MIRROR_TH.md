@@ -30,3 +30,7 @@ Messaging API และ Webhook ของ TEST เปิดใช้งานแ
 6. ไฟล์ local และ manifest ย้อนด้วย Git revert ได้
 
 Reward Card ยังไม่ถูกสร้างหรือ Publish จึงไม่มี live card ให้ rollback และห้ามเชื่อม/เปลี่ยน Production Reward Card
+
+## Admin handoff cleanup
+
+การปิด handoff ต้องใช้ endpoint ผู้ดูแลพร้อม `TEST_ADMIN_KEY` ที่ถูกต้องเท่านั้น ห้ามข้าม authentication หรือแก้ Durable Object โดยตรง หาก local Keychain ไม่มีกุญแจเดิม ต้องขอ Owner อนุมัติการหมุนกุญแจเฉพาะ `malispang-lineoa-test` ก่อน แล้วจึงปิดเฉพาะ handoff ของ TEST และตรวจว่า active handoff เหลือ `0` การหมุนกุญแจนี้ไม่เกี่ยวกับ LINE Channel Secret, Channel Access Token หรือ Production

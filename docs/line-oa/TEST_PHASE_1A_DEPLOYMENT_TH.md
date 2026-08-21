@@ -4,7 +4,7 @@
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **TEST_WEBHOOK_LIVE / RICH_MENU_PUBLISHED / OWNER_RICH_MENU_UAT_PENDING**
+สถานะ: **TEST_WEBHOOK_LIVE / RICH_MENU_PUBLISHED / OWNER_RICH_MENU_UAT_PASS**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -46,7 +46,9 @@
   - `/health`, รูปเมนูสองใบ และภาพ Rich Menu: `200` พร้อม MIME ถูกต้อง
   - SHA-256 ของภาพ Rich Menu live ตรง repository: `56668eec5b069763e0d974c90335e79eeed5e2fd31fe86c16dfeab42712cd392`
   - invalid webhook signature: `401`
-  - Owner live UAT Rich Menu: **PENDING**
+  - Owner live UAT Rich Menu: **PASS — 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok)**
+  - Owner ยืนยันครบ 8 ข้อ: Rich Menu แสดงอัตโนมัติพร้อมแถบ `รู้จักมะลิปัง`, กติกาแต้มแบบ fail closed, Maps, Delivery, รูปเมนูสองใบ, Facebook, acknowledgement ครั้งเดียว และ bot silence
+  - การปิด handoff หลัง UAT รอบนี้ยังรอการอนุมัติหมุน `TEST_ADMIN_KEY` ของ Worker TEST เนื่องจากกุญแจเดิมไม่อยู่ใน local Keychain; ไม่มีการข้าม authentication และยังไม่ยืนยัน active handoff ว่าเหลือ `0`
 
 ## Response settings — ก่อน/หลังเปิด Webhook
 
@@ -61,7 +63,7 @@
 | `Add Friend`           | ไม่พบ                  | ไม่พบ                  | ไม่ได้สร้าง                            |
 | Webhook                | OFF/ยังไม่ตั้ง URL     | ON/Verified            | เปลี่ยนเฉพาะบัญชี TEST                 |
 
-Collision check ยืนยันว่า active global Auto-response rules = 0 จึงไม่มี native global reply ชนกับ Worker; Rich Menu และ Flex Menu ยังไม่ถูก Publish/ส่งจริง
+Collision check ยืนยันว่า active global Auto-response rules = 0 จึงไม่มี native global reply ชนกับ Worker; Rich Menu ถูก Publish เฉพาะ TEST แล้ว ส่วน Flex Menu ไม่ได้ส่งเป็น global response
 
 ## พฤติกรรมตอบลูกค้า
 
@@ -102,7 +104,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - ปุ่ม `คุยกับพนักงาน` เพิ่มเป็น Quick Reply นอกภาพ เพื่อคงเมนูเดิมและให้ปุ่มหายหลังการกดตาม UX ที่ Owner ต้องการ
 - Owner ยืนยัน Maps URL, Facebook URL, ข้อความ Delivery และกติกาสะสมแต้มแล้ว
 - Reward Card ยังไม่ Publish เพราะยังขาด Main reward/voucher, points till goal, expiration และ cooldown; ปุ่มสะสมแต้มจึงตอบแบบ fail closed และไม่เชื่อม Production
-- Rich Menu ถูก Publish เป็น Current menu เฉพาะ `มะลิปัง TEST` แล้ว; UAT รอบสุดท้ายจาก LINE ส่วนตัวของ Owner ยังรอผล
+- Rich Menu ถูก Publish เป็น Current menu เฉพาะ `มะลิปัง TEST` แล้ว และ Owner live UAT ผ่านครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok)
 
 ## Persistence และ retention
 
@@ -126,7 +128,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 
 1. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
 2. Owner กำหนด Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown ก่อนสร้าง Reward Card TEST
-3. ทำ Owner live UAT Rich Menu หนึ่งรอบเฉพาะบัญชี TEST แล้วบันทึกผลจริง
+3. อนุมัติการหมุน `TEST_ADMIN_KEY` เฉพาะ Worker `malispang-lineoa-test` เพื่อปิด handoff ของผู้ทดสอบและยืนยัน active handoff = `0`
 
 ## Rollback
 

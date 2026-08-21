@@ -33,7 +33,7 @@
 
 ## Owner live UAT — Rich Menu รอบเดียว
 
-สถานะ: `PENDING` หลัง Publish วันที่ 21 สิงหาคม 2026
+สถานะ: `PASS` — Owner ยืนยันวันที่ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok)
 
 1. Rich Menu แสดงอัตโนมัติและ chat bar เขียนว่า `รู้จักมะลิปัง`
 2. กดสะสมแต้ม ได้ข้อความ fail closed ที่ระบุ 50 บาท = 1 แต้ม โดยไม่เปิด Production Reward Card
@@ -45,3 +45,5 @@
 8. ส่งข้อความเพิ่มระหว่าง handoff แล้วบอตเงียบ
 
 หลังข้อ 8 ต้องปิด handoff ด้วย authenticated `OWNER_TEST` เพื่อให้พร้อมทดสอบรอบถัดไป
+
+ผลจริง: ผ่านครบทั้ง 8 ข้อ โดยไม่พบ response ซ้ำหรือบอตแทรกระหว่าง handoff การ cleanup หลัง UAT ยังไม่เสร็จ เพราะ local Keychain ไม่มีกุญแจ `TEST_ADMIN_KEY` เดิม ระบบจึงไม่ยอมให้ปิด handoff หรืออ่านจำนวน active handoff โดยไม่มี authentication การหมุนกุญแจ TEST ต้องได้รับอนุมัติแยกก่อนดำเนินการ
