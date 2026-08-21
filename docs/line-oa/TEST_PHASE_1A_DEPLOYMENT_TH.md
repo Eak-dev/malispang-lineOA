@@ -4,7 +4,7 @@
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **TEST_WEBHOOK_LIVE / MENU_IMAGE_UPDATE_DEPLOYED / OWNER_MENU_UAT_PASSED**
+สถานะ: **TEST_WEBHOOK_LIVE / OWNER_MENU_UAT_PASSED / RICH_MENU_READY_FOR_TEST_PUBLISH**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -78,17 +78,21 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - URL รูปถูกจำกัดแบบ fail closed ให้ใช้เฉพาะ `https://malispang-lineoa-test.eakkachai-dev.workers.dev` ไม่อนุญาต host อื่น
 - การเปลี่ยนแปลงนี้ไม่ Publish Rich Menu และไม่แตะ Production `มะลิปัง`
 
-## Rich Menu ตามภาพ Owner
+## Rich Menu ตามภาพ Owner — 21 สิงหาคม 2026
 
-- ใช้ภาพ Owner เดิม 5 ส่วนโดยไม่เปลี่ยนเนื้อหา:
+- ใช้ภาพ Owner เดิมและโครง 6 พื้นที่:
   - สะสมแต้มและโปรโมชัน
   - ที่อยู่ร้าน
   - Delivery
   - เมนูของเรา
   - Facebook
-- ไฟล์ local: `assets/test/malispang-test-rich-menu-original.png`
+- แก้ข้อความตาม Owner: `เริ่มต้น 39 บาท` และ `ซื้อครบ 50 บาท รับ 1 แต้ม`
+- ไฟล์ publishable: `assets/test/malispang-test-rich-menu-publishable.jpeg` (`2500 × 1686`, JPEG, ไม่เกิน 1 MB)
+- Action map: `docs/line-oa/production-mirror/test-rich-menu-action-map.json`
 - ปุ่ม `คุยกับพนักงาน` เพิ่มเป็น Quick Reply นอกภาพ เพื่อคงเมนูเดิมและให้ปุ่มหายหลังการกดตาม UX ที่ Owner ต้องการ
-- ยังไม่ Publish Rich Menu เพราะภาพระบุราคาเริ่มต้น 59 บาท แต่ Test seed ในระบบระบุ 39 บาท และยังไม่ได้ยืนยันสถานะโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
+- Owner ยืนยัน Maps URL, Facebook URL, ข้อความ Delivery และกติกาสะสมแต้มแล้ว
+- Reward Card ยังไม่ Publish เพราะยังขาด Main reward/voucher, points till goal, expiration และ cooldown; ปุ่มสะสมแต้มจึงตอบแบบ fail closed และไม่เชื่อม Production
+- Rich Menu พร้อมตั้งค่าเฉพาะ `มะลิปัง TEST`; ผล Publish และ UAT รอบสุดท้ายต้องบันทึกหลังดำเนินการจริง
 
 ## Persistence และ retention
 
@@ -111,8 +115,8 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 ## ขั้นตอนคงเหลือ
 
 1. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
-2. Owner ตัดสินใจข้อมูลใน Rich Menu รวมถึงโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
-3. Publish Rich Menu ได้เฉพาะเมื่อข้อ 2 ผ่านครบ; ขณะนี้ `publishable=false`
+2. Owner กำหนด Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown ก่อนสร้าง Reward Card TEST
+3. ทำ Owner live UAT Rich Menu หนึ่งรอบหลัง Publish เฉพาะบัญชี TEST
 
 ## Rollback
 

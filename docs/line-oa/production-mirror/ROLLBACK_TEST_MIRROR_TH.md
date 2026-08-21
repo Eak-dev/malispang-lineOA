@@ -10,7 +10,7 @@ Rollback นี้ใช้เฉพาะ `มะลิปัง TEST` แล�
 3. Profile image ถูกเผยแพร่ด้วยโลโก้ Production ที่เก็บใน `assets/brand/malispang-logo.jpeg`
 4. Status message ถูกเผยแพร่เป็น `TEST—ไม่รับเงินจริง`
 
-ไม่มี Rich Menu, Messaging API, Webhook, credential หรือข้อความจริงถูกสร้าง/ส่ง
+Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu ฉบับใหม่ยังไม่ถูก Save/Publish ณ เวลาที่อัปเดตเอกสารนี้ และ Reward Card ยังไม่ถูกสร้าง
 
 ## วิธี rollback
 
@@ -20,8 +20,13 @@ Rollback นี้ใช้เฉพาะ `มะลิปัง TEST` แล�
 4. Status message: เปลี่ยนได้หลังพ้นข้อจำกัด 1 ชั่วโมงของ LINE; หากต้องการย้อนเป็นค่าว่างให้เจ้าของอนุมัติก่อน
 5. Profile image: LINE จำกัดการเปลี่ยนซ้ำ 1 ชั่วโมง และเราไม่ได้เก็บ previous TEST avatar แยกไว้; ต้องให้เจ้าของส่งไฟล์เดิมก่อน rollback รูป
 
-## Local-only rollback
+## Rich Menu และ local rollback
 
-- ลบ/ย้อน `assets/test/malispang-test-rich-menu.png`, action map และ Flex fixture ผ่าน Git revert ได้
-- ไม่มีการ rollback ฝั่ง LINE สำหรับ Rich Menu/Flex เพราะไม่เคย publish หรือส่ง
-- ห้ามใช้ `source-rich-menu-rm-1.jpeg` โดยตรง เนื่องจากมี reward/ราคา/action ของ Production
+1. ยืนยัน visible account name เป็น `มะลิปัง TEST`
+2. Unset/หยุดแสดง Rich Menu TEST เป็นค่า default
+3. ตรวจว่า Rich Menu ไม่แสดงกับผู้ทดสอบ
+4. ลบเฉพาะ Rich Menu TEST เมื่อได้รับอนุมัติการลบแยกต่างหาก
+5. หาก Worker ถูก deploy พร้อม action ชุดนี้ ให้ rollback เฉพาะ `malispang-lineoa-test` ไป Version ก่อนหน้า
+6. ไฟล์ local และ manifest ย้อนด้วย Git revert ได้
+
+Reward Card ยังไม่ถูกสร้างหรือ Publish จึงไม่มี live card ให้ rollback และห้ามเชื่อม/เปลี่ยน Production Reward Card

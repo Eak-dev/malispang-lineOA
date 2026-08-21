@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="1686" viewBox="0 0 2500 1686">
+  <g transform="rotate(-10.4 435 1000)">
+    <rect x="225" y="955" width="430" height="80" rx="5" fill="#72451f" />
+    <text
+      x="440"
+      y="1013"
+      fill="#faf7f0"
+      font-family="Thonburi, sans-serif"
+      font-size="35"
+      font-weight="500"
+      text-anchor="middle"
+    >ทุกๆ 50 บาท รับ 1 แต้ม</text>
+  </g>
+  <rect x="1158" y="1208" width="68" height="55" fill="#ffead3" />
+  <text
+    x="1184"
+    y="1265"
+    fill="#2e170a"
+    font-family="Thonburi, sans-serif"
+    font-size="50"
+    font-weight="700"
+    text-anchor="middle"
+  >39</text>
+</svg>

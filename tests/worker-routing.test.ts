@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DELIVERY_UNAVAILABLE_MESSAGE,
   HANDOFF_ACKNOWLEDGEMENT,
   MENU_AVAILABILITY_NOTICE,
+  REWARD_CARD_PENDING_MESSAGE,
   SAFE_FALLBACK,
   SLIP_ACKNOWLEDGEMENT,
   STAFF_QUICK_REPLY,
@@ -24,6 +26,8 @@ describe("deployed Test routing", () => {
     ["ราคาส่งเท่าไหร่", "WHOLESALE"],
     ["สั่งล่วงหน้าอย่างไร", "ADVANCE_ORDER"],
     ["เมนูหลัก", "FLEX_MENU"],
+    ["สะสมแต้มและโปรโมชั่น", "REWARDS"],
+    ["Delivery", "DELIVERY"],
   ])("routes %s safely", (text, expected) => {
     expect(classifyText(text).replyKind).toBe(expected);
   });
@@ -53,8 +57,8 @@ describe("deployed Test routing", () => {
     ["test:show_location", "LOCATION"],
     ["test:show_hours", "HOURS"],
     ["test:show_wholesale", "WHOLESALE"],
-    ["test:show_rewards", "WHOLESALE"],
-    ["test:show_delivery", "ADVANCE_ORDER"],
+    ["test:show_rewards", "REWARDS"],
+    ["test:show_delivery", "DELIVERY"],
     ["test:show_facebook", "SAFE_FALLBACK"],
     ["test:human_handoff", "HANDOFF_ACK"],
   ])("supports Test-only postback %s", (data, expected) => {
@@ -82,6 +86,22 @@ describe("deployed Test routing", () => {
       type: "text",
       text: SLIP_ACKNOWLEDGEMENT,
     });
+  });
+
+  it("uses the exact fail-closed reward and unavailable Delivery messages", () => {
+    expect(replyMessage("REWARDS")).toEqual({
+      type: "text",
+      text: REWARD_CARD_PENDING_MESSAGE,
+      quickReply: STAFF_QUICK_REPLY,
+    });
+    expect(REWARD_CARD_PENDING_MESSAGE).toContain("ซื้อครบ 50 บาท รับ 1 แต้ม");
+    expect(REWARD_CARD_PENDING_MESSAGE).not.toContain("Production");
+    expect(replyMessage("DELIVERY")).toEqual({
+      type: "text",
+      text: DELIVERY_UNAVAILABLE_MESSAGE,
+      quickReply: STAFF_QUICK_REPLY,
+    });
+    expect(DELIVERY_UNAVAILABLE_MESSAGE).toContain("ยังไม่มีบริการ Delivery");
   });
 
   it("adds one temporary staff quick reply to bot answers but not handoff replies", () => {

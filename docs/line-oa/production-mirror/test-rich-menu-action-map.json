@@ -1,18 +1,27 @@
 {
   "account": "มะลิปัง TEST",
-  "name": "MalisPang TEST Original Menu + Staff Quick Reply",
-  "chatBarLabel": "เมนู TEST",
+  "name": "MalisPang TEST RM 39-50 v1",
+  "chatBarLabel": "รู้จักมะลิปัง",
   "defaultDisplay": "shown",
-  "imagePath": "assets/test/malispang-test-rich-menu-original.png",
+  "imagePath": "assets/test/malispang-test-rich-menu-publishable.jpeg",
+  "publicImagePath": "public/rich-menu/malispang-test-rich-menu.jpeg",
   "image": {
     "width": 2500,
-    "height": 1686
+    "height": 1686,
+    "format": "image/jpeg",
+    "maxBytes": 1048576
   },
-  "publishable": false,
-  "publishBlockers": [
-    "ภาพระบุราคาเริ่มต้น 59 บาท แต่ TEST_SEED ที่อนุมัติไว้ระบุ 39 บาท",
-    "สถานะโปรโมชัน/สะสมแต้มยังไม่ได้รับการยืนยันว่าเป็นข้อมูลปัจจุบัน",
-    "ปลายทาง Delivery และ Facebook ยังไม่ได้รับการยืนยันเป็น Test-safe destination"
+  "visualClaims": {
+    "startingPriceThb": 39,
+    "rewardSpendThbPerPoint": 50,
+    "pointsEarned": 1
+  },
+  "publishable": true,
+  "publishMode": "REWARD_FAIL_CLOSED",
+  "publishBlockers": [],
+  "knownLimitations": [
+    "ยังไม่ Publish Reward Card เพราะ Owner ยังไม่ได้กำหนด Main reward/voucher, goal points, expiration และ cooldown",
+    "พื้นที่สะสมแต้มใช้ native Text action แบบ fail closed และไม่เชื่อมข้อมูล Production"
   ],
   "staffQuickReply": {
     "label": "คุยกับพนักงาน",
@@ -22,51 +31,60 @@
   "areas": [
     {
       "id": "A_REWARDS",
-      "label": "สะสมแต้มและโปรโมชัน",
-      "bounds": { "x": 0, "y": 0, "width": 825, "height": 1686 },
+      "label": "สะสมแต้มและโปรโมชั่น",
+      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
       "action": {
-        "type": "postback",
-        "data": "test:show_rewards",
+        "type": "text",
+        "text": "สะสมแต้มและโปรโมชั่น",
         "enabled": true
       }
     },
     {
       "id": "B_LOCATION",
       "label": "ที่อยู่ร้าน",
-      "bounds": { "x": 850, "y": 0, "width": 825, "height": 800 },
+      "bounds": { "x": 833, "y": 0, "width": 834, "height": 843 },
       "action": {
-        "type": "postback",
-        "data": "test:show_location",
+        "type": "uri",
+        "uri": "https://maps.app.goo.gl/mLTyUC1891a4uu7D9?g_st=ic",
         "enabled": true
       }
     },
     {
       "id": "C_DELIVERY",
       "label": "Delivery",
-      "bounds": { "x": 1675, "y": 0, "width": 825, "height": 800 },
+      "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
       "action": {
-        "type": "postback",
-        "data": "test:show_delivery",
+        "type": "text",
+        "text": "Delivery",
         "enabled": true
       }
     },
     {
-      "id": "D_MENU",
+      "id": "D_NO_ACTION",
+      "label": "พื้นที่ตกแต่ง",
+      "bounds": { "x": 0, "y": 843, "width": 833, "height": 843 },
+      "action": {
+        "type": "none",
+        "enabled": false
+      }
+    },
+    {
+      "id": "E_MENU",
       "label": "เมนูของเรา",
-      "bounds": { "x": 850, "y": 850, "width": 825, "height": 836 },
+      "bounds": { "x": 833, "y": 843, "width": 834, "height": 843 },
       "action": {
-        "type": "postback",
-        "data": "test:show_menu",
+        "type": "text",
+        "text": "เมนูขนมปัง",
         "enabled": true
       }
     },
     {
-      "id": "E_FACEBOOK",
+      "id": "F_FACEBOOK",
       "label": "Facebook",
-      "bounds": { "x": 1675, "y": 850, "width": 825, "height": 836 },
+      "bounds": { "x": 1667, "y": 843, "width": 833, "height": 843 },
       "action": {
-        "type": "postback",
-        "data": "test:show_facebook",
+        "type": "uri",
+        "uri": "https://www.facebook.com/share/18jLnt8dVY/?mibextid=wwXIfr",
         "enabled": true
       }
     }

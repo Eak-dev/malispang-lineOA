@@ -15,6 +15,12 @@ const TEST_SEED_NOTICE =
 export const MENU_AVAILABILITY_NOTICE =
   "เมนูตามรูปอาจมีสินค้าไม่ครบทุกวัน สามารถกด “คุยกับพนักงาน” เพื่อตรวจสอบสินค้าวันนี้ได้เลยค่ะ 😊";
 
+export const DELIVERY_UNAVAILABLE_MESSAGE =
+  "ขณะนี้ร้านมะลิปังยังไม่มีบริการ Delivery นะคะ หากเปิดให้บริการแล้ว ทางร้านจะแจ้งให้ทราบผ่าน LINE นี้ค่ะ 😊";
+
+export const REWARD_CARD_PENDING_MESSAGE =
+  "บัตรสะสมแต้มสำหรับมะลิปัง TEST ยังไม่เปิดใช้งานค่ะ กติกาที่ Owner ยืนยันคือ ซื้อครบ 50 บาท รับ 1 แต้ม แต่ยังต้องกำหนดของรางวัลและเงื่อนไขก่อนเผยแพร่นะคะ";
+
 export type ReplyKind =
   | "NONE"
   | "SAFE_FALLBACK"
@@ -27,7 +33,9 @@ export type ReplyKind =
   | "HOURS"
   | "STORAGE"
   | "WHOLESALE"
-  | "ADVANCE_ORDER";
+  | "ADVANCE_ORDER"
+  | "DELIVERY"
+  | "REWARDS";
 
 export interface RouteDecision {
   readonly replyKind: ReplyKind;
@@ -82,6 +90,13 @@ export const STAFF_QUICK_REPLY: LineQuickReply = {
 
 export function classifyText(text: string): RouteDecision {
   const normalized = normalize(text);
+
+  if (normalized === "สะสมแต้มและโปรโมชั่น") {
+    return reply("REWARDS", "RICH_MENU_REWARD_FAIL_CLOSED");
+  }
+  if (normalized === "delivery") {
+    return reply("DELIVERY", "RICH_MENU_DELIVERY_UNAVAILABLE");
+  }
 
   if (containsSensitivePersonalData(normalized)) {
     return handoff("SENSITIVE_PERSONAL_DATA");
@@ -179,8 +194,8 @@ export function classifyPostback(data: string): RouteDecision {
     "test:show_location": "LOCATION",
     "test:show_hours": "HOURS",
     "test:show_wholesale": "WHOLESALE",
-    "test:show_rewards": "WHOLESALE",
-    "test:show_delivery": "ADVANCE_ORDER",
+    "test:show_rewards": "REWARDS",
+    "test:show_delivery": "DELIVERY",
     "test:show_facebook": "SAFE_FALLBACK",
   };
   if (data === "test:human_handoff") return handoff("CUSTOMER_REQUESTED_STAFF");
@@ -237,6 +252,18 @@ export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
     return withStaffQuickReply({
       type: "text",
       text: `${TEST_SEED_NOTICE}\nขนมปังควรรับประทานภายในประมาณ 2 วันเมื่อเก็บนอกตู้เย็น หากมีข้อกังวลเรื่องการแพ้อาหาร กรุณาคุยกับพนักงานค่ะ`,
+    });
+  }
+  if (kind === "DELIVERY") {
+    return withStaffQuickReply({
+      type: "text",
+      text: DELIVERY_UNAVAILABLE_MESSAGE,
+    });
+  }
+  if (kind === "REWARDS") {
+    return withStaffQuickReply({
+      type: "text",
+      text: REWARD_CARD_PENDING_MESSAGE,
     });
   }
   return withStaffQuickReply({

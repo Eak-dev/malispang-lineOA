@@ -52,12 +52,14 @@
     "activeGlobalRules": 0
   },
   "richMenu": {
-    "nativeTestRichMenu": "NOT_CREATED_OR_PUBLISHED",
-    "localImage": "assets/test/malispang-test-rich-menu-original.png",
+    "nativeTestRichMenu": "READY_FOR_TEST_PUBLISH_NOT_YET_SAVED",
+    "localImage": "assets/test/malispang-test-rich-menu-publishable.jpeg",
     "localActionMap": "docs/line-oa/production-mirror/test-rich-menu-action-map.json",
-    "publishable": false,
+    "publishable": true,
+    "publishMode": "REWARD_FAIL_CLOSED",
     "staffEntryPoint": "LINE Quick Reply: คุยกับพนักงาน",
-    "publishBlockers": "ราคาในภาพ 59 บาทขัดกับ TEST_SEED 39 บาท และ promotion/destination ยังไม่ยืนยัน"
+    "publishBlockers": [],
+    "rewardCardStatus": "NOT_PUBLISHED_OWNER_DECISION_REQUIRED_FOR_REWARD_AND_TERMS"
   },
   "flexMenu": {
     "json": "artifacts/flex-menu.json",

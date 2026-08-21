@@ -9,14 +9,19 @@ export interface RichMenuArea {
   readonly id: string;
   readonly bounds: RichMenuBounds;
   readonly action: {
-    readonly type: "postback" | "uri";
+    readonly type: "text" | "uri" | "none";
     readonly data?: string;
+    readonly text?: string;
     readonly uri?: string | null;
     readonly enabled: boolean;
   };
 }
 
 export interface RichMenuActionMap {
+  readonly account: string;
+  readonly chatBarLabel: string;
+  readonly defaultDisplay: "shown" | "hidden";
+  readonly imagePath: string;
   readonly image: { readonly width: number; readonly height: number };
   readonly publishable: boolean;
   readonly areas: readonly RichMenuArea[];
@@ -36,8 +41,17 @@ export function validateRichMenuActionMap(
   if (value.image.width !== 2500 || value.image.height !== 1686) {
     errors.push("rich menu image must be 2500x1686");
   }
-  if (value.areas.length !== 5) {
-    errors.push("original rich menu must contain five areas");
+  if (value.account !== "มะลิปัง TEST") {
+    errors.push("rich menu account must be มะลิปัง TEST");
+  }
+  if (value.chatBarLabel !== "รู้จักมะลิปัง") {
+    errors.push("unexpected rich menu chat bar label");
+  }
+  if (value.defaultDisplay !== "shown") {
+    errors.push("rich menu must be shown by default");
+  }
+  if (value.areas.length !== 6) {
+    errors.push("original rich menu must contain six grid areas");
   }
 
   for (const [index, area] of value.areas.entries()) {
@@ -51,22 +65,43 @@ export function validateRichMenuActionMap(
     if (x + width > value.image.width || y + height > value.image.height) {
       errors.push(`area ${area.id} exceeds image bounds`);
     }
-    if (
-      area.action.type === "postback" &&
-      !area.action.data?.startsWith("test:")
-    ) {
-      errors.push(`area ${area.id} has invalid postback data`);
-    }
-    if (area.action.type === "uri") {
-      errors.push(`area ${area.id} uses a URI instead of a Test postback`);
+    if (area.action.type === "text") {
+      if (
+        !["สะสมแต้มและโปรโมชั่น", "Delivery", "เมนูขนมปัง"].includes(
+          area.action.text ?? "",
+        ) ||
+        area.action.data
+      ) {
+        errors.push(`area ${area.id} has an unsafe text action`);
+      }
     }
     if (
       area.action.type === "uri" &&
       area.action.enabled &&
-      !area.action.uri?.startsWith("https://")
+      ![
+        "https://maps.app.goo.gl/mLTyUC1891a4uu7D9?g_st=ic",
+        "https://www.facebook.com/share/18jLnt8dVY/?mibextid=wwXIfr",
+      ].includes(area.action.uri ?? "")
     ) {
       errors.push(`area ${area.id} has an unsafe URI`);
     }
+    if (
+      area.action.type === "none" &&
+      (area.action.enabled ||
+        area.action.data ||
+        area.action.text ||
+        area.action.uri)
+    ) {
+      errors.push(`area ${area.id} has an invalid no-action configuration`);
+    }
+  }
+
+  const coveredPixels = value.areas.reduce(
+    (total, area) => total + area.bounds.width * area.bounds.height,
+    0,
+  );
+  if (coveredPixels !== value.image.width * value.image.height) {
+    errors.push("rich menu areas must cover the full image without gaps");
   }
 
   for (let left = 0; left < value.areas.length; left += 1) {
