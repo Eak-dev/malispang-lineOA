@@ -2,18 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import {
   HANDOFF_ACKNOWLEDGEMENT,
+  MENU_AVAILABILITY_NOTICE,
   SAFE_FALLBACK,
   SLIP_ACKNOWLEDGEMENT,
   STAFF_QUICK_REPLY,
   classifyPostback,
   classifyText,
   replyMessage,
+  replyMessages,
 } from "../worker/routing.js";
 
 describe("deployed Test routing", () => {
   it.each([
     ["สอบถามค่ะ", "SAFE_FALLBACK"],
     ["มีเมนูอะไรบ้าง", "MENU"],
+    ["เมนู", "MENU"],
     ["ขนมปังราคาเท่าไหร่", "PRICE"],
     ["ร้านอยู่ที่ไหน", "LOCATION"],
     ["เปิดกี่โมง", "HOURS"],
@@ -82,7 +85,9 @@ describe("deployed Test routing", () => {
   });
 
   it("adds one temporary staff quick reply to bot answers but not handoff replies", () => {
-    expect(replyMessage("MENU")?.quickReply).toEqual(STAFF_QUICK_REPLY);
+    expect(replyMessages("MENU", TEST_ASSET_BASE_URL)[2]?.quickReply).toEqual(
+      STAFF_QUICK_REPLY,
+    );
     expect(STAFF_QUICK_REPLY.items).toHaveLength(1);
     expect(STAFF_QUICK_REPLY.items[0]?.action).toMatchObject({
       type: "postback",
@@ -93,12 +98,35 @@ describe("deployed Test routing", () => {
     expect(replyMessage("SLIP_ACK")?.quickReply).toBeUndefined();
   });
 
-  it("labels seed answers and never claims current stock", () => {
-    const menu = replyMessage("MENU");
-    expect(JSON.stringify(menu)).toContain("TEST_SEED");
-    expect(JSON.stringify(menu)).toContain(
-      "รายชื่อเมนูไม่ใช่ข้อมูลสต๊อกปัจจุบัน",
+  it("returns the two approved menu images and a staff handoff option", () => {
+    const messages = replyMessages("MENU", TEST_ASSET_BASE_URL);
+    expect(messages).toEqual([
+      {
+        type: "image",
+        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
+        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
+      },
+      {
+        type: "image",
+        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
+        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
+      },
+      {
+        type: "text",
+        text: MENU_AVAILABILITY_NOTICE,
+        quickReply: STAFF_QUICK_REPLY,
+      },
+    ]);
+    expect(JSON.stringify(messages)).not.toContain("TEST_SEED");
+    expect(JSON.stringify(messages)).not.toContain("มีพร้อมขาย");
+  });
+
+  it("rejects any asset host other than the dedicated Test Worker", () => {
+    expect(() => replyMessages("MENU", "https://example.com")).toThrow(
+      "INVALID_TEST_ASSET_BASE_URL",
     );
-    expect(JSON.stringify(menu)).not.toContain("มีพร้อมขาย");
   });
 });
+
+const TEST_ASSET_BASE_URL =
+  "https://malispang-lineoa-test.eakkachai-dev.workers.dev";

@@ -13,6 +13,8 @@ export default defineConfig({
           LINE_CHANNEL_ACCESS_TOKEN: fixtureValue("access-key"),
           LINE_BOT_USER_ID: "U_TEST_ONLY_DESTINATION",
           TEST_ADMIN_KEY: fixtureValue("admin-key"),
+          PUBLIC_ASSET_BASE_URL:
+            "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
         },
       },
     }),

@@ -1,10 +1,10 @@
 # มะลิปัง TEST — Phase 1A Deployment
 
-อัปเดตล่าสุด: 20 สิงหาคม 2026
+อัปเดตล่าสุด: 21 สิงหาคม 2026
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **TEST_WEBHOOK_LIVE / OWNER_LIVE_UAT_PENDING**
+สถานะ: **TEST_WEBHOOK_LIVE / OWNER_LIVE_UAT_PASSED / MENU_IMAGE_UPDATE_PENDING_DEPLOY**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -19,6 +19,7 @@
 - Channel Access Token ผ่านการตรวจชื่อบอตเป็น `มะลิปัง TEST`
 - Live safety checks: health `200`, invalid signature `401`, unauthenticated admin `401`, authenticated admin `200`, signed empty webhook `200`
 - Production `มะลิปัง`: ไม่ได้เปิดและไม่ได้เปลี่ยนแปลง
+- Owner live UAT วันที่ 20 สิงหาคม 2026: ผ่านทั้งการดูเมนู, เริ่ม handoff, acknowledgement ครั้งเดียว และ bot silence
 
 ## Response settings — ก่อน/หลังเปิด Webhook
 
@@ -48,6 +49,17 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - acknowledgement และข้อความรับรูปไม่มี Quick Reply จึงไม่เกิดปุ่มซ้ำระหว่าง handoff
 - duplicate event ที่ส่งสำเร็จแล้วไม่ตอบซ้ำ
 - persistence error, signature ผิด หรือ destination ไม่ตรง Test จะ fail closed
+
+## เมนูรูปภาพฉบับ Owner — 21 สิงหาคม 2026
+
+- Owner อนุมัติให้ใช้ภาพเมนูใหม่สองใบกับบัญชี `มะลิปัง TEST`:
+  - `public/menu/bread-menu.jpeg` — เมนูขนมปัง 22 รายการ
+  - `public/menu/chiffon-cookie-menu.jpeg` — เมนูชิฟฟ่อนและคุกกี้
+- เมื่อผู้ใช้พิมพ์ `เมนู`, `มีเมนูอะไรบ้าง`, `เมนูขนมปัง`, `รายการขนม` หรือ `ดูเมนู` ระบบตอบรูปทั้งสองใบแทนข้อความรายการยาว
+- postback `test:show_menu` จาก Flex Menu ใช้คำตอบรูปชุดเดียวกัน
+- ข้อความสุดท้ายแจ้งว่าสินค้าอาจมีไม่ครบทุกวันและมี Quick Reply `คุยกับพนักงาน`
+- URL รูปถูกจำกัดแบบ fail closed ให้ใช้เฉพาะ `https://malispang-lineoa-test.eakkachai-dev.workers.dev` ไม่อนุญาต host อื่น
+- การเปลี่ยนแปลงนี้ไม่ Publish Rich Menu และไม่แตะ Production `มะลิปัง`
 
 ## Rich Menu ตามภาพ Owner
 
@@ -81,10 +93,11 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 
 ## ขั้นตอนคงเหลือ
 
-1. Owner ส่ง UAT messages จาก LINE ส่วนตัวเข้าบัญชี `มะลิปัง TEST` เพื่อทดสอบ reply token จริง, Quick Reply, handoff silence และ authorized staff-close
-2. Owner ยืนยันว่า TEST_SEED ราคา 39 บาท, ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
-3. Owner ตัดสินใจข้อมูลที่ขัดแย้งในภาพ Rich Menu (ภาพระบุ 59 บาท) รวมถึงโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
-4. Publish Rich Menu ได้เฉพาะเมื่อข้อ 3 ผ่านครบ; ขณะนี้ `publishable=false`
+1. Deploy menu image update ไปยัง Worker ของ `มะลิปัง TEST` และตรวจว่า URL รูปทั้งสองตอบ `200 image/jpeg`
+2. Owner ทำ live UAT โดยพิมพ์ `เมนู` และกดปุ่ม `ดูเมนู`; ต้องได้รูปสองใบและปุ่ม `คุยกับพนักงาน`
+3. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
+4. Owner ตัดสินใจข้อมูลใน Rich Menu รวมถึงโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
+5. Publish Rich Menu ได้เฉพาะเมื่อข้อ 4 ผ่านครบ; ขณะนี้ `publishable=false`
 
 ## Rollback
 

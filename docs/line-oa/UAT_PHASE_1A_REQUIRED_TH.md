@@ -5,7 +5,7 @@
 | ID  | Input/เหตุการณ์                                       | ผลที่คาดหวัง                                                   |
 | --- | ----------------------------------------------------- | -------------------------------------------------------------- |
 | U01 | ลูกค้าพิมพ์ `สอบถามค่ะ`                               | ส่ง safe fallback หนึ่งครั้ง ไม่เดาข้อมูลและไม่เปิด order form |
-| U02 | ลูกค้าถาม `มีเมนูอะไรบ้าง`                            | ตอบ exact approved menu fixture; ถ้าไม่มีให้ fail closed       |
+| U02 | ลูกค้าพิมพ์ `เมนู` หรือ `มีเมนูอะไรบ้าง`               | ส่งภาพเมนู Owner 2 ใบ ตามลำดับ พร้อมข้อความเตือนสต๊อกและปุ่มคุยกับพนักงาน |
 | U03 | ลูกค้าถามราคา                                         | ตอบเฉพาะ approved price fixture; ไม่แต่งราคา                   |
 | U04 | ลูกค้าถามที่ตั้ง                                      | ตอบเฉพาะ approved public location fixture                      |
 | U05 | ลูกค้าถามเวลาทำการ                                    | ตอบเฉพาะ approved/effective hours fixture                      |
@@ -20,6 +20,8 @@
 | U14 | ราคา/โปรโมชัน/สต๊อกไม่มี authoritative source         | ราคาใช้ safe fallback; โปรโมชัน/สต๊อกส่งพนักงาน; ไม่แต่งข้อมูล |
 | U15 | persistence ล้มเหลว                                   | fail closed ไม่มี reply และไม่มี state/outbox mutation         |
 | U16 | พบ Production credential-like variable ใน environment | ปฏิเสธตั้งแต่ safety boundary โดยไม่ log ค่า credential        |
+| U17 | ลูกค้ากด postback `test:show_menu`                     | ส่งภาพชุดเดียวกับ U02 ไม่ส่งรายการ TEST_SEED แบบข้อความยาว     |
+| U18 | ตั้ง asset base URL เป็น host อื่น                      | fail closed ด้วย `INVALID_TEST_ASSET_BASE_URL`                  |
 
 ## Exit criteria
 

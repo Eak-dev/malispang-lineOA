@@ -6,6 +6,7 @@ interface __BaseEnv_Env {
   LINE_OA_ACCOUNT_NAME: "มะลิปัง TEST";
   FAQ_SOURCE_STATUS: "TEST_SEED";
   TEST_STAFF_ALLOWLIST: "OWNER_TEST";
+  PUBLIC_ASSET_BASE_URL: "https://malispang-lineoa-test.eakkachai-dev.workers.dev";
   PROCESSED_EVENT_RETENTION_SECONDS: "86400";
   AUDIT_RETENTION_SECONDS: "604800";
   LINE_CHANNEL_SECRET: string;
@@ -40,6 +41,7 @@ declare namespace NodeJS {
       | "LINE_OA_ACCOUNT_NAME"
       | "FAQ_SOURCE_STATUS"
       | "TEST_STAFF_ALLOWLIST"
+      | "PUBLIC_ASSET_BASE_URL"
       | "PROCESSED_EVENT_RETENTION_SECONDS"
       | "AUDIT_RETENTION_SECONDS"
       | "LINE_CHANNEL_SECRET"

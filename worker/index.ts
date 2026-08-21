@@ -4,6 +4,7 @@ import {
   classifyPostback,
   classifyText,
   replyMessage,
+  replyMessages,
   type RouteDecision,
 } from "./routing.js";
 import {
@@ -123,9 +124,16 @@ async function processLineEvent(
       now,
     );
   }
-  const message = replyMessage(result.replyKind);
-  if (!message) return;
-  await sendLineReply(event.replyToken, message, env.LINE_CHANNEL_ACCESS_TOKEN);
+  const messages = replyMessages(
+    result.replyKind,
+    env.PUBLIC_ASSET_BASE_URL,
+  );
+  if (messages.length === 0) return;
+  await sendLineReply(
+    event.replyToken,
+    messages,
+    env.LINE_CHANNEL_ACCESS_TOKEN,
+  );
   await conversation.markDelivered(eventRef);
   logOutcome(eventRef, "REPLIED", decision.reasonCode);
 }

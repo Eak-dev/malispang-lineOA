@@ -12,37 +12,8 @@ export const SLIP_ACKNOWLEDGEMENT =
 const TEST_SEED_NOTICE =
   "ข้อมูล TEST_SEED — ต้องให้ Owner ยืนยันก่อนใช้ Production";
 
-const savouryMenu = [
-  "หมูหยอง",
-  "หมูหยองไส้กรอก",
-  "หมูหยองพริกเผา",
-  "หมูหยองลูกเกด",
-  "หมูหยองน้ำสลัด",
-  "แฮมสลัด",
-  "แฮมชีส",
-  "แฮม+ไส้กรอก",
-  "ไส้กรอก",
-  "ไส้กรอกพิซซ่า",
-  "ไส้กรอกชีส",
-  "ปูอัดน้ำสลัด",
-  "ทูน่าคอร์นสลัด",
-  "โบโลน่าพริกสดชีส",
-  "ฮาวายเอี้ยน",
-  "แฮมเห็ดชีส",
-  "ทรัฟเฟิลแฮมชีส",
-  "เห็ดท็อปโฟแฮมชีส",
-] as const;
-
-const sweetMenu = [
-  "เนยสด",
-  "สังขยาใบเตย",
-  "ฝอยทอง",
-  "เผือก",
-  "ถั่วแดง",
-  "เผือก+ถั่วแดง",
-  "ลูกเกด",
-  "รวมมิตร",
-] as const;
+export const MENU_AVAILABILITY_NOTICE =
+  "เมนูตามรูปอาจมีสินค้าไม่ครบทุกวัน สามารถกด “คุยกับพนักงาน” เพื่อตรวจสอบสินค้าวันนี้ได้เลยค่ะ 😊";
 
 export type ReplyKind =
   | "NONE"
@@ -86,6 +57,12 @@ export type LineReplyMessage =
       readonly type: "flex";
       readonly altText: string;
       readonly contents: ReturnType<typeof buildFlexMenu>;
+      readonly quickReply?: LineQuickReply;
+    }
+  | {
+      readonly type: "image";
+      readonly originalContentUrl: string;
+      readonly previewImageUrl: string;
       readonly quickReply?: LineQuickReply;
     };
 
@@ -146,6 +123,7 @@ export function classifyText(text: string): RouteDecision {
     return reply("FLEX_MENU", "EXPLICIT_MAIN_MENU");
   }
   if (
+    normalized === "เมนู" ||
     includesAny(normalized, ["มีเมนูอะไร", "เมนูขนม", "รายการขนม", "ดูเมนู"])
   ) {
     return reply("MENU", "FAQ_MENU_TEST_SEED");
@@ -232,10 +210,7 @@ export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
     });
   }
   if (kind === "MENU") {
-    return withStaffQuickReply({
-      type: "text",
-      text: `${TEST_SEED_NOTICE}\n\nไส้คาว: ${savouryMenu.join(" • ")}\n\nไส้หวาน: ${sweetMenu.join(" • ")}\n\nรายชื่อเมนูไม่ใช่ข้อมูลสต๊อกปัจจุบัน กรุณาคุยกับพนักงานเพื่อตรวจสอบสินค้าวันนี้ค่ะ`,
-    });
+    return withStaffQuickReply({ type: "text", text: MENU_AVAILABILITY_NOTICE });
   }
   if (kind === "PRICE") {
     return withStaffQuickReply({
@@ -265,6 +240,42 @@ export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
     type: "text",
     text: "บัญชี TEST นี้ช่วยตอบข้อมูลและร่างคำถามเท่านั้น ยังไม่สร้างออเดอร์จริง ไม่จองสต๊อก และไม่รับชำระเงินจริง กรุณากด “คุยกับพนักงาน” เพื่อดำเนินการต่อค่ะ",
   });
+}
+
+export function replyMessages(
+  kind: ReplyKind,
+  publicAssetBaseUrl: string,
+): readonly LineReplyMessage[] {
+  if (kind !== "MENU") {
+    const message = replyMessage(kind);
+    return message ? [message] : [];
+  }
+
+  const baseUrl = validatedTestAssetBaseUrl(publicAssetBaseUrl);
+  return [
+    imageMessage(`${baseUrl}/menu/bread-menu.jpeg`),
+    imageMessage(`${baseUrl}/menu/chiffon-cookie-menu.jpeg`),
+    withStaffQuickReply({ type: "text", text: MENU_AVAILABILITY_NOTICE }),
+  ];
+}
+
+function imageMessage(url: string): LineReplyMessage {
+  return { type: "image", originalContentUrl: url, previewImageUrl: url };
+}
+
+function validatedTestAssetBaseUrl(value: string): string {
+  const normalized = value.replace(/\/+$/, "");
+  const url = new URL(normalized);
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "malispang-lineoa-test.eakkachai-dev.workers.dev" ||
+    url.pathname !== "/" ||
+    url.search !== "" ||
+    url.hash !== ""
+  ) {
+    throw new Error("INVALID_TEST_ASSET_BASE_URL");
+  }
+  return normalized;
 }
 
 function withStaffQuickReply(message: LineReplyMessage): LineReplyMessage {
