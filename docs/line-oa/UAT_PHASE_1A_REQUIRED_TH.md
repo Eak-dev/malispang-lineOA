@@ -46,4 +46,4 @@
 
 หลังข้อ 8 ต้องปิด handoff ด้วย authenticated `OWNER_TEST` เพื่อให้พร้อมทดสอบรอบถัดไป
 
-ผลจริง: ผ่านครบทั้ง 8 ข้อ โดยไม่พบ response ซ้ำหรือบอตแทรกระหว่าง handoff การ cleanup หลัง UAT ยังไม่เสร็จ เพราะ local Keychain ไม่มีกุญแจ `TEST_ADMIN_KEY` เดิม ระบบจึงไม่ยอมให้ปิด handoff หรืออ่านจำนวน active handoff โดยไม่มี authentication การหมุนกุญแจ TEST ต้องได้รับอนุมัติแยกก่อนดำเนินการ
+ผลจริง: ผ่านครบทั้ง 8 ข้อ โดยไม่พบ response ซ้ำหรือบอตแทรกระหว่าง handoff หลังได้รับ Owner approval ได้หมุน `TEST_ADMIN_KEY` เฉพาะ Worker TEST และใช้ authenticated `OWNER_TEST` ปิด handoff ของผู้ทดสอบ 1 รายการแล้ว ตรวจยืนยัน active handoff เหลือ `0` เมื่อ 21 สิงหาคม 2026 เวลา 11:41 น. (Asia/Bangkok)

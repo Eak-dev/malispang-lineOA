@@ -34,3 +34,5 @@ Reward Card ยังไม่ถูกสร้างหรือ Publish จ�
 ## Admin handoff cleanup
 
 การปิด handoff ต้องใช้ endpoint ผู้ดูแลพร้อม `TEST_ADMIN_KEY` ที่ถูกต้องเท่านั้น ห้ามข้าม authentication หรือแก้ Durable Object โดยตรง หาก local Keychain ไม่มีกุญแจเดิม ต้องขอ Owner อนุมัติการหมุนกุญแจเฉพาะ `malispang-lineoa-test` ก่อน แล้วจึงปิดเฉพาะ handoff ของ TEST และตรวจว่า active handoff เหลือ `0` การหมุนกุญแจนี้ไม่เกี่ยวกับ LINE Channel Secret, Channel Access Token หรือ Production
+
+การหมุนกุญแจตาม Owner approval สำเร็จเมื่อ 21 สิงหาคม 2026 เวลา 11:41 น. ค่าปัจจุบันเก็บใน macOS Keychain service `malispang-lineoa-test` account `TEST_ADMIN_KEY` และ Cloudflare encrypted secret ชื่อเดียวกัน การ rollback กุญแจเดิมทำไม่ได้เพราะค่าเดิมไม่พร้อมใช้งาน; หากกุญแจใหม่สูญหายให้ขอ Owner อนุมัติ rotate ใหม่ ห้ามคัดลอกค่าลง repository

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-08-21T11:31:42+07:00",
+  "verifiedAt": "2026-08-21T11:41:44+07:00",
   "destinationAccount": "มะลิปัง TEST",
   "environment": "TEST_ONLY",
   "profile": {
@@ -65,7 +65,7 @@
     "staffEntryPoint": "LINE Quick Reply: คุยกับพนักงาน",
     "publishBlockers": [],
     "ownerLiveUat": "PASS_2026-08-21T11:31:42+07:00",
-    "postUatHandoffCleanup": "BLOCKED_PENDING_TEST_ADMIN_KEY_ROTATION_APPROVAL",
+    "postUatHandoffCleanup": "PASS_ACTIVE_HANDOFFS_1_TO_0_AUTHENTICATED_OWNER_TEST",
     "rewardCardStatus": "NOT_PUBLISHED_OWNER_DECISION_REQUIRED_FOR_REWARD_AND_TERMS"
   },
   "flexMenu": {
@@ -89,7 +89,10 @@
     "invalidSignature": "HTTP_401",
     "unauthenticatedAdmin": "HTTP_401",
     "authenticatedAdmin": "HTTP_200",
-    "latestWorkerVersion": "0d492401-c76f-4f76-aea8-7cf9d0e5a3ba",
+    "latestWorkerVersion": "9ef906f6-ae5f-4bc5-b21c-b40369c2a9ab",
+    "latestCodeDeploymentVersion": "0d492401-c76f-4f76-aea8-7cf9d0e5a3ba",
+    "testAdminKeyRotation": "PASS_KEYCHAIN_AND_CLOUDFLARE_ENCRYPTED_SECRET_2026-08-21T11:41:44+07:00",
+    "activeHandoffsAfterCleanup": 0,
     "deployedSourceCommit": "47bc0a87d10aaaa0cfd34cad00e6998cdf3fa946"
   },
   "safety": {

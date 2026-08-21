@@ -48,7 +48,7 @@
 
 Owner ยืนยัน `PASS` ครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok): Rich Menu แสดงอัตโนมัติ, chat bar ถูกต้อง, reward fail closed แสดงกติกา 50 บาทต่อ 1 แต้ม, Maps/Delivery/Menu/Facebook ถูกต้อง, acknowledgement ส่งครั้งเดียว และบอตเงียบหลัง handoff
 
-Reward Card TEST จริงยังไม่ได้สร้าง และการปิด handoff ของผู้ทดสอบหลัง UAT ยังรอการอนุมัติหมุน `TEST_ADMIN_KEY` เฉพาะ Worker TEST เพื่อคง authentication boundary
+Reward Card TEST จริงยังไม่ได้สร้าง หลัง UAT ได้หมุน `TEST_ADMIN_KEY` ตาม Owner approval และใช้ authenticated `OWNER_TEST` ปิด handoff ของผู้ทดสอบ 1 รายการแล้ว โดยตรวจยืนยัน active handoff เหลือ `0` เมื่อ 21 สิงหาคม 2026 เวลา 11:41 น. (Asia/Bangkok)
 
 ## Reward Card fail-closed
 

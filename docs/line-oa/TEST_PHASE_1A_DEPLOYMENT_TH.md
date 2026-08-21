@@ -48,7 +48,9 @@
   - invalid webhook signature: `401`
   - Owner live UAT Rich Menu: **PASS — 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok)**
   - Owner ยืนยันครบ 8 ข้อ: Rich Menu แสดงอัตโนมัติพร้อมแถบ `รู้จักมะลิปัง`, กติกาแต้มแบบ fail closed, Maps, Delivery, รูปเมนูสองใบ, Facebook, acknowledgement ครั้งเดียว และ bot silence
-  - การปิด handoff หลัง UAT รอบนี้ยังรอการอนุมัติหมุน `TEST_ADMIN_KEY` ของ Worker TEST เนื่องจากกุญแจเดิมไม่อยู่ใน local Keychain; ไม่มีการข้าม authentication และยังไม่ยืนยัน active handoff ว่าเหลือ `0`
+  - หลัง Owner อนุมัติ ได้หมุน `TEST_ADMIN_KEY` เฉพาะ Worker TEST เมื่อ 21 สิงหาคม 2026 เวลา 11:41 น. เก็บค่าใหม่ใน macOS Keychain และ Cloudflare encrypted secret โดยไม่แสดงค่า
+  - ใช้ authenticated `OWNER_TEST` ปิด handoff ของผู้ทดสอบ `1` รายการ และตรวจยืนยัน active handoff จาก `1` เหลือ `0`
+  - Secret-only Worker version: `9ef906f6-ae5f-4bc5-b21c-b40369c2a9ab`; code deployment version ยังคง `0d492401-c76f-4f76-aea8-7cf9d0e5a3ba`
 
 ## Response settings — ก่อน/หลังเปิด Webhook
 
@@ -128,7 +130,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 
 1. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
 2. Owner กำหนด Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown ก่อนสร้าง Reward Card TEST
-3. อนุมัติการหมุน `TEST_ADMIN_KEY` เฉพาะ Worker `malispang-lineoa-test` เพื่อปิด handoff ของผู้ทดสอบและยืนยัน active handoff = `0`
+3. กำหนด Owner และรอบเวลาสำหรับการ rotate/recover `TEST_ADMIN_KEY` ครั้งถัดไป โดยห้ามบันทึกค่าจริงใน Git หรือเอกสาร
 
 ## Rollback
 
