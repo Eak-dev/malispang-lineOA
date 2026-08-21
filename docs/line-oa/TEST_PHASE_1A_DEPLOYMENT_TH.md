@@ -4,7 +4,7 @@
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **TEST_WEBHOOK_LIVE / OWNER_LIVE_UAT_PASSED / MENU_IMAGE_UPDATE_PENDING_DEPLOY**
+สถานะ: **TEST_WEBHOOK_LIVE / MENU_IMAGE_UPDATE_DEPLOYED / OWNER_MENU_UAT_PASSED**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -20,6 +20,22 @@
 - Live safety checks: health `200`, invalid signature `401`, unauthenticated admin `401`, authenticated admin `200`, signed empty webhook `200`
 - Production `มะลิปัง`: ไม่ได้เปิดและไม่ได้เปลี่ยนแปลง
 - Owner live UAT วันที่ 20 สิงหาคม 2026: ผ่านทั้งการดูเมนู, เริ่ม handoff, acknowledgement ครั้งเดียว และ bot silence
+- Menu image deployment วันที่ 21 สิงหาคม 2026:
+  - Git commit: `ba5e3fa19ed3e266f67ff61dc9ffdc0da62d2c8c`
+  - Cloudflare version: `be3050a9-79ad-467f-8ecb-de1f5c5b6dc9`
+  - deploy command: `pnpm exec wrangler deploy --minify --keep-vars`
+  - automated tests: 85/85 ผ่าน (Node 77 + Worker runtime 8)
+  - `/health`: `200`
+  - `/menu/bread-menu.jpeg`: `200 image/jpeg`
+  - `/menu/chiffon-cookie-menu.jpeg`: `200 image/jpeg`
+  - invalid webhook signature: `401`
+- Owner menu UAT วันที่ 21 สิงหาคม 2026: **PASS**
+  - ได้ภาพเมนูขนมปังและภาพเมนูชิฟฟ่อน/คุกกี้ครบ 2 ใบ
+  - ได้ข้อความสั้นแจ้งว่าสินค้าอาจมีไม่ครบทุกวัน
+  - แสดง Quick Reply `คุยกับพนักงาน`
+  - กด Quick Reply แล้วได้รับ acknowledgement หนึ่งครั้งและเข้าสู่ handoff
+  - การทดสอบครั้งแรกที่บอตเงียบเกิดจาก handoff เดิมค้างอยู่ ซึ่งตรงตาม bot-silence requirement
+  - ปิด handoff หลัง UAT ด้วย authenticated `OWNER_TEST` แล้ว; active handoff คงเหลือ `0`
 
 ## Response settings — ก่อน/หลังเปิด Webhook
 
@@ -93,11 +109,9 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 
 ## ขั้นตอนคงเหลือ
 
-1. Deploy menu image update ไปยัง Worker ของ `มะลิปัง TEST` และตรวจว่า URL รูปทั้งสองตอบ `200 image/jpeg`
-2. Owner ทำ live UAT โดยพิมพ์ `เมนู` และกดปุ่ม `ดูเมนู`; ต้องได้รูปสองใบและปุ่ม `คุยกับพนักงาน`
-3. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
-4. Owner ตัดสินใจข้อมูลใน Rich Menu รวมถึงโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
-5. Publish Rich Menu ได้เฉพาะเมื่อข้อ 4 ผ่านครบ; ขณะนี้ `publishable=false`
+1. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
+2. Owner ตัดสินใจข้อมูลใน Rich Menu รวมถึงโปรโมชัน/แต้ม, Facebook URL และ Delivery destination
+3. Publish Rich Menu ได้เฉพาะเมื่อข้อ 2 ผ่านครบ; ขณะนี้ `publishable=false`
 
 ## Rollback
 

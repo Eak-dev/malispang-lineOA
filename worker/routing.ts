@@ -210,7 +210,10 @@ export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
     });
   }
   if (kind === "MENU") {
-    return withStaffQuickReply({ type: "text", text: MENU_AVAILABILITY_NOTICE });
+    return withStaffQuickReply({
+      type: "text",
+      text: MENU_AVAILABILITY_NOTICE,
+    });
   }
   if (kind === "PRICE") {
     return withStaffQuickReply({
