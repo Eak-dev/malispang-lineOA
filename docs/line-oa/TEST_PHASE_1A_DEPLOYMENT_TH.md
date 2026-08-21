@@ -21,13 +21,14 @@
 - Production `มะลิปัง`: ไม่ได้เปิดและไม่ได้เปลี่ยนแปลง
 - Owner live UAT วันที่ 20 สิงหาคม 2026: ผ่านทั้งการดูเมนู, เริ่ม handoff, acknowledgement ครั้งเดียว และ bot silence
 - Menu image deployment วันที่ 21 สิงหาคม 2026:
-  - Git commit: `ba5e3fa19ed3e266f67ff61dc9ffdc0da62d2c8c`
-  - Cloudflare version: `be3050a9-79ad-467f-8ecb-de1f5c5b6dc9`
+  - deployed Git commit: `03b0de0187f5d5639eeba63ccc6c4d09143b7ad4`
+  - Cloudflare version: `fae3bb7c-9951-4df1-a72a-abfe236918db`
   - deploy command: `pnpm exec wrangler deploy --minify --keep-vars`
   - automated tests: 85/85 ผ่าน (Node 77 + Worker runtime 8)
   - `/health`: `200`
   - `/menu/bread-menu.jpeg`: `200 image/jpeg`
   - `/menu/chiffon-cookie-menu.jpeg`: `200 image/jpeg`
+  - SHA-256 ของรูป live ทั้งสองตรงกับไฟล์ใน repository
   - invalid webhook signature: `401`
 - Owner menu UAT วันที่ 21 สิงหาคม 2026: **PASS**
   - ได้ภาพเมนูขนมปังและภาพเมนูชิฟฟ่อน/คุกกี้ครบ 2 ใบ
