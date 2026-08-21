@@ -30,3 +30,18 @@
 - secret scan และ `git diff --check` ผ่าน
 - preview เป็น local artifact เท่านั้น
 - ชุดนี้ใช้ mock/fixture เท่านั้น; ผล deployment และ Owner live UAT บันทึกแยกใน `TEST_PHASE_1A_DEPLOYMENT_TH.md`
+
+## Owner live UAT — Rich Menu รอบเดียว
+
+สถานะ: `PENDING` หลัง Publish วันที่ 21 สิงหาคม 2026
+
+1. Rich Menu แสดงอัตโนมัติและ chat bar เขียนว่า `รู้จักมะลิปัง`
+2. กดสะสมแต้ม ได้ข้อความ fail closed ที่ระบุ 50 บาท = 1 แต้ม โดยไม่เปิด Production Reward Card
+3. กดที่อยู่ร้าน เปิด Google Maps URL ที่อนุมัติ
+4. กด Delivery ได้ข้อความว่ายังไม่มีบริการ
+5. กดเมนู ได้รูปเมนูใหม่สองรูปตามลำดับ พร้อมปุ่ม `คุยกับพนักงาน`
+6. กด Facebook เปิด URL ที่อนุมัติ
+7. กด `คุยกับพนักงาน` ได้ acknowledgement หนึ่งครั้ง
+8. ส่งข้อความเพิ่มระหว่าง handoff แล้วบอตเงียบ
+
+หลังข้อ 8 ต้องปิด handoff ด้วย authenticated `OWNER_TEST` เพื่อให้พร้อมทดสอบรอบถัดไป

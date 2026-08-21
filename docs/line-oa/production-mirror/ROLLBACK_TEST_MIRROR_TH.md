@@ -10,7 +10,7 @@ Rollback นี้ใช้เฉพาะ `มะลิปัง TEST` แล�
 3. Profile image ถูกเผยแพร่ด้วยโลโก้ Production ที่เก็บใน `assets/brand/malispang-logo.jpeg`
 4. Status message ถูกเผยแพร่เป็น `TEST—ไม่รับเงินจริง`
 
-Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu ฉบับใหม่ยังไม่ถูก Save/Publish ณ เวลาที่อัปเดตเอกสารนี้ และ Reward Card ยังไม่ถูกสร้าง
+Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu `MalisPang TEST RM 39-50 v1` ถูก Publish เป็น Current menu แล้ว และ Reward Card ยังไม่ถูกสร้าง
 
 ## วิธี rollback
 

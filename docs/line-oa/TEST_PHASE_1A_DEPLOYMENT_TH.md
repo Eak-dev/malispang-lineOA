@@ -4,7 +4,7 @@
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **TEST_WEBHOOK_LIVE / OWNER_MENU_UAT_PASSED / RICH_MENU_READY_FOR_TEST_PUBLISH**
+สถานะ: **TEST_WEBHOOK_LIVE / RICH_MENU_PUBLISHED / OWNER_RICH_MENU_UAT_PENDING**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -37,6 +37,16 @@
   - กด Quick Reply แล้วได้รับ acknowledgement หนึ่งครั้งและเข้าสู่ handoff
   - การทดสอบครั้งแรกที่บอตเงียบเกิดจาก handoff เดิมค้างอยู่ ซึ่งตรงตาม bot-silence requirement
   - ปิด handoff หลัง UAT ด้วย authenticated `OWNER_TEST` แล้ว; active handoff คงเหลือ `0`
+- Rich Menu deployment วันที่ 21 สิงหาคม 2026:
+  - Worker source commit: `47bc0a87d10aaaa0cfd34cad00e6998cdf3fa946`
+  - Cloudflare version: `0d492401-c76f-4f76-aea8-7cf9d0e5a3ba`
+  - Rich Menu ID/name: `20032979` / `MalisPang TEST RM 39-50 v1`
+  - LINE OA Manager แสดงเป็น `Current menu` และ `This menu is shown to users.`
+  - Display period: 21 สิงหาคม 2026 00:00 ถึง 20 สิงหาคม 2027 23:59
+  - `/health`, รูปเมนูสองใบ และภาพ Rich Menu: `200` พร้อม MIME ถูกต้อง
+  - SHA-256 ของภาพ Rich Menu live ตรง repository: `56668eec5b069763e0d974c90335e79eeed5e2fd31fe86c16dfeab42712cd392`
+  - invalid webhook signature: `401`
+  - Owner live UAT Rich Menu: **PENDING**
 
 ## Response settings — ก่อน/หลังเปิด Webhook
 
@@ -92,7 +102,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - ปุ่ม `คุยกับพนักงาน` เพิ่มเป็น Quick Reply นอกภาพ เพื่อคงเมนูเดิมและให้ปุ่มหายหลังการกดตาม UX ที่ Owner ต้องการ
 - Owner ยืนยัน Maps URL, Facebook URL, ข้อความ Delivery และกติกาสะสมแต้มแล้ว
 - Reward Card ยังไม่ Publish เพราะยังขาด Main reward/voucher, points till goal, expiration และ cooldown; ปุ่มสะสมแต้มจึงตอบแบบ fail closed และไม่เชื่อม Production
-- Rich Menu พร้อมตั้งค่าเฉพาะ `มะลิปัง TEST`; ผล Publish และ UAT รอบสุดท้ายต้องบันทึกหลังดำเนินการจริง
+- Rich Menu ถูก Publish เป็น Current menu เฉพาะ `มะลิปัง TEST` แล้ว; UAT รอบสุดท้ายจาก LINE ส่วนตัวของ Owner ยังรอผล
 
 ## Persistence และ retention
 
@@ -116,7 +126,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 
 1. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
 2. Owner กำหนด Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown ก่อนสร้าง Reward Card TEST
-3. ทำ Owner live UAT Rich Menu หนึ่งรอบหลัง Publish เฉพาะบัญชี TEST
+3. ทำ Owner live UAT Rich Menu หนึ่งรอบเฉพาะบัญชี TEST แล้วบันทึกผลจริง
 
 ## Rollback
 

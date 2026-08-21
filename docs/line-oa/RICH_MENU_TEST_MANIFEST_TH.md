@@ -2,7 +2,7 @@
 
 อัปเดตล่าสุด: 21 สิงหาคม 2026
 
-สถานะ: `READY_FOR_TEST_PUBLISH / REWARD_FAIL_CLOSED`
+สถานะ: `PUBLISHED_CURRENT_MENU / OWNER_UAT_PENDING / REWARD_FAIL_CLOSED`
 
 ## ขอบเขตและไฟล์
 
@@ -10,6 +10,8 @@
 - ชื่อ Rich Menu: `MalisPang TEST RM 39-50 v1`
 - Menu bar label: `รู้จักมะลิปัง`
 - Default behavior: `Shown`
+- LINE OA Manager Rich Menu ID: `20032979`
+- Display period: `21 สิงหาคม 2026 00:00` ถึง `20 สิงหาคม 2027 23:59`
 - Source artwork: `assets/test/malispang-test-rich-menu-original.png`
 - Editable overlay: `assets/test/malispang-test-rich-menu-overlay.svg`
 - Publishable image: `assets/test/malispang-test-rich-menu-publishable.jpeg`
@@ -44,7 +46,7 @@
 
 ## Reward Card fail-closed
 
-บัญชี TEST ไม่มี Reward Card เดิม การสร้างบัตรแยกทำได้ แต่หน้า Publish บังคับข้อมูลธุรกิจที่ Owner ยังไม่ได้ตัดสินใจ ได้แก่ Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown จึงยังไม่สร้างหรือ Publish Reward Card และไม่เชื่อม Production card
+บัญชี TEST ไม่มี Reward Card เดิม การสร้างบัตรแยกทำได้ แต่หน้า Publish บังคับข้อมูลธุรกิจที่ Owner ยังไม่ได้ตัดสินใจ ได้แก่ Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown จึงยังไม่สร้างหรือ Publish Reward Card และไม่เชื่อม Production card พื้นที่สะสมแต้มจึงใช้ Text action ที่ตอบแบบ fail closed
 
 ## Rollback
 
