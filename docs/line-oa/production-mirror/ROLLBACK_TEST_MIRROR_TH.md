@@ -10,7 +10,7 @@ Rollback นี้ใช้เฉพาะ `มะลิปัง TEST` แล�
 3. Profile image ถูกเผยแพร่ด้วยโลโก้ Production ที่เก็บใน `assets/brand/malispang-logo.jpeg`
 4. Status message ถูกเผยแพร่เป็น `TEST—ไม่รับเงินจริง`
 
-Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu `MalisPang TEST RM 39-50 v1` ถูก Publish เป็น Current menu แล้ว และ Reward Card ยังไม่ถูกสร้าง
+Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu `MalisPang TEST RM 39-50 v1` ถูก Publish เป็น Current menu แล้ว และ Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้บัญชี TEST โดยยังไม่ได้แจก URL ผ่าน Rich Menu
 
 ## วิธี rollback
 
@@ -29,7 +29,15 @@ Messaging API และ Webhook ของ TEST เปิดใช้งานแ
 5. หาก Worker ถูก deploy พร้อม action ชุดนี้ ให้ rollback เฉพาะ `malispang-lineoa-test` ไป Version ก่อนหน้า
 6. ไฟล์ local และ manifest ย้อนด้วย Git revert ได้
 
-Reward Card ยังไม่ถูกสร้างหรือ Publish จึงไม่มี live card ให้ rollback และห้ามเชื่อม/เปลี่ยน Production Reward Card
+## Reward Card TEST rollback gate
+
+Reward Card TEST ถูก Publish แบบ `No expiration` แล้ว และ LINE ระบุว่าค่านี้เปลี่ยนไม่ได้หลัง Publish การ rollback จึงห้ามกด `Suspend card`, สร้างบัตรใหม่ หรือเปลี่ยนการแจกบัตรเอง ก่อนดำเนินการต้อง:
+
+1. ยืนยัน visible account name เป็น `มะลิปัง TEST`
+2. ขอ Owner approval แบบเจาะจงสำหรับผลลัพธ์ที่ต้องการและการกระทำที่อาจย้อนกลับไม่ได้
+3. หาก Owner ยอมรับ `No expiration` ให้กำหนดผู้รับผิดชอบและขั้นตอนปิดด้วยตนเองวันที่ 31 ธันวาคม 2026
+4. หาก Owner ต้องการวันหมดอายุแบบระบบ ให้ตรวจคำเตือนและผลกระทบของการหยุดบัตรเดิม/สร้างบัตร TEST ใหม่ก่อน final confirmation
+5. ห้ามเชื่อม คัดลอก หรือเปลี่ยน Production Reward Card ทุกกรณี
 
 ## Admin handoff cleanup
 

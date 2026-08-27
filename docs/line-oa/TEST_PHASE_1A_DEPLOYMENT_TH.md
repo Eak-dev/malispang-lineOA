@@ -1,6 +1,6 @@
 # มะลิปัง TEST — Phase 1A Deployment
 
-อัปเดตล่าสุด: 21 สิงหาคม 2026
+อัปเดตล่าสุด: 28 สิงหาคม 2026
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
@@ -105,7 +105,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - Action map: `docs/line-oa/production-mirror/test-rich-menu-action-map.json`
 - ปุ่ม `คุยกับพนักงาน` เพิ่มเป็น Quick Reply นอกภาพ เพื่อคงเมนูเดิมและให้ปุ่มหายหลังการกดตาม UX ที่ Owner ต้องการ
 - Owner ยืนยัน Maps URL, Facebook URL, ข้อความ Delivery และกติกาสะสมแต้มแล้ว
-- Reward Card ยังไม่ Publish เพราะยังขาด Main reward/voucher, points till goal, expiration และ cooldown; ปุ่มสะสมแต้มจึงตอบแบบ fail closed และไม่เชื่อม Production
+- Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้ `มะลิปัง TEST` แล้ว และผ่าน read-only configuration UAT เมื่อ 28 สิงหาคม 2026 เวลา 01:35 น.; ปุ่มสะสมแต้มยังตอบแบบ fail closed และยังไม่แจก URL จนกว่า Owner จะตัดสินใจ deviation ระหว่างข้อกำหนด 31 ธันวาคม 2026 กับค่าจริง `No expiration`
 - Rich Menu ถูก Publish เป็น Current menu เฉพาะ `มะลิปัง TEST` แล้ว และ Owner live UAT ผ่านครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok)
 
 ## Persistence และ retention
@@ -129,7 +129,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 ## ขั้นตอนคงเหลือ
 
 1. Owner ยืนยันว่า TEST_SEED ที่ตั้ง, เวลาร้าน และการเก็บรักษาถูกต้องก่อนนำไปใช้เป็น authoritative source
-2. Owner กำหนด Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown ก่อนสร้าง Reward Card TEST
+2. Owner ตัดสินใจรับ `No expiration` พร้อมแผนปิดด้วยตนเองวันที่ 31 ธันวาคม 2026 หรืออนุมัติขั้นตอนแยกเพื่อหยุด/สร้าง Reward Card TEST ใหม่ที่มีวันหมดอายุตรงข้อกำหนด; ห้าม Suspend หรือสร้างใหม่เอง
 3. กำหนด Owner และรอบเวลาสำหรับการ rotate/recover `TEST_ADMIN_KEY` ครั้งถัดไป โดยห้ามบันทึกค่าจริงใน Git หรือเอกสาร
 
 ## Rollback

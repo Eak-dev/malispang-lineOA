@@ -1,6 +1,6 @@
 # Rich Menu Manifest — มะลิปัง TEST
 
-อัปเดตล่าสุด: 21 สิงหาคม 2026
+อัปเดตล่าสุด: 28 สิงหาคม 2026
 
 สถานะ: `PUBLISHED_CURRENT_MENU / OWNER_UAT_PASS / REWARD_FAIL_CLOSED`
 
@@ -33,14 +33,14 @@
 
 ## พื้นที่กด
 
-| พื้นที่                | Bounds `(x,y,w,h)` | Native action               | ผลลัพธ์ TEST                                                                |
-| ---------------------- | ------------------ | --------------------------- | --------------------------------------------------------------------------- |
-| A สะสมแต้มและโปรโมชั่น | `0,0,833,843`      | Text `สะสมแต้มและโปรโมชั่น` | แจ้งกติกา 50 บาท = 1 แต้ม แต่ยังไม่เปิดบัตร เพราะเงื่อนไขของรางวัลยังไม่ครบ |
-| B ที่อยู่ร้าน          | `833,0,834,843`    | Link                        | Google Maps URL ที่ Owner ระบุ                                              |
-| C Delivery             | `1667,0,833,843`   | Text `Delivery`             | แจ้งว่ายังไม่มีบริการ Delivery                                              |
-| D พื้นที่ตกแต่ง        | `0,843,833,843`    | No action                   | ไม่มี action                                                                |
-| E เมนูของเรา           | `833,843,834,843`  | Text `เมนูขนมปัง`           | รูปเมนู 1 → รูปเมนู 2 → ข้อความสั้น + Quick Reply คุยกับพนักงาน             |
-| F Facebook             | `1667,843,833,843` | Link                        | Facebook URL ที่ Owner ระบุ                                                 |
+| พื้นที่                | Bounds `(x,y,w,h)` | Native action               | ผลลัพธ์ TEST                                                                                       |
+| ---------------------- | ------------------ | --------------------------- | -------------------------------------------------------------------------------------------------- |
+| A สะสมแต้มและโปรโมชั่น | `0,0,833,843`      | Text `สะสมแต้มและโปรโมชั่น` | ยังตอบแบบ fail closed และยังไม่แจก Reward Card URL จนกว่า expiry deviation จะได้รับ Owner decision |
+| B ที่อยู่ร้าน          | `833,0,834,843`    | Link                        | Google Maps URL ที่ Owner ระบุ                                                                     |
+| C Delivery             | `1667,0,833,843`   | Text `Delivery`             | แจ้งว่ายังไม่มีบริการ Delivery                                                                     |
+| D พื้นที่ตกแต่ง        | `0,843,833,843`    | No action                   | ไม่มี action                                                                                       |
+| E เมนูของเรา           | `833,843,834,843`  | Text `เมนูขนมปัง`           | รูปเมนู 1 → รูปเมนู 2 → ข้อความสั้น + Quick Reply คุยกับพนักงาน                                    |
+| F Facebook             | `1667,843,833,843` | Link                        | Facebook URL ที่ Owner ระบุ                                                                        |
 
 พื้นที่ทั้งหกครอบคลุมภาพเต็มพอดี ไม่มีช่องว่าง ไม่มีพื้นที่ซ้อน และไม่เกินขอบภาพ
 
@@ -48,11 +48,13 @@
 
 Owner ยืนยัน `PASS` ครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok): Rich Menu แสดงอัตโนมัติ, chat bar ถูกต้อง, reward fail closed แสดงกติกา 50 บาทต่อ 1 แต้ม, Maps/Delivery/Menu/Facebook ถูกต้อง, acknowledgement ส่งครั้งเดียว และบอตเงียบหลัง handoff
 
-Reward Card TEST จริงยังไม่ได้สร้าง หลัง UAT ได้หมุน `TEST_ADMIN_KEY` ตาม Owner approval และใช้ authenticated `OWNER_TEST` ปิด handoff ของผู้ทดสอบ 1 รายการแล้ว โดยตรวจยืนยัน active handoff เหลือ `0` เมื่อ 21 สิงหาคม 2026 เวลา 11:41 น. (Asia/Bangkok)
+หลัง UAT ได้หมุน `TEST_ADMIN_KEY` ตาม Owner approval และใช้ authenticated `OWNER_TEST` ปิด handoff ของผู้ทดสอบ 1 รายการแล้ว โดยตรวจยืนยัน active handoff เหลือ `0` เมื่อ 21 สิงหาคม 2026 เวลา 11:41 น. (Asia/Bangkok)
 
-## Reward Card fail-closed
+## Reward Card TEST และ fail-closed action
 
-บัญชี TEST ไม่มี Reward Card เดิม การสร้างบัตรแยกทำได้ แต่หน้า Publish บังคับข้อมูลธุรกิจที่ Owner ยังไม่ได้ตัดสินใจ ได้แก่ Main reward/voucher, points till goal, expiration, reminder, welcome bonus และ cooldown จึงยังไม่สร้างหรือ Publish Reward Card และไม่เชื่อม Production card พื้นที่สะสมแต้มจึงใช้ Text action ที่ตอบแบบ fail closed
+Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้บัญชี `มะลิปัง TEST` แล้ว โดยมีเป้าหมาย 50 แต้ม, Welcome bonus 0, Reminder None, cooldown วันละครั้ง และ Voucher `รางวัล TEST ไม่มีมูลค่า` พร้อมโลโก้มะลิปัง ผล read-only configuration UAT เมื่อ 28 สิงหาคม 2026 เวลา 01:35 น. เป็น `PASS` และไม่พบการเชื่อม Production ตามหลักฐาน UI ที่ตรวจได้
+
+อย่างไรก็ตาม บัตรถูก Publish แบบ `No expiration` ซึ่งต่างจากข้อกำหนดเดิมวันที่ 31 ธันวาคม 2026 และ LINE ระบุว่าค่านี้เปลี่ยนไม่ได้หลัง Publish จึงยังคง Text action แบบ fail closed ไม่แจก Reward card URL ผ่าน Rich Menu และคง Issue #3 เป็น OPEN จน Owner ตัดสินใจ รายละเอียดอยู่ใน `docs/line-oa/REWARD_CARD_TEST_UAT_TH.md`
 
 ## Rollback
 
