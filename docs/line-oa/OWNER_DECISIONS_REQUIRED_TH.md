@@ -50,5 +50,18 @@
 31. **RESOLVED 21 สิงหาคม 2026:** Owner live UAT จาก LINE ส่วนตัวผ่าน Rich Menu, Quick Reply, acknowledgement ครั้งเดียว และ handoff silence ครบ 8 ข้อ; authorized staff-close เคยผ่าน UAT ก่อนหน้า
 32. ยืนยันว่า TEST_SEED ราคา 39 บาท, ที่ตั้ง, เวลา 08:00–19:00 และการเก็บประมาณ 2 วันถูกต้อง ก่อนเปลี่ยนสถานะเป็น authoritative
 33. **RESOLVED 21 สิงหาคม 2026:** Rich Menu ใช้ราคาเริ่มต้น 39 บาท, กติกา 50 บาท = 1 แต้ม, Maps URL, Facebook URL และข้อความ Delivery ตาม GitHub Issue #1; action แต้มต้อง fail closed จน Reward Card พร้อม
-34. **RESOLVED 28 สิงหาคม 2026:** Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้ `มะลิปัง TEST` ด้วยเป้าหมาย 50 แต้ม, Welcome bonus 0, Reminder None, cooldown วันละครั้ง และ Voucher `รางวัล TEST ไม่มีมูลค่า`; read-only configuration UAT ผ่าน และ Owner อนุมัติ `No expiration` สำหรับ TEST โดยกำหนด action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026 การแจก Reward Card URL ผ่าน Rich Menu และการใช้กับ Production ไม่ได้รับอนุมัติและต้องขอแยก
+34. **RESOLVED 28 สิงหาคม 2026 — TEST เท่านั้น:** Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้ `มะลิปัง TEST` ด้วยเป้าหมาย 50 แต้ม, Welcome bonus 0, Reminder None, cooldown วันละครั้ง และ Voucher `รางวัล TEST ไม่มีมูลค่า`; Owner อนุมัติ `No expiration` พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026 และ live UAT ผ่าน flow รับบัตร/เพิ่ม 1 แต้ม URL อยู่ใน encrypted `TEST_REWARD_CARD_URL` การใช้กับ Production ไม่ได้รับอนุมัติ
 35. **RESOLVED 21 สิงหาคม 2026:** Owner อนุมัติการหมุน `TEST_ADMIN_KEY` เฉพาะ Worker `malispang-lineoa-test`; เก็บค่าใหม่ใน Keychain/Cloudflare encrypted secret, ปิด handoff ของผู้ทดสอบ 1 รายการ และยืนยัน active handoff = `0` โดยไม่เปลี่ยน LINE credential หรือ Production
+
+## Production-readiness decisions — เพิ่มจาก read-only review 28 สิงหาคม 2026
+
+36. อนุมัติ Production Reward Card แยกจาก TEST: อัตราแต้ม, เป้าหมาย, รางวัล/เงื่อนไข, Welcome bonus, Reminder, cooldown, card/voucher expiration และวิธีปิดบัตร
+37. อนุมัติ QR policy: One Time/printable, จำนวนแต้ม, activation/expiration, location restriction, operator roles และวิธีป้องกันการ reuse/share
+38. อนุมัติ native Reward Card audit owner/access/retention; Worker audit ไม่เห็น native QR scan/point history
+39. อนุมัติ Production Worker/Channel/Durable Object/secrets ที่แยกจาก TEST และชื่อ encrypted secret สำหรับ Production Reward Card URL
+40. อนุมัติ authoritative business data พร้อม owner, effective/review dates; ห้ามนำ `TEST_SEED` ไป Production
+41. อนุมัติ Production Rich Menu manifest/action/display period และ current-menu rollback target
+42. อนุมัติ staff/admin roles, credential rotation/revocation, monitoring/incident owner และ rollback authority
+43. อนุมัติ production tester allowlist, privacy basis, maintenance window และข้อยอมรับว่าการเปิด webhook/default Rich Menu อาจกระทบลูกค้าจริงหาก LINE จำกัด audience ไม่ได้
+44. อนุมัติ response-mode/auto-response collision plan หลัง read-only Production configuration audit แยกต่างหาก
+45. ให้ final go/no-go หลัง Issue #4/#5/#8 และ preconditions ที่กำหนดปิดครบ; การ review นี้ไม่อนุญาต external Production action

@@ -4,14 +4,14 @@
 
 ทุก phase ใช้ Test/Mock ก่อน แยกจาก Production และระบบพนักงาน ห้าม live action จนได้รับอนุมัติชัดเจนเป็นรายขั้น
 
-## Phase 0 — Audit และออกแบบ (งานปัจจุบัน)
+## Phase 0 — Audit และออกแบบ
 
 ผลลัพธ์: แยก verified/reported/unknown, รวม specification, สร้าง UAT baseline และรายการ owner decisions
 เสร็จเมื่อ: เอกสารชุดนี้ครบและไม่มีการแก้ live system
 
 ## Phase 1A — FAQ + Handoff
 
-สถานะ ณ 14 สิงหาคม 2026: **Local foundation implemented; ยังไม่เชื่อม Test OA**
+สถานะ ณ 28 สิงหาคม 2026: **TEST LIVE UAT PASS** — webhook, Rich Menu, เมนูรูปภาพ, human handoff, bot silence และ Reward Card entry point ผ่านบน `มะลิปัง TEST`; ข้อมูล FAQ ธุรกิจยังเป็น `TEST_SEED`
 
 ขอบเขต:
 
@@ -66,6 +66,24 @@ Acceptance criteria:
 - Phase 2: order/revision/payment state, immutable quote/payment history, manual slip review, deposit policy
 - Phase 3: controlled catalog/inventory integration, dashboard, monitoring/reconciliation; แยก HR/finance employee data
 - Phase 4: internal Test OA UAT, readiness, rollback และ owner approval ก่อน live action
+
+## Phase 6 — Rich Menu และ Reward Card TEST
+
+สถานะ ณ 28 สิงหาคม 2026: **PASS เฉพาะ TEST**
+
+- Rich Menu TEST เป็น current menu และ Owner UAT ผ่าน
+- Reward Card `บัตรแต้ม TEST` แยกจาก Production, live UAT รับบัตรและเพิ่ม 1 แต้มผ่าน
+- URL จริงเก็บใน encrypted `TEST_REWARD_CARD_URL`; ไม่อยู่ใน Git
+- ผลนี้ไม่อนุญาตให้ reuse บัตร, URL, Worker, credential หรือ state ใน Production
+
+## Phase 7 — Production readiness และ controlled rollout
+
+สถานะ ณ 28 สิงหาคม 2026: **NO-GO / READ-ONLY REVIEW COMPLETE**
+
+- รายงานหลัก: `docs/line-oa/PRODUCTION_READINESS_REVIEW_TH.md`
+- Production ไม่ถูกเปิดหรือเปลี่ยนแปลงระหว่าง review
+- ต้องปิด authoritative-data, Reward Card/QR/audit, separate infrastructure, rollback และ Owner approval gates ก่อน external Production action
+- GitHub Issue #5 ต้องคงเปิด; review นี้ไม่ใช่สิทธิ์ deploy หรือเปลี่ยน Production
 
 ## Success targets รอเจ้าของอนุมัติ
 

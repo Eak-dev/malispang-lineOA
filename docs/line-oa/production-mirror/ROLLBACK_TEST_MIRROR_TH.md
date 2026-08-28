@@ -10,7 +10,7 @@ Rollback นี้ใช้เฉพาะ `มะลิปัง TEST` แล�
 3. Profile image ถูกเผยแพร่ด้วยโลโก้ Production ที่เก็บใน `assets/brand/malispang-logo.jpeg`
 4. Status message ถูกเผยแพร่เป็น `TEST—ไม่รับเงินจริง`
 
-Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu `MalisPang TEST RM 39-50 v1` ถูก Publish เป็น Current menu แล้ว และ Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้บัญชี TEST โดยยังไม่ได้แจก URL ผ่าน Rich Menu
+Messaging API และ Webhook ของ TEST เปิดใช้งานแล้วตาม Phase 1A; Rich Menu `MalisPang TEST RM 39-50 v1` ถูก Publish เป็น Current menu แล้ว Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้บัญชี TEST และแจกผ่าน Worker button โดย URL จริงอยู่ใน encrypted secret `TEST_REWARD_CARD_URL` Owner live UAT รับบัตรและเพิ่ม 1 แต้มผ่านเมื่อ 28 สิงหาคม 2026
 
 ## วิธี rollback
 
@@ -38,6 +38,8 @@ Reward Card TEST ถูก Publish แบบ `No expiration` แล้ว แล
 3. ขอ action-time confirmation ก่อนกดปุ่มสุดท้ายเพื่อปิดบัตร
 4. บันทึกหลักฐานสถานะหลังปิดโดยไม่เก็บข้อมูลผู้ใช้, QR, URL หรือ internal ID
 5. ห้ามเชื่อม คัดลอก หรือเปลี่ยน Production Reward Card ทุกกรณี
+
+หากต้องหยุดการแจก URL ก่อนปิดบัตร ให้ rollback Worker `malispang-lineoa-test` ไป version ก่อน Reward Card entry point หรือ deploy fail-closed copy หลังได้รับอนุมัติ โดยไม่เปิดเผย/ลบ secret ระหว่างการ rollback เว้นแต่พบ credential exposure การ rollback Worker ไม่ยกเลิกบัตรหรือย้อนแต้มที่ LINE ออกไปแล้ว
 
 ## Admin handoff cleanup
 
