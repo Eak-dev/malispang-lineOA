@@ -31,12 +31,12 @@ Messaging API และ Webhook ของ TEST เปิดใช้งานแ
 
 ## Reward Card TEST rollback gate
 
-Reward Card TEST ถูก Publish แบบ `No expiration` แล้ว และ LINE ระบุว่าค่านี้เปลี่ยนไม่ได้หลัง Publish การ rollback จึงห้ามกด `Suspend card`, สร้างบัตรใหม่ หรือเปลี่ยนการแจกบัตรเอง ก่อนดำเนินการต้อง:
+Reward Card TEST ถูก Publish แบบ `No expiration` แล้ว และ Owner อนุมัติค่านี้สำหรับ TEST พร้อมกำหนด action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026 การปิดบัตรเป็น external action ที่อาจย้อนกลับไม่ได้ ก่อนดำเนินการต้อง:
 
 1. ยืนยัน visible account name เป็น `มะลิปัง TEST`
-2. ขอ Owner approval แบบเจาะจงสำหรับผลลัพธ์ที่ต้องการและการกระทำที่อาจย้อนกลับไม่ได้
-3. หาก Owner ยอมรับ `No expiration` ให้กำหนดผู้รับผิดชอบและขั้นตอนปิดด้วยตนเองวันที่ 31 ธันวาคม 2026
-4. หาก Owner ต้องการวันหมดอายุแบบระบบ ให้ตรวจคำเตือนและผลกระทบของการหยุดบัตรเดิม/สร้างบัตร TEST ใหม่ก่อน final confirmation
+2. ตรวจว่าเป็นวันดำเนินการตาม Owner action และตรวจคำเตือน/ผลกระทบของ LINE
+3. ขอ action-time confirmation ก่อนกดปุ่มสุดท้ายเพื่อปิดบัตร
+4. บันทึกหลักฐานสถานะหลังปิดโดยไม่เก็บข้อมูลผู้ใช้, QR, URL หรือ internal ID
 5. ห้ามเชื่อม คัดลอก หรือเปลี่ยน Production Reward Card ทุกกรณี
 
 ## Admin handoff cleanup

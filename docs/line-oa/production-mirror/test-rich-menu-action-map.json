@@ -20,8 +20,8 @@
   "publishMode": "REWARD_FAIL_CLOSED",
   "publishBlockers": [],
   "knownLimitations": [
-    "Reward Card TEST ถูก Publish แยกแล้ว แต่ค่าจริง No expiration ต่างจากข้อกำหนดเดิม 31 ธันวาคม 2026 และยังรอ Owner decision",
-    "พื้นที่สะสมแต้มยังใช้ native Text action แบบ fail closed ไม่แจก Reward card URL และไม่เชื่อมข้อมูล Production"
+    "Owner อนุมัติ No expiration สำหรับ Reward Card TEST พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026",
+    "พื้นที่สะสมแต้มยังใช้ native Text action แบบ fail closed ห้ามแจก Reward card URL จนกว่าจะมี Owner approval แยก และไม่เชื่อมข้อมูล Production"
   ],
   "staffQuickReply": {
     "label": "คุยกับพนักงาน",

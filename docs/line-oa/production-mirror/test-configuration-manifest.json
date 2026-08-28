@@ -66,7 +66,7 @@
     "publishBlockers": [],
     "ownerLiveUat": "PASS_2026-08-21T11:31:42+07:00",
     "postUatHandoffCleanup": "PASS_ACTIVE_HANDOFFS_1_TO_0_AUTHENTICATED_OWNER_TEST",
-    "rewardCardStatus": "PUBLISHED_TEST_ONLY_UAT_PASS_EXPIRY_DEVIATION_OPEN"
+    "rewardCardStatus": "PUBLISHED_TEST_ONLY_UAT_PASS_OWNER_NO_EXPIRATION_APPROVED"
   },
   "rewardCard": {
     "account": "มะลิปัง TEST",
@@ -79,19 +79,20 @@
     "reminder": "NONE",
     "cooldown": "ONCE_PER_DAY_RESET_MIDNIGHT",
     "expiration": "NO_EXPIRATION",
-    "requiredExpiration": "2026-12-31",
-    "expirationDeviation": "OWNER_DECISION_REQUIRED",
+    "expirationDecision": "OWNER_APPROVED_NO_EXPIRATION_FOR_TEST_2026-08-28",
+    "ownerDecisionAt": "2026-08-28T10:14:16+07:00",
+    "manualCloseRequiredBy": "2026-12-31",
     "voucher": {
       "name": "รางวัล TEST ไม่มีมูลค่า",
       "expiration": "NON_EXPIRING",
       "logoVisible": true,
       "realValue": false
     },
-    "distribution": "URL_PRESENT_NOT_COPIED_NOT_CONNECTED_TO_RICH_MENU",
+    "distribution": "URL_PRESENT_NOT_COPIED_NOT_CONNECTED_TO_RICH_MENU_SEPARATE_APPROVAL_REQUIRED",
     "qrScanned": false,
     "pointsIssuedDuringUat": 0,
     "productionBinding": false,
-    "issue3": "OPEN"
+    "issue3": "CLOSED_AFTER_OWNER_DECISION"
   },
   "flexMenu": {
     "json": "artifacts/flex-menu.json",
