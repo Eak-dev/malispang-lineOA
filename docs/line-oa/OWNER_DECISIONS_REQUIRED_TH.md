@@ -55,19 +55,19 @@
 
 ## Production-readiness decisions — เพิ่มจาก read-only review 28 สิงหาคม 2026
 
-36. อนุมัติ Production Reward Card แยกจาก TEST: อัตราแต้ม, เป้าหมาย, รางวัล/เงื่อนไข, Welcome bonus, Reminder, cooldown, card/voucher expiration และวิธีปิดบัตร
-37. อนุมัติ QR policy: One Time/printable, จำนวนแต้ม, activation/expiration, location restriction, operator roles และวิธีป้องกันการ reuse/share
-38. อนุมัติ native Reward Card audit owner/access/retention; Worker audit ไม่เห็น native QR scan/point history
+36. **PARTIAL 28 สิงหาคม 2026:** Owner อนุมัติ Production policy baseline: 50 บาทสุทธิหลังส่วนลด=1 แต้มแบบ floor, เป้าหมาย 50 แต้ม/2,500 บาท, `ตุ๊กตามะลิจัง 1 ตัว` COGS ≤25 บาท, อายุบัตร 12 เดือนจากวันรับ, Voucher 60 วัน, welcome 0, reminder none และไม่มี daily cooldown; ยังรอ redemption/refund terms, COGS evidence, LINE technical feasibility และ final implementation approval
+37. **PARTIAL 28 สิงหาคม 2026:** Owner อนุมัติ One Time QR ต่อ 1 paid receipt อายุ 10 นาที, 30 วันแรก Owner/Shift lead, ไม่ให้แต้ม unpaid/cancelled/refunded/reused transaction; ยังรอตรวจ LINE UI, post-day-30 roles, thresholds และ adjustment/reconciliation runbook
+38. **PARTIAL 28 สิงหาคม 2026:** retention baseline คือ Worker logs 7 วัน, reconciliation 90 วัน, config/incident 365 วัน; ยังรอ native audit access/reviewer/storage/export/deletion design
 39. อนุมัติ Production Worker/Channel/Durable Object/secrets ที่แยกจาก TEST และชื่อ encrypted secret สำหรับ Production Reward Card URL
-40. อนุมัติ authoritative business data พร้อม owner, effective/review dates; ห้ามนำ `TEST_SEED` ไป Production
+40. **PARTIAL 28 สิงหาคม 2026:** Owner เลือก versioned repository manifest เป็น single source สำหรับราคา เมนู เวลา โปรโมชั่นและกติกา; ยังต้องแนบ exact values/source/owner/effective/review dates และหมวด location/storage/allergen/wholesale/advance order/delivery
 41. อนุมัติ Production Rich Menu manifest/action/display period และ current-menu rollback target
-42. อนุมัติ staff/admin roles, credential rotation/revocation, monitoring/incident owner และ rollback authority
+42. **PARTIAL 28 สิงหาคม 2026:** Owner ตัดสินใจหยุด, Technical operator แก้ระบบ, Shift lead ตรวจยอด/ออก QR; ยังรอ auditor/backup/access lifecycle/monitoring thresholds/acknowledgement และ rollback executor details
 43. อนุมัติ production tester allowlist, privacy basis, maintenance window และข้อยอมรับว่าการเปิด webhook/default Rich Menu อาจกระทบลูกค้าจริงหาก LINE จำกัด audience ไม่ได้
 44. อนุมัติ response-mode/auto-response collision plan หลัง read-only Production configuration audit แยกต่างหาก
-45. ให้ final go/no-go หลัง Issue #4/#5/#8 และ preconditions ที่กำหนดปิดครบ; การ review นี้ไม่อนุญาต external Production action
+45. **PENDING FINAL APPROVAL:** rollout baseline คือ 30 นาทีช่วงลูกค้าน้อย มี Owner หน้างานและ rollback target พร้อม; ยังรอ exact window/executors/stable hashes/rehearsal และ final go/no-go การ review นี้ไม่อนุญาต implementation หรือ external Production action
 
 ## Owner Decision Pack
 
 ตารางตัวเลือก ผลกระทบ และแบบตอบทีละข้ออยู่ใน `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md`
 
-สถานะ ณ 28 สิงหาคม 2026: `PACK_READY / OWNER_SELECTION_PENDING` — ยังไม่มี Production decision ข้อ 36–45 ใดถูกปิดจากการจัดทำ Pack เพียงอย่างเดียว และ Issues #4, #5, #8 ต้องคงเปิดจนมี decision + implementation/test/UAT evidence ตาม acceptance criteria
+สถานะ ณ 28 สิงหาคม 2026: `OWNER_BASELINE_RECORDED / FINAL_PLAN_APPROVAL_PENDING / PRODUCTION_NO-GO` — ดู decision record และ proposed plan ใน `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และ `PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` Issues #4, #5, #8 ต้องคงเปิดจน decision gaps + implementation/test/UAT evidence ผ่าน acceptance criteria จริง

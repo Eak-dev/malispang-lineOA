@@ -6,7 +6,7 @@
 
 สถานะ: **NO-GO — ยังไม่พร้อมเปิดใช้กับ Production**
 
-Owner Decision Pack สำหรับปิด decision blockers ของ Issues #4, #5 และ #8 ถูกจัดทำแล้วที่ `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md` แต่ยังไม่มีตัวเลือกใดถือว่าอนุมัติจนกว่า Owner จะตอบพร้อมชื่อ/บทบาทและวันที่ Pack ไม่ใช่สิทธิ์เปลี่ยน Production
+Owner บันทึก policy baseline แล้วใน `docs/line-oa/PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และ map เข้ากับ OD-01 ถึง OD-12 ใน `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md` แผนที่ต้องอนุมัติรอบสุดท้ายอยู่ใน `docs/line-oa/PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` การอนุมัติ baseline ไม่ใช่สิทธิ์เปลี่ยน Production
 
 ## ขอบเขตและหลักฐาน
 
@@ -67,19 +67,19 @@ Cloudflare ระบุว่า secrets เป็น encrypted bindings แล�
 
 ## Production Reward Card approval gate
 
-ค่าของ TEST ไม่ถือเป็น Production approval ต้องมี decision record ระบุ owner, approval/effective/review date และ exact customer-facing terms สำหรับทุกข้อ:
+Owner อนุมัติ policy baseline แล้ว แต่ยังไม่อนุญาต implementation และยังต้องผ่าน technical feasibility/final action-time approval:
 
-| Decision           | TEST evidence                          | Production status                                                          |
-| ------------------ | -------------------------------------- | -------------------------------------------------------------------------- |
-| อัตราแต้ม          | 50 บาท = 1 แต้ม                        | `OWNER_APPROVAL_REQUIRED`                                                  |
-| เป้าหมาย           | 50 แต้ม                                | `OWNER_APPROVAL_REQUIRED`                                                  |
-| รางวัล/Voucher     | TEST ไม่มีมูลค่า                       | `OWNER_APPROVAL_REQUIRED` — ต้องระบุรางวัลจริง เงื่อนไข จำนวน และข้อยกเว้น |
-| Welcome bonus      | 0                                      | `OWNER_APPROVAL_REQUIRED`                                                  |
-| Reminder           | None                                   | `OWNER_APPROVAL_REQUIRED`                                                  |
-| Cooldown           | วันละครั้ง reset 00:00                 | `OWNER_APPROVAL_REQUIRED`                                                  |
-| วันหมดอายุบัตร     | TEST เป็น No expiration + manual close | `OWNER_APPROVAL_REQUIRED`                                                  |
-| วันหมดอายุ Voucher | TEST non-expiring                      | `OWNER_APPROVAL_REQUIRED`                                                  |
-| การปิด/ระงับบัตร   | TEST ต้องปิดภายใน 31 ธ.ค. 2026         | `OWNER_APPROVAL_REQUIRED` พร้อมผลกระทบต่อสมาชิก/แต้ม                       |
+| Decision           | TEST evidence                          | Production status                                                               |
+| ------------------ | -------------------------------------- | ------------------------------------------------------------------------------- |
+| อัตราแต้ม          | 50 บาท = 1 แต้ม                        | `APPROVED_BASELINE` — net after discount, floor                                 |
+| เป้าหมาย           | 50 แต้ม                                | `APPROVED_BASELINE` — ยอดซื้อสะสม 2,500 บาท                                     |
+| รางวัล/Voucher     | TEST ไม่มีมูลค่า                       | `APPROVED_BASELINE` — `ตุ๊กตามะลิจัง 1 ตัว`, COGS ≤25 บาท; terms บางข้อรอ Owner |
+| Welcome bonus      | 0                                      | `APPROVED_BASELINE` — 0                                                         |
+| Reminder           | None                                   | `APPROVED_BASELINE` — None ในรอบแรก                                             |
+| Cooldown           | วันละครั้ง reset 00:00                 | `APPROVED_POLICY` — Production ไม่มี daily cooldown; รอตรวจ LINE feasibility    |
+| วันหมดอายุบัตร     | TEST เป็น No expiration + manual close | `APPROVED_POLICY` — 12 เดือนนับจากวันรับ; รอตรวจ rolling-expiry feasibility     |
+| วันหมดอายุ Voucher | TEST non-expiring                      | `APPROVED_BASELINE` — 60 วันหลังได้รับ                                          |
+| การปิด/ระงับบัตร   | TEST ต้องปิดภายใน 31 ธ.ค. 2026         | `PENDING` — ต้องมี exact reversible/irreversible runbook ก่อนสร้างจริง          |
 
 ก่อน Publish ต้องตรวจ preview/terms รอบสุดท้าย เพราะ LINE ระบุว่าบัตร/บัตรรางวัลที่ผู้ใช้รับแล้วและ Voucher ที่ตั้งค่าหรือรับแล้วมีข้อจำกัดการแก้ไข:
 
@@ -92,11 +92,11 @@ Cloudflare ระบุว่า secrets เป็น encrypted bindings แล�
 1. Owner อนุมัติผู้มีสิทธิ์สร้าง/แสดง QR และผู้ตรวจ audit; ใช้ least privilege และห้ามแชร์ account
 2. ใช้ **One Time QR Code** จาก LINE OA Manager app สำหรับการให้แต้มแบบพนักงานต่อรายการเมื่อทำได้ เพราะ LINE ระบุว่าเป็น QR ใช้ครั้งเดียว; ห้ามพิมพ์หรือส่ง screenshot
 3. หากจำเป็นต้องใช้ printable QR ต้องขอ Owner approval แยก กำหนด point value, ชื่อ QR, สาขา/จุดใช้งาน, activation/expiration สั้นที่สุดที่ธุรกิจรองรับ และเลิกใช้ทันทีเมื่อจบรอบ ห้ามถือว่า cooldown เท่ากับ one-time protection
-4. ค่าเริ่มต้นสำหรับ controlled UAT คือ 1 แต้ม, One Time QR, เจ้าของเป็นผู้รับบัตร/สแกน และไม่มีข้อมูลลูกค้าจริง
-5. ตรวจ cooldown และ reset timezone จากหน้า Production ก่อนเปิดใช้; ห้ามยึดค่าของ TEST
+4. Production policy คือ One Time QR ต่อใบเสร็จ อายุ 10 นาที และจำนวนแต้มตาม `floor(ยอดสุทธิ/50)`; ต้องพิสูจน์ว่า LINE UI รองรับก่อนสร้าง ห้ามลดเหลือ 1 แต้มเอง
+5. Production ไม่มี daily cooldown; ต้องตรวจข้อจำกัด native และ timezone แบบ read-only ก่อนเปิดใช้ ห้ามยึดค่าของ TEST
 6. บันทึกเฉพาะ QR reference/name, point value, operator role, created/expires/disabled timestamps และผลรวม ไม่บันทึก QR image/value, customer ID, ชื่อ, เบอร์ หรือข้อความ
 7. Native scan/point history ต้องตรวจผ่าน LINE OA Insights/Reward Card ด้วยผู้มีสิทธิ์เท่านั้น; Worker audit ไม่สามารถใช้แทน native loyalty audit
-8. Owner ต้องอนุมัติ retention และผู้ทบทวน audit; ข้อเสนอเริ่มต้นคือ operational log 30 วันและ incident record ตามนโยบายที่อนุมัติ แต่ยังเป็น `OWNER_DECISION_REQUIRED`
+8. Retention baseline คือ Worker logs 7 วัน, reconciliation 90 วัน และ config/incident 365 วัน; storage/export, reviewer และ access lifecycle ยังต้องอนุมัติก่อน implementation
 
 LINE ระบุช่องทางให้แต้มเป็น One Time QR บนแอปหรือ printable QR ที่ต้องเปิดใช้แยก:
 
@@ -141,24 +141,24 @@ Cloudflare rollback ทำให้ version เป้าหมาย active ท�
 
 หาก LINE OA ไม่สามารถจำกัด webhook/Rich Menu ให้ owner tester เท่านั้น การ live UAT บน Production จะไม่ใช่ zero-customer-impact และต้องหยุดรอ Owner ยอมรับความเสี่ยงพร้อม maintenance window แยก ห้ามอ้างผล TEST แทน
 
-## Owner decisions ที่ต้องอนุมัติก่อนเริ่ม Production
+## Owner decisions/หลักฐานที่ยังต้องปิดก่อนเริ่ม Production
 
-1. Production Reward Card settings ทั้ง 9 รายการในตารางด้านบน
-2. Authoritative menu/price/location/hours/storage/promotion sources พร้อม owner และ review date
+1. Voucher redemption/stacking/refund terms และยืนยัน COGS `ตุ๊กตามะลิจัง 1 ตัว` ไม่เกิน 25 บาท
+2. Authoritative values/sources ของ location, storage, allergen, wholesale, advance order และ Delivery/pickup พร้อม owner/review dates
 3. ชื่อ Production Worker/config, LINE Channel binding และการแยก Durable Object namespaces/secrets
 4. Production Rich Menu image/actions/display period/chat-bar label และ current-menu rollback target
-5. QR mode, point value, QR expiry/activation, cooldown, location restriction และ operator roles
+5. หลักฐานว่า LINE รองรับ rolling card expiry, One Time QR 10 นาที, multi-point QR และ native adjustment/audit ตาม policy
 6. Native loyalty audit owner, retention, access review และ incident escalation
 7. Staff allowlist/admin auth lifecycle, rotation/revocation และ authorized close roles
-8. Monitoring thresholds, on-call/incident owner และ rollback decision authority
+8. Monitoring/sampling thresholds, acknowledgement time, backup operator และ rollback execution authority
 9. Production tester allowlist/privacy basis และ controlled activation window
 10. Exact response-mode/auto-response changes ที่อนุญาต เพื่อป้องกัน native/Webhook collision
 11. Token type/least privilege, secret custody และ rotation/revocation owner
-12. Go/no-go approval หลัง Issue #4/#5/#8 และ preconditions ที่ Owner เลือกปิดครบ
+12. Exact rollout date/time/executors/stable targets/maximum rollback time และ final go/no-go หลัง Issue #4/#5/#8 ผ่านครบ
 
 ## Read-only review conclusion
 
-TEST Rich Menu, customer-response, handoff และ Reward Card flow มีหลักฐาน UAT ที่ดี แต่เป็นหลักฐานความพร้อมของ sandbox เท่านั้น สถานะ Production ณ 28 สิงหาคม 2026 คือ **NO-GO** จนกว่าจะมี authoritative business data, separate Production architecture/configuration, approved Reward Card/QR/audit policy, tested Production rollback และ explicit Owner approvals ตามรายการข้างต้น
+TEST Rich Menu, customer-response, handoff และ Reward Card flow มีหลักฐาน UAT ที่ดี และ Production policy baseline ได้รับอนุมัติแล้ว แต่สถานะ Production ณ 28 สิงหาคม 2026 ยังเป็น **NO-GO** จน technical feasibility, authoritative data, separate Production architecture/configuration, operations/audit details, tested rollback และ final Owner approval ผ่านครบ
 
 ## ผลการตรวจแบบไม่เปลี่ยนระบบภายนอก
 
@@ -175,7 +175,7 @@ TEST Rich Menu, customer-response, handoff และ Reward Card flow มีห�
 - Rich Menu validation: PASS — 6 areas, `2500 × 1686`, 421,467 bytes, ไม่มี gap/overlap/out-of-bounds
 - Local Flex/Rich Menu previews: generated successfully
 - Wrangler deployment dry-run: PASS; แสดงเฉพาะ Worker `malispang-lineoa-test` และ TEST bindings; **ไม่มี deploy**
-- Secret scan: PASS — 84 files, ไม่พบค่าความลับจาก pattern ที่กำหนด
+- Secret scan: PASS — 87 files, ไม่พบค่าความลับจาก pattern ที่กำหนด
 - Dependency audit: PASS — ไม่พบ known vulnerability ระดับที่ตรวจ
 - `git diff --check`: PASS
 

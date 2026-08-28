@@ -2,11 +2,40 @@
 
 จัดทำ: 28 สิงหาคม 2026 (Asia/Bangkok)
 
-สถานะ: `OWNER_SELECTION_REQUIRED / PRODUCTION_NO-GO`
+สถานะ: `OWNER_BASELINE_RECORDED / FINAL_PLAN_APPROVAL_REQUIRED / PRODUCTION_NO-GO`
 
 ขอบเขต: เอกสารประกอบการตัดสินใจเท่านั้น การเลือกในเอกสารนี้ยังไม่อนุญาตให้เปิดหรือเปลี่ยน Production, deploy, สร้าง credential/secret/Reward Card, เปลี่ยน Rich Menu/Webhook หรือส่งข้อความ ต้องมี implementation plan และ action-time approval แยกภายหลัง
 
-## วิธีตอบ Owner ทีละข้อ
+## Owner baseline ที่บันทึกแล้ว — 28 สิงหาคม 2026
+
+ตารางนี้เป็นสถานะ authoritative ของการเลือกใน Pack; ช่องตัวเลือกในหัวข้อถัดไปคงไว้เพื่ออธิบาย trade-off เท่านั้น หากขัดกันให้ยึดตารางนี้และ decision record `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md`
+
+| Decision | ค่าที่ Owner เลือก                                                                                                           | สถานะ/ช่องว่างที่ยังเหลือ                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| OD-01    | A — ทุก 50 บาทจากยอดสุทธิหลังส่วนลด = 1 แต้ม; ปัด `floor(ยอดสุทธิ/50)`                                                       | `APPROVED_BASELINE`                                                                                                     |
+| OD-02    | C — 50 แต้ม; ยอดซื้อสะสม 2,500 บาท                                                                                           | `APPROVED_BASELINE`                                                                                                     |
+| OD-03A   | A — ต้นทุนจริงรางวัลไม่เกิน 25 บาท หรือไม่เกิน 1% ของ 2,500 บาท                                                              | `APPROVED_BASELINE`; ต้องยืนยัน COGS ก่อนเปิดจริง                                                                       |
+| OD-03B   | CUSTOM — `ตุ๊กตามะลิจัง 1 ตัว` เท่านั้น; รางวัลแทนต้องเป็นชื่อที่ Owner อนุมัติใน manifest version ใหม่                      | `APPROVED_BASELINE`; ปฏิเสธถ้อยคำกว้าง เช่น “สินค้าไม่เกิน 39 บาท”                                                      |
+| OD-03C   | ยอดสุทธิหลังส่วนลด; ไม่ให้แต้มบิลยังไม่ชำระ/ยกเลิก/คืนเงิน/QR ใช้แล้ว                                                        | `PARTIAL`; เงื่อนไขแลก Voucher, stacking และ refund adjustment ยังรอ Owner                                              |
+| OD-04A   | CUSTOM — อายุบัตร 12 เดือนนับจากวันที่ลูกค้ารับบัตร                                                                          | `APPROVED_POLICY / TECHNICAL_FEASIBILITY_PENDING`                                                                       |
+| OD-04B   | B — Voucher ใช้ได้ 60 วันหลังได้รับ                                                                                          | `APPROVED_BASELINE`                                                                                                     |
+| OD-05A   | A — Welcome bonus 0 แต้ม                                                                                                     | `APPROVED_BASELINE`                                                                                                     |
+| OD-05B   | A — ไม่มี reminder ในรอบแรก                                                                                                  | `APPROVED_BASELINE`                                                                                                     |
+| OD-05C   | B — ไม่มี daily cooldown; ทุกใบเสร็จที่เข้าเกณฑ์ได้แต้ม                                                                      | `APPROVED_POLICY / TECHNICAL_FEASIBILITY_PENDING`                                                                       |
+| OD-06A   | A-CUSTOM — One Time QR ต่อ 1 ใบเสร็จ อายุ 10 นาที                                                                            | `APPROVED_POLICY / TECHNICAL_FEASIBILITY_PENDING`; LINE ยืนยัน one-time แต่ยังต้องพิสูจน์ค่าอายุ 10 นาที/จำนวนแต้มใน UI |
+| OD-06B   | CUSTOM — 30 วันแรก Owner หรือ Shift lead เท่านั้น                                                                            | `PARTIAL`; ผู้มีสิทธิ์หลังวันที่ 30 ยังรอ Owner                                                                         |
+| OD-06C   | paid receipt เท่านั้น, net-after-discount, floor, 1 transaction/QR ครั้งเดียว, unpaid/cancelled/refunded/reused QR ไม่มีแต้ม | `PARTIAL`; approval threshold และวิธี reverse/reconcile refund ยังรอ Owner                                              |
+| OD-07A   | A — versioned manifest ใน repository เป็นแหล่งเดียว                                                                          | `APPROVED_BASELINE`                                                                                                     |
+| OD-07B   | manifest ครอบคลุมราคา เมนู เวลา โปรโมชั่น และกติกา                                                                           | `PARTIAL`; authoritative values/sources ของที่อยู่ การเก็บรักษา ภูมิแพ้ ราคาส่ง สั่งล่วงหน้า Delivery/pickup ยังไม่ครบ  |
+| OD-08    | CUSTOM — Owner ตัดสินใจหยุด; Technical operator แก้ระบบ; Shift lead ตรวจยอดและออก QR                                         | `PARTIAL`; auditor/backup/access lifecycle และผู้ปิด handoff ยังรอ Owner                                                |
+| OD-09    | B — Worker logs 7 วัน, reconciliation 90 วัน, config/incident 365 วัน                                                        | `APPROVED_BASELINE`; storage/export สำหรับ 90/365 วันต้องออกแบบและอนุมัติต้นทุนก่อนใช้                                  |
+| OD-10    | Incident owner ตาม OD-08                                                                                                     | `PARTIAL`; monitoring level, thresholds, acknowledgement time และ backup ยังรอ Owner                                    |
+| OD-11    | A-CUSTOM — 30 นาทีช่วงลูกค้าน้อย, Owner อยู่หน้างาน, rollback target พร้อม                                                   | `PARTIAL`; วัน/เวลา, executor, stable hashes และเวลาสูงสุดในการ rollback ยังรอ Owner                                    |
+| OD-12    | ยังไม่ GO; Owner ขอ review implementation/rollout/rollback plan รอบสุดท้าย                                                   | `FINAL_APPROVAL_REQUIRED`                                                                                               |
+
+ค่าที่อนุมัติข้างต้นเป็น **policy baseline** ไม่ใช่สิทธิ์ implementation หรือ external Production action การสร้างบัตร, deploy, เพิ่ม secret, เชื่อม Rich Menu หรือเปิด Production ยังคง `NO-GO`
+
+## แบบตอบอ้างอิงสำหรับช่องว่างที่ยังเหลือ
 
 Owner ตอบเป็นรหัสได้ เช่น:
 
@@ -39,7 +68,7 @@ Effective date: YYYY-MM-DD หรือ PENDING
 หมายเหตุ: ...
 ```
 
-หากเลือก `CUSTOM` ต้องระบุค่าตัวเลขและเงื่อนไขครบ ห้ามตีความจากคำว่า “ตามเดิม” หรือ “เหมือน TEST” เพราะ TEST decisions ไม่ใช่ Production approval
+สำหรับช่องว่างที่ยังเหลือ หากเลือก `CUSTOM` ต้องระบุค่าตัวเลขและเงื่อนไขครบ ห้ามตีความจากคำว่า “ตามเดิม” หรือ “เหมือน TEST” เพราะ TEST decisions ไม่ใช่ Production approval
 
 ## สูตรกลางที่ใช้ใน Pack
 
@@ -113,14 +142,14 @@ Effective date: YYYY-MM-DD หรือ PENDING
 
 ### OD-03B รูปแบบรางวัล
 
-| ตัวเลือก                  | รางวัล                                                   |                  ต้นทุนสูงสุดต่อยอดขาย 2,500 บาท | หน้างาน                                | ความเสี่ยงทุจริต                                 | Rollback                                                           |
-| ------------------------- | -------------------------------------------------------- | -----------------------------------------------: | -------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------ |
-| **A — แนะนำถ้า COGS ≤25** | ขนม 1 ชิ้นจากรายการ Owner-approved ราคาขายไม่เกิน 39 บาท |                  COGS/2,500; ต้อง ≤1% ตาม OD-03A | พนักงานตรวจ SKU ที่ร่วมรายการและ stock | เปลี่ยนเป็นสินค้าราคาแพง/ออกของโดยไม่ตัด Voucher | ถอนรายการที่ร่วมในรอบถัดไป; ต้อง honor Voucher ที่ออกแล้วตาม terms |
-| B                         | ส่วนลด 50 บาท                                            |                                            2.00% | ลดจากบิลแลกทันที                       | ใช้ซ้อนโปร/ใช้ซ้ำ/แลกกับบิลต่ำ                   | ปิดการออกใหม่; Voucher ที่ออกแล้วคง liability                      |
-| C                         | ส่วนลด 100 บาท เมื่อซื้อขั้นต่ำ 500 บาท                  | สูงสุด 4.00% ของยอดสะสมเดิม แต่ต้องมียอดแลกเพิ่ม | ต้องตรวจ minimum spend                 | แบ่งบิล/คืนสินค้าหลังแลก                         | ปิดการออกใหม่; ตรวจ refund abuse                                   |
-| D                         | ยังไม่กำหนดรางวัล                                        |                                          ไม่ทราบ | เปิดบัตรไม่ได้อย่างปลอดภัย             | สูงเพราะพนักงานตีความเอง                         | Fail closed; ไม่ Publish                                           |
+| ตัวเลือก         | รางวัล                                      |                  ต้นทุนสูงสุดต่อยอดขาย 2,500 บาท | หน้างาน                    | ความเสี่ยงทุจริต                     | Rollback                                      |
+| ---------------- | ------------------------------------------- | -----------------------------------------------: | -------------------------- | ------------------------------------ | --------------------------------------------- |
+| A — Owner ปฏิเสธ | รางวัลแบบกว้าง เช่นสินค้า/ขนมไม่เกิน 39 บาท |                   ไม่แน่นอนจนกว่าจะระบุ SKU/COGS | พนักงานตีความไม่ตรงกัน     | เปลี่ยนของรางวัลเองหรือจ่ายเกินเพดาน | **ห้ามใช้**; fail closed                      |
+| B                | ส่วนลด 50 บาท                               |                                            2.00% | ลดจากบิลแลกทันที           | ใช้ซ้อนโปร/ใช้ซ้ำ/แลกกับบิลต่ำ       | ปิดการออกใหม่; Voucher ที่ออกแล้วคง liability |
+| C                | ส่วนลด 100 บาท เมื่อซื้อขั้นต่ำ 500 บาท     | สูงสุด 4.00% ของยอดสะสมเดิม แต่ต้องมียอดแลกเพิ่ม | ต้องตรวจ minimum spend     | แบ่งบิล/คืนสินค้าหลังแลก             | ปิดการออกใหม่; ตรวจ refund abuse              |
+| D                | ยังไม่กำหนดรางวัล                           |                                          ไม่ทราบ | เปิดบัตรไม่ได้อย่างปลอดภัย | สูงเพราะพนักงานตีความเอง             | Fail closed; ไม่ Publish                      |
 
-**Owner selection OD-03B:** `[ ] A` `[ ] B` `[ ] C` `[ ] D` `[ ] CUSTOM: ________`
+**Owner decision OD-03B:** `CUSTOM — ตุ๊กตามะลิจัง 1 ตัว; COGS ≤25 บาท` รางวัลแทนใช้ได้เมื่อ Owner ประกาศชื่อชัดเจนและอนุมัติ manifest version ใหม่เท่านั้น
 
 ### OD-03C เงื่อนไขแลกขั้นต่ำ
 
@@ -143,12 +172,12 @@ Effective date: YYYY-MM-DD หรือ PENDING
 
 ตัวเลือกต้องตรวจอีกครั้งกับ LINE UI ก่อนสร้าง เพราะค่าบางรายการของบัตรที่เปิดใช้แล้วแก้ไขได้จำกัด
 
-| ตัวเลือก      | Policy                                          | ต้นทุน/liability     | หน้างาน                                             | Fraud/ข้อพิพาท                               | Rollback                                                |
-| ------------- | ----------------------------------------------- | -------------------- | --------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------- |
-| **A — แนะนำ** | วันหมดอายุคงที่ 12 เดือนหลังวันเริ่ม Production | จำกัด liability      | ต้องแจ้งวันชัดและเตือนก่อนหมด                       | ต่ำกว่า no-expiration; มีข้อร้องเรียนปลายงวด | หยุดออกบัตรก่อน; บัตรที่รับแล้วต้องจัดการตาม LINE/terms |
-| B             | No expiration + Owner review/ปิดด้วยตนเองรายปี  | liability ไม่สิ้นสุด | ภาระติดตามสูง                                       | แต้มเก่าค้าง/บัญชีร้าง                       | การ suspend อาจกระทบผู้ถือทั้งหมดและอาจย้อนกลับไม่ได้   |
-| C             | 6 เดือน                                         | liability ต่ำ        | ลูกค้าต้องสะสมเร็ว                                  | ข้อร้องเรียน/ความรู้สึกไม่คุ้มสูง            | เหมือน A                                                |
-| D             | กำหนดวันสิ้นปี                                  | บริหารงบง่าย         | ลูกค้าที่สมัครปลายปีเสียเปรียบถ้าไม่มี grace period | dispute สูง                                  | ต้องมี transition/grace policy                          |
+| ตัวเลือก                       | Policy                                                                             | ต้นทุน/liability     | หน้างาน                                             | Fraud/ข้อพิพาท                                                | Rollback                                                   |
+| ------------------------------ | ---------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| **A — Owner เลือกเป็น policy** | 12 เดือนนับจากวันที่ลูกค้ารับบัตร; ต้องตรวจว่า LINE รองรับ rolling expiration จริง | จำกัด liability      | ต้องแจ้งวันชัด; ไม่มี reminder รอบแรก               | ต่ำกว่า no-expiration; เสี่ยงข้อพิพาทหาก platform ใช้วันคงที่ | หยุดก่อน Publish หาก UI ไม่รองรับ; ห้ามแปลงเป็นวันคงที่เอง |
+| B                              | No expiration + Owner review/ปิดด้วยตนเองรายปี                                     | liability ไม่สิ้นสุด | ภาระติดตามสูง                                       | แต้มเก่าค้าง/บัญชีร้าง                                        | การ suspend อาจกระทบผู้ถือทั้งหมดและอาจย้อนกลับไม่ได้      |
+| C                              | 6 เดือน                                                                            | liability ต่ำ        | ลูกค้าต้องสะสมเร็ว                                  | ข้อร้องเรียน/ความรู้สึกไม่คุ้มสูง                             | เหมือน A                                                   |
+| D                              | กำหนดวันสิ้นปี                                                                     | บริหารงบง่าย         | ลูกค้าที่สมัครปลายปีเสียเปรียบถ้าไม่มี grace period | dispute สูง                                                   | ต้องมี transition/grace policy                             |
 
 **Owner selection OD-04A:** `[ ] A` `[ ] B` `[ ] C` `[ ] D` `[ ] CUSTOM DATE/POLICY: ________`
 
@@ -437,7 +466,7 @@ Cloudflare rollback ทำให้ version เป้าหมาย active แ�
 - monitoring/incident owner ไม่พร้อมใน change window
 - test สำคัญไม่ผ่าน, diff ไม่สะอาด หรือพบ secret/PII
 
-**Owner selection OD-12:** `[ ] APPROVE GO/NO-GO CRITERIA` `[ ] MODIFY: ________`
+**Owner decision OD-12:** `FINAL PLAN APPROVAL PENDING` — ยังไม่อนุญาต implementation หรือ external Production action
 
 ---
 
@@ -449,7 +478,7 @@ Decision Pack นี้ช่วยปิดเฉพาะ **decision-design bl
 - Issue #4 คงเปิดจน role/auth/monitoring/runbook/retention ถูก implement และ failure/rollback tests ผ่าน
 - Issue #5 คงเปิดจน prerequisites, separate Production design, threat/privacy review, rollback rehearsal และ final go/no-go evidence ครบ
 
-หลัง Owner ตอบ Pack ให้บันทึกแต่ละคำตอบเป็น decision record โดยไม่เปิดหรือเปลี่ยน Production จากนั้นจึงวาง implementation plan แยกและขออนุมัติ external action เป็นรายขั้น
+Owner baseline ถูกบันทึกใน `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และแผนเสนออยู่ใน `PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` Issues #4/#5/#8 ยังคงเปิดจน acceptance criteria จริงผ่านครบ
 
 ## หลักฐานความปลอดภัยของงานจัดทำ Pack
 
@@ -465,6 +494,6 @@ Local verification วันที่ 28 สิงหาคม 2026:
 - Node tests: 85/85 PASS
 - Worker runtime tests: 8/8 PASS โดยไม่โหลด secret จริง
 - รวม automated tests: 93/93 PASS
-- Secret scan: PASS — 85 files
+- Secret scan: PASS — 87 files
 - Dependency audit: ไม่พบ known vulnerabilities
 - `git diff --check`: PASS
