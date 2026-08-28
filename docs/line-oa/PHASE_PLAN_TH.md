@@ -78,7 +78,7 @@ Acceptance criteria:
 
 ## Phase 7 — Production readiness และ controlled rollout
 
-สถานะ ณ 28 สิงหาคม 2026: **NO-GO / OWNER POLICY BASELINE RECORDED / FINAL PLAN APPROVAL PENDING**
+สถานะ ณ 28 สิงหาคม 2026: **LOCAL READINESS PACKAGE COMPLETE / PRODUCTION NO-GO**
 
 - รายงานหลัก: `docs/line-oa/PRODUCTION_READINESS_REVIEW_TH.md`
 - Production ไม่ถูกเปิดหรือเปลี่ยนแปลงระหว่าง review
@@ -87,7 +87,8 @@ Acceptance criteria:
 - Owner Decision Pack สำหรับ Issues #4/#5/#8: `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md`
 - Owner baseline record: `docs/line-oa/PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md`
 - Proposed implementation/rollout/rollback: `docs/line-oa/PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md`
-- Policy baseline ไม่อนุญาต implementation/external action; Issues #4/#5/#8 ยังเปิดและต้องมี final Owner approval
+- Final Go/No-Go Pack: `docs/line-oa/PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md`
+- local fail-closed policy/manifest/tests พร้อม แต่ COGS, LINE capabilities, authoritative data และ Production capture/rehearsal ยัง block; Issues #4/#5/#8 คงเปิด
 
 ## Success targets รอเจ้าของอนุมัติ
 

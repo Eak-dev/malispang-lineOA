@@ -2,9 +2,9 @@
 
 จัดทำ: 28 สิงหาคม 2026 (Asia/Bangkok)
 
-สถานะ: `OWNER_FINAL_APPROVAL_REQUIRED / NO_IMPLEMENTATION_STARTED / PRODUCTION_NO-GO`
+สถานะ: `LOCAL_IMPLEMENTATION_COMPLETE / FINAL_PACK_NO-GO / NO_EXTERNAL_ACTION`
 
-แผนนี้แปลง Owner baseline จาก `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` เป็นลำดับงานที่ตรวจสอบและย้อนกลับได้ ยังไม่ใช่สิทธิ์เปิด Production, เขียนโค้ด Production, deploy, สร้าง resource/secret/Reward Card หรือเชื่อม Rich Menu
+แผนนี้แปลง Owner baseline จาก `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` เป็น local fail-closed implementation, acceptance tests และลำดับ external execution ที่ตรวจสอบ/ย้อนกลับได้ Final decision และ combined approval อยู่ใน `PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md` ยังไม่ใช่สิทธิ์เปิด Production, deploy, สร้าง resource/secret/Reward Card หรือเชื่อม Rich Menu
 
 ## หลักแยก TEST กับ Production
 
@@ -136,27 +136,17 @@ Proposed maximum decision-to-disable-automation: 5 นาที; Owner ยัง
 - native auto-response และ webhook ตอบชนกัน
 - Owner สั่งหยุดหรือหน้างานไม่สามารถควบคุม QR/reconciliation ได้
 
-## รายการที่ Owner ยังต้องปิดก่อน final implementation approval
+## Evidence blockers ก่อน combined Production approval
 
-1. เงื่อนไขแลก Voucher/stacking/cash/refund adjustment
-2. ผู้มีสิทธิ์หลัง launch day 30, auditor, backup, access review/revocation และ staff-close owner
+1. ยืนยัน COGS ตุ๊กตามะลิจังไม่เกิน 25 บาทด้วยหลักฐาน
+2. ยืนยัน LINE rolling expiry/10-minute QR/multi-point QR/60-day Voucher capability แบบ read-only
 3. authoritative values/sources ที่ยังขาดใน OD-07B
-4. monitoring/sampling/alerts/acknowledgement/backup และช่วงเฝ้าดูหลัง rollout
-5. exact rollout date/time, executor, rollback owner/executor, stable targets และ maximum rollback time
-6. ยืนยัน COGS ตุ๊กตามะลิจังไม่เกิน 25 บาท
-7. ยอมรับหรือแก้ technical alternative หาก LINE ไม่รองรับ rolling expiry/10-minute QR/multi-point QR
+4. named allowlists/backup/auditor และ Production plan ที่รองรับ retention
+5. stable targets, Production-shaped rollback rehearsal และ resource identity capture
 
-## ข้อความอนุมัติขั้นถัดไปที่ต้องการ
+## ข้อความอนุมัติขั้นถัดไป
 
-การอนุมัติที่ปลอดภัยสำหรับงานรอบถัดไปควรระบุ frozen commit:
-
-```text
-อนุมัติแผน Production implementation/rollout/rollback สำหรับ มะลิปัง ตาม commit <COMMIT_HASH>
-และอนุมัติให้เริ่มเฉพาะ local implementation Gate 2 บน feature branch โดยใช้ mock/placeholder fail-closed เท่านั้น
-ยังไม่อนุมัติให้เปิด Production, deploy, สร้าง Reward Card/credential/secret, เปลี่ยน Webhook/Rich Menu หรือส่งข้อความ
-```
-
-หลัง Gate 1–3 ผ่าน ต้องมี action-time approval ใหม่อีกครั้งก่อน Gate 4/external Production action
+ใช้ combined approval wording ใน `PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md` หลัง evidence blockers ผ่านครบเท่านั้น
 
 ## แหล่งอ้างอิงทางเทคนิค
 

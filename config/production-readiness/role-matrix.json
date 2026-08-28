@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "APPROVED_DEFAULT_ROLES_IDENTITIES_PENDING",
+  "sharedAccountsAllowed": false,
+  "roles": {
+    "OWNER": {
+      "mayDeclareStop": true,
+      "mayApprovePointReconciliation": true,
+      "mayIssueOneTimeQr": true,
+      "mayDeploy": false,
+      "mayChangePolicy": true
+    },
+    "TECHNICAL_OPERATOR": {
+      "mayDeclareStop": false,
+      "mayApprovePointReconciliation": false,
+      "mayIssueOneTimeQr": false,
+      "mayDeploy": "ONLY_DURING_SEPARATELY_APPROVED_CHANGE_WINDOW",
+      "mayChangePolicy": false
+    },
+    "SHIFT_LEAD": {
+      "mayDeclareStop": "EMERGENCY_PAUSE_AND_ESCALATE",
+      "mayApprovePointReconciliation": false,
+      "mayIssueOneTimeQr": true,
+      "mayDeploy": false,
+      "mayChangePolicy": false
+    }
+  },
+  "qrPolicy": {
+    "first30Days": ["OWNER", "SHIFT_LEAD"],
+    "after30DaysFailClosedDefault": ["OWNER", "SHIFT_LEAD"],
+    "expansionRequiresNewOwnerApproval": true
+  },
+  "identityAllowlist": "PENDING_ENCRYPTED_CONFIGURATION",
+  "backupTechnicalOperator": "BLOCKER",
+  "readOnlyAuditor": "BLOCKER",
+  "accessReviewIntervalDays": 30,
+  "revokeOnRoleChange": true
+}

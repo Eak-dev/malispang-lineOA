@@ -63,20 +63,27 @@ Owner อนุมัติค่าตั้งต้นเชิงนโย�
 
 หาก LINE ไม่รองรับข้อใด ให้กลับมาเสนอทางเลือกต่อ Owner ห้ามเปลี่ยนนโยบายเองหรือใช้ printable/static QR แทน
 
-## ช่องว่างที่ยังต้อง Owner ตัดสินใจ
+## Safe defaults ที่ Codex ปิดแทนคำถามย่อย
 
-- เงื่อนไขแลก Voucher: ต่อใบเสร็จ, เงินสด/เงินทอน, stacking, การได้แต้มจากยอดที่จ่ายด้วย Voucher และขั้นตอน mark-used
-- เกณฑ์อนุมัติบิลมูลค่าสูงและวิธี reverse/reconcile เมื่อ refund/cancel หลังให้แต้ม
-- สิทธิ์ออก QR หลังครบ 30 วัน และ role lifecycle/backup/revocation
-- authoritative values/source/approver/effective dates ของที่อยู่ การเก็บรักษา ภูมิแพ้ ราคาส่ง สั่งล่วงหน้า และ Delivery/pickup
-- monitoring level, sampling, thresholds, acknowledgement time, alert recipients และ backup incident owner
-- วัน/เวลา rollout จริง, executor, stable Worker version, Rich Menu rollback target/hash และ maximum rollback time
+- 1 Voucher ต่อ 1 ใบเสร็จ, ไม่แลกเงินสด/เงินทอน, ไม่ stacking, ไม่ได้แต้มจากมูลค่า Voucher และ mark used หลังส่งมอบตุ๊กตาจริง
+- Refund/cancel หลังให้แต้มต้องบันทึก reconciliation และ Owner อนุมัติ; staff ห้ามแก้แต้มเอง
+- หลัง 30 วันยังคงให้เฉพาะ Owner/Shift lead ออก QR จนมี policy version ใหม่
+- หมวด business data ที่ไม่มีหลักฐานอยู่สถานะ `BLOCKED`; ไม่สร้าง customer-facing value
+- ใช้ monitoring/rollback thresholds จาก `config/production-readiness/monitoring-thresholds.json`
+- ใช้ event-based rollout 30 นาที, observation 120 นาที และ decision-to-disable target 5 นาที
+
+## Evidence blockers ที่ safe default ทดแทนไม่ได้
+
+- COGS ตุ๊กตามะลิจัง
+- LINE rolling expiry/10-minute QR/multi-point QR/60-day Voucher capability
+- authoritative values/sources จริง
+- Production resource/stable rollback capture, named allowlists, platform retention และ rollback rehearsal
 
 ## Mapping กับ Owner Decision Pack
 
 - อนุมัติครบเป็น baseline: OD-01, OD-02, OD-03A, OD-03B, OD-04B, OD-05A, OD-05B, OD-07A, OD-09
 - อนุมัตินโยบายแต่รอตรวจ technical feasibility: OD-04A, OD-05C, OD-06A
-- อนุมัติบางส่วนและยังมีช่องว่าง: OD-03C, OD-06B, OD-06C, OD-07B, OD-08, OD-10, OD-11
+- อนุมัติ safe defaults แล้วแต่ยังมี execution evidence blockers: OD-03C, OD-06B, OD-06C, OD-07B, OD-08, OD-10, OD-11
 - รอ Owner final approval: OD-12
 
 ## ผลต่อ Issues

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "status": "DRAFT_FAIL_CLOSED_NO_EXTERNAL_RESOURCES_CREATED",
+  "environment": "PRODUCTION",
+  "accountName": "มะลิปัง",
+  "identityEvidence": "PENDING_SEPARATELY_AUTHORIZED_READ_ONLY_CAPTURE",
+  "businessManifest": "config/production-readiness/production-business-manifest.json",
+  "loyaltyPolicy": {
+    "netBahtPerPoint": 50,
+    "rounding": "FLOOR_NET_AFTER_DISCOUNT",
+    "goalPoints": 50,
+    "qualifyingSpendBaht": 2500,
+    "rewardName": "ตุ๊กตามะลิจัง 1 ตัว",
+    "maximumLandedCostBaht": 25,
+    "landedCostEvidence": "COGS_BLOCKER",
+    "cardValidity": "12_MONTHS_FROM_CUSTOMER_RECEIPT",
+    "voucherValidityDays": 60,
+    "welcomeBonusPoints": 0,
+    "reminder": "NONE",
+    "dailyCooldown": false,
+    "qrMode": "ONE_TIME_PER_PAID_RECEIPT",
+    "qrTargetLifetimeMinutes": 10,
+    "refundAfterAward": "OWNER_RECONCILIATION_REQUIRED_NO_STAFF_ADJUSTMENT"
+  },
+  "lineCapabilityEvidence": {
+    "rollingCardExpiryFromReceipt": "NOT_VERIFIED",
+    "oneTimeQr": "SUPPORTED",
+    "tenMinuteQrExpiry": "NOT_VERIFIED",
+    "multiPointOneTimeQr": "NOT_VERIFIED",
+    "sixtyDayVoucherExpiry": "NOT_VERIFIED"
+  },
+  "resources": {
+    "lineChannel": "NOT_CREATED_NOT_READ",
+    "worker": "NOT_CREATED_NOT_READ",
+    "stateNamespace": "NOT_CREATED_NOT_READ",
+    "rewardCard": "NOT_CREATED_NOT_READ",
+    "richMenu": "NOT_CREATED_NOT_READ",
+    "webhook": "NOT_CONFIGURED_NOT_READ"
+  },
+  "safety": {
+    "testResourceReuse": false,
+    "productionCustomerDataRequired": false,
+    "defaultBehavior": "NO_REPLY_OR_HUMAN_REVIEW",
+    "externalActionAuthorized": false
+  }
+}

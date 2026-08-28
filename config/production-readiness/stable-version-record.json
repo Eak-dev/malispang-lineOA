@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "status": "PENDING_READ_ONLY_PRODUCTION_CAPTURE",
+  "productionWorkerName": null,
+  "stableWorkerVersionReference": null,
+  "stableSourceCommit": null,
+  "productionRichMenuName": null,
+  "productionRichMenuImageHash": null,
+  "productionRichMenuRollbackTarget": null,
+  "productionResponseSettingsSnapshot": null,
+  "durableStateRollbackStrategy": "FORWARD_COMPATIBLE_SCHEMA_AND_SEPARATE_RECONCILIATION",
+  "capturedAt": null,
+  "capturedByRole": null,
+  "externalReadAuthorized": false,
+  "blockerCode": "PRODUCTION_NOT_OPENED_OR_INSPECTED"
+}

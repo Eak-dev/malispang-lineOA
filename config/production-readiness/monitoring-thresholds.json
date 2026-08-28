@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "status": "PROPOSED_FINAL_DEFAULTS_NOT_DEPLOYED",
+  "rolloutWindowMinutes": 30,
+  "postRolloutObservationMinutes": 120,
+  "maximumDecisionToDisableAutomationMinutes": 5,
+  "signals": [
+    {
+      "name": "ACCOUNT_OR_ENVIRONMENT_GUARD_REJECTION",
+      "alertAt": 1,
+      "rollbackAt": 1
+    },
+    {
+      "name": "CONFIRMED_DUPLICATE_CUSTOMER_REPLY",
+      "alertAt": 1,
+      "rollbackAt": 1
+    },
+    {
+      "name": "SECRET_PII_OR_QR_VALUE_IN_LOG",
+      "alertAt": 1,
+      "rollbackAt": 1
+    },
+    {
+      "name": "UNAUTHORIZED_QR_OR_RECEIPT_REUSE",
+      "alertAt": 1,
+      "rollbackAt": 1
+    },
+    {
+      "name": "UNEXPLAINED_POINT_VARIANCE",
+      "alertAt": 1,
+      "rollbackAt": 1
+    },
+    {
+      "name": "PERSISTENCE_FAILURE_CONSECUTIVE",
+      "alertAt": 1,
+      "rollbackAt": 3
+    },
+    {
+      "name": "LINE_REPLY_FAILURE_CONSECUTIVE",
+      "alertAt": 1,
+      "rollbackAt": 3
+    },
+    {
+      "name": "WEBHOOK_OR_LINE_FAILURE_PERCENT_5_MINUTES",
+      "alertAt": 0.5,
+      "rollbackAt": 1
+    }
+  ],
+  "handoffCapacity": {
+    "alertOldestMinutes": 15,
+    "alertActiveCount": 5,
+    "action": "OWNER_DECIDES_PAUSE_IF_STAFF_CAPACITY_INSUFFICIENT"
+  },
+  "logging": {
+    "structuredRedactedOnly": true,
+    "changeWindowSamplingPercent": 100,
+    "workerRetentionDays": 7,
+    "reconciliationRetentionDays": 90,
+    "configIncidentRetentionDays": 365,
+    "sevenDayPlatformRetentionEvidence": "BLOCKER_UNTIL_ACCOUNT_PLAN_CONFIRMED"
+  }
+}

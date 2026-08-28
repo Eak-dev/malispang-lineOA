@@ -55,19 +55,21 @@
 
 ## Production-readiness decisions — เพิ่มจาก read-only review 28 สิงหาคม 2026
 
-36. **PARTIAL 28 สิงหาคม 2026:** Owner อนุมัติ Production policy baseline: 50 บาทสุทธิหลังส่วนลด=1 แต้มแบบ floor, เป้าหมาย 50 แต้ม/2,500 บาท, `ตุ๊กตามะลิจัง 1 ตัว` COGS ≤25 บาท, อายุบัตร 12 เดือนจากวันรับ, Voucher 60 วัน, welcome 0, reminder none และไม่มี daily cooldown; ยังรอ redemption/refund terms, COGS evidence, LINE technical feasibility และ final implementation approval
-37. **PARTIAL 28 สิงหาคม 2026:** Owner อนุมัติ One Time QR ต่อ 1 paid receipt อายุ 10 นาที, 30 วันแรก Owner/Shift lead, ไม่ให้แต้ม unpaid/cancelled/refunded/reused transaction; ยังรอตรวจ LINE UI, post-day-30 roles, thresholds และ adjustment/reconciliation runbook
-38. **PARTIAL 28 สิงหาคม 2026:** retention baseline คือ Worker logs 7 วัน, reconciliation 90 วัน, config/incident 365 วัน; ยังรอ native audit access/reviewer/storage/export/deletion design
+36. **POLICY COMPLETE / EVIDENCE BLOCKED 28 สิงหาคม 2026:** Owner อนุมัติ Production baseline และ Codex เลือก safe Voucher/refund defaults แล้ว; ยังมี `COGS_BLOCKER`, LINE capability blockers และ final external GO
+37. **POLICY COMPLETE / CAPABILITY BLOCKED 28 สิงหาคม 2026:** One Time QR ได้หลักฐาน, แต่ rolling expiry, QR 10 นาที, multi-point QR และ Voucher 60 วันยังไม่ verified; หลังวัน 30 คง Owner/Shift lead และ refund ให้ Owner reconcile
+38. **DESIGN COMPLETE / PLATFORM BLOCKED 28 สิงหาคม 2026:** retention 7/90/365 และ names-only secret/role/monitoring manifests พร้อม; ยังรอ Production plan/storage/access identities
 39. อนุมัติ Production Worker/Channel/Durable Object/secrets ที่แยกจาก TEST และชื่อ encrypted secret สำหรับ Production Reward Card URL
-40. **PARTIAL 28 สิงหาคม 2026:** Owner เลือก versioned repository manifest เป็น single source สำหรับราคา เมนู เวลา โปรโมชั่นและกติกา; ยังต้องแนบ exact values/source/owner/effective/review dates และหมวด location/storage/allergen/wholesale/advance order/delivery
+40. **SCHEMA COMPLETE / DATA BLOCKED 28 สิงหาคม 2026:** versioned manifest และ approved-only fail-closed lookup พร้อม; 9 หมวด customer-facing ถูก classify `BLOCKED` จนมี exact authoritative records
 41. อนุมัติ Production Rich Menu manifest/action/display period และ current-menu rollback target
-42. **PARTIAL 28 สิงหาคม 2026:** Owner ตัดสินใจหยุด, Technical operator แก้ระบบ, Shift lead ตรวจยอด/ออก QR; ยังรอ auditor/backup/access lifecycle/monitoring thresholds/acknowledgement และ rollback executor details
+42. **DESIGN COMPLETE / IDENTITY BLOCKED 28 สิงหาคม 2026:** roles, least privilege, thresholds, 5-minute rollback target และ incident runbook พร้อม; named allowlists/backup/auditor ยังรอ evidence
 43. อนุมัติ production tester allowlist, privacy basis, maintenance window และข้อยอมรับว่าการเปิด webhook/default Rich Menu อาจกระทบลูกค้าจริงหาก LINE จำกัด audience ไม่ได้
 44. อนุมัติ response-mode/auto-response collision plan หลัง read-only Production configuration audit แยกต่างหาก
-45. **PENDING FINAL APPROVAL:** rollout baseline คือ 30 นาทีช่วงลูกค้าน้อย มี Owner หน้างานและ rollback target พร้อม; ยังรอ exact window/executors/stable hashes/rehearsal และ final go/no-go การ review นี้ไม่อนุญาต implementation หรือ external Production action
+45. **FINAL PACK NO-GO:** event-based rollout 30 นาที + observation 120 นาที + rollback 5 นาทีถูกกำหนดแล้ว แต่ยังรอ blockers/stable capture/rehearsal และ combined Owner GO; ไม่มี external Production action
 
 ## Owner Decision Pack
 
 ตารางตัวเลือก ผลกระทบ และแบบตอบทีละข้ออยู่ใน `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md`
 
-สถานะ ณ 28 สิงหาคม 2026: `OWNER_BASELINE_RECORDED / FINAL_PLAN_APPROVAL_PENDING / PRODUCTION_NO-GO` — ดู decision record และ proposed plan ใน `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และ `PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` Issues #4, #5, #8 ต้องคงเปิดจน decision gaps + implementation/test/UAT evidence ผ่าน acceptance criteria จริง
+สถานะ ณ 28 สิงหาคม 2026: `LOCAL_READINESS_PACKAGE_COMPLETE / EVIDENCE_BLOCKERS_REMAIN / PRODUCTION_NO-GO` — ดู decision record และ proposed plan ใน `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และ `PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` Issues #4, #5, #8 ต้องคงเปิดจน evidence + implementation/test/UAT acceptance criteria ผ่านจริง
+
+Final status/combined approval: `docs/line-oa/PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md` ไม่มีคำถามย่อยค้าง เหลือเฉพาะ evidence blockers ที่ safe default ทดแทนไม่ได้

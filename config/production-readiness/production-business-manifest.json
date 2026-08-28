@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "environment": "PRODUCTION",
+  "accountName": "มะลิปัง",
+  "defaultBehavior": "FAIL_CLOSED",
+  "reviewedAt": "2026-08-28T16:00:00+07:00",
+  "categories": {
+    "MENU": {
+      "status": "BLOCKED",
+      "sourceClassification": "TEST_EVIDENCE_ONLY",
+      "blockerCode": "MENU_OWNER_APPROVED_VERSION_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "PRICE": {
+      "status": "BLOCKED",
+      "sourceClassification": "TEST_EVIDENCE_ONLY",
+      "blockerCode": "PRICE_OWNER_APPROVED_VERSION_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "LOCATION": {
+      "status": "BLOCKED",
+      "sourceClassification": "HISTORICAL_ONLY",
+      "blockerCode": "LOCATION_CURRENT_SOURCE_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "OPENING_HOURS": {
+      "status": "BLOCKED",
+      "sourceClassification": "CONFLICTING_EVIDENCE",
+      "blockerCode": "OPENING_HOURS_CONFLICT",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "STORAGE": {
+      "status": "BLOCKED",
+      "sourceClassification": "TEST_EVIDENCE_ONLY",
+      "blockerCode": "STORAGE_PRODUCT_SAFETY_APPROVAL_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "ALLERGEN": {
+      "status": "BLOCKED",
+      "sourceClassification": "NO_AUTHORITATIVE_SOURCE",
+      "blockerCode": "ALLERGEN_SOURCE_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "WHOLESALE": {
+      "status": "BLOCKED",
+      "sourceClassification": "NO_AUTHORITATIVE_SOURCE",
+      "blockerCode": "WHOLESALE_TERMS_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "ADVANCE_ORDER": {
+      "status": "BLOCKED",
+      "sourceClassification": "NO_AUTHORITATIVE_SOURCE",
+      "blockerCode": "ADVANCE_ORDER_TERMS_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "DELIVERY": {
+      "status": "BLOCKED",
+      "sourceClassification": "TEST_EVIDENCE_ONLY",
+      "blockerCode": "DELIVERY_PRODUCTION_APPROVAL_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    }
+  }
+}
