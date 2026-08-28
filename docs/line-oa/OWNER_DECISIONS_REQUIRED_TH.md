@@ -65,3 +65,9 @@
 43. อนุมัติ production tester allowlist, privacy basis, maintenance window และข้อยอมรับว่าการเปิด webhook/default Rich Menu อาจกระทบลูกค้าจริงหาก LINE จำกัด audience ไม่ได้
 44. อนุมัติ response-mode/auto-response collision plan หลัง read-only Production configuration audit แยกต่างหาก
 45. ให้ final go/no-go หลัง Issue #4/#5/#8 และ preconditions ที่กำหนดปิดครบ; การ review นี้ไม่อนุญาต external Production action
+
+## Owner Decision Pack
+
+ตารางตัวเลือก ผลกระทบ และแบบตอบทีละข้ออยู่ใน `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md`
+
+สถานะ ณ 28 สิงหาคม 2026: `PACK_READY / OWNER_SELECTION_PENDING` — ยังไม่มี Production decision ข้อ 36–45 ใดถูกปิดจากการจัดทำ Pack เพียงอย่างเดียว และ Issues #4, #5, #8 ต้องคงเปิดจนมี decision + implementation/test/UAT evidence ตาม acceptance criteria

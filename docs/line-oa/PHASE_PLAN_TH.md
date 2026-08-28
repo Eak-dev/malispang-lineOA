@@ -84,6 +84,7 @@ Acceptance criteria:
 - Production ไม่ถูกเปิดหรือเปลี่ยนแปลงระหว่าง review
 - ต้องปิด authoritative-data, Reward Card/QR/audit, separate infrastructure, rollback และ Owner approval gates ก่อน external Production action
 - GitHub Issue #5 ต้องคงเปิด; review นี้ไม่ใช่สิทธิ์ deploy หรือเปลี่ยน Production
+- Owner Decision Pack สำหรับ Issues #4/#5/#8: `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md` — พร้อมให้ Owner เลือกทีละข้อ แต่ยังไม่มี Production approval
 
 ## Success targets รอเจ้าของอนุมัติ
 

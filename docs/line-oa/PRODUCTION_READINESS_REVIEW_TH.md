@@ -6,6 +6,8 @@
 
 สถานะ: **NO-GO — ยังไม่พร้อมเปิดใช้กับ Production**
 
+Owner Decision Pack สำหรับปิด decision blockers ของ Issues #4, #5 และ #8 ถูกจัดทำแล้วที่ `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md` แต่ยังไม่มีตัวเลือกใดถือว่าอนุมัติจนกว่า Owner จะตอบพร้อมชื่อ/บทบาทและวันที่ Pack ไม่ใช่สิทธิ์เปลี่ยน Production
+
 ## ขอบเขตและหลักฐาน
 
 การตรวจครั้งนี้อ่านเฉพาะ repository, GitHub Issues และเอกสารสาธารณะของ LINE/Cloudflare ไม่ได้เปิดบัญชี Production `มะลิปัง`, LINE OA Manager, LINE Developers Console หรือ Cloudflare dashboard และไม่ได้ deploy, เพิ่ม secret, สร้าง Reward Card, เปลี่ยน Rich Menu/Webhook หรือส่งข้อความ
