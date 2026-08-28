@@ -123,7 +123,7 @@ describe("deployed Test routing", () => {
     ).toThrow("INVALID_TEST_REWARD_CARD_URL");
     expect(() =>
       validatedTestRewardCardUrl(
-        "https://liff.line.me/test-reward-card?source=production",
+        "https://u.lin.ee/test-reward-card?source=production",
       ),
     ).toThrow("INVALID_TEST_REWARD_CARD_URL");
   });
@@ -188,4 +188,4 @@ describe("deployed Test routing", () => {
 
 const TEST_ASSET_BASE_URL =
   "https://malispang-lineoa-test.eakkachai-dev.workers.dev";
-const TEST_REWARD_CARD_URL = "https://liff.line.me/test-reward-card";
+const TEST_REWARD_CARD_URL = "https://u.lin.ee/test-reward-card";

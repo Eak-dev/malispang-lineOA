@@ -13,7 +13,7 @@ export default defineConfig({
           LINE_CHANNEL_ACCESS_TOKEN: fixtureValue("access-key"),
           LINE_BOT_USER_ID: "U_TEST_ONLY_DESTINATION",
           TEST_ADMIN_KEY: fixtureValue("admin-key"),
-          TEST_REWARD_CARD_URL: "https://liff.line.me/test-reward-card",
+          TEST_REWARD_CARD_URL: "https://u.lin.ee/test-reward-card",
           PUBLIC_ASSET_BASE_URL:
             "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
         },

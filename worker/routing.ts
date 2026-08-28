@@ -353,7 +353,7 @@ export function validatedTestRewardCardUrl(value: string | undefined): string {
   }
   if (
     url.protocol !== "https:" ||
-    url.hostname !== "liff.line.me" ||
+    url.hostname !== "u.lin.ee" ||
     !/^\/[A-Za-z0-9_-]+$/.test(url.pathname) ||
     url.username !== "" ||
     url.password !== "" ||
