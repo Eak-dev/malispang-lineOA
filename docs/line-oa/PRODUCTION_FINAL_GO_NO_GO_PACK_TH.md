@@ -8,6 +8,16 @@
 
 Local implementation, tests, manifests และ runbooks พร้อมสำหรับ review แต่ Loyalty และ customer-response Production ยังเปิดไม่ได้เพราะมี blockers ที่ต้องใช้หลักฐานจริงหรือ read-only Production capture ซึ่ง Codex ห้ามเดาและงานรอบนี้ห้ามเปิด Production
 
+## Conditional execution result — 28 สิงหาคม 2026
+
+Owner อนุมัติ conditional execution จาก frozen commit นี้แล้ว การตรวจ Production แบบ read-only ผ่าน identity/COGS gates แต่พบ mandatory gate failures จึงหยุดก่อน external write และสถานะยัง **NO-GO** ดู `PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md`
+
+- COGS: ปิดด้วย Owner attestation ว่าต้นทุนรวมไม่เกิน 25 บาท โดยไม่บันทึกค่าจริง
+- Rolling expiry: UI แสดง 1 ปีจาก first use แต่ยังไม่ยืนยันว่าเท่ากับวันที่รับบัตรตาม policy
+- ยัง block: native QR 10 นาที, multi-point One Time QR, Voucher 60 วัน
+- บัตร Published เดิมขัด policy เพราะชื่อ main reward ไม่ตรง exact approved, มี additional reward ที่ 30 แต้มและ Reminder 2 สัปดาห์
+- activation/deploy/live UAT/T+monitoring ไม่เริ่ม; before/after state ตรงกัน
+
 ## สิ่งที่พร้อม
 
 - deterministic loyalty policy: 50 บาทสุทธิหลังส่วนลด = 1 แต้มแบบ floor, เป้าหมาย 50 แต้ม/2,500 บาท
@@ -20,18 +30,18 @@ Local implementation, tests, manifests และ runbooks พร้อมสำ�
 
 ## Blocking gates
 
-| Blocker                                   | ผลกระทบ                                        | Fallback ที่เลือก                                |
-| ----------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
-| `COGS_BLOCKER`                            | พิสูจน์ไม่ได้ว่าตุ๊กตาต้นทุนรวม ≤25 บาท        | Loyalty OFF; ไม่สร้างบัตร/เปลี่ยนรางวัล          |
-| `LINE_ROLLING_EXPIRY_BLOCKER`             | ไม่พิสูจน์ rolling 12 เดือนต่อผู้รับ           | ไม่ใช้ fixed/no-expiration แทน; Loyalty OFF      |
-| `LINE_QR_TTL_BLOCKER`                     | ไม่พิสูจน์ native QR 10 นาที                   | ไม่ใช้ printable/manual promise แทน; Loyalty OFF |
-| `LINE_MULTI_POINT_QR_BLOCKER`             | TEST พิสูจน์เพียง 1 แต้ม                       | ไม่ออกหลาย QR ต่อบิล; Loyalty OFF                |
-| `LINE_VOUCHER_EXPIRY_BLOCKER`             | ไม่พิสูจน์ Voucher 60 วัน                      | ไม่ Publish Voucher                              |
-| Authoritative data 9 หมวด                 | ไม่มี current approved Production records ครบ  | ไม่ตอบหมวดนั้น; safe fallback/human review       |
-| Production resource/stable target capture | ไม่ได้เปิด Production ตามข้อห้าม               | ห้าม deploy/connect/rollout                      |
-| Worker Logs 7 วัน                         | ยังไม่ยืนยัน Production plan/cost              | ห้าม activation จน retention gate ผ่าน           |
-| Rollback rehearsal                        | ยังไม่มี isolated Production-shaped resources  | ห้าม activation                                  |
-| Final Owner GO                            | ยังไม่มี approval ต่อ frozen execution package | ห้าม external action                             |
+| Blocker                                   | ผลกระทบ                                               | Fallback ที่เลือก                                |
+| ----------------------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| COGS                                      | `CLOSED_BY_OWNER_ATTESTATION`                         | ไม่บันทึกตัวเลขต้นทุนจริง                        |
+| Rolling expiry                            | `NOT_VERIFIED` — first use อาจไม่เท่ากับวันที่รับบัตร | ไม่เปลี่ยน customer terms เอง                    |
+| `LINE_QR_TTL_BLOCKER`                     | ไม่พิสูจน์ native QR 10 นาที                          | ไม่ใช้ printable/manual promise แทน; Loyalty OFF |
+| `LINE_MULTI_POINT_QR_BLOCKER`             | TEST พิสูจน์เพียง 1 แต้ม                              | ไม่ออกหลาย QR ต่อบิล; Loyalty OFF                |
+| `LINE_VOUCHER_EXPIRY_BLOCKER`             | ไม่พิสูจน์ Voucher 60 วัน                             | ไม่ Publish Voucher                              |
+| Authoritative data 9 หมวด                 | ไม่มี current approved Production records ครบ         | ไม่ตอบหมวดนั้น; safe fallback/human review       |
+| Production resource/stable target capture | ไม่ได้เปิด Production ตามข้อห้าม                      | ห้าม deploy/connect/rollout                      |
+| Worker Logs 7 วัน                         | ยังไม่ยืนยัน Production plan/cost                     | ห้าม activation จน retention gate ผ่าน           |
+| Rollback rehearsal                        | ยังไม่มี isolated Production-shaped resources         | ห้าม activation                                  |
+| Final Owner GO                            | ยังไม่มี approval ต่อ frozen execution package        | ห้าม external action                             |
 
 ## Combined Owner approval inputs
 
@@ -90,13 +100,13 @@ Owner ตรวจ Final Production Go/No-Go Pack ของมะลิปัง
 - Formatting/Prettier: PASS
 - ESLint: PASS
 - TypeScript application + Worker: PASS
-- Node unit/integration/regression tests: 109/109 PASS
+- Node unit/integration/regression tests: 110/110 PASS
 - Worker runtime/Durable Object tests: 8/8 PASS
-- รวม: 117/117 PASS, 0 fail
+- รวม: 118/118 PASS, 0 fail
 - Build, Flex validation และ Rich Menu validation: PASS
 - Production readiness validator: PASS — current expected `NO-GO`, 18 evidence blockers recorded
 - Wrangler types: current; deployment dry-run: PASS เฉพาะ Worker TEST, ไม่มี deploy
-- Secret scan: PASS — 103 files
+- Secret scan: PASS — 104 files
 - Dependency audit: ไม่พบ known vulnerability ระดับที่ตรวจ
 - `git diff --check`: PASS
 

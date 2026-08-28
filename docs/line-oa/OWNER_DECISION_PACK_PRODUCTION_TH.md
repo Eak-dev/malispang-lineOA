@@ -14,10 +14,10 @@
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | OD-01    | A — ทุก 50 บาทจากยอดสุทธิหลังส่วนลด = 1 แต้ม; ปัด `floor(ยอดสุทธิ/50)`                                                                                               | `APPROVED_BASELINE`                                                                                                     |
 | OD-02    | C — 50 แต้ม; ยอดซื้อสะสม 2,500 บาท                                                                                                                                   | `APPROVED_BASELINE`                                                                                                     |
-| OD-03A   | A — ต้นทุนจริงรางวัลไม่เกิน 25 บาท หรือไม่เกิน 1% ของ 2,500 บาท                                                                                                      | `APPROVED_BASELINE`; ต้องยืนยัน COGS ก่อนเปิดจริง                                                                       |
+| OD-03A   | A — ต้นทุนจริงรางวัลไม่เกิน 25 บาท หรือไม่เกิน 1% ของ 2,500 บาท                                                                                                      | `PASS_BY_OWNER_ATTESTATION`; ไม่บันทึกตัวเลขต้นทุนจริง                                                                  |
 | OD-03B   | CUSTOM — `ตุ๊กตามะลิจัง 1 ตัว` เท่านั้น; รางวัลแทนต้องเป็นชื่อที่ Owner อนุมัติใน manifest version ใหม่                                                              | `APPROVED_BASELINE`; ปฏิเสธถ้อยคำกว้าง เช่น “สินค้าไม่เกิน 39 บาท”                                                      |
 | OD-03C   | ยอดสุทธิหลังส่วนลด; 1 Voucher/ใบเสร็จ, ไม่แลกเงินสด/ไม่ stacking/ไม่รับแต้มส่วน Voucher, mark used หลังส่งมอบ; refund ให้ Owner reconcile                            | `APPROVED_SAFE_DEFAULT`                                                                                                 |
-| OD-04A   | CUSTOM — อายุบัตร 12 เดือนนับจากวันที่ลูกค้ารับบัตร                                                                                                                  | `APPROVED_POLICY / TECHNICAL_FEASIBILITY_PENDING`                                                                       |
+| OD-04A   | CUSTOM — อายุบัตร 12 เดือนนับจากวันที่ลูกค้ารับบัตร                                                                                                                  | `NOT_VERIFIED`; UI ใช้ first use แต่ยังไม่ยืนยันว่าเท่ากับวันที่รับบัตร                                                 |
 | OD-04B   | B — Voucher ใช้ได้ 60 วันหลังได้รับ                                                                                                                                  | `APPROVED_BASELINE`                                                                                                     |
 | OD-05A   | A — Welcome bonus 0 แต้ม                                                                                                                                             | `APPROVED_BASELINE`                                                                                                     |
 | OD-05B   | A — ไม่มี reminder ในรอบแรก                                                                                                                                          | `APPROVED_BASELINE`                                                                                                     |
@@ -31,7 +31,7 @@
 | OD-09    | B — Worker logs 7 วัน, reconciliation 90 วัน, config/incident 365 วัน                                                                                                | `APPROVED_BASELINE`; storage/export สำหรับ 90/365 วันต้องออกแบบและอนุมัติต้นทุนก่อนใช้                                  |
 | OD-10    | Structured redacted monitoring ตาม thresholds ใน manifest; duplicate/account/PII/QR variance 1 ครั้งให้ rollback; persistence/LINE 3 ครั้งติด; disable target 5 นาที | `APPROVED_SAFE_DEFAULT`; platform plan/recipients ยังเป็น execution blocker                                             |
 | OD-11    | event-based 30 นาทีช่วงลูกค้าน้อย, Owner หน้างาน, Technical operator execute, Shift lead คุม QR, observe 120 นาที, rollback ภายใน 5 นาที                             | `APPROVED_SAFE_DEFAULT`; stable targets/rehearsal ยังเป็น evidence blocker                                              |
-| OD-12    | Final Pack สรุป `NO-GO` จน evidence blockers ผ่าน แล้ว Owner อนุมัติ frozen execution package ครั้งเดียว                                                             | `FINAL_GO_REQUIRED_AFTER_BLOCKERS`                                                                                      |
+| OD-12    | Owner อนุมัติ conditional execution จาก frozen commit แล้ว แต่ต้องหยุดเมื่อ mandatory gate fail                                                                      | `APPROVAL_RECORDED / EXECUTION_GATE_NO_GO`                                                                              |
 
 ค่าที่อนุมัติข้างต้นเป็น **policy baseline** ไม่ใช่สิทธิ์ implementation หรือ external Production action การสร้างบัตร, deploy, เพิ่ม secret, เชื่อม Rich Menu หรือเปิด Production ยังคง `NO-GO`
 
@@ -491,10 +491,10 @@ Owner baseline ถูกบันทึกใน `PRODUCTION_OWNER_DECISION_RECO
 Local verification วันที่ 28 สิงหาคม 2026:
 
 - Formatting: PASS
-- Node tests: 109/109 PASS
+- Node tests: 110/110 PASS
 - Worker runtime tests: 8/8 PASS โดยไม่โหลด secret จริง
-- รวม automated tests: 117/117 PASS
+- รวม automated tests: 118/118 PASS
 - Production readiness validator: PASS — expected `NO-GO`, 18 blockers recorded
-- Secret scan: PASS — 103 files
+- Secret scan: PASS — 104 files
 - Dependency audit: ไม่พบ known vulnerabilities
 - `git diff --check`: PASS

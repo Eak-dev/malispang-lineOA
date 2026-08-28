@@ -26,12 +26,16 @@
 
 ค้นหา repository และเอกสารที่มีด้วยคำสำคัญเกี่ยวกับ `ตุ๊กตามะลิจัง`, landed cost, COGS, supplier, invoice และต้นทุน พบเพียง policy ceiling/decision documents ไม่พบ invoice, supplier quotation, landed-cost worksheet หรือ Owner/accounting attestation ที่ยืนยันต้นทุนรวมจริง
 
-ผล: `COGS_BLOCKER`
+ผลเดิมจาก repository search: ไม่พบ landed-cost document
 
-- ไม่สร้างตัวเลขประมาณ
-- โปรแกรมแต้มเปิดไม่ได้จนมีหลักฐานว่าต้นทุนรวมจริงของ `ตุ๊กตามะลิจัง 1 ตัว` ไม่เกิน 25 บาท
+ผลล่าสุด 28 สิงหาคม 2026: `COGS_GATE_PASS_BY_OWNER_ATTESTATION`
+
+- Owner ยืนยันโดยตรงว่าต้นทุนรวมจริงของ `ตุ๊กตามะลิจัง 1 ตัว` ไม่เกิน 25 บาท
+- ไม่สร้างหรือบันทึกตัวเลขต้นทุนจริง และไม่ commit เอกสารการเงิน
 - หากหลักฐานเกิน 25 บาท ให้คง `NO-GO`; ห้ามเปลี่ยนรางวัลเอง
 - หลักฐานในอนาคตต้องเก็บเฉพาะ reference/checksum/ผู้อนุมัติใน repository ไม่ commit เอกสารที่มีข้อมูล supplier/การเงินอ่อนไหวหากยังไม่ผ่านการ redaction
+
+COGS gate ที่ผ่านไม่ได้ปิด LINE capability, existing-card conflict หรือ authoritative-data blockers อื่น
 
 ## วิธีเลื่อนสถานะเป็น APPROVED
 

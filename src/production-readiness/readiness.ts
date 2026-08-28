@@ -6,7 +6,8 @@ export type CapabilityStatus = "SUPPORTED" | "NOT_VERIFIED" | "UNSUPPORTED";
 
 export interface ProductionReadinessEvidence {
   readonly rewardLandedCostBaht: number | null;
-  readonly rewardLandedCostEvidenceStatus: "VERIFIED" | "MISSING";
+  readonly rewardLandedCostEvidenceStatus:
+    "VERIFIED" | "OWNER_ATTESTED_AT_OR_BELOW_CAP" | "MISSING";
   readonly lineCapabilities: {
     readonly rollingCardExpiryFromReceipt: CapabilityStatus;
     readonly oneTimeQr: CapabilityStatus;
@@ -18,6 +19,8 @@ export interface ProductionReadinessEvidence {
     Partial<Record<BusinessCategory, "APPROVED" | "BLOCKED">>
   >;
   readonly productionResourcesCaptured: boolean;
+  readonly existingRewardCardPolicyConforms: boolean;
+  readonly existingQrPolicyConforms: boolean;
   readonly sevenDayWorkerLogRetentionReady: boolean;
   readonly rollbackRehearsed: boolean;
   readonly finalOwnerGo: boolean;
@@ -33,6 +36,8 @@ export type ReadinessBlockerCode =
   | "LINE_VOUCHER_EXPIRY_BLOCKER"
   | `AUTHORITATIVE_DATA_BLOCKER_${BusinessCategory}`
   | "PRODUCTION_RESOURCE_CAPTURE_BLOCKER"
+  | "EXISTING_REWARD_CARD_POLICY_BLOCKER"
+  | "EXISTING_QR_POLICY_BLOCKER"
   | "WORKER_LOG_RETENTION_BLOCKER"
   | "ROLLBACK_REHEARSAL_BLOCKER"
   | "FINAL_OWNER_GO_REQUIRED";
@@ -46,11 +51,13 @@ export function evaluateProductionReadiness(
   evidence: ProductionReadinessEvidence,
 ): ProductionReadinessResult {
   const blockers: ReadinessBlockerCode[] = [];
-  if (
-    evidence.rewardLandedCostBaht === null ||
-    evidence.rewardLandedCostEvidenceStatus !== "VERIFIED"
-  ) {
-    blockers.push("COGS_BLOCKER");
+  if (evidence.rewardLandedCostBaht === null) {
+    if (
+      evidence.rewardLandedCostEvidenceStatus !==
+      "OWNER_ATTESTED_AT_OR_BELOW_CAP"
+    ) {
+      blockers.push("COGS_BLOCKER");
+    }
   } else if (
     !Number.isFinite(evidence.rewardLandedCostBaht) ||
     evidence.rewardLandedCostBaht < 0 ||
@@ -58,6 +65,8 @@ export function evaluateProductionReadiness(
       PRODUCTION_LOYALTY_POLICY.maximumRewardLandedCostBaht
   ) {
     blockers.push("COGS_EXCEEDS_LIMIT");
+  } else if (evidence.rewardLandedCostEvidenceStatus === "MISSING") {
+    blockers.push("COGS_BLOCKER");
   }
 
   const capabilityBlockers = [
@@ -87,6 +96,12 @@ export function evaluateProductionReadiness(
   }
   if (!evidence.productionResourcesCaptured) {
     blockers.push("PRODUCTION_RESOURCE_CAPTURE_BLOCKER");
+  }
+  if (!evidence.existingRewardCardPolicyConforms) {
+    blockers.push("EXISTING_REWARD_CARD_POLICY_BLOCKER");
+  }
+  if (!evidence.existingQrPolicyConforms) {
+    blockers.push("EXISTING_QR_POLICY_BLOCKER");
   }
   if (!evidence.sevenDayWorkerLogRetentionReady) {
     blockers.push("WORKER_LOG_RETENTION_BLOCKER");

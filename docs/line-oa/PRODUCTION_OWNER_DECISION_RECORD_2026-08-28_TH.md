@@ -2,11 +2,13 @@
 
 บัญชีเป้าหมายในอนาคต: `มะลิปัง`
 
-สถานะ: `POLICY_BASELINE_APPROVED / IMPLEMENTATION_NOT_AUTHORIZED / PRODUCTION_NO-GO`
+สถานะ: `CONDITIONAL_EXECUTION_APPROVED / READ_ONLY_GATE_NO-GO / ACTIVATION_NOT_STARTED`
 
 ## ขอบเขตการอนุมัติ
 
 Owner อนุมัติค่าตั้งต้นเชิงนโยบายด้านแต้ม รางวัล การออก QR แหล่งข้อมูล บทบาท retention และ rollout ตามเอกสารนี้ การอนุมัตินี้ **ไม่อนุญาต** ให้เปิด Production, สร้าง/แก้ Reward Card, deploy, เพิ่ม secret, เปลี่ยน Webhook/Rich Menu หรือส่งข้อความ การลงมือทำต้องผ่านแผนและ Owner approval รอบสุดท้ายก่อน
+
+Owner อนุมัติ conditional execution จาก frozen commit `5b204f1c7aecc69c76577fea025e40979c73a115` ภายหลัง โดยบังคับให้หยุดเมื่อ gate ใดไม่ผ่าน ผล read-only gate วันที่ 28 สิงหาคม 2026 คือ `NO-GO`: COGS ผ่าน แต่ rolling first-use semantics, QR 10 นาที, multi-point One Time QR, Voucher 60 วัน และ existing Published card policy ไม่ผ่าน จึงไม่มี external write/deploy/UAT ดู `PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md`
 
 ## ค่าที่อนุมัติ
 
@@ -74,8 +76,8 @@ Owner อนุมัติค่าตั้งต้นเชิงนโย�
 
 ## Evidence blockers ที่ safe default ทดแทนไม่ได้
 
-- COGS ตุ๊กตามะลิจัง
-- LINE rolling expiry/10-minute QR/multi-point QR/60-day Voucher capability
+- LINE 10-minute QR/multi-point One Time QR/60-day Voucher capability
+- existing Published card มี reward label/additional reward/Reminder/printable QR ขัด policy
 - authoritative values/sources จริง
 - Production resource/stable rollback capture, named allowlists, platform retention และ rollback rehearsal
 
@@ -84,7 +86,7 @@ Owner อนุมัติค่าตั้งต้นเชิงนโย�
 - อนุมัติครบเป็น baseline: OD-01, OD-02, OD-03A, OD-03B, OD-04B, OD-05A, OD-05B, OD-07A, OD-09
 - อนุมัตินโยบายแต่รอตรวจ technical feasibility: OD-04A, OD-05C, OD-06A
 - อนุมัติ safe defaults แล้วแต่ยังมี execution evidence blockers: OD-03C, OD-06B, OD-06C, OD-07B, OD-08, OD-10, OD-11
-- รอ Owner final approval: OD-12
+- conditional Owner execution approval ได้รับแล้ว แต่ gate result เป็น NO-GO: OD-12
 
 ## ผลต่อ Issues
 

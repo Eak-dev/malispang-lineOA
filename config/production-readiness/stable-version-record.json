@@ -1,16 +1,28 @@
 {
   "schemaVersion": 1,
-  "status": "PENDING_READ_ONLY_PRODUCTION_CAPTURE",
+  "status": "READ_ONLY_PARTIAL_CAPTURE_ACTIVATION_BLOCKED",
   "productionWorkerName": null,
   "stableWorkerVersionReference": null,
   "stableSourceCommit": null,
-  "productionRichMenuName": null,
+  "productionRichMenuName": "RM-1",
   "productionRichMenuImageHash": null,
   "productionRichMenuRollbackTarget": null,
-  "productionResponseSettingsSnapshot": null,
+  "productionResponseSettingsSnapshot": {
+    "chat": "ON",
+    "greeting": "ON",
+    "responseHours": "ON",
+    "duringHours": "MANUAL_CHAT_PLUS_AUTO_RESPONSE",
+    "outsideHours": "AUTO_RESPONSE",
+    "webhook": "OFF",
+    "messagingApi": "DISABLED",
+    "defaultRule": "OFF",
+    "addFriendRule": "OFF",
+    "menuRule": "ON",
+    "facebookAngpaoRule": "ON"
+  },
   "durableStateRollbackStrategy": "FORWARD_COMPATIBLE_SCHEMA_AND_SEPARATE_RECONCILIATION",
-  "capturedAt": null,
-  "capturedByRole": null,
-  "externalReadAuthorized": false,
-  "blockerCode": "PRODUCTION_NOT_OPENED_OR_INSPECTED"
+  "capturedAt": "2026-08-28T17:44:41+07:00",
+  "capturedByRole": "TECHNICAL_OPERATOR_READ_ONLY",
+  "externalReadAuthorized": true,
+  "blockerCode": "NO_STABLE_PRODUCTION_WORKER_AND_POLICY_CONFLICTS_BLOCK_ACTIVATION"
 }

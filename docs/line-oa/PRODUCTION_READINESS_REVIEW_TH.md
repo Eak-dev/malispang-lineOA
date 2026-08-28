@@ -8,6 +8,8 @@
 
 อัปเดตล่าสุด: local fail-closed implementation และ Final Pack อยู่ใน `PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md`; รายงานนี้เป็น baseline review และถูก supersede ด้าน decision/status โดย Final Pack
 
+ผล conditional Production read-only gate ล่าสุดอยู่ใน `PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md`: activation หยุดก่อน external write เพราะ native QR/Voucher evidence และ existing-card policy conflicts ไม่ผ่าน
+
 Owner บันทึก policy baseline แล้วใน `docs/line-oa/PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และ map เข้ากับ OD-01 ถึง OD-12 ใน `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md` แผนที่ต้องอนุมัติรอบสุดท้ายอยู่ใน `docs/line-oa/PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` การอนุมัติ baseline ไม่ใช่สิทธิ์เปลี่ยน Production
 
 ## ขอบเขตและหลักฐาน

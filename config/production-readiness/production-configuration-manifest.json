@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "status": "DRAFT_FAIL_CLOSED_NO_EXTERNAL_RESOURCES_CREATED",
+  "status": "READ_ONLY_GATE_COMPLETE_ACTIVATION_BLOCKED",
   "environment": "PRODUCTION",
   "accountName": "มะลิปัง",
-  "identityEvidence": "PENDING_SEPARATELY_AUTHORIZED_READ_ONLY_CAPTURE",
+  "identityEvidence": "VERIFIED_EXACT_ACCOUNT_NAME_READ_ONLY_2026_08_28",
   "businessManifest": "config/production-readiness/production-business-manifest.json",
   "loyaltyPolicy": {
     "netBahtPerPoint": 50,
@@ -12,7 +12,7 @@
     "qualifyingSpendBaht": 2500,
     "rewardName": "ตุ๊กตามะลิจัง 1 ตัว",
     "maximumLandedCostBaht": 25,
-    "landedCostEvidence": "COGS_BLOCKER",
+    "landedCostEvidence": "OWNER_ATTESTED_AT_OR_BELOW_25_VALUE_NOT_RECORDED",
     "cardValidity": "12_MONTHS_FROM_CUSTOMER_RECEIPT",
     "voucherValidityDays": 60,
     "welcomeBonusPoints": 0,
@@ -23,24 +23,38 @@
     "refundAfterAward": "OWNER_RECONCILIATION_REQUIRED_NO_STAFF_ADJUSTMENT"
   },
   "lineCapabilityEvidence": {
-    "rollingCardExpiryFromReceipt": "NOT_VERIFIED",
+    "rollingCardExpiryFromReceipt": "NOT_VERIFIED_SEMANTIC_FIRST_USE_VS_CARD_RECEIPT",
     "oneTimeQr": "SUPPORTED",
     "tenMinuteQrExpiry": "NOT_VERIFIED",
     "multiPointOneTimeQr": "NOT_VERIFIED",
     "sixtyDayVoucherExpiry": "NOT_VERIFIED"
   },
   "resources": {
-    "lineChannel": "NOT_CREATED_NOT_READ",
+    "lineChannel": "MESSAGING_API_DISABLED",
     "worker": "NOT_CREATED_NOT_READ",
     "stateNamespace": "NOT_CREATED_NOT_READ",
-    "rewardCard": "NOT_CREATED_NOT_READ",
-    "richMenu": "NOT_CREATED_NOT_READ",
-    "webhook": "NOT_CONFIGURED_NOT_READ"
+    "rewardCard": "EXISTING_PUBLISHED_POLICY_CONFLICT",
+    "richMenu": "CURRENT_RM_1_ACTIVE_UNCHANGED",
+    "webhook": "OFF"
+  },
+  "existingRewardCardReadOnlySnapshot": {
+    "name": "บัตรสะสมแต้ม มะลิปัง",
+    "status": "PUBLISHED",
+    "goalPoints": 50,
+    "mainReward": "BLOCKER_LABEL_IS_ตุ๊กตามะลิปัง_1_ตัว_NOT_APPROVED_ตุ๊กตามะลิจัง_1_ตัว",
+    "additionalReward": "BLOCKER_PRESENT_AT_30_POINTS_COOKIE",
+    "expiry": "ONE_YEAR_FROM_FIRST_USE",
+    "reminder": "BLOCKER_TWO_WEEKS_NOT_NONE",
+    "welcomeBonusPoints": 0,
+    "cooldown": "NONE",
+    "existingQr": "PRINTABLE_ONE_POINT_NON_EXPIRING_POLICY_CONFLICT"
   },
   "safety": {
     "testResourceReuse": false,
     "productionCustomerDataRequired": false,
     "defaultBehavior": "NO_REPLY_OR_HUMAN_REVIEW",
-    "externalActionAuthorized": false
+    "conditionalExecutionAuthorizedByOwner": true,
+    "activationAllowed": false,
+    "externalWritePerformed": false
   }
 }

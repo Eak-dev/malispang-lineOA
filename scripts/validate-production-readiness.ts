@@ -69,16 +69,20 @@ if (
 }
 if (
   !isRecord(stableVersion) ||
-  stableVersion.status !== "PENDING_READ_ONLY_PRODUCTION_CAPTURE" ||
-  stableVersion.externalReadAuthorized !== false
+  stableVersion.status !== "READ_ONLY_PARTIAL_CAPTURE_ACTIVATION_BLOCKED" ||
+  stableVersion.externalReadAuthorized !== true ||
+  stableVersion.productionRichMenuName !== "RM-1"
 ) {
   throw new Error("Stable version record must remain fail closed");
 }
 if (
   !isRecord(configManifest) ||
-  !isRecord(configManifest.lineCapabilityEvidence)
+  !isRecord(configManifest.lineCapabilityEvidence) ||
+  !isRecord(configManifest.safety) ||
+  configManifest.safety.activationAllowed !== false ||
+  configManifest.safety.externalWritePerformed !== false
 ) {
-  throw new Error("LINE capability evidence is missing");
+  throw new Error("LINE capability or activation safety evidence is missing");
 }
 
 const categories = Object.fromEntries(
@@ -86,7 +90,7 @@ const categories = Object.fromEntries(
 );
 const result = evaluateProductionReadiness({
   rewardLandedCostBaht: null,
-  rewardLandedCostEvidenceStatus: "MISSING",
+  rewardLandedCostEvidenceStatus: "OWNER_ATTESTED_AT_OR_BELOW_CAP",
   lineCapabilities: {
     rollingCardExpiryFromReceipt: "NOT_VERIFIED",
     oneTimeQr: "SUPPORTED",
@@ -96,12 +100,20 @@ const result = evaluateProductionReadiness({
   },
   authoritativeCategories: categories,
   productionResourcesCaptured: false,
+  existingRewardCardPolicyConforms: false,
+  existingQrPolicyConforms: false,
   sevenDayWorkerLogRetentionReady: false,
   rollbackRehearsed: false,
-  finalOwnerGo: false,
+  finalOwnerGo: true,
 });
-if (result.decision !== "NO_GO" || !result.blockers.includes("COGS_BLOCKER")) {
-  throw new Error("Current package must remain NO_GO with COGS blocker");
+if (
+  result.decision !== "NO_GO" ||
+  result.blockers.includes("COGS_BLOCKER") ||
+  !result.blockers.includes("LINE_QR_TTL_BLOCKER")
+) {
+  throw new Error(
+    "Current package must remain NO_GO after conditional execution gates",
+  );
 }
 console.log(
   `Production readiness validation passed: expected NO_GO, ${result.blockers.length} blockers recorded`,

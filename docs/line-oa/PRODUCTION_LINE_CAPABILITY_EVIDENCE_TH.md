@@ -2,19 +2,19 @@
 
 ตรวจเมื่อ: 28 สิงหาคม 2026 (Asia/Bangkok)
 
-สถานะ: `READ_ONLY_EVIDENCE_REVIEW / LOYALTY_PARTIAL_NO-GO`
+สถานะ: `PRODUCTION_READ_ONLY_GATE_COMPLETE / LOYALTY_NO-GO`
 
 การตรวจนี้ใช้เอกสารทางการ LINE และหลักฐาน TEST ใน repository เท่านั้น ไม่ได้เปิดบัญชี Production `มะลิปัง`
 
 ## ผลตรวจ
 
-| ความสามารถที่ต้องใช้                  | เอกสารทางการ                                                                                                            | หลักฐาน `มะลิปัง TEST`                            | ผลตัดสิน Production                          |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------- |
-| One Time QR                           | LINE ระบุว่าแสดง One Time QR ผ่านแอป Manager และ QR ชนิดนี้พิมพ์ไม่ได้                                                  | Owner สแกน QR TEST และแต้มเพิ่ม 1 สำเร็จ          | `SUPPORTED` เฉพาะการมี One Time QR           |
-| QR อายุ 10 นาที                       | หน้าช่วยเหลือที่ตรวจไม่ระบุการตั้ง TTL ระดับนาที                                                                        | QR UAT ที่บันทึกมี expiry วันถัดไป ไม่ใช่ 10 นาที | `NOT_VERIFIED / LINE_QR_TTL_BLOCKER`         |
-| หลายแต้มใน One Time QR เดียว          | หน้าช่วยเหลือที่ตรวจไม่ระบุ point value ต่อ One Time QR                                                                 | TEST พิสูจน์เพียง 1 แต้ม                          | `NOT_VERIFIED / LINE_MULTI_POINT_QR_BLOCKER` |
-| อายุบัตร 12 เดือนนับจากวันรับรายบุคคล | LINE ระบุเพียงว่าบัตรมีแบบหมดอายุ/ไม่หมดอายุ และการแก้บัตรที่ผู้ใช้รับแล้วมีข้อจำกัด ไม่ยืนยัน rolling expiry ต่อผู้รับ | TEST ใช้ `No expiration`                          | `NOT_VERIFIED / LINE_ROLLING_EXPIRY_BLOCKER` |
-| Voucher อายุ 60 วันหลังได้รับ         | เอกสารที่ตรวจไม่ยืนยันวิธีตั้ง rolling Voucher expiry                                                                   | TEST Voucher ไม่หมดอายุ                           | `NOT_VERIFIED / LINE_VOUCHER_EXPIRY_BLOCKER` |
+| ความสามารถที่ต้องใช้                  | เอกสารทางการ                                                                                                     | หลักฐาน `มะลิปัง TEST`                            | ผลตัดสิน Production                          |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------- |
+| One Time QR                           | LINE ระบุว่าแสดง One Time QR ผ่านแอป Manager และ QR ชนิดนี้พิมพ์ไม่ได้                                           | Owner สแกน QR TEST และแต้มเพิ่ม 1 สำเร็จ          | `SUPPORTED` เฉพาะการมี One Time QR           |
+| QR อายุ 10 นาที                       | หน้าช่วยเหลือที่ตรวจไม่ระบุการตั้ง TTL ระดับนาที                                                                 | QR UAT ที่บันทึกมี expiry วันถัดไป ไม่ใช่ 10 นาที | `NOT_VERIFIED / LINE_QR_TTL_BLOCKER`         |
+| หลายแต้มใน One Time QR เดียว          | หน้าช่วยเหลือที่ตรวจไม่ระบุ point value ต่อ One Time QR                                                          | TEST พิสูจน์เพียง 1 แต้ม                          | `NOT_VERIFIED / LINE_MULTI_POINT_QR_BLOCKER` |
+| อายุบัตร 12 เดือนนับจากวันรับรายบุคคล | Production Published card แสดง `From date first used: 1 year` แต่ไม่ยืนยันว่า first use เท่ากับวันที่รับบัตรเสมอ | TEST ใช้ `No expiration`                          | `NOT_VERIFIED / LINE_ROLLING_EXPIRY_BLOCKER` |
+| Voucher อายุ 60 วันหลังได้รับ         | เอกสารที่ตรวจไม่ยืนยันวิธีตั้ง rolling Voucher expiry                                                            | TEST Voucher ไม่หมดอายุ                           | `NOT_VERIFIED / LINE_VOUCHER_EXPIRY_BLOCKER` |
 
 แหล่งหลัก:
 
@@ -30,6 +30,15 @@
 4. ห้ามแปลง rolling 12 เดือนเป็นวันหมดอายุคงที่หรือ `No expiration` โดยพลการ
 5. ห้าม Publish Production Reward Card จน read-only Production UI review ยืนยันทั้ง rolling card expiry, 10-minute QR, multi-point QR และ 60-day Voucher expiry
 6. หาก LINE ไม่รองรับข้อใดจริง ให้คง Loyalty `NO-GO` และนำตัวเลือกที่เปลี่ยน customer terms กลับให้ Owner อนุมัติ; ระบบตอบข้อความส่วนที่ไม่ใช่ loyalty สามารถพิจารณาแยกได้เมื่อผ่าน gate ของตน
+
+## Production read-only gate — 28 สิงหาคม 2026
+
+- ยืนยันบัญชี `มะลิปัง` ก่อนทุก inspection
+- UI การสร้าง printable QR รองรับแต้ม 1–50 แต่ไม่ใช่หลักฐานว่า One Time QR รองรับ multi-point แบบเดียวกัน
+- printable QR รองรับ non-expiring หรือ fixed date; ไม่พบ TTL ระดับ 10 นาที
+- บัตร Published เดิมมี expiry semantic gap, additional reward ที่ 30 แต้ม และ Reminder 2 สัปดาห์ จึงไม่ตรง approved policy
+- ไม่เปิด Users/Usage history, ไม่สร้าง/สแกน QR และไม่บันทึกข้อมูลลูกค้า
+- ผลรวม: `NO-GO`; ดู `PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md`
 
 ## ข้อจำกัดการ rollback ของ LINE
 

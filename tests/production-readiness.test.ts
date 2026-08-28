@@ -214,20 +214,45 @@ describe("Final Production readiness decision", () => {
     expect(result.decision).toBe("NO_GO");
     expect(result.blockers).toEqual(
       expect.arrayContaining([
-        "COGS_BLOCKER",
-        "LINE_ROLLING_EXPIRY_BLOCKER",
         "LINE_QR_TTL_BLOCKER",
         "LINE_MULTI_POINT_QR_BLOCKER",
         "LINE_VOUCHER_EXPIRY_BLOCKER",
         "AUTHORITATIVE_DATA_BLOCKER_MENU",
         "AUTHORITATIVE_DATA_BLOCKER_ALLERGEN",
         "PRODUCTION_RESOURCE_CAPTURE_BLOCKER",
+        "EXISTING_REWARD_CARD_POLICY_BLOCKER",
+        "EXISTING_QR_POLICY_BLOCKER",
         "WORKER_LOG_RETENTION_BLOCKER",
         "ROLLBACK_REHEARSAL_BLOCKER",
-        "FINAL_OWNER_GO_REQUIRED",
       ]),
     );
+    expect(result.blockers).not.toContain("COGS_BLOCKER");
+    expect(result.blockers).toContain("LINE_ROLLING_EXPIRY_BLOCKER");
     expect(result.blockers).not.toContain("LINE_ONE_TIME_QR_BLOCKER");
+  });
+
+  it("accepts the Owner landed-cost ceiling attestation without inventing a value", () => {
+    const result = evaluateProductionReadiness({
+      ...currentEvidence(),
+      authoritativeCategories: Object.fromEntries(
+        REQUIRED_BUSINESS_CATEGORIES.map((category) => [category, "APPROVED"]),
+      ),
+      lineCapabilities: {
+        rollingCardExpiryFromReceipt: "SUPPORTED",
+        oneTimeQr: "SUPPORTED",
+        tenMinuteQrExpiry: "SUPPORTED",
+        multiPointOneTimeQr: "SUPPORTED",
+        sixtyDayVoucherExpiry: "SUPPORTED",
+      },
+      productionResourcesCaptured: true,
+      existingRewardCardPolicyConforms: true,
+      existingQrPolicyConforms: true,
+      sevenDayWorkerLogRetentionReady: true,
+      rollbackRehearsed: true,
+      finalOwnerGo: true,
+    });
+    expect(result.decision).toBe("GO");
+    expect(result.blockers).not.toContain("COGS_BLOCKER");
   });
 
   it("blocks a reward landed cost above 25 baht without inventing a value", () => {
@@ -258,6 +283,8 @@ describe("Final Production readiness decision", () => {
         },
         authoritativeCategories: categories,
         productionResourcesCaptured: true,
+        existingRewardCardPolicyConforms: true,
+        existingQrPolicyConforms: true,
         sevenDayWorkerLogRetentionReady: true,
         rollbackRehearsed: true,
         finalOwnerGo: true,
@@ -269,7 +296,7 @@ describe("Final Production readiness decision", () => {
 function currentEvidence(): ProductionReadinessEvidence {
   return {
     rewardLandedCostBaht: null,
-    rewardLandedCostEvidenceStatus: "MISSING",
+    rewardLandedCostEvidenceStatus: "OWNER_ATTESTED_AT_OR_BELOW_CAP",
     lineCapabilities: {
       rollingCardExpiryFromReceipt: "NOT_VERIFIED",
       oneTimeQr: "SUPPORTED",
@@ -281,9 +308,11 @@ function currentEvidence(): ProductionReadinessEvidence {
       REQUIRED_BUSINESS_CATEGORIES.map((category) => [category, "BLOCKED"]),
     ),
     productionResourcesCaptured: false,
+    existingRewardCardPolicyConforms: false,
+    existingQrPolicyConforms: false,
     sevenDayWorkerLogRetentionReady: false,
     rollbackRehearsed: false,
-    finalOwnerGo: false,
+    finalOwnerGo: true,
   };
 }
 

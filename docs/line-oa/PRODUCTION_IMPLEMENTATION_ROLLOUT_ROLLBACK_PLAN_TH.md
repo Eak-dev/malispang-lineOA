@@ -6,6 +6,8 @@
 
 แผนนี้แปลง Owner baseline จาก `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` เป็น local fail-closed implementation, acceptance tests และลำดับ external execution ที่ตรวจสอบ/ย้อนกลับได้ Final decision และ combined approval อยู่ใน `PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md` ยังไม่ใช่สิทธิ์เปิด Production, deploy, สร้าง resource/secret/Reward Card หรือเชื่อม Rich Menu
 
+อัปเดต execution gate 28 สิงหาคม 2026: Owner อนุมัติ frozen package แบบมีเงื่อนไขแล้ว แต่ read-only gate พบ QR/Voucher capability และ existing-card policy conflicts จึงหยุดก่อน external write ผลอยู่ใน `PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md` ขั้น activation ด้านล่างยังไม่ถูกดำเนินการ
+
 ## หลักแยก TEST กับ Production
 
 - สร้าง Production Channel, Worker, state namespace, Reward Card, URL และ encrypted secrets แยกจาก TEST ทุกชิ้น; ห้าม copy/reuse TEST state หรือ credential
@@ -138,11 +140,11 @@ Proposed maximum decision-to-disable-automation: 5 นาที; Owner ยัง
 
 ## Evidence blockers ก่อน combined Production approval
 
-1. ยืนยัน COGS ตุ๊กตามะลิจังไม่เกิน 25 บาทด้วยหลักฐาน
-2. ยืนยัน LINE rolling expiry/10-minute QR/multi-point QR/60-day Voucher capability แบบ read-only
+1. COGS ผ่านด้วย Owner attestation; ไม่บันทึกตัวเลขจริง
+2. ยังต้องยืนยัน first-use เท่ากับ card receipt ตาม policy, 10-minute QR, multi-point One Time QR และ 60-day Voucher capability
 3. authoritative values/sources ที่ยังขาดใน OD-07B
 4. named allowlists/backup/auditor และ Production plan ที่รองรับ retention
-5. stable targets, Production-shaped rollback rehearsal และ resource identity capture
+5. stable Worker target, Production-shaped rollback rehearsal และ safe migration plan สำหรับ existing Published card
 
 ## ข้อความอนุมัติขั้นถัดไป
 

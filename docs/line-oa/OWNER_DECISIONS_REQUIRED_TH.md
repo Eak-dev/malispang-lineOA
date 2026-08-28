@@ -55,8 +55,8 @@
 
 ## Production-readiness decisions — เพิ่มจาก read-only review 28 สิงหาคม 2026
 
-36. **POLICY COMPLETE / EVIDENCE BLOCKED 28 สิงหาคม 2026:** Owner อนุมัติ Production baseline และ Codex เลือก safe Voucher/refund defaults แล้ว; ยังมี `COGS_BLOCKER`, LINE capability blockers และ final external GO
-37. **POLICY COMPLETE / CAPABILITY BLOCKED 28 สิงหาคม 2026:** One Time QR ได้หลักฐาน, แต่ rolling expiry, QR 10 นาที, multi-point QR และ Voucher 60 วันยังไม่ verified; หลังวัน 30 คง Owner/Shift lead และ refund ให้ Owner reconcile
+36. **COGS GATE PASS 28 สิงหาคม 2026:** Owner ยืนยัน landed cost รวมไม่เกิน 25 บาทโดยไม่บันทึกค่าจริง; COGS blocker ปิด แต่ไม่ปิด capability/config blockers
+37. **PARTIAL CAPABILITY PASS / ACTIVATION BLOCKED 28 สิงหาคม 2026:** One Time QR มีหลักฐาน; rolling first-use semantics, QR 10 นาที, multi-point One Time QR และ Voucher 60 วันยังไม่ verified; หลังวัน 30 คง Owner/Shift lead และ refund ให้ Owner reconcile
 38. **DESIGN COMPLETE / PLATFORM BLOCKED 28 สิงหาคม 2026:** retention 7/90/365 และ names-only secret/role/monitoring manifests พร้อม; ยังรอ Production plan/storage/access identities
 39. อนุมัติ Production Worker/Channel/Durable Object/secrets ที่แยกจาก TEST และชื่อ encrypted secret สำหรับ Production Reward Card URL
 40. **SCHEMA COMPLETE / DATA BLOCKED 28 สิงหาคม 2026:** versioned manifest และ approved-only fail-closed lookup พร้อม; 9 หมวด customer-facing ถูก classify `BLOCKED` จนมี exact authoritative records
@@ -64,12 +64,12 @@
 42. **DESIGN COMPLETE / IDENTITY BLOCKED 28 สิงหาคม 2026:** roles, least privilege, thresholds, 5-minute rollback target และ incident runbook พร้อม; named allowlists/backup/auditor ยังรอ evidence
 43. อนุมัติ production tester allowlist, privacy basis, maintenance window และข้อยอมรับว่าการเปิด webhook/default Rich Menu อาจกระทบลูกค้าจริงหาก LINE จำกัด audience ไม่ได้
 44. อนุมัติ response-mode/auto-response collision plan หลัง read-only Production configuration audit แยกต่างหาก
-45. **FINAL PACK NO-GO:** event-based rollout 30 นาที + observation 120 นาที + rollback 5 นาทีถูกกำหนดแล้ว แต่ยังรอ blockers/stable capture/rehearsal และ combined Owner GO; ไม่มี external Production action
+45. **CONDITIONAL APPROVAL RECEIVED / EXECUTION GATE NO-GO:** Owner อนุมัติ frozen package แล้ว แต่ read-only Production gate พบ native capability และ existing-card policy conflicts จึงหยุดก่อน external write; ไม่มี activation/deploy/UAT
 
 ## Owner Decision Pack
 
 ตารางตัวเลือก ผลกระทบ และแบบตอบทีละข้ออยู่ใน `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md`
 
-สถานะ ณ 28 สิงหาคม 2026: `LOCAL_READINESS_PACKAGE_COMPLETE / EVIDENCE_BLOCKERS_REMAIN / PRODUCTION_NO-GO` — ดู decision record และ proposed plan ใน `PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md` และ `PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md` Issues #4, #5, #8 ต้องคงเปิดจน evidence + implementation/test/UAT acceptance criteria ผ่านจริง
+สถานะ ณ 28 สิงหาคม 2026: `PRODUCTION_READ_ONLY_GATE_COMPLETE / ACTIVATION_NOT_STARTED / NO-GO` — ดู `PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md` Issues #4, #5, #8 ต้องคงเปิดจน evidence + implementation/test/UAT acceptance criteria ผ่านจริง
 
 Final status/combined approval: `docs/line-oa/PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md` ไม่มีคำถามย่อยค้าง เหลือเฉพาะ evidence blockers ที่ safe default ทดแทนไม่ได้

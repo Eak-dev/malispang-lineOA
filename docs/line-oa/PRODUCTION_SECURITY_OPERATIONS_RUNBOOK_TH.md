@@ -74,4 +74,4 @@ Cloudflare Workers Rollbacks documentation (ตรวจ 28 สิงหาค�
 - Executor: Technical operator; QR/reconciliation: Shift lead; STOP authority: Owner
 - Checkpoints: T-30, T+0, T+5, T+15, T+30; observation ต่อ 120 นาที
 - ไม่มีวัน/เวลา calendar ใน package เพราะยังไม่อนุญาต Production action; Owner final approval ต้องระบุหรือยืนยัน event-based window นี้
-- Stable Worker/Rich Menu/response setting targets ยังเป็น `PENDING_READ_ONLY_PRODUCTION_CAPTURE`; ถ้า capture ไม่ครบห้ามเริ่ม
+- Response/Rich Menu before-state capture แล้ว แต่ stable Production Worker ยังไม่มีเพราะ Messaging API Disabled; ถ้า stable targets/rehearsal ไม่ครบห้ามเริ่ม

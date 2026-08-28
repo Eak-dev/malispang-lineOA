@@ -78,17 +78,18 @@ Acceptance criteria:
 
 ## Phase 7 — Production readiness และ controlled rollout
 
-สถานะ ณ 28 สิงหาคม 2026: **LOCAL READINESS PACKAGE COMPLETE / PRODUCTION NO-GO**
+สถานะ ณ 28 สิงหาคม 2026: **PRODUCTION READ-ONLY GATE COMPLETE / ACTIVATION STOPPED / NO-GO**
 
 - รายงานหลัก: `docs/line-oa/PRODUCTION_READINESS_REVIEW_TH.md`
-- Production ไม่ถูกเปิดหรือเปลี่ยนแปลงระหว่าง review
+- Production ถูกเปิดเฉพาะ read-only conditional gate หลัง Owner อนุมัติ; before/after state ตรงกันและไม่มีการเปลี่ยนแปลง
 - ต้องปิด authoritative-data, Reward Card/QR/audit, separate infrastructure, rollback และ Owner approval gates ก่อน external Production action
 - GitHub Issue #5 ต้องคงเปิด; review นี้ไม่ใช่สิทธิ์ deploy หรือเปลี่ยน Production
 - Owner Decision Pack สำหรับ Issues #4/#5/#8: `docs/line-oa/OWNER_DECISION_PACK_PRODUCTION_TH.md`
 - Owner baseline record: `docs/line-oa/PRODUCTION_OWNER_DECISION_RECORD_2026-08-28_TH.md`
 - Proposed implementation/rollout/rollback: `docs/line-oa/PRODUCTION_IMPLEMENTATION_ROLLOUT_ROLLBACK_PLAN_TH.md`
 - Final Go/No-Go Pack: `docs/line-oa/PRODUCTION_FINAL_GO_NO_GO_PACK_TH.md`
-- local fail-closed policy/manifest/tests พร้อม แต่ COGS, LINE capabilities, authoritative data และ Production capture/rehearsal ยัง block; Issues #4/#5/#8 คงเปิด
+- Conditional execution result: `docs/line-oa/PRODUCTION_EXECUTION_GATE_RESULT_2026-08-28_TH.md`
+- local fail-closed policy/manifest/tests พร้อม; COGS ผ่านแล้ว แต่ rolling expiry semantics, QR/Voucher capabilities, existing-card conflicts, authoritative data และ Production Worker/retention/rehearsal ยัง block; Issues #4/#5/#8 คงเปิด
 
 ## Success targets รอเจ้าของอนุมัติ
 
