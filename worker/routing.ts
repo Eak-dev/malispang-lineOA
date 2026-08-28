@@ -18,8 +18,8 @@ export const MENU_AVAILABILITY_NOTICE =
 export const DELIVERY_UNAVAILABLE_MESSAGE =
   "ขณะนี้ร้านมะลิปังยังไม่มีบริการ Delivery นะคะ หากเปิดให้บริการแล้ว ทางร้านจะแจ้งให้ทราบผ่าน LINE นี้ค่ะ 😊";
 
-export const REWARD_CARD_PENDING_MESSAGE =
-  "บัตรสะสมแต้มสำหรับมะลิปัง TEST ยังไม่เปิดใช้งานค่ะ กติกาที่ Owner ยืนยันคือ ซื้อครบ 50 บาท รับ 1 แต้ม แต่ยังต้องกำหนดของรางวัลและเงื่อนไขก่อนเผยแพร่นะคะ";
+export const REWARD_CARD_ACTIVE_MESSAGE =
+  "บัตรแต้ม TEST เปิดให้ทดสอบแล้วค่ะ\nซื้อครบ 50 บาท รับ 1 แต้ม\nใช้เฉพาะบัญชีมะลิปัง TEST และรางวัลไม่มีมูลค่าจริงนะคะ";
 
 export type ReplyKind =
   | "NONE"
@@ -71,6 +71,20 @@ export type LineReplyMessage =
       readonly type: "image";
       readonly originalContentUrl: string;
       readonly previewImageUrl: string;
+      readonly quickReply?: LineQuickReply;
+    }
+  | {
+      readonly type: "template";
+      readonly altText: string;
+      readonly template: {
+        readonly type: "buttons";
+        readonly text: string;
+        readonly actions: readonly {
+          readonly type: "uri";
+          readonly label: string;
+          readonly uri: string;
+        }[];
+      };
       readonly quickReply?: LineQuickReply;
     };
 
@@ -206,7 +220,10 @@ export function classifyPostback(data: string): RouteDecision {
   );
 }
 
-export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
+export function replyMessage(
+  kind: ReplyKind,
+  testRewardCardUrl?: string,
+): LineReplyMessage | undefined {
   if (kind === "NONE") return undefined;
   if (kind === "SAFE_FALLBACK" || kind === "WHOLESALE") {
     return withStaffQuickReply({ type: "text", text: SAFE_FALLBACK });
@@ -261,10 +278,7 @@ export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
     });
   }
   if (kind === "REWARDS") {
-    return withStaffQuickReply({
-      type: "text",
-      text: REWARD_CARD_PENDING_MESSAGE,
-    });
+    return rewardCardMessage(validatedTestRewardCardUrl(testRewardCardUrl));
   }
   return withStaffQuickReply({
     type: "text",
@@ -275,9 +289,10 @@ export function replyMessage(kind: ReplyKind): LineReplyMessage | undefined {
 export function replyMessages(
   kind: ReplyKind,
   publicAssetBaseUrl: string,
+  testRewardCardUrl: string,
 ): readonly LineReplyMessage[] {
   if (kind !== "MENU") {
-    const message = replyMessage(kind);
+    const message = replyMessage(kind, testRewardCardUrl);
     return message ? [message] : [];
   }
 
@@ -287,6 +302,24 @@ export function replyMessages(
     imageMessage(`${baseUrl}/menu/chiffon-cookie-menu.jpeg`),
     withStaffQuickReply({ type: "text", text: MENU_AVAILABILITY_NOTICE }),
   ];
+}
+
+function rewardCardMessage(url: string): LineReplyMessage {
+  return withStaffQuickReply({
+    type: "template",
+    altText: "เปิดบัตรสะสมแต้ม มะลิปัง TEST",
+    template: {
+      type: "buttons",
+      text: REWARD_CARD_ACTIVE_MESSAGE,
+      actions: [
+        {
+          type: "uri",
+          label: "เปิดบัตรสะสมแต้ม",
+          uri: url,
+        },
+      ],
+    },
+  });
 }
 
 function imageMessage(url: string): LineReplyMessage {
@@ -304,6 +337,30 @@ function validatedTestAssetBaseUrl(value: string): string {
     url.hash !== ""
   ) {
     throw new Error("INVALID_TEST_ASSET_BASE_URL");
+  }
+  return normalized;
+}
+
+export function validatedTestRewardCardUrl(value: string | undefined): string {
+  if (typeof value !== "string")
+    throw new Error("INVALID_TEST_REWARD_CARD_URL");
+  const normalized = value.trim();
+  let url: URL;
+  try {
+    url = new URL(normalized);
+  } catch {
+    throw new Error("INVALID_TEST_REWARD_CARD_URL");
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "liff.line.me" ||
+    !/^\/[A-Za-z0-9_-]+$/.test(url.pathname) ||
+    url.username !== "" ||
+    url.password !== "" ||
+    url.search !== "" ||
+    url.hash !== ""
+  ) {
+    throw new Error("INVALID_TEST_REWARD_CARD_URL");
   }
   return normalized;
 }

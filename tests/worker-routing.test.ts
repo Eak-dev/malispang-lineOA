@@ -4,7 +4,7 @@ import {
   DELIVERY_UNAVAILABLE_MESSAGE,
   HANDOFF_ACKNOWLEDGEMENT,
   MENU_AVAILABILITY_NOTICE,
-  REWARD_CARD_PENDING_MESSAGE,
+  REWARD_CARD_ACTIVE_MESSAGE,
   SAFE_FALLBACK,
   SLIP_ACKNOWLEDGEMENT,
   STAFF_QUICK_REPLY,
@@ -12,6 +12,7 @@ import {
   classifyText,
   replyMessage,
   replyMessages,
+  validatedTestRewardCardUrl,
 } from "../worker/routing.js";
 
 describe("deployed Test routing", () => {
@@ -88,14 +89,46 @@ describe("deployed Test routing", () => {
     });
   });
 
-  it("uses the exact fail-closed reward and unavailable Delivery messages", () => {
-    expect(replyMessage("REWARDS")).toEqual({
-      type: "text",
-      text: REWARD_CARD_PENDING_MESSAGE,
+  it("uses only the encrypted Test reward-card URL in an explicit button", () => {
+    expect(replyMessage("REWARDS", TEST_REWARD_CARD_URL)).toEqual({
+      type: "template",
+      altText: "เปิดบัตรสะสมแต้ม มะลิปัง TEST",
+      template: {
+        type: "buttons",
+        text: REWARD_CARD_ACTIVE_MESSAGE,
+        actions: [
+          {
+            type: "uri",
+            label: "เปิดบัตรสะสมแต้ม",
+            uri: TEST_REWARD_CARD_URL,
+          },
+        ],
+      },
       quickReply: STAFF_QUICK_REPLY,
     });
-    expect(REWARD_CARD_PENDING_MESSAGE).toContain("ซื้อครบ 50 บาท รับ 1 แต้ม");
-    expect(REWARD_CARD_PENDING_MESSAGE).not.toContain("Production");
+    expect(REWARD_CARD_ACTIVE_MESSAGE).toContain("ซื้อครบ 50 บาท รับ 1 แต้ม");
+    expect(REWARD_CARD_ACTIVE_MESSAGE).toContain("มะลิปัง TEST");
+    expect(REWARD_CARD_ACTIVE_MESSAGE).not.toContain("Production");
+  });
+
+  it("fails closed for a missing, malformed, or non-LINE reward-card URL", () => {
+    expect(() => replyMessage("REWARDS")).toThrow(
+      "INVALID_TEST_REWARD_CARD_URL",
+    );
+    expect(() => validatedTestRewardCardUrl("not-a-url")).toThrow(
+      "INVALID_TEST_REWARD_CARD_URL",
+    );
+    expect(() =>
+      validatedTestRewardCardUrl("https://example.com/reward"),
+    ).toThrow("INVALID_TEST_REWARD_CARD_URL");
+    expect(() =>
+      validatedTestRewardCardUrl(
+        "https://liff.line.me/test-reward-card?source=production",
+      ),
+    ).toThrow("INVALID_TEST_REWARD_CARD_URL");
+  });
+
+  it("uses the exact unavailable Delivery message", () => {
     expect(replyMessage("DELIVERY")).toEqual({
       type: "text",
       text: DELIVERY_UNAVAILABLE_MESSAGE,
@@ -105,9 +138,10 @@ describe("deployed Test routing", () => {
   });
 
   it("adds one temporary staff quick reply to bot answers but not handoff replies", () => {
-    expect(replyMessages("MENU", TEST_ASSET_BASE_URL)[2]?.quickReply).toEqual(
-      STAFF_QUICK_REPLY,
-    );
+    expect(
+      replyMessages("MENU", TEST_ASSET_BASE_URL, TEST_REWARD_CARD_URL)[2]
+        ?.quickReply,
+    ).toEqual(STAFF_QUICK_REPLY);
     expect(STAFF_QUICK_REPLY.items).toHaveLength(1);
     expect(STAFF_QUICK_REPLY.items[0]?.action).toMatchObject({
       type: "postback",
@@ -119,7 +153,11 @@ describe("deployed Test routing", () => {
   });
 
   it("returns the two approved menu images and a staff handoff option", () => {
-    const messages = replyMessages("MENU", TEST_ASSET_BASE_URL);
+    const messages = replyMessages(
+      "MENU",
+      TEST_ASSET_BASE_URL,
+      TEST_REWARD_CARD_URL,
+    );
     expect(messages).toEqual([
       {
         type: "image",
@@ -142,11 +180,12 @@ describe("deployed Test routing", () => {
   });
 
   it("rejects any asset host other than the dedicated Test Worker", () => {
-    expect(() => replyMessages("MENU", "https://example.com")).toThrow(
-      "INVALID_TEST_ASSET_BASE_URL",
-    );
+    expect(() =>
+      replyMessages("MENU", "https://example.com", TEST_REWARD_CARD_URL),
+    ).toThrow("INVALID_TEST_ASSET_BASE_URL");
   });
 });
 
 const TEST_ASSET_BASE_URL =
   "https://malispang-lineoa-test.eakkachai-dev.workers.dev";
+const TEST_REWARD_CARD_URL = "https://liff.line.me/test-reward-card";

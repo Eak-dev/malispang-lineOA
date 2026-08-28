@@ -124,7 +124,11 @@ async function processLineEvent(
       now,
     );
   }
-  const messages = replyMessages(result.replyKind, env.PUBLIC_ASSET_BASE_URL);
+  const messages = replyMessages(
+    result.replyKind,
+    env.PUBLIC_ASSET_BASE_URL,
+    env.TEST_REWARD_CARD_URL,
+  );
   if (messages.length === 0) return;
   await sendLineReply(
     event.replyToken,

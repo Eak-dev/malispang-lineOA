@@ -25,6 +25,7 @@
       "LINE_CHANNEL_ACCESS_TOKEN",
       "LINE_BOT_USER_ID",
       "TEST_ADMIN_KEY",
+      "TEST_REWARD_CARD_URL",
     ],
   },
   "durable_objects": {

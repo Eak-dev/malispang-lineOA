@@ -25,6 +25,7 @@ export function assertRequiredSecrets(env: Env): void {
     env.LINE_CHANNEL_ACCESS_TOKEN,
     env.LINE_BOT_USER_ID,
     env.TEST_ADMIN_KEY,
+    env.TEST_REWARD_CARD_URL,
   ];
   if (
     required.some(
