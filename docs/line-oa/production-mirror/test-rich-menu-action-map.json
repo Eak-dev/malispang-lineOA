@@ -17,11 +17,11 @@
     "pointsEarned": 1
   },
   "publishable": true,
-  "publishMode": "REWARD_FAIL_CLOSED",
+  "publishMode": "REWARD_CARD_ENABLED_VIA_TEST_WORKER",
   "publishBlockers": [],
   "knownLimitations": [
     "Owner อนุมัติ No expiration สำหรับ Reward Card TEST พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026",
-    "พื้นที่สะสมแต้มยังใช้ native Text action แบบ fail closed ห้ามแจก Reward card URL จนกว่าจะมี Owner approval แยก และไม่เชื่อมข้อมูล Production"
+    "พื้นที่สะสมแต้มใช้ native Text action เดิม แล้ว Worker ตอบปุ่มเปิดบัตรจาก encrypted TEST_REWARD_CARD_URL โดยไม่เก็บ URL จริงใน Git และไม่เชื่อมข้อมูล Production"
   ],
   "staffQuickReply": {
     "label": "คุยกับพนักงาน",

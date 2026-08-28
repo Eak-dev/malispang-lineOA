@@ -4,7 +4,7 @@
 
 ขอบเขต: `มะลิปัง TEST` เท่านั้น
 
-สถานะ: **TEST_WEBHOOK_LIVE / RICH_MENU_PUBLISHED / OWNER_RICH_MENU_UAT_PASS**
+สถานะ: **TEST_WEBHOOK_LIVE / RICH_MENU_PUBLISHED / REWARD_CARD_LIVE_UAT_PASS**
 
 ## สถานะภายนอกที่ยืนยันแล้ว
 
@@ -15,7 +15,7 @@
 - Test endpoint: `https://malispang-lineoa-test.eakkachai-dev.workers.dev`
 - Persistence: Durable Objects with SQLite
 - Webhook: ตั้ง Test URL แล้ว, LINE Verify สำเร็จ และ `Use webhook` เปิดอยู่
-- Cloudflare encrypted secrets: ตั้งครบ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_BOT_USER_ID` และ `TEST_ADMIN_KEY` แล้ว (บันทึกเฉพาะชื่อ ไม่บันทึกค่า)
+- Cloudflare encrypted secrets: ตั้งครบ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_BOT_USER_ID`, `TEST_ADMIN_KEY` และ `TEST_REWARD_CARD_URL` แล้ว (บันทึกเฉพาะชื่อ ไม่บันทึกค่า)
 - Channel Access Token ผ่านการตรวจชื่อบอตเป็น `มะลิปัง TEST`
 - Live safety checks: health `200`, invalid signature `401`, unauthenticated admin `401`, authenticated admin `200`, signed empty webhook `200`
 - Production `มะลิปัง`: ไม่ได้เปิดและไม่ได้เปลี่ยนแปลง
@@ -105,7 +105,15 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - Action map: `docs/line-oa/production-mirror/test-rich-menu-action-map.json`
 - ปุ่ม `คุยกับพนักงาน` เพิ่มเป็น Quick Reply นอกภาพ เพื่อคงเมนูเดิมและให้ปุ่มหายหลังการกดตาม UX ที่ Owner ต้องการ
 - Owner ยืนยัน Maps URL, Facebook URL, ข้อความ Delivery และกติกาสะสมแต้มแล้ว
-- Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้ `มะลิปัง TEST` แล้ว และผ่าน read-only configuration UAT เมื่อ 28 สิงหาคม 2026 เวลา 01:35 น.; Owner อนุมัติ `No expiration` สำหรับ TEST พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026 ปุ่มสะสมแต้มยังตอบแบบ fail closed และห้ามแจก URL จนกว่าจะมี Owner approval แยก
+- Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้ `มะลิปัง TEST` แล้ว Owner อนุมัติ `No expiration` สำหรับ TEST พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026
+- Reward Card entry-point deployment วันที่ 28 สิงหาคม 2026:
+  - deployed source commit: `9dd3c88`
+  - Cloudflare version: `59674297-4c83-4f8e-8460-dcd001c6f0c5`
+  - URL จริงเก็บเฉพาะ encrypted secret `TEST_REWARD_CARD_URL`
+  - Rich Menu native Text action เดิมเรียก Worker ซึ่งตอบข้อความกติกาพร้อมปุ่ม `เปิดบัตรสะสมแต้ม`
+  - health `200`, invalid signature `401`, automated tests 93/93 ผ่าน
+  - Owner live UAT เวลา 11:40 น.: เปิดบัตร รับบัตร และเพิ่ม 1 แต้มสำเร็จ
+  - QR UAT ให้ 1 แต้มและหมดอายุ 29 สิงหาคม 2026
 - Rich Menu ถูก Publish เป็น Current menu เฉพาะ `มะลิปัง TEST` แล้ว และ Owner live UAT ผ่านครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok)
 
 ## Persistence และ retention
@@ -123,6 +131,7 @@ Collision check ยืนยันว่า active global Auto-response rules = 
 - `LINE_CHANNEL_ACCESS_TOKEN`
 - `LINE_BOT_USER_ID`
 - `TEST_ADMIN_KEY`
+- `TEST_REWARD_CARD_URL`
 
 ห้ามบันทึกค่าจริงใน `.dev.vars`, `.env`, log, screenshot, Git หรือเอกสาร
 
