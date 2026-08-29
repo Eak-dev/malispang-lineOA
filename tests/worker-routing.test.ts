@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DELIVERY_UNAVAILABLE_MESSAGE,
   HANDOFF_ACKNOWLEDGEMENT,
-  MENU_AVAILABILITY_NOTICE,
   REWARD_CARD_ACTIVE_MESSAGE,
   SAFE_FALLBACK,
   SLIP_ACKNOWLEDGEMENT,
@@ -23,11 +21,15 @@ describe("deployed Test routing", () => {
     ["ขนมปังราคาเท่าไหร่", "PRICE"],
     ["ร้านอยู่ที่ไหน", "LOCATION"],
     ["เปิดกี่โมง", "HOURS"],
+    ["ติดต่อร้านอย่างไร", "CONTACT"],
+    ["รับสินค้าที่ไหน", "PICKUP"],
     ["เก็บได้กี่วัน", "STORAGE"],
     ["ราคาส่งเท่าไหร่", "WHOLESALE"],
     ["สั่งล่วงหน้าอย่างไร", "ADVANCE_ORDER"],
     ["เมนูหลัก", "FLEX_MENU"],
     ["สะสมแต้มและโปรโมชั่น", "REWARDS"],
+    ["มีโปรโมชั่นอะไร", "PROMOTION"],
+    ["กติกาแต้มเป็นอย่างไร", "LOYALTY"],
     ["Delivery", "DELIVERY"],
   ])("routes %s safely", (text, expected) => {
     expect(classifyText(text).replyKind).toBe(expected);
@@ -35,7 +37,6 @@ describe("deployed Test routing", () => {
 
   it.each([
     "มีของไหม",
-    "มีโปรอะไร",
     "คุยกับพนักงาน",
     "ขอร้องเรียนสินค้า",
     "แพ้อาหารค่ะ",
@@ -128,18 +129,30 @@ describe("deployed Test routing", () => {
     ).toThrow("INVALID_TEST_REWARD_CARD_URL");
   });
 
-  it("uses the exact unavailable Delivery message", () => {
-    expect(replyMessage("DELIVERY")).toEqual({
+  it.each([
+    "MENU",
+    "PRICE",
+    "LOCATION",
+    "HOURS",
+    "STORAGE",
+    "WHOLESALE",
+    "ADVANCE_ORDER",
+    "DELIVERY",
+    "CONTACT",
+    "PICKUP",
+    "PROMOTION",
+    "LOYALTY",
+  ] as const)("fails closed for unapproved %s business data", (kind) => {
+    expect(replyMessage(kind)).toEqual({
       type: "text",
-      text: DELIVERY_UNAVAILABLE_MESSAGE,
+      text: SAFE_FALLBACK,
       quickReply: STAFF_QUICK_REPLY,
     });
-    expect(DELIVERY_UNAVAILABLE_MESSAGE).toContain("ยังไม่มีบริการ Delivery");
   });
 
   it("adds one temporary staff quick reply to bot answers but not handoff replies", () => {
     expect(
-      replyMessages("MENU", TEST_ASSET_BASE_URL, TEST_REWARD_CARD_URL)[2]
+      replyMessages("MENU", TEST_ASSET_BASE_URL, TEST_REWARD_CARD_URL)[0]
         ?.quickReply,
     ).toEqual(STAFF_QUICK_REPLY);
     expect(STAFF_QUICK_REPLY.items).toHaveLength(1);
@@ -152,37 +165,17 @@ describe("deployed Test routing", () => {
     expect(replyMessage("SLIP_ACK")?.quickReply).toBeUndefined();
   });
 
-  it("returns the two approved menu images and a staff handoff option", () => {
+  it("does not return menu images until the menu manifest is approved", () => {
     const messages = replyMessages(
       "MENU",
       TEST_ASSET_BASE_URL,
       TEST_REWARD_CARD_URL,
     );
     expect(messages).toEqual([
-      {
-        type: "image",
-        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
-        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
-      },
-      {
-        type: "image",
-        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
-        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
-      },
-      {
-        type: "text",
-        text: MENU_AVAILABILITY_NOTICE,
-        quickReply: STAFF_QUICK_REPLY,
-      },
+      { type: "text", text: SAFE_FALLBACK, quickReply: STAFF_QUICK_REPLY },
     ]);
     expect(JSON.stringify(messages)).not.toContain("TEST_SEED");
-    expect(JSON.stringify(messages)).not.toContain("มีพร้อมขาย");
-  });
-
-  it("rejects any asset host other than the dedicated Test Worker", () => {
-    expect(() =>
-      replyMessages("MENU", "https://example.com", TEST_REWARD_CARD_URL),
-    ).toThrow("INVALID_TEST_ASSET_BASE_URL");
+    expect(JSON.stringify(messages)).not.toContain("image");
   });
 });
 

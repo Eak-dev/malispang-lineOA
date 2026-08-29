@@ -9,7 +9,7 @@
   "vars": {
     "ENVIRONMENT": "TEST",
     "LINE_OA_ACCOUNT_NAME": "มะลิปัง TEST",
-    "FAQ_SOURCE_STATUS": "TEST_SEED",
+    "FAQ_SOURCE_STATUS": "APPROVED_ONLY",
     "TEST_STAFF_ALLOWLIST": "OWNER_TEST",
     "PUBLIC_ASSET_BASE_URL": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
     "PROCESSED_EVENT_RETENTION_SECONDS": "86400",

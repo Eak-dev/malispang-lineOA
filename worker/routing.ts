@@ -9,15 +9,6 @@ export const HANDOFF_ACKNOWLEDGEMENT =
 export const SLIP_ACKNOWLEDGEMENT =
   "ได้รับรูปแล้วค่ะ รายการชำระเงินต้องให้พนักงานตรวจสอบก่อนนะคะ ทางร้านจะกลับมายืนยันอีกครั้งค่ะ";
 
-const TEST_SEED_NOTICE =
-  "ข้อมูล TEST_SEED — ต้องให้ Owner ยืนยันก่อนใช้ Production";
-
-export const MENU_AVAILABILITY_NOTICE =
-  "เมนูตามรูปอาจมีสินค้าไม่ครบทุกวัน สามารถกด “คุยกับพนักงาน” เพื่อตรวจสอบสินค้าวันนี้ได้เลยค่ะ 😊";
-
-export const DELIVERY_UNAVAILABLE_MESSAGE =
-  "ขณะนี้ร้านมะลิปังยังไม่มีบริการ Delivery นะคะ หากเปิดให้บริการแล้ว ทางร้านจะแจ้งให้ทราบผ่าน LINE นี้ค่ะ 😊";
-
 export const REWARD_CARD_ACTIVE_MESSAGE =
   "บัตรแต้ม TEST เปิดให้ทดสอบแล้วค่ะ\nซื้อครบ 50 บาท รับ 1 แต้ม\nใช้เฉพาะบัญชีมะลิปัง TEST และรางวัลไม่มีมูลค่าจริงนะคะ";
 
@@ -31,10 +22,14 @@ export type ReplyKind =
   | "PRICE"
   | "LOCATION"
   | "HOURS"
+  | "CONTACT"
+  | "PICKUP"
   | "STORAGE"
   | "WHOLESALE"
   | "ADVANCE_ORDER"
   | "DELIVERY"
+  | "PROMOTION"
+  | "LOYALTY"
   | "REWARDS";
 
 export interface RouteDecision {
@@ -131,14 +126,11 @@ export function classifyText(text: string): RouteDecision {
       "สต๊อก",
       "สต็อก",
       "ของวันนี้",
-      "มีโปร",
-      "โปรโมชั่น",
-      "โปรโมชัน",
       "ออเดอร์จำนวนมาก",
       "สั่งเยอะ",
       "จัดเลี้ยง",
       "วันรับสินค้า",
-      "รับสินค้า",
+      "รับสินค้าวัน",
     ])
   ) {
     return handoff("HIGH_RISK_OR_DYNAMIC_TOPIC");
@@ -155,13 +147,21 @@ export function classifyText(text: string): RouteDecision {
     normalized === "เมนู" ||
     includesAny(normalized, ["มีเมนูอะไร", "เมนูขนม", "รายการขนม", "ดูเมนู"])
   ) {
-    return reply("MENU", "FAQ_MENU_TEST_SEED");
+    return reply("MENU", "KB_MENU_NOT_AUTHORITATIVE");
   }
   if (includesAny(normalized, ["ราคาส่ง", "ขายส่ง"])) {
-    return reply("WHOLESALE", "FAQ_WHOLESALE_NOT_CONFIRMED");
+    return reply("WHOLESALE", "KB_WHOLESALE_NOT_AUTHORITATIVE");
+  }
+  if (includesAny(normalized, ["ติดต่อร้าน", "เบอร์ติดต่อ", "ช่องทางติดต่อ"])) {
+    return reply("CONTACT", "KB_CONTACT_NOT_AUTHORITATIVE");
+  }
+  if (
+    includesAny(normalized, ["รับสินค้าที่ไหน", "จุดรับสินค้า", "รับของที่ไหน"])
+  ) {
+    return reply("PICKUP", "KB_PICKUP_NOT_AUTHORITATIVE");
   }
   if (includesAny(normalized, ["ราคา", "กี่บาท", "เท่าไหร่"])) {
-    return reply("PRICE", "FAQ_PRICE_TEST_SEED");
+    return reply("PRICE", "KB_PRICE_NOT_AUTHORITATIVE");
   }
   if (
     includesAny(normalized, [
@@ -172,7 +172,7 @@ export function classifyText(text: string): RouteDecision {
       "เดินทาง",
     ])
   ) {
-    return reply("LOCATION", "FAQ_LOCATION_TEST_SEED");
+    return reply("LOCATION", "KB_LOCATION_NOT_AUTHORITATIVE");
   }
   if (
     includesAny(normalized, [
@@ -182,7 +182,7 @@ export function classifyText(text: string): RouteDecision {
       "ร้านเปิด",
     ])
   ) {
-    return reply("HOURS", "FAQ_HOURS_TEST_SEED");
+    return reply("HOURS", "KB_OPENING_HOURS_NOT_AUTHORITATIVE");
   }
   if (
     includesAny(normalized, [
@@ -192,10 +192,19 @@ export function classifyText(text: string): RouteDecision {
       "อายุขนม",
     ])
   ) {
-    return reply("STORAGE", "FAQ_STORAGE_TEST_SEED");
+    return reply("STORAGE", "KB_STORAGE_NOT_AUTHORITATIVE");
   }
   if (includesAny(normalized, ["สั่งล่วงหน้า", "วิธีสั่ง", "สั่งยังไง"])) {
-    return reply("ADVANCE_ORDER", "FAQ_ADVANCE_ORDER_TEST_ONLY");
+    return reply("ADVANCE_ORDER", "KB_ADVANCE_ORDER_NOT_AUTHORITATIVE");
+  }
+  if (includesAny(normalized, ["มีโปร", "โปรโมชั่น", "โปรโมชัน"])) {
+    return reply("PROMOTION", "KB_PROMOTION_NOT_AUTHORITATIVE");
+  }
+  if (includesAny(normalized, ["กติกาแต้ม", "แลกแต้ม", "บัตรแต้ม"])) {
+    return reply("LOYALTY", "KB_LOYALTY_NOT_AUTHORITATIVE");
+  }
+  if (includesAny(normalized, ["delivery", "เดลิเวอรี", "ส่งถึงบ้าน"])) {
+    return reply("DELIVERY", "KB_DELIVERY_NOT_AUTHORITATIVE");
   }
   return reply("SAFE_FALLBACK", "NO_AUTHORITATIVE_ANSWER");
 }
@@ -223,10 +232,28 @@ export function classifyPostback(data: string): RouteDecision {
 export function replyMessage(
   kind: ReplyKind,
   testRewardCardUrl?: string,
+  approvedAnswer?: string,
 ): LineReplyMessage | undefined {
   if (kind === "NONE") return undefined;
-  if (kind === "SAFE_FALLBACK" || kind === "WHOLESALE") {
-    return withStaffQuickReply({ type: "text", text: SAFE_FALLBACK });
+  if (
+    kind === "SAFE_FALLBACK" ||
+    kind === "MENU" ||
+    kind === "PRICE" ||
+    kind === "LOCATION" ||
+    kind === "HOURS" ||
+    kind === "CONTACT" ||
+    kind === "PICKUP" ||
+    kind === "STORAGE" ||
+    kind === "WHOLESALE" ||
+    kind === "ADVANCE_ORDER" ||
+    kind === "DELIVERY" ||
+    kind === "PROMOTION" ||
+    kind === "LOYALTY"
+  ) {
+    return withStaffQuickReply({
+      type: "text",
+      text: approvedAnswer?.trim() || SAFE_FALLBACK,
+    });
   }
   if (kind === "HANDOFF_ACK") {
     return { type: "text", text: HANDOFF_ACKNOWLEDGEMENT };
@@ -241,42 +268,6 @@ export function replyMessage(
       contents: buildFlexMenu(),
     });
   }
-  if (kind === "MENU") {
-    return withStaffQuickReply({
-      type: "text",
-      text: MENU_AVAILABILITY_NOTICE,
-    });
-  }
-  if (kind === "PRICE") {
-    return withStaffQuickReply({
-      type: "text",
-      text: `${TEST_SEED_NOTICE}\nขนมปังราคา 39 บาทต่อชิ้น โดยยังไม่ยืนยันสต๊อกหรือโปรโมชันปัจจุบันค่ะ`,
-    });
-  }
-  if (kind === "LOCATION") {
-    return withStaffQuickReply({
-      type: "text",
-      text: `${TEST_SEED_NOTICE}\nสาขาทดสอบ: ตลาดยิ่งเจริญ สะพานใหม่ ชั้น 1 โซน Take Home`,
-    });
-  }
-  if (kind === "HOURS") {
-    return withStaffQuickReply({
-      type: "text",
-      text: `${TEST_SEED_NOTICE}\nเวลาร้านโดยประมาณ 08:00–19:00 น. กรุณาให้พนักงานยืนยันหากต้องเดินทางมารับสินค้าค่ะ`,
-    });
-  }
-  if (kind === "STORAGE") {
-    return withStaffQuickReply({
-      type: "text",
-      text: `${TEST_SEED_NOTICE}\nขนมปังควรรับประทานภายในประมาณ 2 วันเมื่อเก็บนอกตู้เย็น หากมีข้อกังวลเรื่องการแพ้อาหาร กรุณาคุยกับพนักงานค่ะ`,
-    });
-  }
-  if (kind === "DELIVERY") {
-    return withStaffQuickReply({
-      type: "text",
-      text: DELIVERY_UNAVAILABLE_MESSAGE,
-    });
-  }
   if (kind === "REWARDS") {
     return rewardCardMessage(validatedTestRewardCardUrl(testRewardCardUrl));
   }
@@ -288,20 +279,12 @@ export function replyMessage(
 
 export function replyMessages(
   kind: ReplyKind,
-  publicAssetBaseUrl: string,
+  _publicAssetBaseUrl: string,
   testRewardCardUrl: string,
+  approvedAnswer?: string,
 ): readonly LineReplyMessage[] {
-  if (kind !== "MENU") {
-    const message = replyMessage(kind, testRewardCardUrl);
-    return message ? [message] : [];
-  }
-
-  const baseUrl = validatedTestAssetBaseUrl(publicAssetBaseUrl);
-  return [
-    imageMessage(`${baseUrl}/menu/bread-menu.jpeg`),
-    imageMessage(`${baseUrl}/menu/chiffon-cookie-menu.jpeg`),
-    withStaffQuickReply({ type: "text", text: MENU_AVAILABILITY_NOTICE }),
-  ];
+  const message = replyMessage(kind, testRewardCardUrl, approvedAnswer);
+  return message ? [message] : [];
 }
 
 function rewardCardMessage(url: string): LineReplyMessage {
@@ -320,25 +303,6 @@ function rewardCardMessage(url: string): LineReplyMessage {
       ],
     },
   });
-}
-
-function imageMessage(url: string): LineReplyMessage {
-  return { type: "image", originalContentUrl: url, previewImageUrl: url };
-}
-
-function validatedTestAssetBaseUrl(value: string): string {
-  const normalized = value.replace(/\/+$/, "");
-  const url = new URL(normalized);
-  if (
-    url.protocol !== "https:" ||
-    url.hostname !== "malispang-lineoa-test.eakkachai-dev.workers.dev" ||
-    url.pathname !== "/" ||
-    url.search !== "" ||
-    url.hash !== ""
-  ) {
-    throw new Error("INVALID_TEST_ASSET_BASE_URL");
-  }
-  return normalized;
 }
 
 export function validatedTestRewardCardUrl(value: string | undefined): string {

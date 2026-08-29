@@ -1,4 +1,8 @@
 import { ConversationStateDO, HandoffRegistryDO } from "./durable-objects.js";
+import {
+  approvedAnswerForReplyKind,
+  enforceApprovedKnowledge,
+} from "./knowledge.js";
 import { sendLineReply } from "./line-api.js";
 import {
   classifyPostback,
@@ -101,7 +105,7 @@ async function processLineEvent(
     sha256Reference(event.eventId),
     sha256Reference(event.conversationId),
   ]);
-  const decision = eventDecision(event);
+  const decision = enforceApprovedKnowledge(eventDecision(event));
   const now = Date.now();
   const conversation = env.CONVERSATION_STATE.getByName(conversationRef);
   const result = await conversation.processEvent({
@@ -128,6 +132,7 @@ async function processLineEvent(
     result.replyKind,
     env.PUBLIC_ASSET_BASE_URL,
     env.TEST_REWARD_CARD_URL,
+    approvedAnswerForReplyKind(result.replyKind),
   );
   if (messages.length === 0) return;
   await sendLineReply(

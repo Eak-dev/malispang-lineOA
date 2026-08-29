@@ -150,6 +150,7 @@ export class Phase1AService {
         result.answer,
         "FAQ_ANSWERED",
         `FAQ_${result.intent ?? "UNKNOWN"}`,
+        result.provenance,
       );
     }
     return this.safeFallback(
@@ -202,12 +203,19 @@ export class Phase1AService {
     text: string,
     outcome: "FAQ_ANSWERED" | "SAFE_FALLBACK" | "MOCK_NOTICE_SENT",
     reasonCode: string,
+    knowledgeTrace?: {
+      readonly recordId: string;
+      readonly sourceReference: string;
+      readonly approvedAt: string;
+      readonly version: string;
+      readonly checksum: string;
+    },
   ): readonly ReplyEnvelope[] {
     const reply = this.enqueue(event.conversationId, `text:${event.eventId}`, {
       type: "text",
       text,
     });
-    this.audit(event, outcome, reasonCode);
+    this.audit(event, outcome, reasonCode, knowledgeTrace);
     return [reply];
   }
 
@@ -227,13 +235,22 @@ export class Phase1AService {
     event: MockEvent,
     outcome: Parameters<RedactedAuditLog["record"]>[0]["outcome"],
     reasonCode: string,
+    knowledgeTrace?: {
+      readonly recordId: string;
+      readonly sourceReference: string;
+      readonly approvedAt: string;
+      readonly version: string;
+      readonly checksum: string;
+    },
   ): void {
-    this.options.auditLog?.record({
+    const input = {
       eventId: event.eventId,
       conversationId: event.conversationId,
       outcome,
       reasonCode,
-    });
+      ...(knowledgeTrace === undefined ? {} : { knowledgeTrace }),
+    };
+    this.options.auditLog?.record(input);
   }
 }
 

@@ -3,7 +3,22 @@ export { validateFlexMenu } from "./flex-validation.js";
 export { RedactedAuditLog } from "./audit-log.js";
 export type { AuditOutcome, RedactedAuditEntry } from "./audit-log.js";
 export { ApprovedFaqKnowledgeBase } from "./faq.js";
-export type { ApprovedFaqRecord, FaqIntent, FaqLookupResult } from "./faq.js";
+export { FAQ_INTENTS } from "./faq.js";
+export type {
+  ApprovedFaqRecord,
+  FaqIntent,
+  FaqLookupResult,
+  FaqProvenance,
+} from "./faq.js";
+export {
+  approvedFaqRecordsFromManifest,
+  parseApprovedKnowledgeManifest,
+  validateApprovedKnowledgeManifest,
+} from "./approved-knowledge-manifest.js";
+export type {
+  ApprovedKnowledgeManifest,
+  KnowledgeManifestRecord,
+} from "./approved-knowledge-manifest.js";
 export { MemoryStore } from "./memory-store.js";
 export {
   MOCK_VALID_SIGNATURE,

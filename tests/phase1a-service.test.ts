@@ -31,9 +31,21 @@ function fixture(
     intent,
     keywords: [],
     answer,
-    approvalStatus: "APPROVED",
-    approvedBy: "OWNER-MOCK",
+    status: "APPROVED",
+    source: {
+      classification: "OWNER_APPROVED_REPOSITORY_RECORD",
+      reference: "fixture-owner-decision-2026-08-14",
+    },
+    owner: "OWNER-MOCK",
+    approvedAt: "2026-08-01T00:00:00.000Z",
     effectiveFrom: "2026-01-01T00:00:00.000Z",
+    effectiveTo: "2026-12-31T00:00:00.000Z",
+    freshness: {
+      reviewAt: "2026-12-01T00:00:00.000Z",
+      maximumAgeDays: 180,
+    },
+    version: `fixture-${intent.toLocaleLowerCase()}`,
+    checksum: "a".repeat(64),
   };
 }
 
@@ -100,10 +112,10 @@ describe("Phase1AService", () => {
 
   it("fails closed for draft, revoked, future, and expired FAQ records", () => {
     const variants: ApprovedFaqRecord[] = [
-      { ...fixture("PRICE", "ห้ามส่งคำตอบ draft"), approvalStatus: "DRAFT" },
+      { ...fixture("PRICE", "ห้ามส่งคำตอบ draft"), status: "DRAFT" },
       {
         ...fixture("PRICE", "ห้ามส่งคำตอบ revoked"),
-        approvalStatus: "REVOKED",
+        status: "REVOKED",
       },
       {
         ...fixture("PRICE", "ห้ามส่งคำตอบอนาคต"),
@@ -111,7 +123,7 @@ describe("Phase1AService", () => {
       },
       {
         ...fixture("PRICE", "ห้ามส่งคำตอบหมดอายุ"),
-        expiresAt: "2026-08-13T00:00:00.000Z",
+        effectiveTo: "2026-08-13T00:00:00.000Z",
       },
     ];
     for (const [index, record] of variants.entries()) {
@@ -127,6 +139,63 @@ describe("Phase1AService", () => {
       expect(serialized).toContain(SAFE_FALLBACK);
       expect(serialized).not.toContain(record.answer);
     }
+  });
+
+  it("records provenance for every approved answer without customer data", () => {
+    const test = setup();
+    test.service.process(
+      customer("EVENT-TRACE-1", { kind: "text", text: "ราคาเท่าไหร่" }),
+    );
+    expect(test.auditLog.entries.at(-1)).toMatchObject({
+      outcome: "FAQ_ANSWERED",
+      knowledgeTrace: {
+        recordId: "FAQ-PRICE",
+        sourceReference: "fixture-owner-decision-2026-08-14",
+        approvedAt: "2026-08-01T00:00:00.000Z",
+        version: "fixture-price",
+        checksum: "a".repeat(64),
+      },
+    });
+    expect(JSON.stringify(test.auditLog.entries)).not.toContain(
+      "EVENT-TRACE-1",
+    );
+  });
+
+  it("fails closed for stale, malformed, and conflicting approved records", () => {
+    const stale = {
+      ...fixture("PRICE", "ห้ามส่งคำตอบ stale"),
+      freshness: {
+        reviewAt: "2026-08-13T00:00:00.000Z",
+        maximumAgeDays: 180,
+      },
+    };
+    const malformed = {
+      ...fixture("PRICE", "ห้ามส่งคำตอบ checksum ผิด"),
+      checksum: "not-a-checksum",
+    };
+    for (const record of [stale, malformed]) {
+      const test = setup([record]);
+      expect(
+        test.service.process(
+          customer(`E-${record.checksum}`, {
+            kind: "text",
+            text: "ราคาเท่าไหร่",
+          }),
+        )[0]?.message,
+      ).toEqual({ type: "text", text: SAFE_FALLBACK });
+    }
+
+    const test = setup([
+      fixture("PRICE", "คำตอบขัดกันหนึ่ง"),
+      { ...fixture("PRICE", "คำตอบขัดกันสอง"), id: "FAQ-PRICE-2" },
+    ]);
+    const serialized = JSON.stringify(
+      test.service.process(
+        customer("E-CONFLICT", { kind: "text", text: "ราคาเท่าไหร่" }),
+      ),
+    );
+    expect(serialized).toContain(SAFE_FALLBACK);
+    expect(serialized).not.toContain("คำตอบขัดกัน");
   });
 
   it("returns the branded Flex menu only for an explicit main-menu request", () => {

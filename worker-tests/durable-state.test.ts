@@ -39,7 +39,7 @@ describe("Durable Object persistence and webhook security", () => {
       eventRef: "b".repeat(64),
       decision: {
         replyKind: "MENU",
-        reasonCode: "FAQ_MENU_TEST_SEED",
+        reasonCode: "KB_MENU_NOT_AUTHORITATIVE",
         handoff: false,
       },
     });

@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "environment": "TEST",
+  "accountName": "มะลิปัง TEST",
+  "sourceOfTruth": "VERSIONED_REPOSITORY_MANIFEST",
+  "defaultBehavior": "FAIL_CLOSED",
+  "categories": {
+    "MENU": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "TEST_EVIDENCE_ONLY",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "MENU_CURRENT_SOURCE_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "PRICE": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "TEST_EVIDENCE_ONLY",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "PRICE_CURRENT_SOURCE_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "LOCATION": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "CONFLICTING_EVIDENCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "LOCATION_CURRENT_SOURCE_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "OPENING_HOURS": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "CONFLICTING_EVIDENCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "OPENING_HOURS_CONFLICT",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "CONTACT": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "NO_AUTHORITATIVE_SOURCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "CONTACT_SOURCE_REQUIRED",
+      "fallback": "SAFE_FALLBACK"
+    },
+    "PICKUP": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "NO_AUTHORITATIVE_SOURCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "PICKUP_TERMS_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "STORAGE": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "TEST_EVIDENCE_ONLY",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "STORAGE_PRODUCT_SAFETY_APPROVAL_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "ALLERGEN": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "NO_AUTHORITATIVE_SOURCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "ALLERGEN_SOURCE_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "WHOLESALE": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "NO_AUTHORITATIVE_SOURCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "WHOLESALE_TERMS_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "ADVANCE_ORDER": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "NO_AUTHORITATIVE_SOURCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "ADVANCE_ORDER_TERMS_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "DELIVERY": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "TEST_EVIDENCE_ONLY",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "DELIVERY_CURRENT_APPROVAL_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "PROMOTION": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "CONFLICTING_EVIDENCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "PROMOTION_EFFECTIVE_WINDOW_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "LOYALTY": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "TEST_EVIDENCE_ONLY",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "LOYALTY_EFFECTIVE_WINDOW_REQUIRED",
+      "fallback": "HUMAN_REVIEW"
+    },
+    "STOCK": {
+      "status": "BLOCKED",
+      "source": {
+        "classification": "NO_AUTHORITATIVE_SOURCE",
+        "reference": "github-issue-8"
+      },
+      "owner": "OWNER_DECISION_PENDING",
+      "approvedAt": null,
+      "effectiveFrom": null,
+      "effectiveTo": null,
+      "freshness": { "reviewAt": null, "maximumAgeDays": null },
+      "version": null,
+      "checksum": null,
+      "blockerCode": "CURRENT_STOCK_REQUIRES_HUMAN_REVIEW",
+      "fallback": "HUMAN_REVIEW"
+    }
+  }
+}
