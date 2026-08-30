@@ -6,7 +6,7 @@ Owner approval / effective date: `2026-08-30`
 
 Review date: `2026-09-30`
 
-สถานะ: `LIVE UAT FAILURE RECORDED / LOCAL FIX TEST PASS / THIS FIX NOT DEPLOYED / OWNER RE-UAT PENDING`
+สถานะ: `WORKER FIX DEPLOYED / RICH MENU V1 MESSAGE-ACTION DEFECT CONFIRMED / V2 LOCAL READY NOT PUBLISHED / OWNER RE-UAT PENDING`
 
 เอกสารนี้ทำตาม GitHub Issue #9 และ Issue #8 เท่านั้น งานรอบนี้ไม่อนุญาตให้ deploy เปลี่ยน LINE OA `มะลิปัง TEST` หรือเปิด/เปลี่ยน Production `มะลิปัง`
 
@@ -59,6 +59,10 @@ Review date: `2026-09-30`
 
 Deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` ไม่รองรับข้อความ `ขอเมนูหน่อย` จึงส่ง fallback และเริ่ม handoff หลังจากนั้น `test:show_menu` ถูก Durable Object ตัดเป็น `HANDOFF_SILENCE` แม้เป็น Rich Menu postback ที่ Owner อนุมัติ การแก้ local รอบนี้แยก event capability ชัดเจน: typed text ไม่มีสิทธิ์ bypass silence ส่วน static TEST postback allowlist ตอบได้โดยไม่ปิด handoff
 
+Corrective Worker commit `60bfe05caa5ac4d4763a4fb5d2c7c218f1e88735` ถูก deploy เฉพาะ `malispang-lineoa-test` แล้ว แต่ Owner re-UAT พบว่า Rich Menu v1 ที่เผยแพร่อยู่ส่ง `Delivery`, `เมนูขนมปัง` และ `สะสมแต้มและโปรโมชั่น` เป็น native text/message events จึงยังถูก typed-message silence ระหว่าง handoff นี่เป็น configuration mismatch ไม่ใช่ Worker routing regression
+
+Local Rich Menu v2 เปลี่ยนสาม action เป็น `test:show_delivery`, `test:show_menu` และ `test:show_rewards` postback ตามลำดับ โดยคง Maps/Facebook เป็น URI และพื้นที่ตกแต่งเป็น no action การ Publish/set default และการปิด active TEST handoff ยังไม่ทำในรอบนี้
+
 ## Fail-closed date policy
 
 record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+07:00` และ lookup ต้องปฏิเสธตั้งแต่ `2026-09-30T00:00:00+07:00` หากยังไม่มี Owner-reviewed version ใหม่ การทบทวนต้องสร้าง version/checksum ใหม่ ห้ามแก้ record ที่เคยใช้ย้อนหลัง
@@ -76,7 +80,7 @@ record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+0
 - authorized/unauthorized staff close และ persistence fail-closed
 - loyalty response ไม่มี customer/Reward Card operation
 - Production credential/account safety guards
-- full local suite: 193 Node tests + 24 Worker runtime tests = 217 ผ่าน
+- full local suite หลังเพิ่ม Rich Menu v2: 194 Node tests + 24 Worker runtime tests = 218 ผ่าน
 - formatting, ESLint, TypeScript, build, Flex/Rich Menu/manifest validation และ Worker dry-run ผ่าน
 
 ผล command ชุดเต็มและ commit จะบันทึกใน GitHub Issue #8 หลัง final checks ผ่าน
@@ -87,9 +91,9 @@ record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+0
 
 ## งานค้างก่อนปิด Issue #8
 
-1. Local full checks ผ่านและ freeze corrective commit ใหม่
-2. Owner อนุมัติ TEST deployment ของ corrective commit แยกต่างหาก
-3. Deploy เฉพาะ `มะลิปัง TEST` ตาม approval และตรวจ health/security gates
+1. Local full checks ของ Rich Menu postback v2 ผ่านและ freeze commit ใหม่
+2. Owner อนุมัติสร้าง/Publish/set default Rich Menu v2 เฉพาะ `มะลิปัง TEST` และอนุมัติปิด active TEST handoff แยก
+3. Publish v2 โดยเก็บ v1 ไว้เป็น rollback; ไม่ต้อง deploy Worker ใหม่
 4. Owner re-UAT: `ขอเมนูหน่อย`, static Rich Menu postback ระหว่าง handoff, acknowledgement ครั้งเดียว และ typed silence
 5. ปิด Issue #8 ได้เมื่อ acceptance criteria ผ่านครบพร้อมหลักฐานจริงเท่านั้น
 

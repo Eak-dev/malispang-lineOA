@@ -9,8 +9,9 @@ export interface RichMenuArea {
   readonly id: string;
   readonly bounds: RichMenuBounds;
   readonly action: {
-    readonly type: "text" | "uri" | "none";
+    readonly type: "postback" | "uri" | "none";
     readonly data?: string;
+    readonly displayText?: string;
     readonly text?: string;
     readonly uri?: string | null;
     readonly enabled: boolean;
@@ -65,14 +66,33 @@ export function validateRichMenuActionMap(
     if (x + width > value.image.width || y + height > value.image.height) {
       errors.push(`area ${area.id} exceeds image bounds`);
     }
-    if (area.action.type === "text") {
+    if (area.action.type === "postback") {
+      const approvedPostbacks: Readonly<
+        Record<string, { data: string; displayText: string }>
+      > = {
+        A_REWARDS: {
+          data: "test:show_rewards",
+          displayText: "สะสมแต้มและโปรโมชั่น",
+        },
+        C_DELIVERY: {
+          data: "test:show_delivery",
+          displayText: "Delivery",
+        },
+        E_MENU: {
+          data: "test:show_menu",
+          displayText: "เมนูขนมปัง",
+        },
+      };
+      const expected = approvedPostbacks[area.id];
       if (
-        !["สะสมแต้มและโปรโมชั่น", "Delivery", "เมนูขนมปัง"].includes(
-          area.action.text ?? "",
-        ) ||
-        area.action.data
+        !expected ||
+        !area.action.enabled ||
+        area.action.data !== expected.data ||
+        area.action.displayText !== expected.displayText ||
+        area.action.text ||
+        area.action.uri
       ) {
-        errors.push(`area ${area.id} has an unsafe text action`);
+        errors.push(`area ${area.id} has an unsafe postback action`);
       }
     }
     if (
@@ -89,6 +109,7 @@ export function validateRichMenuActionMap(
       area.action.type === "none" &&
       (area.action.enabled ||
         area.action.data ||
+        area.action.displayText ||
         area.action.text ||
         area.action.uri)
     ) {

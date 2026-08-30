@@ -1,0 +1,49 @@
+{
+  "size": {
+    "width": 2500,
+    "height": 1686
+  },
+  "selected": true,
+  "name": "MalisPang TEST RM 39-50 postback v2",
+  "chatBarText": "รู้จักมะลิปัง",
+  "areas": [
+    {
+      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "test:show_rewards",
+        "displayText": "สะสมแต้มและโปรโมชั่น"
+      }
+    },
+    {
+      "bounds": { "x": 833, "y": 0, "width": 834, "height": 843 },
+      "action": {
+        "type": "uri",
+        "uri": "https://maps.app.goo.gl/mLTyUC1891a4uu7D9?g_st=ic"
+      }
+    },
+    {
+      "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "test:show_delivery",
+        "displayText": "Delivery"
+      }
+    },
+    {
+      "bounds": { "x": 833, "y": 843, "width": 834, "height": 843 },
+      "action": {
+        "type": "postback",
+        "data": "test:show_menu",
+        "displayText": "เมนูขนมปัง"
+      }
+    },
+    {
+      "bounds": { "x": 1667, "y": 843, "width": 833, "height": 843 },
+      "action": {
+        "type": "uri",
+        "uri": "https://www.facebook.com/share/18jLnt8dVY/?mibextid=wwXIfr"
+      }
+    }
+  ]
+}

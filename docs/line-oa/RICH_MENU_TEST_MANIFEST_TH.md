@@ -1,13 +1,14 @@
 # Rich Menu Manifest — มะลิปัง TEST
 
-อัปเดตล่าสุด: 28 สิงหาคม 2026
+อัปเดตล่าสุด: 31 สิงหาคม 2026
 
-สถานะ: `PUBLISHED_CURRENT_MENU / OWNER_UAT_PASS / REWARD_CARD_LIVE_UAT_PASS`
+สถานะ: `V1 PUBLISHED WITH MESSAGE-ACTION DEFECT / V2 POSTBACK LOCAL READY / NOT PUBLISHED / OWNER APPROVAL REQUIRED`
 
 ## ขอบเขตและไฟล์
 
 - บัญชีปลายทาง: `มะลิปัง TEST` เท่านั้น
-- ชื่อ Rich Menu: `MalisPang TEST RM 39-50 v1`
+- Rich Menu ที่เผยแพร่อยู่: `MalisPang TEST RM 39-50 v1` — native text actions; มี defect ระหว่าง handoff
+- Rich Menu replacement ที่เตรียม local: `MalisPang TEST RM 39-50 postback v2`
 - Menu bar label: `รู้จักมะลิปัง`
 - Default behavior: `Shown`
 - LINE OA Manager Rich Menu ID: `20032979`
@@ -16,6 +17,7 @@
 - Editable overlay: `assets/test/malispang-test-rich-menu-overlay.svg`
 - Publishable image: `assets/test/malispang-test-rich-menu-publishable.jpeg`
 - Public Worker asset: `public/rich-menu/malispang-test-rich-menu.jpeg`
+- API-ready TEST payload: `config/rich-menu/malispang-test-rich-menu-postback-v2.json`
 - Renderer source: `scripts/render-rich-menu.ts` (`pnpm render:rich-menu`)
 - Local action preview: `artifacts/rich-menu-preview.html`
 
@@ -33,16 +35,26 @@
 
 ## พื้นที่กด
 
-| พื้นที่                | Bounds `(x,y,w,h)` | Native action               | ผลลัพธ์ TEST                                                          |
-| ---------------------- | ------------------ | --------------------------- | --------------------------------------------------------------------- |
-| A สะสมแต้มและโปรโมชั่น | `0,0,833,843`      | Text `สะสมแต้มและโปรโมชั่น` | Worker ตอบกติกา 50 บาท = 1 แต้ม พร้อมปุ่ม `เปิดบัตรสะสมแต้ม` ของ TEST |
-| B ที่อยู่ร้าน          | `833,0,834,843`    | Link                        | Google Maps URL ที่ Owner ระบุ                                        |
-| C Delivery             | `1667,0,833,843`   | Text `Delivery`             | แจ้งว่ายังไม่มีบริการ Delivery                                        |
-| D พื้นที่ตกแต่ง        | `0,843,833,843`    | No action                   | ไม่มี action                                                          |
-| E เมนูของเรา           | `833,843,834,843`  | Text `เมนูขนมปัง`           | รูปเมนู 1 → รูปเมนู 2 → ข้อความสั้น + Quick Reply คุยกับพนักงาน       |
-| F Facebook             | `1667,843,833,843` | Link                        | Facebook URL ที่ Owner ระบุ                                           |
+| พื้นที่                | Bounds `(x,y,w,h)` | v2 action                                                 | ผลลัพธ์ TEST                                                          |
+| ---------------------- | ------------------ | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| A สะสมแต้มและโปรโมชั่น | `0,0,833,843`      | Postback `test:show_rewards`                              | Worker ตอบกติกา 50 บาท = 1 แต้ม พร้อมปุ่ม `เปิดบัตรสะสมแต้ม` ของ TEST |
+| B ที่อยู่ร้าน          | `833,0,834,843`    | URI Google Maps                                           | Google Maps URL ที่ Owner ระบุ                                        |
+| C Delivery             | `1667,0,833,843`   | Postback `test:show_delivery`                             | แจ้งว่ายังไม่มีบริการ Delivery                                        |
+| D พื้นที่ตกแต่ง        | `0,843,833,843`    | No action; ไม่ส่งพื้นที่นี้ใน Messaging API areas payload | ไม่มี action                                                          |
+| E เมนูของเรา           | `833,843,834,843`  | Postback `test:show_menu`                                 | รูปเมนู 1 → รูปเมนู 2 → ข้อความสั้น + Quick Reply คุยกับพนักงาน       |
+| F Facebook             | `1667,843,833,843` | URI Facebook                                              | Facebook URL ที่ Owner ระบุ                                           |
 
 พื้นที่ทั้งหกครอบคลุมภาพเต็มพอดี ไม่มีช่องว่าง ไม่มีพื้นที่ซ้อน และไม่เกินขอบภาพ
+
+## Live UAT failure หลัง Phase 1B deploy — 31 สิงหาคม 2026
+
+ภาพ Owner UAT แสดงว่าการกด Rich Menu ส่ง bubble `Delivery` และ `เมนูขนมปัง` แบบ customer text event Rich Menu v1 จึงไม่สามารถแยกการกดปุ่มออกจาก typed message ได้ เมื่อ conversation อยู่ใน `HUMAN_HANDOFF` Worker ต้องรักษา bot silence และไม่ตอบ event เหล่านี้ตาม Owner rule
+
+ผลตรวจ read-only หลัง failure พบ active TEST handoff `1` รายการ การแก้ที่ปลอดภัยคือเปลี่ยนเฉพาะสาม action เป็น TEST postback v2 ข้างต้น ห้ามแก้ด้วยการยกเลิก typed-message silence หรือ auto-close handoff
+
+ไฟล์ v2 เป็น local configuration เท่านั้น ยังไม่ได้สร้าง/Publish/set default และยังไม่ได้ปิด active handoff ต้องได้รับ Owner approval สำหรับ external changes ทั้งสองรายการก่อน
+
+Local validation ผ่านทั้ง exact TEST postback mapping, action bounds, URI allowlist, no-action omission, Production-like action rejection, secret scan และ full suite 218 tests
 
 ## Owner live UAT
 
@@ -60,9 +72,9 @@ Owner live UAT เมื่อ 28 สิงหาคม 2026 เวลา 11:40 
 
 ## Rollback
 
-1. ยืนยันหน้าจอเป็น `มะลิปัง TEST`
-2. Unset/หยุดแสดง Rich Menu นี้เป็นค่า default
-3. หากต้องลบ Rich Menu ให้ขออนุมัติการลบแยกต่างหาก
-4. Worker rollback ใช้ Cloudflare Version ของ `malispang-lineoa-test` ก่อน deployment ครั้งนี้
+1. ก่อน Publish v2 ให้บันทึก Rich Menu v1 ที่เป็น default ปัจจุบัน และยืนยันบัญชี `มะลิปัง TEST`
+2. หาก v2 UAT ไม่ผ่าน ให้ set v1 กลับเป็น default ทันที; ห้ามลบ v1 ระหว่าง rollout
+3. Unset/หยุดแสดง v2 ได้โดยไม่ลบ resource; การลบต้องขออนุมัติแยก
+4. การเปลี่ยน action map ครั้งนี้ไม่ต้อง deploy Worker ใหม่ เพราะ Worker version ปัจจุบันรองรับ TEST postback แล้ว
 5. QR UAT หมดอายุ 29 สิงหาคม 2026; หากต้องยกเลิกก่อนกำหนดให้ดำเนินการเฉพาะ TEST
 6. ห้ามแก้ Rich Menu หรือ Reward Card ของ Production `มะลิปัง`

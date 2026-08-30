@@ -4,7 +4,7 @@ Owner approval date / effective date: `2026-08-30`
 
 Review date: `2026-09-30`
 
-สถานะ: `OWNER APPROVED CHANGE / LIVE UAT FAILURE RECORDED / LOCAL FIX TEST PASS / THIS FIX NOT DEPLOYED / OWNER RE-UAT PENDING`
+สถานะ: `WORKER FIX DEPLOYED / RICH MENU V1 CONFIGURATION MISMATCH CONFIRMED / V2 LOCAL READY NOT PUBLISHED / OWNER RE-UAT PENDING`
 
 เอกสารนี้บันทึก Owner approval สำหรับ `มะลิปัง TEST` ตาม Roadmap Issue #9 และ Issue #8 เท่านั้น ข้อความที่อนุมัติถูกเก็บใน `config/approved-knowledge-base/test-knowledge-base.json` พร้อม version และ SHA-256 checksum ของ UTF-8 exact answer ทุก record ข้อมูลจะ fail closed ตั้งแต่เริ่มวันที่ทบทวนหากยังไม่มี manifest version ใหม่
 
@@ -20,6 +20,8 @@ Live UAT ของ deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` �
 - postback ข้างต้นห้ามส่ง acknowledgement ซ้ำ ห้ามปิด/reset handoff และห้ามเปลี่ยนเจ้าของ conversation จากพนักงานกลับเป็นบอต
 - `test:show_facebook`, unknown และ Production-like postback ไม่อยู่ใน allowlist และต้อง fail closed; ระหว่าง handoff ต้องไม่ตอบข้อมูลใหม่
 - menu lexicon เพิ่ม `ขอเมนู`, `ขอเมนูหน่อย`, `เมนูขนมปัง`, `มีอะไรบ้าง`, `มีไรบ้าง` และ `ขอดูเมนู`; manifest `MENU` เปลี่ยนเป็น version `2026-08-31-menu-v2` โดย exact answer/checksum เดิม
+
+Owner re-UAT หลัง deploy Worker fix พบ configuration mismatch เพิ่มเติม: Rich Menu v1 ส่งสามปุ่มตอบบอตเป็น native text/message action ไม่ใช่ postback จึงถูก handoff silence เช่นเดียวกับ typed message ตามที่ออกแบบไว้ Local v2 จึงเตรียม exact TEST postback `test:show_rewards`, `test:show_delivery` และ `test:show_menu` โดยยังไม่ Publish/set default และไม่ปิด active handoff จนกว่าจะได้รับ Owner approval แยก
 
 ## ตาราง Owner approval 14 หมวด
 
@@ -58,9 +60,11 @@ Live UAT ของ deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` �
 - [x] Local automated tests ผ่าน
 - [x] Owner อนุมัติข้อยกเว้น static Rich Menu postback ระหว่าง handoff และ expanded menu lexicon
 - [x] Local full checks ของ amendment 2026-08-31 ผ่าน: 193 Node + 24 Worker tests
-- [ ] Owner อนุมัติ TEST deployment ของ fix แยก
-- [ ] Owner re-UAT จาก frozen deployed fix ผ่าน
+- [x] Corrective Worker commit ถูก deploy เฉพาะ TEST และ health/security gates ผ่าน
+- [x] Local Rich Menu v2 payload/validator และ full suite ผ่าน: 194 Node + 24 Worker tests
+- [ ] Owner อนุมัติ Publish/set default Rich Menu postback v2 และปิด active TEST handoff
+- [ ] Owner re-UAT จาก Worker fix + Rich Menu v2 ผ่าน
 
 Issue #8 ต้องคง `OPEN` จนสองรายการสุดท้ายผ่านจริง ห้ามเริ่ม Issue #2, #4, #5 หรือ #6 ก่อน Roadmap อนุญาต
 
-การแก้ amendment รอบนี้ยังไม่ deploy และไม่มีการเปลี่ยน LINE OA, Rich Menu, Webhook, Reward Card หรือ secret ใด ๆ ส่วน Production `มะลิปัง` ไม่ถูกเปิดหรือแก้ไข
+Rich Menu v2 รอบนี้เป็น local configuration เท่านั้น ไม่มีการเปลี่ยน LINE OA, Rich Menu, Webhook, Reward Card หรือ secret ใด ๆ ส่วน Production `มะลิปัง` ไม่ถูกเปิดหรือแก้ไข
