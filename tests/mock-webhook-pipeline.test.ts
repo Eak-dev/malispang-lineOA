@@ -53,7 +53,7 @@ describe("mock webhook safety pipeline", () => {
     const test = pipeline();
     const result = test.pipeline.process(event(), MOCK_VALID_SIGNATURE);
     expect(result.status).toBe("PROCESSED");
-    expect(result.replies).toHaveLength(1);
+    expect(result.replies).toHaveLength(2);
     expect(test.store.processedEventIds).toEqual(new Set(["E1"]));
   });
 

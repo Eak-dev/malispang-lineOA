@@ -15,13 +15,7 @@ export const HANDOFF_ACKNOWLEDGEMENT =
   "รับเรื่องแล้วค่ะ พนักงานมะลิปังจะเข้ามาตอบโดยเร็วที่สุดนะคะ ระหว่างนี้สามารถพิมพ์รายละเอียดเพิ่มเติมไว้ได้เลยค่ะ 😊";
 
 export const SAFE_FALLBACK =
-  "ขออภัยค่ะ ข้อมูลนี้ยังไม่มีแหล่งข้อมูลที่เจ้าของร้านอนุมัติ จึงยังยืนยันแทนร้านไม่ได้ หากต้องการ สามารถเลือก “คุยกับพนักงาน” เพื่อให้พนักงานช่วยตรวจสอบค่ะ";
-
-export const MOCK_DRAFT_ORDER_NOTICE =
-  "โหมด TEST: เป็นเพียงแบบร่างจำลอง ไม่มีการสร้างออเดอร์จริงและไม่รับชำระเงินจริงค่ะ";
-
-export const MOCK_REWARDS_NOTICE =
-  "โหมด TEST: ข้อมูลโปรโมชั่นและสะสมแต้มเป็นข้อมูลทดสอบเท่านั้น ไม่เชื่อมบัตร Production และไม่ให้แต้มจริงค่ะ";
+  "ขออภัยค่ะ ตอนนี้น้องมะลิยังไม่มีข้อมูลที่ยืนยันสำหรับคำถามนี้ เพื่อไม่ให้ข้อมูลผิด กรุณากด “คุยกับพนักงาน” หรือพิมพ์ “คุยกับพนักงาน” ได้เลยนะคะ 😊";
 
 export interface Phase1AOptions {
   readonly environment: "test";
@@ -80,6 +74,13 @@ export class Phase1AService {
       return this.routeAction(event, event.content.action);
     }
 
+    if (requiresApprovedGuidanceThenHandoff(event.content.text)) {
+      return this.answerFaqThenHandoff(
+        event,
+        this.faq.lookupText(event.content.text),
+      );
+    }
+
     if (requiresHumanReview(event.content.text)) {
       return this.enterHandoff(event, "SENSITIVE_OR_DYNAMIC_TOPIC");
     }
@@ -107,23 +108,16 @@ export class Phase1AService {
       return this.enterHandoff(event, "CUSTOMER_REQUESTED_STAFF");
     }
     if (action === "CHECK_TODAY") {
-      return this.enterHandoff(event, "CURRENT_STOCK_REQUIRES_STAFF");
+      return this.answerFaqThenHandoff(event, this.faq.lookupIntent("STOCK"));
     }
     if (action === "ADVANCE_ORDER") {
-      return this.textReply(
+      return this.answerFaqThenHandoff(
         event,
-        MOCK_DRAFT_ORDER_NOTICE,
-        "MOCK_NOTICE_SENT",
-        "MOCK_DRAFT_ONLY",
+        this.faq.lookupIntent("ADVANCE_ORDER"),
       );
     }
     if (action === "REWARDS_INFO") {
-      return this.textReply(
-        event,
-        MOCK_REWARDS_NOTICE,
-        "MOCK_NOTICE_SENT",
-        "TEST_REWARDS_ONLY",
-      );
+      return this.answerFaqOrFallback(event, this.faq.lookupIntent("LOYALTY"));
     }
 
     const intentByAction: Readonly<Partial<Record<CustomerAction, FaqIntent>>> =
@@ -161,11 +155,43 @@ export class Phase1AService {
     );
   }
 
+  private answerFaqThenHandoff(
+    event: Extract<MockEvent, { kind: "customer" }>,
+    result: ReturnType<ApprovedFaqKnowledgeBase["lookupText"]>,
+  ): readonly ReplyEnvelope[] {
+    if (result.status !== "APPROVED" || result.answer === undefined) {
+      return this.safeFallback(
+        event,
+        `FAQ_${result.intent ?? "UNKNOWN"}_NOT_AUTHORITATIVE`,
+      );
+    }
+    const answer = this.textReply(
+      event,
+      result.answer,
+      "FAQ_ANSWERED",
+      `FAQ_${result.intent ?? "UNKNOWN"}_STAFF_REVIEW`,
+      result.provenance,
+    );
+    return [
+      ...answer,
+      ...this.enterHandoff(
+        event,
+        `FAQ_${result.intent ?? "UNKNOWN"}_STAFF_REVIEW`,
+      ),
+    ];
+  }
+
   private safeFallback(
     event: Extract<MockEvent, { kind: "customer" }>,
     reasonCode: string,
   ): readonly ReplyEnvelope[] {
-    return this.textReply(event, SAFE_FALLBACK, "SAFE_FALLBACK", reasonCode);
+    const fallback = this.textReply(
+      event,
+      SAFE_FALLBACK,
+      "SAFE_FALLBACK",
+      reasonCode,
+    );
+    return [...fallback, ...this.enterHandoff(event, reasonCode)];
   }
 
   private flexMenu(
@@ -270,21 +296,33 @@ function isFlexMenuRequest(text: string): boolean {
 
 function requiresHumanReview(text: string): boolean {
   const normalized = normalize(text);
+  return ["ชำระเงิน", "โอนเงิน", "สลิป", "ร้องเรียน", "ไม่พอใจ"].some(
+    (keyword) => normalized.includes(keyword),
+  );
+}
+
+function requiresApprovedGuidanceThenHandoff(text: string): boolean {
+  const normalized = normalize(text);
   return [
-    "ชำระเงิน",
-    "โอนเงิน",
-    "สลิป",
-    "ร้องเรียน",
-    "ไม่พอใจ",
     "แพ้อาหาร",
     "สารก่อภูมิแพ้",
+    "ส่วนผสมเพื่อการแพ้",
     "ออเดอร์จำนวนมาก",
     "สั่งเยอะ",
+    "ราคาส่ง",
+    "ขายส่ง",
     "สต๊อก",
+    "สต็อก",
+    "มีของไหม",
     "มีของวันนี้",
     "ของเหลือ",
     "โปรโมชั่น",
     "โปรโมชัน",
+    "ไส้พิเศษ",
+    "สั่งล่วงหน้า",
+    "พรีออเดอร์",
+    "แลกรางวัล",
+    "แลกแต้ม",
   ].some((keyword) => normalized.includes(keyword));
 }
 

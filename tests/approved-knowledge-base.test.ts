@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
@@ -16,7 +17,7 @@ const manifestPath = new URL(
 );
 
 describe("Issue #8 Approved Knowledge Base manifest", () => {
-  it("validates the committed TEST-only fail-closed manifest", async () => {
+  it("validates the committed TEST-only approved manifest", async () => {
     const manifest = await loadManifest();
     expect(validateApprovedKnowledgeManifest(manifest)).toEqual([]);
     expect(manifest).toMatchObject({
@@ -30,25 +31,29 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
     );
     expect(
       Object.values(manifest.categories).every(
-        (record) => record.status === "BLOCKED",
+        (record) => record.status === "APPROVED",
       ),
     ).toBe(true);
-    expect(approvedFaqRecordsFromManifest(manifest)).toEqual([]);
+    expect(approvedFaqRecordsFromManifest(manifest)).toHaveLength(14);
   });
 
-  it("does not store a customer-facing answer on any blocked category", async () => {
-    const serialized = JSON.stringify(await loadManifest());
-    expect(serialized).not.toContain("customerFacingAnswer");
-    expect(serialized).not.toContain("TEST_SEED");
-    expect(serialized).not.toContain("39 บาท");
-    expect(serialized).not.toContain("08:00");
+  it("binds every approved exact answer to its SHA-256 checksum", async () => {
+    const manifest = await loadManifest();
+    for (const record of Object.values(manifest.categories)) {
+      expect(record.status).toBe("APPROVED");
+      if (record.status !== "APPROVED") continue;
+      expect(record.checksum).toBe(answerChecksum(record.customerFacingAnswer));
+      expect(record.customerFacingAnswer).not.toMatch(
+        /TEST_SEED|TEST ONLY|ทดสอบระบบ/i,
+      );
+    }
   });
 
-  it("fails closed for every current Thai business-data question", async () => {
+  it("answers every Owner-approved Thai business-data category", async () => {
     const manifest = await loadManifest();
     const knowledgeBase = new ApprovedFaqKnowledgeBase(
       approvedFaqRecordsFromManifest(manifest),
-      () => new Date("2026-08-29T00:00:00+07:00"),
+      () => new Date("2026-08-30T12:00:00+07:00"),
     );
     for (const text of [
       "มีเมนูอะไรบ้าง",
@@ -66,7 +71,20 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
       "สะสมแต้มอย่างไร",
       "มีของไหม",
     ]) {
-      expect(knowledgeBase.lookupText(text).status).toBe("NOT_AUTHORITATIVE");
+      expect(knowledgeBase.lookupText(text).status).toBe("APPROVED");
+    }
+  });
+
+  it("fails closed for every category at the 2026-09-30 review boundary", async () => {
+    const manifest = await loadManifest();
+    const knowledgeBase = new ApprovedFaqKnowledgeBase(
+      approvedFaqRecordsFromManifest(manifest),
+      () => new Date("2026-09-30T00:00:00+07:00"),
+    );
+    for (const intent of FAQ_INTENTS) {
+      expect(knowledgeBase.lookupIntent(intent).status).toBe(
+        "NOT_AUTHORITATIVE",
+      );
     }
   });
 
@@ -100,6 +118,25 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
     expect(errors).toContain("PRICE_INVALID_SOURCE_REFERENCE");
     expect(errors).toContain("PRICE_KEYWORDS_MISSING");
   });
+
+  it("rejects a checksum that does not match the exact answer", async () => {
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const categories = manifest.categories as Record<string, unknown>;
+    categories.PRICE = {
+      ...approvedRecord("คำตอบที่มี checksum ถูกต้องก่อนแก้"),
+      customerFacingAnswer: "คำตอบถูกแก้โดยไม่หมุน checksum",
+    };
+    const record = categories.PRICE as {
+      customerFacingAnswer: string;
+      checksum: string;
+    };
+    expect(answerChecksum(record.customerFacingAnswer)).not.toBe(
+      record.checksum,
+    );
+  });
 });
 
 async function loadManifest(): Promise<ApprovedKnowledgeManifest> {
@@ -124,8 +161,12 @@ function approvedRecord(answer: string): Record<string, unknown> {
       maximumAgeDays: 90,
     },
     version: "fixture-v1",
-    checksum: "b".repeat(64),
+    checksum: answerChecksum(answer),
     keywords: ["ราคา"],
     customerFacingAnswer: answer,
   };
+}
+
+function answerChecksum(answer: string): string {
+  return createHash("sha256").update(answer, "utf8").digest("hex");
 }

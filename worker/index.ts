@@ -131,8 +131,8 @@ async function processLineEvent(
   const messages = replyMessages(
     result.replyKind,
     env.PUBLIC_ASSET_BASE_URL,
-    env.TEST_REWARD_CARD_URL,
     approvedAnswerForReplyKind(result.replyKind),
+    result.enteredHandoff,
   );
   if (messages.length === 0) return;
   await sendLineReply(
@@ -148,7 +148,7 @@ function eventDecision(event: ParsedLineEvent): RouteDecision {
   if (event.kind === "text") return classifyText(event.text);
   if (event.kind === "postback") return classifyPostback(event.data);
   return {
-    replyKind: "SLIP_ACK",
+    replyKind: "HANDOFF_ACK",
     reasonCode: "IMAGE_REQUIRES_HUMAN_REVIEW",
     handoff: true,
   };

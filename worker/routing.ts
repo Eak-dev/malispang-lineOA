@@ -1,16 +1,13 @@
 import { buildFlexMenu, FLEX_MENU_ALT_TEXT } from "../src/flex-menu.js";
 
 export const SAFE_FALLBACK =
-  "ขออภัยค่ะ ตอนนี้น้องมะลิยังไม่มีข้อมูลที่ยืนยันสำหรับคำถามนี้ เพื่อไม่ให้ข้อมูลผิด สามารถกด “คุยกับพนักงาน” หรือพิมพ์ “คุยกับพนักงาน” ได้เลยนะคะ 😊";
+  "ขออภัยค่ะ ตอนนี้น้องมะลิยังไม่มีข้อมูลที่ยืนยันสำหรับคำถามนี้ เพื่อไม่ให้ข้อมูลผิด กรุณากด “คุยกับพนักงาน” หรือพิมพ์ “คุยกับพนักงาน” ได้เลยนะคะ 😊";
 
 export const HANDOFF_ACKNOWLEDGEMENT =
   "รับเรื่องแล้วค่ะ พนักงานมะลิปังจะเข้ามาตอบโดยเร็วที่สุดนะคะ ระหว่างนี้สามารถพิมพ์รายละเอียดเพิ่มเติมไว้ได้เลยค่ะ 😊";
 
 export const SLIP_ACKNOWLEDGEMENT =
   "ได้รับรูปแล้วค่ะ รายการชำระเงินต้องให้พนักงานตรวจสอบก่อนนะคะ ทางร้านจะกลับมายืนยันอีกครั้งค่ะ";
-
-export const REWARD_CARD_ACTIVE_MESSAGE =
-  "บัตรแต้ม TEST เปิดให้ทดสอบแล้วค่ะ\nซื้อครบ 50 บาท รับ 1 แต้ม\nใช้เฉพาะบัญชีมะลิปัง TEST และรางวัลไม่มีมูลค่าจริงนะคะ";
 
 export type ReplyKind =
   | "NONE"
@@ -25,12 +22,13 @@ export type ReplyKind =
   | "CONTACT"
   | "PICKUP"
   | "STORAGE"
+  | "ALLERGEN"
   | "WHOLESALE"
   | "ADVANCE_ORDER"
   | "DELIVERY"
   | "PROMOTION"
   | "LOYALTY"
-  | "REWARDS";
+  | "STOCK";
 
 export interface RouteDecision {
   readonly replyKind: ReplyKind;
@@ -101,7 +99,7 @@ export function classifyText(text: string): RouteDecision {
   const normalized = normalize(text);
 
   if (normalized === "สะสมแต้มและโปรโมชั่น") {
-    return reply("REWARDS", "RICH_MENU_REWARD_FAIL_CLOSED");
+    return reply("LOYALTY", "RICH_MENU_LOYALTY_RULES");
   }
   if (normalized === "delivery") {
     return reply("DELIVERY", "RICH_MENU_DELIVERY_UNAVAILABLE");
@@ -119,21 +117,75 @@ export function classifyText(text: string): RouteDecision {
       "ร้องเรียน",
       "สินค้ามีปัญหา",
       "ไม่พอใจ",
+    ])
+  ) {
+    return handoff("HIGH_RISK_OR_DYNAMIC_TOPIC");
+  }
+  if (
+    includesAny(normalized, [
       "แพ้อาหาร",
       "สารก่อภูมิแพ้",
       "ส่วนผสมเพื่อการแพ้",
+      "แพ้แป้ง",
+      "แพ้นม",
+      "แพ้ไข่",
+      "แพ้ถั่ว",
+    ])
+  ) {
+    return replyAndHandoff("ALLERGEN", "ALLERGEN_REQUIRES_STAFF_REVIEW");
+  }
+  if (
+    includesAny(normalized, [
       "มีของไหม",
       "สต๊อก",
       "สต็อก",
       "ของวันนี้",
+      "เช็กสต๊อก",
+      "ไส้พิเศษวันนี้",
+    ])
+  ) {
+    return replyAndHandoff("STOCK", "CURRENT_STOCK_REQUIRES_STAFF_REVIEW");
+  }
+  if (
+    includesAny(normalized, [
+      "โปรโมชั่นพิเศษ",
+      "โปรโมชันพิเศษ",
+      "โปรวันนี้",
+      "ไส้พิเศษ",
+    ])
+  ) {
+    return replyAndHandoff(
+      "PROMOTION",
+      "DAILY_PROMOTION_REQUIRES_STAFF_REVIEW",
+    );
+  }
+  if (
+    includesAny(normalized, [
       "ออเดอร์จำนวนมาก",
       "สั่งเยอะ",
       "จัดเลี้ยง",
+      "ราคาส่ง",
+      "ขายส่ง",
+    ])
+  ) {
+    return replyAndHandoff("WHOLESALE", "WHOLESALE_REQUIRES_STAFF_REVIEW");
+  }
+  if (
+    includesAny(normalized, [
+      "พรีออเดอร์",
+      "preorder",
+      "สั่งล่วงหน้า",
       "วันรับสินค้า",
       "รับสินค้าวัน",
     ])
   ) {
-    return handoff("HIGH_RISK_OR_DYNAMIC_TOPIC");
+    return replyAndHandoff(
+      "ADVANCE_ORDER",
+      "ADVANCE_ORDER_REQUIRES_STAFF_REVIEW",
+    );
+  }
+  if (includesAny(normalized, ["แลกรางวัล", "แลกแต้ม"])) {
+    return replyAndHandoff("LOYALTY", "REWARD_REDEMPTION_REQUIRES_STAFF");
   }
   if (includesAny(normalized, ["คุยกับพนักงาน", "แอดมิน", "เจ้าหน้าที่"])) {
     return handoff("CUSTOMER_REQUESTED_STAFF");
@@ -148,9 +200,6 @@ export function classifyText(text: string): RouteDecision {
     includesAny(normalized, ["มีเมนูอะไร", "เมนูขนม", "รายการขนม", "ดูเมนู"])
   ) {
     return reply("MENU", "KB_MENU_NOT_AUTHORITATIVE");
-  }
-  if (includesAny(normalized, ["ราคาส่ง", "ขายส่ง"])) {
-    return reply("WHOLESALE", "KB_WHOLESALE_NOT_AUTHORITATIVE");
   }
   if (includesAny(normalized, ["ติดต่อร้าน", "เบอร์ติดต่อ", "ช่องทางติดต่อ"])) {
     return reply("CONTACT", "KB_CONTACT_NOT_AUTHORITATIVE");
@@ -194,11 +243,17 @@ export function classifyText(text: string): RouteDecision {
   ) {
     return reply("STORAGE", "KB_STORAGE_NOT_AUTHORITATIVE");
   }
-  if (includesAny(normalized, ["สั่งล่วงหน้า", "วิธีสั่ง", "สั่งยังไง"])) {
-    return reply("ADVANCE_ORDER", "KB_ADVANCE_ORDER_NOT_AUTHORITATIVE");
+  if (includesAny(normalized, ["วิธีสั่ง", "สั่งยังไง"])) {
+    return replyAndHandoff(
+      "ADVANCE_ORDER",
+      "ADVANCE_ORDER_REQUIRES_STAFF_REVIEW",
+    );
   }
   if (includesAny(normalized, ["มีโปร", "โปรโมชั่น", "โปรโมชัน"])) {
-    return reply("PROMOTION", "KB_PROMOTION_NOT_AUTHORITATIVE");
+    return replyAndHandoff(
+      "PROMOTION",
+      "DAILY_PROMOTION_REQUIRES_STAFF_REVIEW",
+    );
   }
   if (includesAny(normalized, ["กติกาแต้ม", "แลกแต้ม", "บัตรแต้ม"])) {
     return reply("LOYALTY", "KB_LOYALTY_NOT_AUTHORITATIVE");
@@ -206,7 +261,7 @@ export function classifyText(text: string): RouteDecision {
   if (includesAny(normalized, ["delivery", "เดลิเวอรี", "ส่งถึงบ้าน"])) {
     return reply("DELIVERY", "KB_DELIVERY_NOT_AUTHORITATIVE");
   }
-  return reply("SAFE_FALLBACK", "NO_AUTHORITATIVE_ANSWER");
+  return replyAndHandoff("SAFE_FALLBACK", "NO_AUTHORITATIVE_ANSWER");
 }
 
 export function classifyPostback(data: string): RouteDecision {
@@ -217,21 +272,25 @@ export function classifyPostback(data: string): RouteDecision {
     "test:show_location": "LOCATION",
     "test:show_hours": "HOURS",
     "test:show_wholesale": "WHOLESALE",
-    "test:show_rewards": "REWARDS",
+    "test:show_rewards": "LOYALTY",
     "test:show_delivery": "DELIVERY",
     "test:show_facebook": "SAFE_FALLBACK",
   };
   if (data === "test:human_handoff") return handoff("CUSTOMER_REQUESTED_STAFF");
+  if (data === "test:show_wholesale") {
+    return replyAndHandoff("WHOLESALE", "WHOLESALE_REQUIRES_STAFF_REVIEW");
+  }
   const replyKind = routes[data];
-  return reply(
-    replyKind ?? "SAFE_FALLBACK",
-    replyKind ? `POSTBACK_${replyKind}` : "POSTBACK_NOT_ALLOWED",
-  );
+  if (replyKind === "SAFE_FALLBACK") {
+    return replyAndHandoff("SAFE_FALLBACK", "POSTBACK_SAFE_FALLBACK");
+  }
+  return replyKind
+    ? reply(replyKind, `POSTBACK_${replyKind}`)
+    : replyAndHandoff("SAFE_FALLBACK", "POSTBACK_NOT_ALLOWED");
 }
 
 export function replyMessage(
   kind: ReplyKind,
-  testRewardCardUrl?: string,
   approvedAnswer?: string,
 ): LineReplyMessage | undefined {
   if (kind === "NONE") return undefined;
@@ -244,11 +303,13 @@ export function replyMessage(
     kind === "CONTACT" ||
     kind === "PICKUP" ||
     kind === "STORAGE" ||
+    kind === "ALLERGEN" ||
     kind === "WHOLESALE" ||
     kind === "ADVANCE_ORDER" ||
     kind === "DELIVERY" ||
     kind === "PROMOTION" ||
-    kind === "LOYALTY"
+    kind === "LOYALTY" ||
+    kind === "STOCK"
   ) {
     return withStaffQuickReply({
       type: "text",
@@ -268,9 +329,6 @@ export function replyMessage(
       contents: buildFlexMenu(),
     });
   }
-  if (kind === "REWARDS") {
-    return rewardCardMessage(validatedTestRewardCardUrl(testRewardCardUrl));
-  }
   return withStaffQuickReply({
     type: "text",
     text: "บัญชี TEST นี้ช่วยตอบข้อมูลและร่างคำถามเท่านั้น ยังไม่สร้างออเดอร์จริง ไม่จองสต๊อก และไม่รับชำระเงินจริง กรุณากด “คุยกับพนักงาน” เพื่อดำเนินการต่อค่ะ",
@@ -279,54 +337,63 @@ export function replyMessage(
 
 export function replyMessages(
   kind: ReplyKind,
-  _publicAssetBaseUrl: string,
-  testRewardCardUrl: string,
+  publicAssetBaseUrl: string,
   approvedAnswer?: string,
+  enteredHandoff = false,
 ): readonly LineReplyMessage[] {
-  const message = replyMessage(kind, testRewardCardUrl, approvedAnswer);
-  return message ? [message] : [];
+  const messages =
+    (kind === "MENU" || kind === "PRICE" || kind === "STOCK") &&
+    approvedAnswer?.trim()
+      ? menuMessages(publicAssetBaseUrl, approvedAnswer)
+      : [replyMessage(kind, approvedAnswer)].filter(
+          (message): message is LineReplyMessage => message !== undefined,
+        );
+  if (
+    enteredHandoff &&
+    kind !== "HANDOFF_ACK" &&
+    kind !== "SLIP_ACK" &&
+    kind !== "NONE"
+  ) {
+    return [...messages, { type: "text", text: HANDOFF_ACKNOWLEDGEMENT }];
+  }
+  return messages;
 }
 
-function rewardCardMessage(url: string): LineReplyMessage {
-  return withStaffQuickReply({
-    type: "template",
-    altText: "เปิดบัตรสะสมแต้ม มะลิปัง TEST",
-    template: {
-      type: "buttons",
-      text: REWARD_CARD_ACTIVE_MESSAGE,
-      actions: [
-        {
-          type: "uri",
-          label: "เปิดบัตรสะสมแต้ม",
-          uri: url,
-        },
-      ],
-    },
-  });
+function menuMessages(
+  publicAssetBaseUrl: string,
+  approvedAnswer: string,
+): readonly LineReplyMessage[] {
+  const baseUrl = validatedTestAssetBaseUrl(publicAssetBaseUrl);
+  return [
+    imageMessage(`${baseUrl}/menu/bread-menu.jpeg`),
+    imageMessage(`${baseUrl}/menu/chiffon-cookie-menu.jpeg`),
+    withStaffQuickReply({ type: "text", text: approvedAnswer }),
+  ];
 }
 
-export function validatedTestRewardCardUrl(value: string | undefined): string {
-  if (typeof value !== "string")
-    throw new Error("INVALID_TEST_REWARD_CARD_URL");
-  const normalized = value.trim();
+function imageMessage(url: string): LineReplyMessage {
+  return { type: "image", originalContentUrl: url, previewImageUrl: url };
+}
+
+export function validatedTestAssetBaseUrl(value: string): string {
   let url: URL;
   try {
-    url = new URL(normalized);
+    url = new URL(value.trim());
   } catch {
-    throw new Error("INVALID_TEST_REWARD_CARD_URL");
+    throw new Error("INVALID_TEST_ASSET_BASE_URL");
   }
   if (
     url.protocol !== "https:" ||
-    url.hostname !== "u.lin.ee" ||
-    !/^\/[A-Za-z0-9_-]+$/.test(url.pathname) ||
+    url.hostname !== "malispang-lineoa-test.eakkachai-dev.workers.dev" ||
+    (url.pathname !== "" && url.pathname !== "/") ||
     url.username !== "" ||
     url.password !== "" ||
     url.search !== "" ||
     url.hash !== ""
   ) {
-    throw new Error("INVALID_TEST_REWARD_CARD_URL");
+    throw new Error("INVALID_TEST_ASSET_BASE_URL");
   }
-  return normalized;
+  return url.origin;
 }
 
 function withStaffQuickReply(message: LineReplyMessage): LineReplyMessage {
@@ -335,6 +402,13 @@ function withStaffQuickReply(message: LineReplyMessage): LineReplyMessage {
 
 function handoff(reasonCode: string): RouteDecision {
   return { replyKind: "HANDOFF_ACK", reasonCode, handoff: true };
+}
+
+function replyAndHandoff(
+  replyKind: ReplyKind,
+  reasonCode: string,
+): RouteDecision {
+  return { replyKind, reasonCode, handoff: true };
 }
 
 function reply(replyKind: ReplyKind, reasonCode: string): RouteDecision {

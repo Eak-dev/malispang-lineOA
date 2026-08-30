@@ -6,228 +6,329 @@
   "defaultBehavior": "FAIL_CLOSED",
   "categories": {
     "MENU": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "TEST_EVIDENCE_ONLY",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "MENU_CURRENT_SOURCE_REQUIRED",
-      "fallback": "SAFE_FALLBACK"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-menu-v1",
+      "checksum": "1db66c4677a2951a9e29e5a247d6ac69fff7acdf37dd28ebaffceb2800794b3f",
+      "keywords": [
+        "เมนู",
+        "มีเมนูอะไรบ้าง",
+        "เมนูขนมปัง",
+        "รายการขนม",
+        "ดูเมนู"
+      ],
+      "customerFacingAnswer": "เมนูตามรูปเป็นรายการอ้างอิง สินค้าหน้าร้านมีการขายออกตลอดวัน จึงอาจมีสินค้าไม่ครบหรือหมดได้ค่ะ หากต้องการเช็กสต๊อกสินค้าวันนี้ สอบถามโปรโมชั่นพิเศษประจำวัน หรือไส้พิเศษประจำวัน กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊"
     },
     "PRICE": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "TEST_EVIDENCE_ONLY",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "PRICE_CURRENT_SOURCE_REQUIRED",
-      "fallback": "SAFE_FALLBACK"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-price-v1",
+      "checksum": "1db66c4677a2951a9e29e5a247d6ac69fff7acdf37dd28ebaffceb2800794b3f",
+      "keywords": ["ราคา", "กี่บาท", "เท่าไหร่"],
+      "customerFacingAnswer": "เมนูตามรูปเป็นรายการอ้างอิง สินค้าหน้าร้านมีการขายออกตลอดวัน จึงอาจมีสินค้าไม่ครบหรือหมดได้ค่ะ หากต้องการเช็กสต๊อกสินค้าวันนี้ สอบถามโปรโมชั่นพิเศษประจำวัน หรือไส้พิเศษประจำวัน กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊"
     },
     "LOCATION": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "CONFLICTING_EVIDENCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "LOCATION_CURRENT_SOURCE_REQUIRED",
-      "fallback": "SAFE_FALLBACK"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-location-v1",
+      "checksum": "6c12258f88527b58f3fd4742c69733c16b518d3188f9cb51b57042de76ca528d",
+      "keywords": [
+        "ที่ตั้ง",
+        "พิกัด",
+        "ร้านอยู่ไหน",
+        "ร้านอยู่ที่ไหน",
+        "เดินทาง"
+      ],
+      "customerFacingAnswer": "ขณะนี้มะลิปังมีสาขาที่ ตลาดยิ่งเจริญ สะพานใหม่ ค่ะ ดูแผนที่ได้ที่: https://maps.app.goo.gl/mLTyUC1891a4uu7D9?g_st=ic และกำลังเตรียมพบกับสาขาใหม่เร็ว ๆ นี้ ติดตามข่าวสารได้ทาง LINE นี้นะคะ 😊"
     },
     "OPENING_HOURS": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "CONFLICTING_EVIDENCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "OPENING_HOURS_CONFLICT",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-opening-hours-v1",
+      "checksum": "a246ebc1d77695644bec3ac76d2bfbff55a3cde09ce095ce498b7c21496958e4",
+      "keywords": ["เวลาทำการ", "เปิดกี่โมง", "ปิดกี่โมง", "ร้านเปิด"],
+      "customerFacingAnswer": "ร้านมะลิปังเปิดทุกวัน เวลา 06:00–16:00 น. ค่ะ หากมีการเปลี่ยนแปลงในวันหยุด ทางร้านจะแจ้งล่วงหน้าผ่าน LINE นี้นะคะ 😊"
     },
     "CONTACT": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "NO_AUTHORITATIVE_SOURCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "CONTACT_SOURCE_REQUIRED",
-      "fallback": "SAFE_FALLBACK"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-contact-v1",
+      "checksum": "bacee458e4a00921943745cdec0a676c3707f1985f01b37dc5f7a18f1351da38",
+      "keywords": ["ติดต่อ", "ติดต่อร้าน", "ช่องทางติดต่อ"],
+      "customerFacingAnswer": "สอบถามเพิ่มเติมได้ทาง LINE Official Account ของมะลิปังนี้ได้เลยค่ะ หากต้องการให้พนักงานช่วยดูแล กรุณากด “คุยกับพนักงาน” นะคะ 😊"
     },
     "PICKUP": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "NO_AUTHORITATIVE_SOURCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "PICKUP_TERMS_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-pickup-v1",
+      "checksum": "e93fb3272a48a403fc984acd783ad8283a7f82d06ce442fcc411278e42ba61a8",
+      "keywords": ["รับสินค้า", "รับของ", "จุดรับสินค้า", "รับสินค้าที่ร้าน"],
+      "customerFacingAnswer": "สามารถสั่งล่วงหน้าและรับสินค้าได้ที่ร้านมะลิปัง ตลาดยิ่งเจริญ สะพานใหม่ค่ะ 😊 กรุณากด “คุยกับพนักงาน” แล้วแจ้งชื่อ เบอร์โทร วันและเวลารับสินค้า พร้อมรายการที่ต้องการ ทางร้านจะตรวจสอบและยืนยันรายการ ยอดรวม และรายละเอียดการรับสินค้าให้ก่อนรับออเดอร์ค่ะ"
     },
     "STORAGE": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "TEST_EVIDENCE_ONLY",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "STORAGE_PRODUCT_SAFETY_APPROVAL_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-storage-v1",
+      "checksum": "81f9785fa63b16fd982a3e7b910b984f5c95e21bab626eda2627143e8e764a22",
+      "keywords": [
+        "เก็บรักษา",
+        "เก็บได้นาน",
+        "เก็บได้กี่วัน",
+        "แช่เย็น",
+        "อายุขนม"
+      ],
+      "customerFacingAnswer": "ขนมปังทั่วไปและชิฟฟ่อน เก็บนอกตู้เย็นได้ 2 วันนับจากวันที่ซื้อ หรือเก็บในตู้เย็นได้ 5 วันค่ะ ควรเก็บให้พ้นแสงแดดและความร้อน สินค้าที่มีครีมหรือไส้สดควรเก็บในตู้เย็นทันที หากต้องการทราบอายุสินค้าเฉพาะรายการ กรุณากด “คุยกับพนักงาน” นะคะ 😊"
     },
     "ALLERGEN": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "NO_AUTHORITATIVE_SOURCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "ALLERGEN_SOURCE_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-allergen-v1",
+      "checksum": "975c0c6241616dddd83a8e5678e35c02d47c0609aee96f78ae8c00438d3308af",
+      "keywords": [
+        "แพ้อาหาร",
+        "สารก่อภูมิแพ้",
+        "ส่วนผสม",
+        "แพ้แป้ง",
+        "แพ้นม",
+        "แพ้ไข่",
+        "แพ้ถั่ว"
+      ],
+      "customerFacingAnswer": "สินค้าแต่ละรายการอาจมีส่วนประกอบหรือสัมผัสกับวัตถุดิบที่ก่อภูมิแพ้ได้ เช่น แป้งสาลี นม ไข่ ถั่ว หรือวัตถุดิบอื่น ๆ หากมีอาการแพ้อาหาร หรือจำเป็นต้องหลีกเลี่ยงส่วนผสมใด กรุณากด “คุยกับพนักงาน” เพื่อให้ตรวจสอบก่อนสั่งซื้อนะคะ 😊"
     },
     "WHOLESALE": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "NO_AUTHORITATIVE_SOURCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "WHOLESALE_TERMS_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-wholesale-v1",
+      "checksum": "f212293f0819c1f35c685d6ea3603da2c27681af9bd3390ecbb987a5da376cc1",
+      "keywords": [
+        "ราคาส่ง",
+        "ขายส่ง",
+        "ออเดอร์จำนวนมาก",
+        "สั่งเยอะ",
+        "จัดเลี้ยง"
+      ],
+      "customerFacingAnswer": "สำหรับออเดอร์จำนวนมากหรือราคาส่ง กรุณากด “คุยกับพนักงาน” แล้วแจ้งชนิดสินค้า จำนวน วันที่ต้องการรับ และเวลารับสินค้า ทางร้านจะตรวจสอบราคา คิวผลิต และเงื่อนไขล่าสุดให้ก่อนยืนยันออเดอร์ค่ะ 😊"
     },
     "ADVANCE_ORDER": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "NO_AUTHORITATIVE_SOURCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "ADVANCE_ORDER_TERMS_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-advance-order-v1",
+      "checksum": "e93fb3272a48a403fc984acd783ad8283a7f82d06ce442fcc411278e42ba61a8",
+      "keywords": [
+        "สั่งล่วงหน้า",
+        "พรีออเดอร์",
+        "preorder",
+        "วิธีสั่ง",
+        "สั่งยังไง"
+      ],
+      "customerFacingAnswer": "สามารถสั่งล่วงหน้าและรับสินค้าได้ที่ร้านมะลิปัง ตลาดยิ่งเจริญ สะพานใหม่ค่ะ 😊 กรุณากด “คุยกับพนักงาน” แล้วแจ้งชื่อ เบอร์โทร วันและเวลารับสินค้า พร้อมรายการที่ต้องการ ทางร้านจะตรวจสอบและยืนยันรายการ ยอดรวม และรายละเอียดการรับสินค้าให้ก่อนรับออเดอร์ค่ะ"
     },
     "DELIVERY": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "TEST_EVIDENCE_ONLY",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "DELIVERY_CURRENT_APPROVAL_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-delivery-v1",
+      "checksum": "7c8c5405d721776c09a9c98a89af997245016e39a66e15e7b5bca026e180e8ea",
+      "keywords": ["delivery", "เดลิเวอรี", "ส่งถึงบ้าน", "จัดส่ง"],
+      "customerFacingAnswer": "ขณะนี้ร้านมะลิปังยังไม่มีบริการ Delivery โดยตรงนะคะ หากต้องการสั่งล่วงหน้าหรือสอบถามทางเลือกในการรับสินค้า กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊"
     },
     "PROMOTION": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "CONFLICTING_EVIDENCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "PROMOTION_EFFECTIVE_WINDOW_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-promotion-v1",
+      "checksum": "77d2e7951cc056acb474378d00248288e493e5caf0fd3b34ccf22aad98e42981",
+      "keywords": [
+        "โปรโมชั่น",
+        "โปรโมชัน",
+        "มีโปร",
+        "โปรวันนี้",
+        "ไส้พิเศษ",
+        "โปรโมชั่นพิเศษรายวัน"
+      ],
+      "customerFacingAnswer": "โปรโมชั่นพิเศษและไส้พิเศษของแต่ละวันอาจเปลี่ยนแปลงได้ค่ะ กรุณากด “คุยกับพนักงาน” เพื่อสอบถามรายการและเงื่อนไขล่าสุดได้เลยนะคะ 😊"
     },
     "LOYALTY": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "TEST_EVIDENCE_ONLY",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "LOYALTY_EFFECTIVE_WINDOW_REQUIRED",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-loyalty-v1",
+      "checksum": "88de090126b19c9e942d0f6017f1ad96bc3a2e506d14f36bebb7189876ccd881",
+      "keywords": [
+        "สะสมแต้ม",
+        "บัตรแต้ม",
+        "กติกาแต้ม",
+        "คะแนน",
+        "แลกแต้ม",
+        "แลกรางวัล"
+      ],
+      "customerFacingAnswer": "กติกาสะสมแต้มมะลิปัง\nทุกยอดซื้อที่ชำระเงินแล้ว รับ 1 แต้มต่อทุก 50 บาท โดยปัดเศษลงค่ะ\n\n🎁 สะสมครบ 30 แต้ม แลกคุกกี้ 1 ถุง มูลค่า 159 บาท เลือกรสชาติได้ตามสินค้าที่มีในวันแลก\n🎁 สะสมครบ 50 แต้ม แลกตุ๊กตา 1 ตัว จากแบบที่ร่วมรายการและมีในวันแลก\n\nบัตรและคะแนนเดิมยังใช้ได้ ไม่มีวันหมดอายุ\nการแลกรางวัลต้องให้พนักงานตรวจสอบและยืนยันที่ร้านนะคะ 😊"
     },
     "STOCK": {
-      "status": "BLOCKED",
+      "status": "APPROVED",
       "source": {
-        "classification": "NO_AUTHORITATIVE_SOURCE",
-        "reference": "github-issue-8"
+        "classification": "OWNER_APPROVED_REPOSITORY_RECORD",
+        "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
-      "owner": "OWNER_DECISION_PENDING",
-      "approvedAt": null,
-      "effectiveFrom": null,
-      "effectiveTo": null,
-      "freshness": { "reviewAt": null, "maximumAgeDays": null },
-      "version": null,
-      "checksum": null,
-      "blockerCode": "CURRENT_STOCK_REQUIRES_HUMAN_REVIEW",
-      "fallback": "HUMAN_REVIEW"
+      "owner": "MALISPANG_OWNER",
+      "approvedAt": "2026-08-30T00:00:00+07:00",
+      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "effectiveTo": "2026-09-30T00:00:00+07:00",
+      "freshness": {
+        "reviewAt": "2026-09-30T00:00:00+07:00",
+        "maximumAgeDays": 31
+      },
+      "version": "2026-08-30-stock-v1",
+      "checksum": "1db66c4677a2951a9e29e5a247d6ac69fff7acdf37dd28ebaffceb2800794b3f",
+      "keywords": [
+        "มีของไหม",
+        "สต๊อก",
+        "สต็อก",
+        "ของวันนี้",
+        "เช็กสต๊อก",
+        "ไส้พิเศษวันนี้"
+      ],
+      "customerFacingAnswer": "เมนูตามรูปเป็นรายการอ้างอิง สินค้าหน้าร้านมีการขายออกตลอดวัน จึงอาจมีสินค้าไม่ครบหรือหมดได้ค่ะ หากต้องการเช็กสต๊อกสินค้าวันนี้ สอบถามโปรโมชั่นพิเศษประจำวัน หรือไส้พิเศษประจำวัน กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊"
     }
   }
 }

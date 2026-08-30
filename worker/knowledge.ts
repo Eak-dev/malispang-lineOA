@@ -31,30 +31,11 @@ export function enforceApprovedKnowledge(
       ].join("|"),
     };
   }
-  const fallback =
-    record.status === "BLOCKED"
-      ? record.fallback
-      : defaultFallbackForIntent(intent);
   const reasonCode =
     record.status === "BLOCKED"
       ? record.blockerCode
       : `${intent}_STALE_OR_NOT_EFFECTIVE`;
-  if (fallback === "HUMAN_REVIEW") {
-    return {
-      replyKind: "HANDOFF_ACK",
-      reasonCode,
-      handoff: true,
-    };
-  }
-  return { ...decision, reasonCode };
-}
-
-function defaultFallbackForIntent(
-  intent: FaqIntent,
-): "SAFE_FALLBACK" | "HUMAN_REVIEW" {
-  return ["MENU", "PRICE", "LOCATION", "CONTACT"].includes(intent)
-    ? "SAFE_FALLBACK"
-    : "HUMAN_REVIEW";
+  return { replyKind: "SAFE_FALLBACK", reasonCode, handoff: true };
 }
 
 export function approvedAnswerForReplyKind(
@@ -75,11 +56,13 @@ function intentForReplyKind(replyKind: ReplyKind): FaqIntent | undefined {
     CONTACT: "CONTACT",
     PICKUP: "PICKUP",
     STORAGE: "STORAGE",
+    ALLERGEN: "ALLERGEN",
     WHOLESALE: "WHOLESALE",
     ADVANCE_ORDER: "ADVANCE_ORDER",
     DELIVERY: "DELIVERY",
     PROMOTION: "PROMOTION",
     LOYALTY: "LOYALTY",
+    STOCK: "STOCK",
   };
   return mapping[replyKind];
 }

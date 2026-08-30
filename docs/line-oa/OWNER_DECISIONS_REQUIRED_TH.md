@@ -48,7 +48,7 @@
 29. ยืนยัน cover image และ business/response hours ที่ต้อง mirror
 30. **RESOLVED 20 สิงหาคม 2026:** เปิด Messaging API, สร้าง Test Provider/Channel, ตั้ง encrypted credentials, deploy Test Worker และเปิด verified Webhook เฉพาะ `มะลิปัง TEST` แล้ว
 31. **RESOLVED 21 สิงหาคม 2026:** Owner live UAT จาก LINE ส่วนตัวผ่าน Rich Menu, Quick Reply, acknowledgement ครั้งเดียว และ handoff silence ครบ 8 ข้อ; authorized staff-close เคยผ่าน UAT ก่อนหน้า
-32. ยืนยันว่า TEST_SEED ราคา 39 บาท, ที่ตั้ง, เวลา 08:00–19:00 และการเก็บประมาณ 2 วันถูกต้อง ก่อนเปลี่ยนสถานะเป็น authoritative
+32. **RESOLVED/SUPERSEDED 30 สิงหาคม 2026 — TEST เท่านั้น:** Owner ไม่อนุมัติ TEST_SEED เดิมแบบเหมารวม แต่อนุมัติ exact Phase 1B records ใหม่: เมนู/ราคาใช้รูป approved พร้อม stock disclaimer, ที่ตั้งตลาดยิ่งเจริญและ Maps URL, เวลา `06:00–16:00`, การเก็บขนมปังทั่วไป/ชิฟฟ่อน 2 วันนอกตู้เย็นหรือ 5 วันในตู้เย็นพร้อมข้อจำกัดไส้ครีม/ไส้สด มีผล `2026-08-30` และทบทวน `2026-09-30`
 33. **RESOLVED 21 สิงหาคม 2026:** Rich Menu ใช้ราคาเริ่มต้น 39 บาท, กติกา 50 บาท = 1 แต้ม, Maps URL, Facebook URL และข้อความ Delivery ตาม GitHub Issue #1; action แต้มต้อง fail closed จน Reward Card พร้อม
 34. **RESOLVED 28 สิงหาคม 2026 — TEST เท่านั้น:** Reward Card `บัตรแต้ม TEST` ถูก Publish แยกใต้ `มะลิปัง TEST` ด้วยเป้าหมาย 50 แต้ม, Welcome bonus 0, Reminder None, cooldown วันละครั้ง และ Voucher `รางวัล TEST ไม่มีมูลค่า`; Owner อนุมัติ `No expiration` พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026 และ live UAT ผ่าน flow รับบัตร/เพิ่ม 1 แต้ม URL อยู่ใน encrypted `TEST_REWARD_CARD_URL` การใช้กับ Production ไม่ได้รับอนุมัติ
 35. **RESOLVED 21 สิงหาคม 2026:** Owner อนุมัติการหมุน `TEST_ADMIN_KEY` เฉพาะ Worker `malispang-lineoa-test`; เก็บค่าใหม่ใน Keychain/Cloudflare encrypted secret, ปิด handoff ของผู้ทดสอบ 1 รายการ และยืนยัน active handoff = `0` โดยไม่เปลี่ยน LINE credential หรือ Production
@@ -65,6 +65,7 @@
 43. อนุมัติ production tester allowlist, privacy basis, maintenance window และข้อยอมรับว่าการเปิด webhook/default Rich Menu อาจกระทบลูกค้าจริงหาก LINE จำกัด audience ไม่ได้
 44. อนุมัติ response-mode/auto-response collision plan หลัง read-only Production configuration audit แยกต่างหาก
 45. **CONDITIONAL APPROVAL RECEIVED / EXECUTION GATE NO-GO:** Owner อนุมัติ frozen package แล้ว แต่ read-only Production gate พบ native capability และ existing-card policy conflicts จึงหยุดก่อน external write; ไม่มี activation/deploy/UAT
+46. **PHASE 1B OWNER DATA APPROVED 30 สิงหาคม 2026 — TEST เท่านั้น:** exact answer 14 categories, handoff triggers และ fallback ถูกบันทึกใน Approved Knowledge Base พร้อม provenance/version/checksum มีผล `2026-08-30` และ fail closed เมื่อถึง review `2026-09-30`; local tests ผ่าน แต่ยังไม่อนุญาต deploy และ Issue #8 ต้องคงเปิดจน Owner UAT จาก frozen deployed commit ผ่าน
 
 ## Owner Decision Pack
 

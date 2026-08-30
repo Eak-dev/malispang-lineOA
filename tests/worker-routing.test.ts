@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   HANDOFF_ACKNOWLEDGEMENT,
-  REWARD_CARD_ACTIVE_MESSAGE,
   SAFE_FALLBACK,
   SLIP_ACKNOWLEDGEMENT,
   STAFF_QUICK_REPLY,
@@ -10,43 +9,50 @@ import {
   classifyText,
   replyMessage,
   replyMessages,
-  validatedTestRewardCardUrl,
+  validatedTestAssetBaseUrl,
 } from "../worker/routing.js";
 
-describe("deployed Test routing", () => {
+describe("local TEST routing for Issue #8", () => {
   it.each([
-    ["สอบถามค่ะ", "SAFE_FALLBACK"],
-    ["มีเมนูอะไรบ้าง", "MENU"],
-    ["เมนู", "MENU"],
-    ["ขนมปังราคาเท่าไหร่", "PRICE"],
-    ["ร้านอยู่ที่ไหน", "LOCATION"],
-    ["เปิดกี่โมง", "HOURS"],
-    ["ติดต่อร้านอย่างไร", "CONTACT"],
-    ["รับสินค้าที่ไหน", "PICKUP"],
-    ["เก็บได้กี่วัน", "STORAGE"],
-    ["ราคาส่งเท่าไหร่", "WHOLESALE"],
-    ["สั่งล่วงหน้าอย่างไร", "ADVANCE_ORDER"],
-    ["เมนูหลัก", "FLEX_MENU"],
-    ["สะสมแต้มและโปรโมชั่น", "REWARDS"],
-    ["มีโปรโมชั่นอะไร", "PROMOTION"],
-    ["กติกาแต้มเป็นอย่างไร", "LOYALTY"],
-    ["Delivery", "DELIVERY"],
-  ])("routes %s safely", (text, expected) => {
-    expect(classifyText(text).replyKind).toBe(expected);
+    ["สอบถามค่ะ", "SAFE_FALLBACK", true],
+    ["มีเมนูอะไรบ้าง", "MENU", false],
+    ["เมนู", "MENU", false],
+    ["ขนมปังราคาเท่าไหร่", "PRICE", false],
+    ["ร้านอยู่ที่ไหน", "LOCATION", false],
+    ["เปิดกี่โมง", "HOURS", false],
+    ["ติดต่อร้านอย่างไร", "CONTACT", false],
+    ["รับสินค้าที่ไหน", "PICKUP", false],
+    ["เก็บได้กี่วัน", "STORAGE", false],
+    ["เมนูหลัก", "FLEX_MENU", false],
+    ["สะสมแต้มและโปรโมชั่น", "LOYALTY", false],
+    ["กติกาแต้มเป็นอย่างไร", "LOYALTY", false],
+    ["Delivery", "DELIVERY", false],
+  ])("routes %s safely", (text, replyKind, handoff) => {
+    expect(classifyText(text)).toMatchObject({ replyKind, handoff });
   });
 
   it.each([
-    "มีของไหม",
+    ["มีของไหม", "STOCK"],
+    ["มีไส้พิเศษวันนี้ไหม", "STOCK"],
+    ["แพ้อาหารค่ะ", "ALLERGEN"],
+    ["มีโปรวันนี้ไหม", "PROMOTION"],
+    ["งานจัดเลี้ยง 200 ชิ้น", "WHOLESALE"],
+    ["ราคาส่งเท่าไหร่", "WHOLESALE"],
+    ["รับสินค้าวันไหนดี", "ADVANCE_ORDER"],
+    ["สั่งล่วงหน้าอย่างไร", "ADVANCE_ORDER"],
+    ["ขอแลกรางวัล", "LOYALTY"],
+  ])("routes approved guidance into handoff: %s", (text, replyKind) => {
+    expect(classifyText(text)).toMatchObject({ replyKind, handoff: true });
+  });
+
+  it.each([
     "คุยกับพนักงาน",
     "ขอร้องเรียนสินค้า",
-    "แพ้อาหารค่ะ",
     "แจ้งโอนเงิน",
     "ขอคืนเงิน",
-    "งานจัดเลี้ยง 200 ชิ้น",
-    "รับสินค้าวันไหนดี",
     "ส่งที่บ้านเลขที่ 123",
     "โทร 0812345678",
-  ])("routes high-risk text to handoff: %s", (text) => {
+  ])("routes a direct high-risk topic to handoff: %s", (text) => {
     expect(classifyText(text)).toMatchObject({
       replyKind: "HANDOFF_ACK",
       handoff: true,
@@ -54,27 +60,27 @@ describe("deployed Test routing", () => {
   });
 
   it.each([
-    ["test:show_menu", "MENU"],
-    ["test:show_price", "PRICE"],
-    ["test:show_location", "LOCATION"],
-    ["test:show_hours", "HOURS"],
-    ["test:show_wholesale", "WHOLESALE"],
-    ["test:show_rewards", "REWARDS"],
-    ["test:show_delivery", "DELIVERY"],
-    ["test:show_facebook", "SAFE_FALLBACK"],
-    ["test:human_handoff", "HANDOFF_ACK"],
-  ])("supports Test-only postback %s", (data, expected) => {
-    expect(classifyPostback(data).replyKind).toBe(expected);
+    ["test:show_menu", "MENU", false],
+    ["test:show_price", "PRICE", false],
+    ["test:show_location", "LOCATION", false],
+    ["test:show_hours", "HOURS", false],
+    ["test:show_wholesale", "WHOLESALE", true],
+    ["test:show_rewards", "LOYALTY", false],
+    ["test:show_delivery", "DELIVERY", false],
+    ["test:show_facebook", "SAFE_FALLBACK", true],
+    ["test:human_handoff", "HANDOFF_ACK", true],
+  ])("supports Test-only postback %s", (data, replyKind, handoff) => {
+    expect(classifyPostback(data)).toMatchObject({ replyKind, handoff });
   });
 
-  it("fails closed for a Production-like or unknown postback", () => {
+  it("fails closed and enters handoff for a Production-like or unknown postback", () => {
     expect(classifyPostback("action=show_menu")).toMatchObject({
       replyKind: "SAFE_FALLBACK",
-      handoff: false,
+      handoff: true,
     });
   });
 
-  it("uses the exact safe fallback and handoff messages", () => {
+  it("uses the exact safe fallback and acknowledgement messages", () => {
     expect(replyMessage("SAFE_FALLBACK")).toEqual({
       type: "text",
       text: SAFE_FALLBACK,
@@ -90,59 +96,22 @@ describe("deployed Test routing", () => {
     });
   });
 
-  it("uses only the encrypted Test reward-card URL in an explicit button", () => {
-    expect(replyMessage("REWARDS", TEST_REWARD_CARD_URL)).toEqual({
-      type: "template",
-      altText: "เปิดบัตรสะสมแต้ม มะลิปัง TEST",
-      template: {
-        type: "buttons",
-        text: REWARD_CARD_ACTIVE_MESSAGE,
-        actions: [
-          {
-            type: "uri",
-            label: "เปิดบัตรสะสมแต้ม",
-            uri: TEST_REWARD_CARD_URL,
-          },
-        ],
-      },
-      quickReply: STAFF_QUICK_REPLY,
-    });
-    expect(REWARD_CARD_ACTIVE_MESSAGE).toContain("ซื้อครบ 50 บาท รับ 1 แต้ม");
-    expect(REWARD_CARD_ACTIVE_MESSAGE).toContain("มะลิปัง TEST");
-    expect(REWARD_CARD_ACTIVE_MESSAGE).not.toContain("Production");
-  });
-
-  it("fails closed for a missing, malformed, or non-LINE reward-card URL", () => {
-    expect(() => replyMessage("REWARDS")).toThrow(
-      "INVALID_TEST_REWARD_CARD_URL",
-    );
-    expect(() => validatedTestRewardCardUrl("not-a-url")).toThrow(
-      "INVALID_TEST_REWARD_CARD_URL",
-    );
-    expect(() =>
-      validatedTestRewardCardUrl("https://example.com/reward"),
-    ).toThrow("INVALID_TEST_REWARD_CARD_URL");
-    expect(() =>
-      validatedTestRewardCardUrl(
-        "https://u.lin.ee/test-reward-card?source=production",
-      ),
-    ).toThrow("INVALID_TEST_REWARD_CARD_URL");
-  });
-
   it.each([
     "MENU",
     "PRICE",
     "LOCATION",
     "HOURS",
+    "CONTACT",
+    "PICKUP",
     "STORAGE",
+    "ALLERGEN",
     "WHOLESALE",
     "ADVANCE_ORDER",
     "DELIVERY",
-    "CONTACT",
-    "PICKUP",
     "PROMOTION",
     "LOYALTY",
-  ] as const)("fails closed for unapproved %s business data", (kind) => {
+    "STOCK",
+  ] as const)("fails closed if %s has no approved answer", (kind) => {
     expect(replyMessage(kind)).toEqual({
       type: "text",
       text: SAFE_FALLBACK,
@@ -150,35 +119,91 @@ describe("deployed Test routing", () => {
     });
   });
 
-  it("adds one temporary staff quick reply to bot answers but not handoff replies", () => {
+  it("returns both approved menu images in order before the exact notice", () => {
     expect(
-      replyMessages("MENU", TEST_ASSET_BASE_URL, TEST_REWARD_CARD_URL)[0]
-        ?.quickReply,
-    ).toEqual(STAFF_QUICK_REPLY);
-    expect(STAFF_QUICK_REPLY.items).toHaveLength(1);
-    expect(STAFF_QUICK_REPLY.items[0]?.action).toMatchObject({
-      type: "postback",
-      label: "คุยกับพนักงาน",
-      data: "test:human_handoff",
-    });
-    expect(replyMessage("HANDOFF_ACK")?.quickReply).toBeUndefined();
-    expect(replyMessage("SLIP_ACK")?.quickReply).toBeUndefined();
+      replyMessages("MENU", TEST_ASSET_BASE_URL, APPROVED_MENU_ANSWER),
+    ).toEqual([
+      {
+        type: "image",
+        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
+        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
+      },
+      {
+        type: "image",
+        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
+        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
+      },
+      {
+        type: "text",
+        text: APPROVED_MENU_ANSWER,
+        quickReply: STAFF_QUICK_REPLY,
+      },
+    ]);
   });
 
-  it("does not return menu images until the menu manifest is approved", () => {
-    const messages = replyMessages(
-      "MENU",
-      TEST_ASSET_BASE_URL,
-      TEST_REWARD_CARD_URL,
-    );
+  it("does not return menu images without an approved answer", () => {
+    const messages = replyMessages("MENU", TEST_ASSET_BASE_URL);
     expect(messages).toEqual([
       { type: "text", text: SAFE_FALLBACK, quickReply: STAFF_QUICK_REPLY },
     ]);
-    expect(JSON.stringify(messages)).not.toContain("TEST_SEED");
     expect(JSON.stringify(messages)).not.toContain("image");
+  });
+
+  it("returns approved loyalty rules without using a Reward Card URL", () => {
+    const message = replyMessage("LOYALTY", APPROVED_LOYALTY_ANSWER);
+    expect(message).toEqual({
+      type: "text",
+      text: APPROVED_LOYALTY_ANSWER,
+      quickReply: STAFF_QUICK_REPLY,
+    });
+    expect(JSON.stringify(message)).not.toMatch(/https?:\/\//);
+  });
+
+  it("sends approved guidance and one acknowledgement before handoff silence", () => {
+    expect(
+      replyMessages("STOCK", TEST_ASSET_BASE_URL, APPROVED_MENU_ANSWER, true),
+    ).toEqual([
+      {
+        type: "image",
+        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
+        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/bread-menu.jpeg`,
+      },
+      {
+        type: "image",
+        originalContentUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
+        previewImageUrl: `${TEST_ASSET_BASE_URL}/menu/chiffon-cookie-menu.jpeg`,
+      },
+      {
+        type: "text",
+        text: APPROVED_MENU_ANSWER,
+        quickReply: STAFF_QUICK_REPLY,
+      },
+      { type: "text", text: HANDOFF_ACKNOWLEDGEMENT },
+    ]);
+  });
+
+  it("sends fallback and one acknowledgement when knowledge is unavailable", () => {
+    expect(
+      replyMessages("SAFE_FALLBACK", TEST_ASSET_BASE_URL, undefined, true),
+    ).toEqual([
+      { type: "text", text: SAFE_FALLBACK, quickReply: STAFF_QUICK_REPLY },
+      { type: "text", text: HANDOFF_ACKNOWLEDGEMENT },
+    ]);
+  });
+
+  it("allows only the fixed TEST asset origin", () => {
+    expect(validatedTestAssetBaseUrl(TEST_ASSET_BASE_URL)).toBe(
+      TEST_ASSET_BASE_URL,
+    );
+    expect(() => validatedTestAssetBaseUrl("https://example.com")).toThrow(
+      "INVALID_TEST_ASSET_BASE_URL",
+    );
   });
 });
 
 const TEST_ASSET_BASE_URL =
   "https://malispang-lineoa-test.eakkachai-dev.workers.dev";
-const TEST_REWARD_CARD_URL = "https://u.lin.ee/test-reward-card";
+const APPROVED_MENU_ANSWER =
+  "เมนูตามรูปเป็นรายการอ้างอิง สินค้าหน้าร้านมีการขายออกตลอดวัน จึงอาจมีสินค้าไม่ครบหรือหมดได้ค่ะ หากต้องการเช็กสต๊อกสินค้าวันนี้ สอบถามโปรโมชั่นพิเศษประจำวัน หรือไส้พิเศษประจำวัน กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊";
+const APPROVED_LOYALTY_ANSWER =
+  "กติกาสะสมแต้มมะลิปัง\nทุกยอดซื้อที่ชำระเงินแล้ว รับ 1 แต้มต่อทุก 50 บาท โดยปัดเศษลงค่ะ";

@@ -28,8 +28,6 @@ export {
 export type { MockWebhookResult } from "./mock-webhook-pipeline.js";
 export {
   HANDOFF_ACKNOWLEDGEMENT,
-  MOCK_DRAFT_ORDER_NOTICE,
-  MOCK_REWARDS_NOTICE,
   Phase1AService,
   SAFE_FALLBACK,
 } from "./phase1a-service.js";
