@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   HANDOFF_ACKNOWLEDGEMENT,
+  MENU_TEXT_LEXICON,
   SAFE_FALLBACK,
   SLIP_ACKNOWLEDGEMENT,
   STAFF_QUICK_REPLY,
@@ -30,6 +31,17 @@ describe("local TEST routing for Issue #8", () => {
   ])("routes %s safely", (text, replyKind, handoff) => {
     expect(classifyText(text)).toMatchObject({ replyKind, handoff });
   });
+
+  it.each(MENU_TEXT_LEXICON)(
+    "routes the Owner-approved menu lexicon to MENU without handoff: %s",
+    (text) => {
+      expect(classifyText(text)).toMatchObject({
+        replyKind: "MENU",
+        handoff: false,
+        allowDuringHandoff: false,
+      });
+    },
+  );
 
   it.each([
     ["มีของไหม", "STOCK"],
@@ -60,23 +72,32 @@ describe("local TEST routing for Issue #8", () => {
   });
 
   it.each([
-    ["test:show_menu", "MENU", false],
-    ["test:show_price", "PRICE", false],
-    ["test:show_location", "LOCATION", false],
-    ["test:show_hours", "HOURS", false],
-    ["test:show_wholesale", "WHOLESALE", true],
-    ["test:show_rewards", "LOYALTY", false],
-    ["test:show_delivery", "DELIVERY", false],
-    ["test:show_facebook", "SAFE_FALLBACK", true],
-    ["test:human_handoff", "HANDOFF_ACK", true],
-  ])("supports Test-only postback %s", (data, replyKind, handoff) => {
-    expect(classifyPostback(data)).toMatchObject({ replyKind, handoff });
-  });
+    ["test:main_menu", "FLEX_MENU", false, true],
+    ["test:show_menu", "MENU", false, true],
+    ["test:show_price", "PRICE", false, true],
+    ["test:show_location", "LOCATION", false, true],
+    ["test:show_hours", "HOURS", false, true],
+    ["test:show_wholesale", "WHOLESALE", true, true],
+    ["test:show_rewards", "LOYALTY", false, true],
+    ["test:show_delivery", "DELIVERY", false, true],
+    ["test:show_facebook", "SAFE_FALLBACK", true, false],
+    ["test:human_handoff", "HANDOFF_ACK", true, false],
+  ])(
+    "supports Test-only postback %s with an explicit handoff policy",
+    (data, replyKind, handoff, allowDuringHandoff) => {
+      expect(classifyPostback(data)).toMatchObject({
+        replyKind,
+        handoff,
+        allowDuringHandoff,
+      });
+    },
+  );
 
   it("fails closed and enters handoff for a Production-like or unknown postback", () => {
     expect(classifyPostback("action=show_menu")).toMatchObject({
       replyKind: "SAFE_FALLBACK",
       handoff: true,
+      allowDuringHandoff: false,
     });
   });
 

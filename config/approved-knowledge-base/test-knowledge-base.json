@@ -12,19 +12,24 @@
         "reference": "docs/line-oa/OWNER_APPROVAL_PACK_PHASE_1B_TH.md"
       },
       "owner": "MALISPANG_OWNER",
-      "approvedAt": "2026-08-30T00:00:00+07:00",
-      "effectiveFrom": "2026-08-30T00:00:00+07:00",
+      "approvedAt": "2026-08-31T00:00:00+07:00",
+      "effectiveFrom": "2026-08-31T00:00:00+07:00",
       "effectiveTo": "2026-09-30T00:00:00+07:00",
       "freshness": {
         "reviewAt": "2026-09-30T00:00:00+07:00",
         "maximumAgeDays": 31
       },
-      "version": "2026-08-30-menu-v1",
+      "version": "2026-08-31-menu-v2",
       "checksum": "1db66c4677a2951a9e29e5a247d6ac69fff7acdf37dd28ebaffceb2800794b3f",
       "keywords": [
         "เมนู",
+        "ขอเมนู",
+        "ขอเมนูหน่อย",
         "มีเมนูอะไรบ้าง",
         "เมนูขนมปัง",
+        "มีอะไรบ้าง",
+        "มีไรบ้าง",
+        "ขอดูเมนู",
         "รายการขนม",
         "ดูเมนู"
       ],

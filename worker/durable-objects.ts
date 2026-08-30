@@ -95,6 +95,25 @@ export class ConversationStateDO extends DurableObject<Env> {
       .one();
     const processedExpiry = input.now + input.processedRetentionSeconds * 1000;
     if (state.mode === "HUMAN_HANDOFF") {
+      if (input.decision.allowDuringHandoff) {
+        sql.exec(
+          "INSERT INTO processed_events VALUES (?, ?, 0, 0, ?, ?)",
+          input.eventRef,
+          input.decision.replyKind,
+          input.now,
+          processedExpiry,
+        );
+        this.audit(
+          input,
+          "HANDOFF_APPROVED_STATIC_RESPONSE",
+          input.decision.reasonCode,
+        );
+        return {
+          status: "RESPOND",
+          replyKind: input.decision.replyKind,
+          enteredHandoff: false,
+        };
+      }
       sql.exec(
         "INSERT INTO processed_events VALUES (?, 'NONE', 1, 0, ?, ?)",
         input.eventRef,

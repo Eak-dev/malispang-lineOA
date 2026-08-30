@@ -27,8 +27,13 @@ describe("Worker Approved Knowledge gate", () => {
       replyKind: kind,
       reasonCode: "CLASSIFIED",
       handoff: false,
+      allowDuringHandoff: true,
     });
-    expect(decision).toMatchObject({ replyKind: kind, handoff: false });
+    expect(decision).toMatchObject({
+      replyKind: kind,
+      handoff: false,
+      allowDuringHandoff: true,
+    });
     expect(decision.reasonCode).toMatch(/^KB_APPROVED\|/);
     expect(approvedAnswerForReplyKind(kind)).toBeTruthy();
   });
@@ -53,6 +58,7 @@ describe("Worker Approved Knowledge gate", () => {
       expect(enforceApprovedKnowledge(classifyText(text))).toMatchObject({
         replyKind: "HANDOFF_ACK",
         handoff: true,
+        allowDuringHandoff: false,
       });
     }
   });

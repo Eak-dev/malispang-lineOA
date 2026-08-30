@@ -61,6 +61,14 @@ export class Phase1AService {
       return [];
     }
 
+    if (
+      conversation.mode === "HUMAN_HANDOFF" &&
+      event.content.kind === "action" &&
+      isAllowedDuringHandoff(event.content.action)
+    ) {
+      return this.routeApprovedActionDuringHandoff(event, event.content.action);
+    }
+
     if (conversation.mode === "HUMAN_HANDOFF") {
       this.audit(event, "HANDOFF_SILENCE", "CONVERSATION_OWNED_BY_STAFF");
       return [];
@@ -119,6 +127,12 @@ export class Phase1AService {
     if (action === "REWARDS_INFO") {
       return this.answerFaqOrFallback(event, this.faq.lookupIntent("LOYALTY"));
     }
+    if (action === "WHOLESALE") {
+      return this.answerFaqThenHandoff(
+        event,
+        this.faq.lookupIntent("WHOLESALE"),
+      );
+    }
 
     const intentByAction: Readonly<Partial<Record<CustomerAction, FaqIntent>>> =
       {
@@ -126,12 +140,47 @@ export class Phase1AService {
         MENU_PRICE: "PRICE",
         LOCATION: "LOCATION",
         OPENING_HOURS: "OPENING_HOURS",
-        WHOLESALE: "WHOLESALE",
+        DELIVERY: "DELIVERY",
       };
     const intent = intentByAction[action];
     return intent
       ? this.answerFaqOrFallback(event, this.faq.lookupIntent(intent))
       : this.safeFallback(event, "ACTION_NOT_APPROVED");
+  }
+
+  private routeApprovedActionDuringHandoff(
+    event: Extract<MockEvent, { kind: "customer" }>,
+    action: CustomerAction,
+  ): readonly ReplyEnvelope[] {
+    if (action === "OPEN_FLEX_MENU") return this.flexMenu(event);
+    const intentByAction: Readonly<Partial<Record<CustomerAction, FaqIntent>>> =
+      {
+        SHOW_MENU: "MENU",
+        MENU_PRICE: "PRICE",
+        LOCATION: "LOCATION",
+        OPENING_HOURS: "OPENING_HOURS",
+        REWARDS_INFO: "LOYALTY",
+        DELIVERY: "DELIVERY",
+        WHOLESALE: "WHOLESALE",
+      };
+    const intent = intentByAction[action];
+    if (!intent) return [];
+    const result = this.faq.lookupIntent(intent);
+    if (result.status !== "APPROVED" || result.answer === undefined) {
+      this.audit(
+        event,
+        "HANDOFF_SILENCE",
+        `FAQ_${intent}_NOT_AUTHORITATIVE_DURING_HANDOFF`,
+      );
+      return [];
+    }
+    return this.textReply(
+      event,
+      result.answer,
+      "FAQ_ANSWERED",
+      `FAQ_${intent}_APPROVED_STATIC_DURING_HANDOFF`,
+      result.provenance,
+    );
   }
 
   private answerFaqOrFallback(
@@ -328,4 +377,17 @@ function requiresApprovedGuidanceThenHandoff(text: string): boolean {
 
 function normalize(value: string): string {
   return value.trim().toLocaleLowerCase("th-TH").replace(/\s+/g, " ");
+}
+
+function isAllowedDuringHandoff(action: CustomerAction): boolean {
+  return [
+    "OPEN_FLEX_MENU",
+    "SHOW_MENU",
+    "MENU_PRICE",
+    "LOCATION",
+    "OPENING_HOURS",
+    "REWARDS_INFO",
+    "DELIVERY",
+    "WHOLESALE",
+  ].includes(action);
 }

@@ -6,7 +6,7 @@ Owner approval / effective date: `2026-08-30`
 
 Review date: `2026-09-30`
 
-สถานะ: `LOCAL IMPLEMENTATION AND TEST PASS / NOT DEPLOYED / OWNER UAT PENDING`
+สถานะ: `LIVE UAT FAILURE RECORDED / LOCAL FIX TEST PASS / THIS FIX NOT DEPLOYED / OWNER RE-UAT PENDING`
 
 เอกสารนี้ทำตาม GitHub Issue #9 และ Issue #8 เท่านั้น งานรอบนี้ไม่อนุญาตให้ deploy เปลี่ยน LINE OA `มะลิปัง TEST` หรือเปิด/เปลี่ยน Production `มะลิปัง`
 
@@ -19,6 +19,9 @@ Review date: `2026-09-30`
 - stock, daily promotion/filling, preorder, allergen, wholesale และ reward redemption ส่ง safe approved guidance แล้วเริ่ม handoff
 - fallback ส่ง exact fallback แล้ว acknowledgement หนึ่งครั้ง จากนั้นบอตเงียบจน authorized staff close
 - เมนูและราคาใช้รูป approved สองรูปตามลำดับ แล้วจึงส่งข้อความ stock disclaimer
+- typed messages ทุกข้อความยัง silent ระหว่าง handoff; ห้ามใช้ text intent เป็นทางเลี่ยง bot silence
+- เฉพาะ approved static TEST postback allowlist และ `test:show_wholesale` ตอบได้ระหว่าง handoff โดยไม่ acknowledgement ซ้ำและไม่เปลี่ยน handoff state
+- static postback ต้องผ่าน Approved Knowledge Base; missing/stale/conflict ต้อง silent ระหว่าง handoff ส่วน unknown, `test:show_facebook` และ Production-like postback ต้อง fail closed
 - แต้มตอบเฉพาะกติกาทั่วไป ไม่อ่าน/แก้ข้อมูลลูกค้า ไม่คำนวณแต้มรายบุคคล ไม่เรียก Reward Card URL และไม่แลกรางวัล
 - Definition of Done ของ Issue #8 จะผ่านสมบูรณ์เมื่อ local checks ผ่าน, ได้ approval สำหรับ TEST deployment แยก และ Owner UAT จาก frozen deployed commit ผ่าน
 
@@ -33,18 +36,28 @@ Review date: `2026-09-30`
 7. generic fallback เข้า handoff เช่นเดียวกัน; duplicate event ยังคงไม่ตอบซ้ำ
 8. rich-menu reward route ใน local build ตอบกติกา `LOYALTY` จาก manifest โดยไม่สร้างปุ่ม/ใช้ Reward Card URL
 9. กติกาพรีออเดอร์สำหรับพนักงานอยู่ใน `PREORDER_STAFF_POLICY_PHASE_1B_TH.md` แบบ reference-only; ไม่เริ่ม workflow Issue #2
+10. `RouteDecision.allowDuringHandoff` เป็น capability ที่ตั้ง `true` ได้จาก static TEST postback allowlist เท่านั้น; typed classifier และ unsafe postback ตั้ง `false`
+11. Durable Object ตอบ approved static postback ระหว่าง handoff โดยบันทึก processed event ตามเดิม, ส่ง `enteredHandoff=false` และคง state `HUMAN_HANDOFF`
+12. menu lexicon version `2026-08-31-menu-v2` รองรับ `ขอเมนู`, `ขอเมนูหน่อย`, `เมนูขนมปัง`, `มีอะไรบ้าง`, `มีไรบ้าง` และ `ขอดูเมนู`
 
 ## พฤติกรรมตอบและ escalation
 
-| กลุ่ม                                                | พฤติกรรม local ที่ตรวจ                                                 |
-| ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| Menu / price                                         | รูป bread menu → รูป chiffon/cookie → exact reference/stock disclaimer |
-| Location / hours / contact / storage / Delivery      | exact approved answer จาก manifest; ไม่มี real-time claim              |
-| Stock / daily promo-filling                          | ไม่ยืนยันค่าปัจจุบัน; ส่ง exact guidance → acknowledgement → silence   |
-| Preorder / wholesale / allergen / reward redemption  | ส่ง exact limitations/requirements → acknowledgement → silence         |
-| Payment / slip / refund / complaint / sensitive data | ไม่พยายามตอบ FAQ; เข้า handoff โดยตรง                                  |
-| Unknown / unavailable / stale                        | exact fallback → acknowledgement หนึ่งครั้ง → silence                  |
-| Loyalty rules                                        | ตอบกติกาทั่วไป; ไม่มี URL, customer lookup หรือ Reward Card operation  |
+| กลุ่ม                                                | พฤติกรรม local ที่ตรวจ                                                  |
+| ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| Menu / price                                         | รูป bread menu → รูป chiffon/cookie → exact reference/stock disclaimer  |
+| Location / hours / contact / storage / Delivery      | exact approved answer จาก manifest; ไม่มี real-time claim               |
+| Stock / daily promo-filling                          | ไม่ยืนยันค่าปัจจุบัน; ส่ง exact guidance → acknowledgement → silence    |
+| Preorder / wholesale / allergen / reward redemption  | ส่ง exact limitations/requirements → acknowledgement → silence          |
+| Payment / slip / refund / complaint / sensitive data | ไม่พยายามตอบ FAQ; เข้า handoff โดยตรง                                   |
+| Unknown / unavailable / stale                        | exact fallback → acknowledgement หนึ่งครั้ง → silence                   |
+| Loyalty rules                                        | ตอบกติกาทั่วไป; ไม่มี URL, customer lookup หรือ Reward Card operation   |
+| Typed text ระหว่าง handoff                           | เงียบทั้งหมด แม้ข้อความจะตรง static FAQ                                 |
+| Approved static TEST postback ระหว่าง handoff        | ตอบ approved content; ไม่ acknowledgement ซ้ำ; handoff state ไม่เปลี่ยน |
+| Unknown / Production-like / Facebook postback        | Fail closed; ระหว่าง handoff ไม่ตอบข้อมูลใหม่                           |
+
+## Live UAT failure และ corrective scope — 31 สิงหาคม 2026
+
+Deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` ไม่รองรับข้อความ `ขอเมนูหน่อย` จึงส่ง fallback และเริ่ม handoff หลังจากนั้น `test:show_menu` ถูก Durable Object ตัดเป็น `HANDOFF_SILENCE` แม้เป็น Rich Menu postback ที่ Owner อนุมัติ การแก้ local รอบนี้แยก event capability ชัดเจน: typed text ไม่มีสิทธิ์ bypass silence ส่วน static TEST postback allowlist ตอบได้โดยไม่ปิด handoff
 
 ## Fail-closed date policy
 
@@ -57,9 +70,14 @@ record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+0
 - stale boundary `2026-09-30` และ conflict rejection
 - daily stock/promotion/filling ไม่ถูกยืนยัน
 - fallback/handoff acknowledgement ครั้งเดียว, duplicate protection และ bot silence
+- expanded menu lexicon เข้า `MENU` โดยไม่เริ่ม handoff
+- static allowlist ทั้งเจ็ดรายการและ wholesale guidance ตอบระหว่าง handoff โดย state ไม่เปลี่ยนและไม่มี acknowledgement ซ้ำ
+- typed location/Delivery/loyalty wording, Facebook, unknown และ Production-like postback ยังคง silent/fail closed ระหว่าง handoff
 - authorized/unauthorized staff close และ persistence fail-closed
 - loyalty response ไม่มี customer/Reward Card operation
 - Production credential/account safety guards
+- full local suite: 193 Node tests + 24 Worker runtime tests = 217 ผ่าน
+- formatting, ESLint, TypeScript, build, Flex/Rich Menu/manifest validation และ Worker dry-run ผ่าน
 
 ผล command ชุดเต็มและ commit จะบันทึกใน GitHub Issue #8 หลัง final checks ผ่าน
 
@@ -69,9 +87,10 @@ record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+0
 
 ## งานค้างก่อนปิด Issue #8
 
-1. Owner อนุมัติ TEST deployment จาก frozen commit แยกต่างหาก
-2. Deploy เฉพาะ `มะลิปัง TEST` ตาม approval และตรวจ health/security gates
-3. Owner UAT ภาษาไทยครบ exact answer, menu images, dynamic handoff, fallback และ silence
-4. ปิด Issue #8 ได้เมื่อ acceptance criteria ผ่านครบพร้อมหลักฐานจริงเท่านั้น
+1. Local full checks ผ่านและ freeze corrective commit ใหม่
+2. Owner อนุมัติ TEST deployment ของ corrective commit แยกต่างหาก
+3. Deploy เฉพาะ `มะลิปัง TEST` ตาม approval และตรวจ health/security gates
+4. Owner re-UAT: `ขอเมนูหน่อย`, static Rich Menu postback ระหว่าง handoff, acknowledgement ครั้งเดียว และ typed silence
+5. ปิด Issue #8 ได้เมื่อ acceptance criteria ผ่านครบพร้อมหลักฐานจริงเท่านั้น
 
 ห้ามเริ่ม Issue #2, #4, #5 หรือ #6 และห้ามนำข้อมูล/credential/state ของ TEST ไป Production

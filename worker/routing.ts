@@ -34,7 +34,31 @@ export interface RouteDecision {
   readonly replyKind: ReplyKind;
   readonly reasonCode: string;
   readonly handoff: boolean;
+  readonly allowDuringHandoff: boolean;
 }
+
+export const MENU_TEXT_LEXICON = [
+  "เมนู",
+  "ขอเมนู",
+  "ขอเมนูหน่อย",
+  "เมนูขนมปัง",
+  "มีเมนูอะไรบ้าง",
+  "มีอะไรบ้าง",
+  "มีไรบ้าง",
+  "ขอดูเมนู",
+  "รายการขนม",
+  "ดูเมนู",
+] as const;
+
+const STATIC_APPROVED_POSTBACK_ROUTES: Readonly<Record<string, ReplyKind>> = {
+  "test:main_menu": "FLEX_MENU",
+  "test:show_menu": "MENU",
+  "test:show_price": "PRICE",
+  "test:show_location": "LOCATION",
+  "test:show_hours": "HOURS",
+  "test:show_rewards": "LOYALTY",
+  "test:show_delivery": "DELIVERY",
+};
 
 export interface LineQuickReply {
   readonly items: readonly {
@@ -195,10 +219,7 @@ export function classifyText(text: string): RouteDecision {
   ) {
     return reply("FLEX_MENU", "EXPLICIT_MAIN_MENU");
   }
-  if (
-    normalized === "เมนู" ||
-    includesAny(normalized, ["มีเมนูอะไร", "เมนูขนม", "รายการขนม", "ดูเมนู"])
-  ) {
+  if (includesAny(normalized, MENU_TEXT_LEXICON)) {
     return reply("MENU", "KB_MENU_NOT_AUTHORITATIVE");
   }
   if (includesAny(normalized, ["ติดต่อร้าน", "เบอร์ติดต่อ", "ช่องทางติดต่อ"])) {
@@ -265,27 +286,20 @@ export function classifyText(text: string): RouteDecision {
 }
 
 export function classifyPostback(data: string): RouteDecision {
-  const routes: Readonly<Record<string, ReplyKind>> = {
-    "test:main_menu": "FLEX_MENU",
-    "test:show_menu": "MENU",
-    "test:show_price": "PRICE",
-    "test:show_location": "LOCATION",
-    "test:show_hours": "HOURS",
-    "test:show_wholesale": "WHOLESALE",
-    "test:show_rewards": "LOYALTY",
-    "test:show_delivery": "DELIVERY",
-    "test:show_facebook": "SAFE_FALLBACK",
-  };
   if (data === "test:human_handoff") return handoff("CUSTOMER_REQUESTED_STAFF");
   if (data === "test:show_wholesale") {
-    return replyAndHandoff("WHOLESALE", "WHOLESALE_REQUIRES_STAFF_REVIEW");
+    return replyAndHandoff(
+      "WHOLESALE",
+      "WHOLESALE_REQUIRES_STAFF_REVIEW",
+      true,
+    );
   }
-  const replyKind = routes[data];
-  if (replyKind === "SAFE_FALLBACK") {
+  if (data === "test:show_facebook") {
     return replyAndHandoff("SAFE_FALLBACK", "POSTBACK_SAFE_FALLBACK");
   }
+  const replyKind = STATIC_APPROVED_POSTBACK_ROUTES[data];
   return replyKind
-    ? reply(replyKind, `POSTBACK_${replyKind}`)
+    ? reply(replyKind, `POSTBACK_${replyKind}`, true)
     : replyAndHandoff("SAFE_FALLBACK", "POSTBACK_NOT_ALLOWED");
 }
 
@@ -401,18 +415,28 @@ function withStaffQuickReply(message: LineReplyMessage): LineReplyMessage {
 }
 
 function handoff(reasonCode: string): RouteDecision {
-  return { replyKind: "HANDOFF_ACK", reasonCode, handoff: true };
+  return {
+    replyKind: "HANDOFF_ACK",
+    reasonCode,
+    handoff: true,
+    allowDuringHandoff: false,
+  };
 }
 
 function replyAndHandoff(
   replyKind: ReplyKind,
   reasonCode: string,
+  allowDuringHandoff = false,
 ): RouteDecision {
-  return { replyKind, reasonCode, handoff: true };
+  return { replyKind, reasonCode, handoff: true, allowDuringHandoff };
 }
 
-function reply(replyKind: ReplyKind, reasonCode: string): RouteDecision {
-  return { replyKind, reasonCode, handoff: false };
+function reply(
+  replyKind: ReplyKind,
+  reasonCode: string,
+  allowDuringHandoff = false,
+): RouteDecision {
+  return { replyKind, reasonCode, handoff: false, allowDuringHandoff };
 }
 
 function normalize(value: string): string {

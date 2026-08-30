@@ -56,10 +56,14 @@ describe("Issue #8 Owner-approved exact content", () => {
       expect(record.status).toBe("APPROVED");
       if (record.status !== "APPROVED") continue;
       expect(record.customerFacingAnswer).toBe(expected);
+      const approvalDate =
+        intent === "MENU"
+          ? "2026-08-31T00:00:00+07:00"
+          : "2026-08-30T00:00:00+07:00";
       expect(record).toMatchObject({
         owner: "MALISPANG_OWNER",
-        approvedAt: "2026-08-30T00:00:00+07:00",
-        effectiveFrom: "2026-08-30T00:00:00+07:00",
+        approvedAt: approvalDate,
+        effectiveFrom: approvalDate,
         effectiveTo: "2026-09-30T00:00:00+07:00",
         freshness: {
           reviewAt: "2026-09-30T00:00:00+07:00",
@@ -71,6 +75,23 @@ describe("Issue #8 Owner-approved exact content", () => {
       );
       expect(record.checksum).toBe(answerChecksum(expected));
     }
+  });
+
+  it("versions the expanded Owner-approved menu lexicon", async () => {
+    const menu = (await loadManifest()).categories.MENU;
+    expect(menu.status).toBe("APPROVED");
+    if (menu.status !== "APPROVED") return;
+    expect(menu.version).toBe("2026-08-31-menu-v2");
+    expect(menu.keywords).toEqual(
+      expect.arrayContaining([
+        "ขอเมนู",
+        "ขอเมนูหน่อย",
+        "เมนูขนมปัง",
+        "มีอะไรบ้าง",
+        "มีไรบ้าง",
+        "ขอดูเมนู",
+      ]),
+    );
   });
 
   it("never claims real-time stock, a fixed daily promotion, or current open status", async () => {

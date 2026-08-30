@@ -53,7 +53,7 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
     const manifest = await loadManifest();
     const knowledgeBase = new ApprovedFaqKnowledgeBase(
       approvedFaqRecordsFromManifest(manifest),
-      () => new Date("2026-08-30T12:00:00+07:00"),
+      () => new Date("2026-08-31T12:00:00+07:00"),
     );
     for (const text of [
       "มีเมนูอะไรบ้าง",

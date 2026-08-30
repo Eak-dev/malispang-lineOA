@@ -35,7 +35,12 @@ export function enforceApprovedKnowledge(
     record.status === "BLOCKED"
       ? record.blockerCode
       : `${intent}_STALE_OR_NOT_EFFECTIVE`;
-  return { replyKind: "SAFE_FALLBACK", reasonCode, handoff: true };
+  return {
+    replyKind: "SAFE_FALLBACK",
+    reasonCode,
+    handoff: true,
+    allowDuringHandoff: false,
+  };
 }
 
 export function approvedAnswerForReplyKind(

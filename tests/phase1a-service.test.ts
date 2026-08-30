@@ -23,6 +23,7 @@ const approvedRecords: readonly ApprovedFaqRecord[] = [
   fixture("PROMOTION", "โปรรายวันที่ต้องให้พนักงานตรวจสอบ"),
   fixture("LOYALTY", "กติกาแต้มที่เจ้าของอนุมัติ"),
   fixture("STOCK", "สต๊อกต้องให้พนักงานตรวจสอบ"),
+  fixture("DELIVERY", "ยังไม่มี Delivery โดยตรง"),
 ];
 
 function fixture(
@@ -106,6 +107,21 @@ describe("Phase1AService", () => {
     expect(
       test.service.process(customer("E1", { kind: "text", text }))[0]?.message,
     ).toEqual({ type: "text", text: answer });
+  });
+
+  it.each([
+    "ขอเมนู",
+    "ขอเมนูหน่อย",
+    "เมนูขนมปัง",
+    "มีอะไรบ้าง",
+    "มีไรบ้าง",
+    "ขอดูเมนู",
+  ])("routes every Owner-approved menu phrase without handoff: %s", (text) => {
+    const test = setup();
+    expect(
+      test.service.process(customer("E1", { kind: "text", text }))[0]?.message,
+    ).toEqual({ type: "text", text: "เมนูทดสอบที่เจ้าของอนุมัติ" });
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("BOT_ACTIVE");
   });
 
   it("fails closed when a business answer has no authoritative source", () => {
@@ -244,6 +260,60 @@ describe("Phase1AService", () => {
       ),
     ).toEqual([]);
     expect(test.store.outbox.size).toBe(1);
+  });
+
+  it.each([
+    ["OPEN_FLEX_MENU", "flex"],
+    ["SHOW_MENU", "text"],
+    ["MENU_PRICE", "text"],
+    ["LOCATION", "text"],
+    ["OPENING_HOURS", "text"],
+    ["REWARDS_INFO", "text"],
+    ["DELIVERY", "text"],
+    ["WHOLESALE", "text"],
+  ] as const)(
+    "allows approved static action %s during handoff without resetting it",
+    (action, messageType) => {
+      const test = setup();
+      test.service.process(
+        customer("E1", { kind: "action", action: "HUMAN_HANDOFF" }),
+      );
+      const replies = test.service.process(
+        customer("E2", { kind: "action", action }),
+      );
+      expect(replies).toHaveLength(1);
+      expect(replies[0]?.message.type).toBe(messageType);
+      expect(JSON.stringify(replies)).not.toContain(HANDOFF_ACKNOWLEDGEMENT);
+      expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
+      expect(test.store.conversation("CUST-TEST-1").handoffWindow).toBe(1);
+    },
+  );
+
+  it.each(["ร้านอยู่ไหน", "Delivery", "สะสมแต้มและโปรโมชั่น"])(
+    "keeps typed message silent during handoff: %s",
+    (text) => {
+      const test = setup();
+      test.service.process(
+        customer("E1", { kind: "action", action: "HUMAN_HANDOFF" }),
+      );
+      expect(
+        test.service.process(customer("E2", { kind: "text", text })),
+      ).toEqual([]);
+      expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
+    },
+  );
+
+  it("fails closed without a reply when approved static data is unavailable during handoff", () => {
+    const test = setup([]);
+    test.service.process(
+      customer("E1", { kind: "action", action: "HUMAN_HANDOFF" }),
+    );
+    expect(
+      test.service.process(
+        customer("E2", { kind: "action", action: "SHOW_MENU" }),
+      ),
+    ).toEqual([]);
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
   });
 
   it.each(["ส่งสลิปแล้วค่ะ", "สอบถามการชำระเงิน", "ขอร้องเรียนสินค้า"])(

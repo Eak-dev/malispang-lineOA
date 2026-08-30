@@ -151,6 +151,7 @@ function eventDecision(event: ParsedLineEvent): RouteDecision {
     replyKind: "HANDOFF_ACK",
     reasonCode: "IMAGE_REQUIRES_HUMAN_REVIEW",
     handoff: true,
+    allowDuringHandoff: false,
   };
 }
 
