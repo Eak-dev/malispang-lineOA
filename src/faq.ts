@@ -1,3 +1,9 @@
+import {
+  detectConversationIntent,
+  normalizeConversationText,
+  type ConversationIntent,
+} from "./conversation-intents.js";
+
 export const FAQ_INTENTS = [
   "MENU",
   "PRICE",
@@ -55,51 +61,6 @@ export interface FaqLookupResult {
   readonly status: "APPROVED" | "NO_MATCH" | "NOT_AUTHORITATIVE" | "CONFLICT";
 }
 
-const intentKeywords: Readonly<Record<FaqIntent, readonly string[]>> = {
-  MENU: [
-    "เมนู",
-    "ขอเมนู",
-    "ขอเมนูหน่อย",
-    "เมนูขนมปัง",
-    "มีเมนูอะไรบ้าง",
-    "มีอะไรบ้าง",
-    "มีไรบ้าง",
-    "ขอดูเมนู",
-    "รายการขนม",
-    "ดูเมนู",
-  ],
-  PRICE: ["ราคา", "กี่บาท", "เท่าไหร่"],
-  LOCATION: ["ที่ตั้ง", "พิกัด", "ร้านอยู่ไหน", "ร้านอยู่ที่ไหน", "เดินทาง"],
-  OPENING_HOURS: ["เวลาทำการ", "เปิดกี่โมง", "ปิดกี่โมง", "ร้านเปิด"],
-  CONTACT: ["ติดต่อ", "เบอร์ติดต่อ", "ช่องทางติดต่อ"],
-  PICKUP: ["รับสินค้า", "รับของ", "จุดรับสินค้า"],
-  STORAGE: ["เก็บรักษา", "เก็บได้นาน", "เก็บได้กี่วัน", "แช่เย็น", "อายุขนม"],
-  ALLERGEN: ["แพ้อาหาร", "สารก่อภูมิแพ้", "ส่วนผสมเพื่อการแพ้"],
-  WHOLESALE: ["ราคาส่ง", "ขายส่ง", "สั่งจำนวนมาก"],
-  ADVANCE_ORDER: ["สั่งล่วงหน้า", "วิธีสั่ง", "สั่งยังไง"],
-  DELIVERY: ["delivery", "เดลิเวอรี", "ส่งถึงบ้าน"],
-  PROMOTION: ["โปรโมชั่น", "โปรโมชัน", "มีโปร"],
-  LOYALTY: ["สะสมแต้ม", "บัตรแต้ม", "แลกแต้ม"],
-  STOCK: ["มีของไหม", "สต๊อก", "สต็อก", "ของวันนี้"],
-};
-
-const intentPrecedence: readonly FaqIntent[] = [
-  "ALLERGEN",
-  "STOCK",
-  "PROMOTION",
-  "LOYALTY",
-  "WHOLESALE",
-  "ADVANCE_ORDER",
-  "OPENING_HOURS",
-  "PICKUP",
-  "CONTACT",
-  "STORAGE",
-  "DELIVERY",
-  "LOCATION",
-  "MENU",
-  "PRICE",
-];
-
 export class ApprovedFaqKnowledgeBase {
   constructor(
     private readonly records: readonly ApprovedFaqRecord[] = [],
@@ -107,17 +68,15 @@ export class ApprovedFaqKnowledgeBase {
   ) {}
 
   lookupText(text: string): FaqLookupResult {
-    const normalized = normalize(text);
-    const intent = intentPrecedence.find((candidate) =>
-      intentKeywords[candidate].some((keyword) =>
-        normalized.includes(normalize(keyword)),
-      ),
+    const intent = faqIntentForConversationIntent(
+      detectConversationIntent(text),
     );
     if (intent) return this.lookupIntent(intent);
 
+    const normalized = normalizeConversationText(text);
     const customRecord = this.records.find((record) =>
       record.keywords.some((keyword) =>
-        normalized.includes(normalize(keyword)),
+        normalized.includes(normalizeConversationText(keyword)),
       ),
     );
     return customRecord
@@ -160,6 +119,33 @@ export class ApprovedFaqKnowledgeBase {
   }
 }
 
+function faqIntentForConversationIntent(
+  intent: ConversationIntent,
+): FaqIntent | undefined {
+  switch (intent) {
+    case "MENU":
+    case "PRICE":
+    case "LOCATION":
+    case "CONTACT":
+    case "PICKUP":
+    case "STORAGE":
+    case "ALLERGEN":
+    case "WHOLESALE":
+    case "ADVANCE_ORDER":
+    case "DELIVERY":
+    case "PROMOTION":
+    case "LOYALTY":
+    case "STOCK":
+      return intent;
+    case "HOURS":
+      return "OPENING_HOURS";
+    case "LOYALTY_REDEMPTION":
+      return "LOYALTY";
+    default:
+      return undefined;
+  }
+}
+
 function isInsideEffectiveWindow(
   record: ApprovedFaqRecord,
   timestamp: number,
@@ -198,8 +184,4 @@ function isAuthoritative(
     record.freshness.maximumAgeDays > 0 &&
     timestamp < approvedAt + maximumAgeMs
   );
-}
-
-function normalize(value: string): string {
-  return value.trim().toLocaleLowerCase("th-TH").replace(/\s+/g, " ");
 }

@@ -1,0 +1,252 @@
+{
+  "version": "2026-08-31-issue6-v1",
+  "environment": "TEST",
+  "containsRealCustomerData": false,
+  "cases": [
+    {
+      "id": "MENU-01",
+      "text": "เมนู",
+      "intent": "MENU",
+      "replyKind": "MENU",
+      "handoff": false
+    },
+    {
+      "id": "MENU-02",
+      "text": "ขอเมนูหน่อยค่ะ 😊",
+      "intent": "MENU",
+      "replyKind": "MENU",
+      "handoff": false
+    },
+    {
+      "id": "MENU-03",
+      "text": "ขอเมณูหน่อย",
+      "intent": "MENU",
+      "replyKind": "MENU",
+      "handoff": false
+    },
+    {
+      "id": "MENU-04",
+      "text": "เมนูู",
+      "intent": "MENU",
+      "replyKind": "MENU",
+      "handoff": false
+    },
+    {
+      "id": "PRICE-01",
+      "text": "ราคา",
+      "intent": "PRICE",
+      "replyKind": "PRICE",
+      "handoff": false
+    },
+    {
+      "id": "PRICE-02",
+      "text": "ขอราคาหน่อยค่ะ",
+      "intent": "PRICE",
+      "replyKind": "PRICE",
+      "handoff": false
+    },
+    {
+      "id": "PRICE-03",
+      "text": "ราาคาเท่าไรคะ",
+      "intent": "PRICE",
+      "replyKind": "PRICE",
+      "handoff": false
+    },
+    {
+      "id": "LOCATION-01",
+      "text": "พิกัด",
+      "intent": "LOCATION",
+      "replyKind": "LOCATION",
+      "handoff": false
+    },
+    {
+      "id": "LOCATION-02",
+      "text": "ร้านอยุ่ไหนคะ",
+      "intent": "LOCATION",
+      "replyKind": "LOCATION",
+      "handoff": false
+    },
+    {
+      "id": "HOURS-01",
+      "text": "เวลา",
+      "intent": "HOURS",
+      "replyKind": "HOURS",
+      "handoff": false
+    },
+    {
+      "id": "HOURS-02",
+      "text": "เปิดกี่โมงคะ?",
+      "intent": "HOURS",
+      "replyKind": "HOURS",
+      "handoff": false
+    },
+    {
+      "id": "PROMO-01",
+      "text": "โปร",
+      "intent": "PROMOTION",
+      "replyKind": "PROMOTION",
+      "handoff": true
+    },
+    {
+      "id": "PROMO-02",
+      "text": "มีโปรโมชันวันนี้ไหมคะ",
+      "intent": "PROMOTION",
+      "replyKind": "PROMOTION",
+      "handoff": true
+    },
+    {
+      "id": "STOCK-01",
+      "text": "สต๊อค",
+      "intent": "STOCK",
+      "replyKind": "STOCK",
+      "handoff": true
+    },
+    {
+      "id": "STOCK-02",
+      "text": "มีของมั้ยคะ",
+      "intent": "STOCK",
+      "replyKind": "STOCK",
+      "handoff": true
+    },
+    {
+      "id": "PREORDER-01",
+      "text": "พรีออเดอได้ไหม",
+      "intent": "ADVANCE_ORDER",
+      "replyKind": "ADVANCE_ORDER",
+      "handoff": true
+    },
+    {
+      "id": "PREORDER-02",
+      "text": "สั่งไว้ก่อนได้ไหมคะ",
+      "intent": "ADVANCE_ORDER",
+      "replyKind": "ADVANCE_ORDER",
+      "handoff": true
+    },
+    {
+      "id": "WHOLESALE-01",
+      "text": "ราคาส่ง",
+      "intent": "WHOLESALE",
+      "replyKind": "WHOLESALE",
+      "handoff": true
+    },
+    {
+      "id": "WHOLESALE-02",
+      "text": "ขายสงมีเงื่อนไขอย่างไร",
+      "intent": "WHOLESALE",
+      "replyKind": "WHOLESALE",
+      "handoff": true
+    },
+    {
+      "id": "STORAGE-01",
+      "text": "เก็บยังงัย",
+      "intent": "STORAGE",
+      "replyKind": "STORAGE",
+      "handoff": false
+    },
+    {
+      "id": "STORAGE-02",
+      "text": "ต้องแช่ตู้เย็นไหมคะ",
+      "intent": "STORAGE",
+      "replyKind": "STORAGE",
+      "handoff": false
+    },
+    {
+      "id": "LOYALTY-01",
+      "text": "แต้ม",
+      "intent": "LOYALTY",
+      "replyKind": "LOYALTY",
+      "handoff": false
+    },
+    {
+      "id": "LOYALTY-02",
+      "text": "สะสมเเต้มยังไงคะ",
+      "intent": "LOYALTY",
+      "replyKind": "LOYALTY",
+      "handoff": false
+    },
+    {
+      "id": "DELIVERY-01",
+      "text": "เดลิเวอรี่",
+      "intent": "DELIVERY",
+      "replyKind": "DELIVERY",
+      "handoff": false
+    },
+    {
+      "id": "CONTACT-01",
+      "text": "ติดต่อ",
+      "intent": "CONTACT",
+      "replyKind": "CONTACT",
+      "handoff": false
+    },
+    {
+      "id": "PICKUP-01",
+      "text": "รับของที่ไหนคะ",
+      "intent": "PICKUP",
+      "replyKind": "PICKUP",
+      "handoff": false
+    },
+    {
+      "id": "ALLERGEN-01",
+      "text": "แพ้กลูเตนค่ะ",
+      "intent": "ALLERGEN",
+      "replyKind": "ALLERGEN",
+      "handoff": true
+    },
+    {
+      "id": "STAFF-01",
+      "text": "พนักงาน",
+      "intent": "STAFF",
+      "replyKind": "HANDOFF_ACK",
+      "handoff": true
+    },
+    {
+      "id": "STAFF-02",
+      "text": "ขอคุยกับคนหน่อยค่ะ",
+      "intent": "STAFF",
+      "replyKind": "HANDOFF_ACK",
+      "handoff": true
+    },
+    {
+      "id": "RISK-01",
+      "text": "ขอร้องเรียนสินค้า",
+      "intent": "HIGH_RISK",
+      "replyKind": "HANDOFF_ACK",
+      "handoff": true
+    },
+    {
+      "id": "AMBIGUOUS-01",
+      "text": "เท่าไหร่คะ",
+      "intent": "AMBIGUOUS",
+      "replyKind": "SAFE_FALLBACK",
+      "handoff": true
+    },
+    {
+      "id": "AMBIGUOUS-02",
+      "text": "มีไหม",
+      "intent": "AMBIGUOUS",
+      "replyKind": "SAFE_FALLBACK",
+      "handoff": true
+    },
+    {
+      "id": "AMBIGUOUS-03",
+      "text": "เอาอันนี้",
+      "intent": "AMBIGUOUS",
+      "replyKind": "SAFE_FALLBACK",
+      "handoff": true
+    },
+    {
+      "id": "AMBIGUOUS-04",
+      "text": "ขอรายละเอียดค่ะ",
+      "intent": "AMBIGUOUS",
+      "replyKind": "SAFE_FALLBACK",
+      "handoff": true
+    },
+    {
+      "id": "UNKNOWN-01",
+      "text": "สอบถามค่ะ",
+      "intent": "UNKNOWN",
+      "replyKind": "SAFE_FALLBACK",
+      "handoff": true
+    }
+  ]
+}

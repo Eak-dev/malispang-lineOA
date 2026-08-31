@@ -470,8 +470,8 @@ describe("Phase1AService", () => {
     expect(serialized).not.toContain("0812345678");
     expect(serialized).not.toContain("ที่อยู่เต็ม");
     expect(test.auditLog.entries[0]).toMatchObject({
-      outcome: "SAFE_FALLBACK",
-      reasonCode: "QUESTION_NOT_IN_APPROVED_FAQ",
+      outcome: "HANDOFF_STARTED",
+      reasonCode: "SENSITIVE_OR_DYNAMIC_TOPIC",
     });
   });
 });

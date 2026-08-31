@@ -1,4 +1,5 @@
 import type { RedactedAuditLog } from "./audit-log.js";
+import { detectConversationIntent } from "./conversation-intents.js";
 import type { FaqIntent } from "./faq.js";
 import { ApprovedFaqKnowledgeBase } from "./faq.js";
 import { buildFlexMenu, FLEX_MENU_ALT_TEXT } from "./flex-menu.js";
@@ -330,53 +331,28 @@ export class Phase1AService {
 }
 
 function isHumanRequest(text: string): boolean {
-  const normalized = normalize(text);
-  return ["คุยกับพนักงาน", "ขอคุยกับพนักงาน", "แอดมิน", "เจ้าหน้าที่"].some(
-    (keyword) => normalized.includes(keyword),
-  );
+  return detectConversationIntent(text) === "STAFF";
 }
 
 function isFlexMenuRequest(text: string): boolean {
-  const normalized = normalize(text);
-  return ["เมนูหลัก", "เมนูช่วยเหลือ", "ตัวเลือก", "help"].some((keyword) =>
-    normalized.includes(keyword),
-  );
+  return detectConversationIntent(text) === "FLEX_MENU";
 }
 
 function requiresHumanReview(text: string): boolean {
-  const normalized = normalize(text);
-  return ["ชำระเงิน", "โอนเงิน", "สลิป", "ร้องเรียน", "ไม่พอใจ"].some(
-    (keyword) => normalized.includes(keyword),
+  return ["SENSITIVE_PERSONAL_DATA", "HIGH_RISK"].includes(
+    detectConversationIntent(text),
   );
 }
 
 function requiresApprovedGuidanceThenHandoff(text: string): boolean {
-  const normalized = normalize(text);
   return [
-    "แพ้อาหาร",
-    "สารก่อภูมิแพ้",
-    "ส่วนผสมเพื่อการแพ้",
-    "ออเดอร์จำนวนมาก",
-    "สั่งเยอะ",
-    "ราคาส่ง",
-    "ขายส่ง",
-    "สต๊อก",
-    "สต็อก",
-    "มีของไหม",
-    "มีของวันนี้",
-    "ของเหลือ",
-    "โปรโมชั่น",
-    "โปรโมชัน",
-    "ไส้พิเศษ",
-    "สั่งล่วงหน้า",
-    "พรีออเดอร์",
-    "แลกรางวัล",
-    "แลกแต้ม",
-  ].some((keyword) => normalized.includes(keyword));
-}
-
-function normalize(value: string): string {
-  return value.trim().toLocaleLowerCase("th-TH").replace(/\s+/g, " ");
+    "ALLERGEN",
+    "STOCK",
+    "PROMOTION",
+    "WHOLESALE",
+    "ADVANCE_ORDER",
+    "LOYALTY_REDEMPTION",
+  ].includes(detectConversationIntent(text));
 }
 
 function isAllowedDuringHandoff(action: CustomerAction): boolean {

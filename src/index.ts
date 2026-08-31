@@ -1,4 +1,10 @@
 export { buildFlexMenu, FLEX_MENU_ALT_TEXT } from "./flex-menu.js";
+export {
+  detectConversationIntent,
+  MENU_TEXT_LEXICON,
+  normalizeConversationText,
+} from "./conversation-intents.js";
+export type { ConversationIntent } from "./conversation-intents.js";
 export { validateFlexMenu } from "./flex-validation.js";
 export { RedactedAuditLog } from "./audit-log.js";
 export type { AuditOutcome, RedactedAuditEntry } from "./audit-log.js";

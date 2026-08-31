@@ -21,3 +21,14 @@
 - ถือ `PHASE_PLAN_TH.md` เป็น historical document ในจุดที่ขัดกับ Roadmap #9
 
 Owner ควรตัดสินใจภายหลังว่าจะ archive หรือปรับเอกสารเก่าให้ตรง Roadmap แต่การตัดสินใจนั้นไม่ block งาน local ของ Issue #8
+
+## Status drift ที่พบก่อน Issue #6 — 31 สิงหาคม 2026
+
+body ของ Roadmap #9 ยังแสดง Phase 1B / Issue #8 เป็น unchecked แต่ GitHub Issue #8 ถูกปิดหลัง Owner re-UAT PASS และมี completion commit `ebab874bf4be7c9f03e2d5ea76508d7fd44fb403` แล้ว
+
+การจัดการ:
+
+- ไม่ reinterpret หรือเปลี่ยนลำดับ Roadmap
+- ใช้สถานะ Issue #8 ที่ปิดพร้อม evidence commit เป็นหลักฐานว่าเริ่ม Issue #6 ซึ่งเป็นลำดับถัดไปได้
+- ไม่เริ่ม Issue #2, #7, #4 หรือ #5
+- status drift นี้ไม่เปลี่ยน business rules และไม่ block local implementation ของ Issue #6

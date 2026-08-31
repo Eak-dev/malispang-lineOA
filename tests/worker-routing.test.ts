@@ -13,7 +13,7 @@ import {
   validatedTestAssetBaseUrl,
 } from "../worker/routing.js";
 
-describe("local TEST routing for Issue #8", () => {
+describe("local TEST routing for Issue #6 with Issue #8 regressions", () => {
   it.each([
     ["สอบถามค่ะ", "SAFE_FALLBACK", true],
     ["มีเมนูอะไรบ้าง", "MENU", false],
