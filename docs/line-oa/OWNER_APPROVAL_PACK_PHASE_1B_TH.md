@@ -62,9 +62,9 @@ Owner re-UAT หลัง deploy Worker fix พบ configuration mismatch เพ
 - [x] Local full checks ของ amendment 2026-08-31 ผ่าน: 193 Node + 24 Worker tests
 - [x] Corrective Worker commit ถูก deploy เฉพาะ TEST และ health/security gates ผ่าน
 - [x] Local Rich Menu v2 payload/validator และ full suite ผ่าน: 194 Node + 24 Worker tests
-- [ ] Owner อนุมัติ Publish/set default Rich Menu postback v2 และปิด active TEST handoff
+- [x] Owner อนุมัติและดำเนินการ Publish/set default Rich Menu postback v2 เฉพาะ TEST; เก็บ v1 เป็น rollback และปิด active TEST handoff จาก 1 เหลือ 0
 - [ ] Owner re-UAT จาก Worker fix + Rich Menu v2 ผ่าน
 
-Issue #8 ต้องคง `OPEN` จนสองรายการสุดท้ายผ่านจริง ห้ามเริ่ม Issue #2, #4, #5 หรือ #6 ก่อน Roadmap อนุญาต
+Issue #8 ต้องคง `OPEN` จน Owner re-UAT ผ่านจริง ห้ามเริ่ม Issue #2, #4, #5 หรือ #6 ก่อน Roadmap อนุญาต
 
-Rich Menu v2 รอบนี้เป็น local configuration เท่านั้น ไม่มีการเปลี่ยน LINE OA, Rich Menu, Webhook, Reward Card หรือ secret ใด ๆ ส่วน Production `มะลิปัง` ไม่ถูกเปิดหรือแก้ไข
+Rich Menu v2 ถูกสร้างและตั้งเป็น default เฉพาะ `มะลิปัง TEST` เมื่อ 31 สิงหาคม 2026 โดยไม่มี Worker deploy, Webhook/Reward Card/secret change หรือการส่งข้อความ ส่วน Production `มะลิปัง` ไม่ถูกเปิดหรือแก้ไข

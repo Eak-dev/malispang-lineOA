@@ -2,13 +2,13 @@
 
 อัปเดตล่าสุด: 31 สิงหาคม 2026
 
-สถานะ: `V1 PUBLISHED WITH MESSAGE-ACTION DEFECT / V2 POSTBACK LOCAL READY / NOT PUBLISHED / OWNER APPROVAL REQUIRED`
+สถานะ: `V2 POSTBACK PUBLISHED AND DEFAULT ON TEST / OWNER RE-UAT PENDING`
 
 ## ขอบเขตและไฟล์
 
 - บัญชีปลายทาง: `มะลิปัง TEST` เท่านั้น
-- Rich Menu ที่เผยแพร่อยู่: `MalisPang TEST RM 39-50 v1` — native text actions; มี defect ระหว่าง handoff
-- Rich Menu replacement ที่เตรียม local: `MalisPang TEST RM 39-50 postback v2`
+- Rich Menu default ปัจจุบัน: `MalisPang TEST RM 39-50 postback v2`
+- Rich Menu rollback ที่เก็บไว้: `MalisPang TEST RM 39-50 v1` — ไม่ถูกลบหรือแก้ไข
 - Menu bar label: `รู้จักมะลิปัง`
 - Default behavior: `Shown`
 - LINE OA Manager Rich Menu ID: `20032979`
@@ -52,7 +52,9 @@
 
 ผลตรวจ read-only หลัง failure พบ active TEST handoff `1` รายการ การแก้ที่ปลอดภัยคือเปลี่ยนเฉพาะสาม action เป็น TEST postback v2 ข้างต้น ห้ามแก้ด้วยการยกเลิก typed-message silence หรือ auto-close handoff
 
-ไฟล์ v2 เป็น local configuration เท่านั้น ยังไม่ได้สร้าง/Publish/set default และยังไม่ได้ปิด active handoff ต้องได้รับ Owner approval สำหรับ external changes ทั้งสองรายการก่อน
+Owner อนุมัติ external changes ทั้งสองรายการ และเมื่อ 31 สิงหาคม 2026 เวลา 07:31 น. (Asia/Bangkok) ได้ยืนยันบัญชีผ่าน Messaging API ว่าเป็น `มะลิปัง TEST`, validate payload, สร้าง v2, อัปโหลดรูป, ตั้ง v2 เป็น default และตรวจ config/hash รูปสำเร็จครบทุก gate ส่วน v1 ยังคงอยู่โดยไม่ถูกลบหรือแก้ไข
+
+ใช้ authenticated TEST admin close เฉพาะ handoff ที่ Owner อนุมัติ โดยบังคับ precondition ว่าต้องมี active handoff เท่ากับ `1`; ผลหลัง close เหลือ `0` รายการ การดำเนินการนี้ไม่เปิด customer conversation และไม่ส่งข้อความ
 
 Local validation ผ่านทั้ง exact TEST postback mapping, action bounds, URI allowlist, no-action omission, Production-like action rejection, secret scan และ full suite 218 tests
 
@@ -72,9 +74,13 @@ Owner live UAT เมื่อ 28 สิงหาคม 2026 เวลา 11:40 
 
 ## Rollback
 
-1. ก่อน Publish v2 ให้บันทึก Rich Menu v1 ที่เป็น default ปัจจุบัน และยืนยันบัญชี `มะลิปัง TEST`
-2. หาก v2 UAT ไม่ผ่าน ให้ set v1 กลับเป็น default ทันที; ห้ามลบ v1 ระหว่าง rollout
-3. Unset/หยุดแสดง v2 ได้โดยไม่ลบ resource; การลบต้องขออนุมัติแยก
+1. ยืนยันบัญชี `มะลิปัง TEST` และ Rich Menu default ปัจจุบันเป็น `MalisPang TEST RM 39-50 postback v2`
+2. หาก v2 UAT ไม่ผ่าน ให้ยกเลิก Messaging API default ของ v2 เพื่อให้ OA Manager v1 เดิมกลับมาควบคุม default; ห้ามลบ v1 ระหว่าง rollout
+3. Unset/หยุดแสดง v2 ได้โดยไม่ลบ resource; การลบ v2 หรือ v1 ต้องขออนุมัติแยก
 4. การเปลี่ยน action map ครั้งนี้ไม่ต้อง deploy Worker ใหม่ เพราะ Worker version ปัจจุบันรองรับ TEST postback แล้ว
 5. QR UAT หมดอายุ 29 สิงหาคม 2026; หากต้องยกเลิกก่อนกำหนดให้ดำเนินการเฉพาะ TEST
 6. ห้ามแก้ Rich Menu หรือ Reward Card ของ Production `มะลิปัง`
+
+## Security follow-up
+
+ระหว่างตรวจ LINE Developers Console ระบบอัตโนมัติอ่าน DOM ของหน้า TEST ซึ่งมี long-lived Channel Access Token แสดงอยู่ในหน้าโดยตรง ค่าดังกล่าวไม่ได้ถูกทำซ้ำในรายงาน, terminal, Git, เอกสาร หรือ GitHub Issue และไม่ได้ออก token ใหม่ การหมุน TEST token เป็นงาน security follow-up ที่ต้องขอ Owner approval แยกก่อนดำเนินการ

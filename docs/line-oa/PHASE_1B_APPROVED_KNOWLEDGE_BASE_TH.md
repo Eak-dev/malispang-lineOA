@@ -6,7 +6,7 @@ Owner approval / effective date: `2026-08-30`
 
 Review date: `2026-09-30`
 
-สถานะ: `WORKER FIX DEPLOYED / RICH MENU V1 MESSAGE-ACTION DEFECT CONFIRMED / V2 LOCAL READY NOT PUBLISHED / OWNER RE-UAT PENDING`
+สถานะ: `WORKER FIX DEPLOYED / RICH MENU V2 POSTBACK DEFAULT ON TEST / OWNER RE-UAT PENDING`
 
 เอกสารนี้ทำตาม GitHub Issue #9 และ Issue #8 เท่านั้น งานรอบนี้ไม่อนุญาตให้ deploy เปลี่ยน LINE OA `มะลิปัง TEST` หรือเปิด/เปลี่ยน Production `มะลิปัง`
 
@@ -61,7 +61,9 @@ Deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` ไม่รองร
 
 Corrective Worker commit `60bfe05caa5ac4d4763a4fb5d2c7c218f1e88735` ถูก deploy เฉพาะ `malispang-lineoa-test` แล้ว แต่ Owner re-UAT พบว่า Rich Menu v1 ที่เผยแพร่อยู่ส่ง `Delivery`, `เมนูขนมปัง` และ `สะสมแต้มและโปรโมชั่น` เป็น native text/message events จึงยังถูก typed-message silence ระหว่าง handoff นี่เป็น configuration mismatch ไม่ใช่ Worker routing regression
 
-Local Rich Menu v2 เปลี่ยนสาม action เป็น `test:show_delivery`, `test:show_menu` และ `test:show_rewards` postback ตามลำดับ โดยคง Maps/Facebook เป็น URI และพื้นที่ตกแต่งเป็น no action การ Publish/set default และการปิด active TEST handoff ยังไม่ทำในรอบนี้
+Local Rich Menu v2 เปลี่ยนสาม action เป็น `test:show_delivery`, `test:show_menu` และ `test:show_rewards` postback ตามลำดับ โดยคง Maps/Facebook เป็น URI และพื้นที่ตกแต่งเป็น no action
+
+Owner อนุมัติให้สร้าง/Publish/set default v2 และปิด active TEST handoff เมื่อ 31 สิงหาคม 2026 กระบวนการยืนยันชื่อบัญชี `มะลิปัง TEST`, payload, action map และ image hash ผ่านทั้งหมด v2 เป็น default แล้ว, v1 ถูกเก็บไว้สำหรับ rollback และ active handoff เปลี่ยนจาก `1` เป็น `0` โดยไม่ส่งข้อความหรือเปิด customer conversation
 
 ## Fail-closed date policy
 
@@ -87,14 +89,13 @@ record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+0
 
 ## Rollback
 
-รอบนี้ไม่มี external deployment จึงไม่มี live rollback หาก local regression ให้ revert commit ของ Phase 1B เท่านั้น ห้ามแก้ Worker/Webhook/LINE OA เพื่อชดเชย การ deploy ในอนาคตต้องมี approval แยก และต้องเก็บ stable TEST version สำหรับ rollback ก่อนเปลี่ยนระบบ
+Worker ไม่มีการ deploy ใหม่ในรอบ Rich Menu v2 หาก v2 re-UAT ไม่ผ่าน ให้ยกเลิก Messaging API default ของ v2 เพื่อคืนการควบคุม default ให้ OA Manager v1 ที่เก็บไว้ ห้ามลบ resource ใดโดยไม่มี approval แยก ส่วน code rollback ใช้ stable TEST Worker version เดิมตาม deployment record
 
 ## งานค้างก่อนปิด Issue #8
 
-1. Local full checks ของ Rich Menu postback v2 ผ่านและ freeze commit ใหม่
-2. Owner อนุมัติสร้าง/Publish/set default Rich Menu v2 เฉพาะ `มะลิปัง TEST` และอนุมัติปิด active TEST handoff แยก
-3. Publish v2 โดยเก็บ v1 ไว้เป็น rollback; ไม่ต้อง deploy Worker ใหม่
-4. Owner re-UAT: `ขอเมนูหน่อย`, static Rich Menu postback ระหว่าง handoff, acknowledgement ครั้งเดียว และ typed silence
-5. ปิด Issue #8 ได้เมื่อ acceptance criteria ผ่านครบพร้อมหลักฐานจริงเท่านั้น
+1. Owner re-UAT: `ขอเมนูหน่อย`, static Rich Menu postback ระหว่าง handoff, acknowledgement ครั้งเดียว และ typed silence
+2. ปิด Issue #8 ได้เมื่อ acceptance criteria ผ่านครบพร้อมหลักฐานจริงเท่านั้น
+
+Security follow-up แยกจาก acceptance criteria: LINE Developers Console แสดง long-lived TEST token ใน DOM ที่ระบบอัตโนมัติใช้ตรวจบัญชี ค่าไม่ถูกทำซ้ำหรือบันทึกใน repository/Issue และยังไม่มีการหมุน token เพราะต้องได้รับ approval แยก
 
 ห้ามเริ่ม Issue #2, #4, #5 หรือ #6 และห้ามนำข้อมูล/credential/state ของ TEST ไป Production
