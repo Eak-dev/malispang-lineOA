@@ -6,7 +6,7 @@ Owner approval / effective date: `2026-08-30`
 
 Review date: `2026-09-30`
 
-สถานะ: `WORKER FIX DEPLOYED / RICH MENU V2 POSTBACK DEFAULT ON TEST / OWNER RE-UAT PENDING`
+สถานะ: `ISSUE #8 DEFINITION OF DONE COMPLETE / OWNER RE-UAT PASS`
 
 เอกสารนี้ทำตาม GitHub Issue #9 และ Issue #8 เท่านั้น งานรอบนี้ไม่อนุญาตให้ deploy เปลี่ยน LINE OA `มะลิปัง TEST` หรือเปิด/เปลี่ยน Production `มะลิปัง`
 
@@ -65,6 +65,8 @@ Local Rich Menu v2 เปลี่ยนสาม action เป็น `test:show
 
 Owner อนุมัติให้สร้าง/Publish/set default v2 และปิด active TEST handoff เมื่อ 31 สิงหาคม 2026 กระบวนการยืนยันชื่อบัญชี `มะลิปัง TEST`, payload, action map และ image hash ผ่านทั้งหมด v2 เป็น default แล้ว, v1 ถูกเก็บไว้สำหรับ rollback และ active handoff เปลี่ยนจาก `1` เป็น `0` โดยไม่ส่งข้อความหรือเปิด customer conversation
 
+Owner ยืนยัน re-UAT Issue #8 เป็น `PASS` เมื่อ 31 สิงหาคม 2026 เวลา 09:36 น. (Asia/Bangkok) ครอบคลุม menu lexicon ขณะ bot active, acknowledgement ครั้งเดียว, static Rich Menu postback ระหว่าง handoff, typed-message silence และ Maps/Facebook ตาม acceptance ที่ตกลงไว้ จึงครบ Definition of Done ของ Issue #8
+
 ## Fail-closed date policy
 
 record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+07:00` และ lookup ต้องปฏิเสธตั้งแต่ `2026-09-30T00:00:00+07:00` หากยังไม่มี Owner-reviewed version ใหม่ การทบทวนต้องสร้าง version/checksum ใหม่ ห้ามแก้ record ที่เคยใช้ย้อนหลัง
@@ -84,17 +86,17 @@ record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+0
 - Production credential/account safety guards
 - full local suite หลังเพิ่ม Rich Menu v2: 194 Node tests + 24 Worker runtime tests = 218 ผ่าน
 - formatting, ESLint, TypeScript, build, Flex/Rich Menu/manifest validation และ Worker dry-run ผ่าน
+- Owner re-UAT จาก Worker corrective commit และ Rich Menu postback v2: `PASS` เมื่อ `2026-08-31 09:36 +07:00`
 
-ผล command ชุดเต็มและ commit จะบันทึกใน GitHub Issue #8 หลัง final checks ผ่าน
+ผล command ชุดเต็ม, corrective commits, activation evidence และ Owner re-UAT ถูกบันทึกใน GitHub Issue #8
 
 ## Rollback
 
 Worker ไม่มีการ deploy ใหม่ในรอบ Rich Menu v2 หาก v2 re-UAT ไม่ผ่าน ให้ยกเลิก Messaging API default ของ v2 เพื่อคืนการควบคุม default ให้ OA Manager v1 ที่เก็บไว้ ห้ามลบ resource ใดโดยไม่มี approval แยก ส่วน code rollback ใช้ stable TEST Worker version เดิมตาม deployment record
 
-## งานค้างก่อนปิด Issue #8
+## Completion status
 
-1. Owner re-UAT: `ขอเมนูหน่อย`, static Rich Menu postback ระหว่าง handoff, acknowledgement ครั้งเดียว และ typed silence
-2. ปิด Issue #8 ได้เมื่อ acceptance criteria ผ่านครบพร้อมหลักฐานจริงเท่านั้น
+Acceptance criteria และ Definition of Done ผ่านครบแล้ว Issue #8 จึงได้รับอนุญาตให้ปิด โดยไม่เริ่ม Issue ถัดไปอัตโนมัติ
 
 Security follow-up แยกจาก acceptance criteria: LINE Developers Console แสดง long-lived TEST token ใน DOM ที่ระบบอัตโนมัติใช้ตรวจบัญชี ค่าไม่ถูกทำซ้ำหรือบันทึกใน repository/Issue และยังไม่มีการหมุน token เพราะต้องได้รับ approval แยก
 

@@ -2,7 +2,7 @@
 
 อัปเดตล่าสุด: 31 สิงหาคม 2026
 
-สถานะ: `V2 POSTBACK PUBLISHED AND DEFAULT ON TEST / OWNER RE-UAT PENDING`
+สถานะ: `V2 POSTBACK PUBLISHED AND DEFAULT ON TEST / OWNER RE-UAT PASS`
 
 ## ขอบเขตและไฟล์
 
@@ -59,6 +59,8 @@ Owner อนุมัติ external changes ทั้งสองรายก�
 Local validation ผ่านทั้ง exact TEST postback mapping, action bounds, URI allowlist, no-action omission, Production-like action rejection, secret scan และ full suite 218 tests
 
 ## Owner live UAT
+
+Owner ยืนยัน Phase 1B corrective re-UAT เป็น `PASS` เมื่อ 31 สิงหาคม 2026 เวลา 09:36 น. (Asia/Bangkok): menu lexicon ตอบขณะ bot active, acknowledgement ส่งครั้งเดียว, Rich Menu static postback ตอบได้ระหว่าง handoff โดยไม่ reset state, typed messages ยังคงเงียบ และ Maps/Facebook เปิดถูกต้อง
 
 Owner ยืนยัน `PASS` ครบ 8 ข้อเมื่อ 21 สิงหาคม 2026 เวลา 11:31 น. (Asia/Bangkok): Rich Menu แสดงอัตโนมัติ, chat bar ถูกต้อง, reward fail closed แสดงกติกา 50 บาทต่อ 1 แต้ม, Maps/Delivery/Menu/Facebook ถูกต้อง, acknowledgement ส่งครั้งเดียว และบอตเงียบหลัง handoff
 
