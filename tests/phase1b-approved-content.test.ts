@@ -16,8 +16,64 @@ const manifestPath = new URL(
 const MENU_STOCK_ANSWER =
   "เมนูตามรูปเป็นรายการอ้างอิง สินค้าหน้าร้านมีการขายออกตลอดวัน จึงอาจมีสินค้าไม่ครบหรือหมดได้ค่ะ หากต้องการเช็กสต๊อกสินค้าวันนี้ สอบถามโปรโมชั่นพิเศษประจำวัน หรือไส้พิเศษประจำวัน กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊";
 
-const PICKUP_PREORDER_ANSWER =
+const PICKUP_ANSWER =
   "สามารถสั่งล่วงหน้าและรับสินค้าได้ที่ร้านมะลิปัง ตลาดยิ่งเจริญ สะพานใหม่ค่ะ 😊 กรุณากด “คุยกับพนักงาน” แล้วแจ้งชื่อ เบอร์โทร วันและเวลารับสินค้า พร้อมรายการที่ต้องการ ทางร้านจะตรวจสอบและยืนยันรายการ ยอดรวม และรายละเอียดการรับสินค้าให้ก่อนรับออเดอร์ค่ะ";
+
+const ADVANCE_ORDER_ANSWER = `🍞 ขนมปังอบใหม่ หอม นุ่ม ไส้แน่น เลือกความอร่อยได้ตามใจเลยค่ะ ✨
+
+🎉 ไส้ใหม่ ชวนลอง
+• ทรัฟเฟิลแฮมชีส
+• ฮาวายเอี้ยน
+• ทูน่าคอร์นสลัด
+
+⭐ ไส้ขายดี ลูกค้าสั่งซ้ำบ่อย
+• แฮมชีส
+• เนยสด
+• สังขยา
+• หมูหยอง
+• หมูหยองไส้กรอก
+• ไส้กรอก
+• ไส้กรอกชีส
+• หมูหยองพริกเผา
+
+🥖 ไส้อื่น ๆ ก็มีให้เลือกอีกมากมาย
+• หมูหยองลูกเกด
+• หมูหยองน้ำสลัด
+• แฮมสลัด
+• แฮมไส้กรอก
+• ไส้กรอกพิซซ่า
+• ฝอยทอง
+• เผือก
+• ถั่วแดง
+• ลูกเกด
+• รวมมิตร
+
+📌 อยากได้ไส้ไหน แนะนำให้สั่งจองล่วงหน้า เพราะบางไส้มีจำนวนจำกัดในแต่ละวันนะคะ
+
+🧾 วิธีสั่งซื้อ
+คัดลอกแบบฟอร์มด้านล่าง กรอกข้อมูล แล้วส่งกลับมาได้เลยค่ะ 😊
+
+👤 ชื่อผู้รับ:
+📞 เบอร์โทร:
+📅 วันรับ:
+⏰ รอบอบ: 08:00 / 11:00 / 14:00
+🚗 วิธีรับ: รับที่ร้าน / จัดส่ง
+
+🥖 รายการที่สั่ง
+ระบุชื่อไส้ + จำนวน
+ตัวอย่าง: แฮมชีส 2 / เนยสด 3
+
+📝 รายการที่ต้องการ:
+•
+•
+•
+•
+
+🗒️ หมายเหตุ:
+
+หลังได้รับข้อมูล พนักงานจะตรวจสอบสินค้าและสรุปให้ พร้อมแจ้งรายการ จำนวน ยอดชำระ และรอบอบที่ยืนยันค่ะ
+
+⏳ ไส้ขายดีมีจำนวนจำกัดในแต่ละวัน แนะนำสั่งจองล่วงหน้านะคะ 💕🍞`;
 
 const expectedAnswers: Readonly<Record<FaqIntent, string>> = {
   MENU: MENU_STOCK_ANSWER,
@@ -28,14 +84,14 @@ const expectedAnswers: Readonly<Record<FaqIntent, string>> = {
     "ร้านมะลิปังเปิดทุกวัน เวลา 06:00–16:00 น. ค่ะ หากมีการเปลี่ยนแปลงในวันหยุด ทางร้านจะแจ้งล่วงหน้าผ่าน LINE นี้นะคะ 😊",
   CONTACT:
     "สอบถามเพิ่มเติมได้ทาง LINE Official Account ของมะลิปังนี้ได้เลยค่ะ หากต้องการให้พนักงานช่วยดูแล กรุณากด “คุยกับพนักงาน” นะคะ 😊",
-  PICKUP: PICKUP_PREORDER_ANSWER,
+  PICKUP: PICKUP_ANSWER,
   STORAGE:
     "ขนมปังทั่วไปและชิฟฟ่อน เก็บนอกตู้เย็นได้ 2 วันนับจากวันที่ซื้อ หรือเก็บในตู้เย็นได้ 5 วันค่ะ ควรเก็บให้พ้นแสงแดดและความร้อน สินค้าที่มีครีมหรือไส้สดควรเก็บในตู้เย็นทันที หากต้องการทราบอายุสินค้าเฉพาะรายการ กรุณากด “คุยกับพนักงาน” นะคะ 😊",
   ALLERGEN:
     "สินค้าแต่ละรายการอาจมีส่วนประกอบหรือสัมผัสกับวัตถุดิบที่ก่อภูมิแพ้ได้ เช่น แป้งสาลี นม ไข่ ถั่ว หรือวัตถุดิบอื่น ๆ หากมีอาการแพ้อาหาร หรือจำเป็นต้องหลีกเลี่ยงส่วนผสมใด กรุณากด “คุยกับพนักงาน” เพื่อให้ตรวจสอบก่อนสั่งซื้อนะคะ 😊",
   WHOLESALE:
     "สำหรับออเดอร์จำนวนมากหรือราคาส่ง กรุณากด “คุยกับพนักงาน” แล้วแจ้งชนิดสินค้า จำนวน วันที่ต้องการรับ และเวลารับสินค้า ทางร้านจะตรวจสอบราคา คิวผลิต และเงื่อนไขล่าสุดให้ก่อนยืนยันออเดอร์ค่ะ 😊",
-  ADVANCE_ORDER: PICKUP_PREORDER_ANSWER,
+  ADVANCE_ORDER: ADVANCE_ORDER_ANSWER,
   DELIVERY:
     "ขณะนี้ร้านมะลิปังยังไม่มีบริการ Delivery โดยตรงนะคะ หากต้องการสั่งล่วงหน้าหรือสอบถามทางเลือกในการรับสินค้า กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊",
   PROMOTION:
@@ -57,7 +113,7 @@ describe("Issue #8 Owner-approved exact content", () => {
       if (record.status !== "APPROVED") continue;
       expect(record.customerFacingAnswer).toBe(expected);
       const approvalDate =
-        intent === "MENU"
+        intent === "MENU" || intent === "ADVANCE_ORDER"
           ? "2026-08-31T00:00:00+07:00"
           : "2026-08-30T00:00:00+07:00";
       expect(record).toMatchObject({
@@ -92,6 +148,19 @@ describe("Issue #8 Owner-approved exact content", () => {
         "ขอดูเมนู",
       ]),
     );
+  });
+
+  it("versions the Owner-approved preorder reply independently from pickup", async () => {
+    const manifest = await loadManifest();
+    const preorder = manifest.categories.ADVANCE_ORDER;
+    const pickup = manifest.categories.PICKUP;
+    expect(preorder.status).toBe("APPROVED");
+    expect(pickup.status).toBe("APPROVED");
+    if (preorder.status !== "APPROVED" || pickup.status !== "APPROVED") return;
+    expect(preorder.version).toBe("2026-08-31-advance-order-v2");
+    expect(preorder.customerFacingAnswer).toBe(ADVANCE_ORDER_ANSWER);
+    expect(pickup.version).toBe("2026-08-30-pickup-v1");
+    expect(pickup.customerFacingAnswer).toBe(PICKUP_ANSWER);
   });
 
   it("never claims real-time stock, a fixed daily promotion, or current open status", async () => {

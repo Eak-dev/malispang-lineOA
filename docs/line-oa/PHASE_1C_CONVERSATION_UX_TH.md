@@ -4,7 +4,7 @@
 
 ฐานงาน: `ebab874bf4be7c9f03e2d5ea76508d7fd44fb403`
 
-สถานะ: `LOCAL IMPLEMENTATION VALIDATED / NOT DEPLOYED / OWNER TEST DEPLOY APPROVAL AND UAT REQUIRED`
+สถานะ: `BASE DEPLOYED / PREORDER AMENDMENT LOCAL VALIDATED / NOT DEPLOYED / OWNER TEST DEPLOY APPROVAL AND UAT REQUIRED`
 
 ## Roadmap และ Definition of Done
 
@@ -32,7 +32,7 @@ Definition of Done ของ Issue #6:
 - ไม่สร้าง draft order หรือเริ่ม Issue #2
 - ไม่ยืนยันสต๊อกปัจจุบัน, โปรประจำวัน, ออเดอร์, การชำระเงิน หรือข้อมูลส่วนบุคคล
 - ไม่เพิ่ม AI free-form classification และไม่เดาคำจาก fuzzy distance
-- ไม่เปลี่ยน Approved Knowledge Base exact answers หรือ business rules
+- เปลี่ยนเฉพาะ Owner-approved `ADVANCE_ORDER` exact reply version `2026-08-31-advance-order-v2`; `PICKUP` และ business behavior อื่นคงเดิม
 - ไม่ deploy, ไม่เปลี่ยน LINE OA settings/Webhook/Rich Menu/Reward Card และไม่อ่านหรือเปลี่ยน secret
 - ไม่เปิดหรือแก้ Production `มะลิปัง`
 
@@ -79,6 +79,14 @@ Definition of Done ของ Issue #6:
 | ALLERGEN/HIGH_RISK      | `แพ้กลูเตน`, complaint/payment wording | staff review; ห้ามยืนยันเอง                          |
 | AMBIGUOUS/UNKNOWN       | `เท่าไหร่`, `เอาอันนี้`, `สอบถามค่ะ`   | exact fallback + handoff                             |
 
+### PREORDER reply amendment — 31 สิงหาคม 2026
+
+- `ADVANCE_ORDER` ตอบ exact text จาก Owner Approval Pack แล้วส่ง acknowledgement เดิมเป็นข้อความถัดไปหนึ่งครั้ง
+- reply มีแบบฟอร์มให้ลูกค้าคัดลอก แต่ Worker ไม่ parse/จัดเก็บข้อมูลและไม่สร้าง draft/real order จึงไม่เริ่ม Issue #2
+- `handoff=true` และ `allowDuringHandoff=false` คงเดิม; หลังตอบ conversation เป็น `HUMAN_HANDOFF` และ typed message ถัดไปเงียบ
+- ห้ามใช้ข้อความนี้เป็นการยืนยัน stock, ราคา, วันรับ, รอบอบ, วิธีรับ/จัดส่ง หรือการชำระเงิน
+- ไม่มีการเปลี่ยน classifier, Quick Reply/Flex, LINE OA setting หรือ Production
+
 ## Transcript fixtures
 
 `tests/fixtures/issue6-conversation-ux.json` เป็น TEST-only fixture แบบ versioned ไม่มี user ID, phone, address, reply token, customer transcript หรือข้อมูลจริง แต่ละแถวบันทึกเฉพาะ synthetic utterance, expected intent/reply kind และ handoff policy
@@ -102,9 +110,9 @@ Definition of Done ของ Issue #6:
 
 ผลวันที่ 31 สิงหาคม 2026:
 
-- Node tests `246/246` ผ่าน
-- Worker/Durable Object tests `24/24` ผ่าน
-- รวม `270/270` tests ผ่าน
+- Node tests `248/248` ผ่าน
+- Worker/Durable Object tests `25/25` ผ่าน
+- รวม `273/273` tests ผ่าน
 - formatting, ESLint, TypeScript และ build ผ่าน
 - Flex, Rich Menu, Approved Knowledge Base และ Production-readiness validators ผ่าน โดย Production readiness ยังคง expected `NO_GO`
 - Worker dry-run ผ่านและยืนยัน bindings เป็น `ENVIRONMENT=TEST`, `LINE_OA_ACCOUNT_NAME=มะลิปัง TEST`
@@ -113,6 +121,8 @@ Definition of Done ของ Issue #6:
 - `git diff --check` ผ่าน
 
 คำเตือน missing secrets ระหว่าง Worker tests เป็น expected local test isolation; ไม่มีการอ่าน เพิ่ม หรือเปลี่ยน secret และ tests ผ่านทั้งหมด
+
+PREORDER amendment validation ยืนยัน exact manifest answer/checksum, version แยกจาก `PICKUP`, ลำดับ reply → acknowledgement หนึ่งครั้ง, transition เป็น `HUMAN_HANDOFF` และ typed-message silence โดยไม่เพิ่ม parser/order/payment behavior
 
 ## งานค้างก่อนปิด Issue #6
 

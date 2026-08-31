@@ -4,7 +4,12 @@ import {
   approvedAnswerForReplyKind,
   enforceApprovedKnowledge,
 } from "../worker/knowledge.js";
-import { classifyText } from "../worker/routing.js";
+import {
+  HANDOFF_ACKNOWLEDGEMENT,
+  STAFF_QUICK_REPLY,
+  classifyText,
+  replyMessages,
+} from "../worker/routing.js";
 
 describe("Worker Approved Knowledge gate", () => {
   it.each([
@@ -51,6 +56,33 @@ describe("Worker Approved Knowledge gate", () => {
     expect(decision).toMatchObject({ replyKind: kind, handoff: true });
     expect(decision.reasonCode).toMatch(/^KB_APPROVED\|/);
     expect(approvedAnswerForReplyKind(kind)).toBeTruthy();
+  });
+
+  it("sends the approved preorder reply followed by one acknowledgement", () => {
+    const decision = enforceApprovedKnowledge(classifyText("พรีออเดอได้ไหม"));
+    expect(decision).toMatchObject({
+      replyKind: "ADVANCE_ORDER",
+      handoff: true,
+      allowDuringHandoff: false,
+    });
+    const answer = approvedAnswerForReplyKind("ADVANCE_ORDER");
+    expect(answer).toBeTruthy();
+    const messages = replyMessages(
+      "ADVANCE_ORDER",
+      "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+      answer,
+      true,
+    );
+    expect(messages).toEqual([
+      { type: "text", text: answer, quickReply: STAFF_QUICK_REPLY },
+      { type: "text", text: HANDOFF_ACKNOWLEDGEMENT },
+    ]);
+    expect(
+      messages.filter(
+        (message) =>
+          message.type === "text" && message.text === HANDOFF_ACKNOWLEDGEMENT,
+      ),
+    ).toHaveLength(1);
   });
 
   it("does not map payment, complaint, or sensitive data to an FAQ", () => {

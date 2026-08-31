@@ -220,6 +220,47 @@ describe("Durable Object persistence and webhook security", () => {
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
+  it("enters handoff after the approved preorder reply and then silences typed text", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("preorder-handoff");
+    const decision = enforceApprovedKnowledge(classifyText("พรีออเดอได้ไหม"));
+    const first = await stub.processEvent({
+      ...baseInput,
+      eventRef: "6".repeat(64),
+      decision,
+    });
+    expect(first).toEqual({
+      status: "RESPOND",
+      replyKind: "ADVANCE_ORDER",
+      enteredHandoff: true,
+    });
+    const messages = replyMessages(
+      first.replyKind,
+      "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+      approvedAnswerForReplyKind(first.replyKind),
+      first.enteredHandoff,
+    );
+    expect(messages).toHaveLength(2);
+    expect(messages[0]).toMatchObject({
+      type: "text",
+      text: approvedAnswerForReplyKind("ADVANCE_ORDER"),
+    });
+    expect(
+      messages.filter(
+        (message) =>
+          message.type === "text" && message.text === HANDOFF_ACKNOWLEDGEMENT,
+      ),
+    ).toHaveLength(1);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+
+    const later = await stub.processEvent({
+      ...baseInput,
+      eventRef: "7".repeat(64),
+      decision: enforceApprovedKnowledge(classifyText("เมนู")),
+    });
+    expect(later.status).toBe("SILENT");
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+  });
+
   it("allows an authenticated and authorized Test staff close", async () => {
     const conversationRef = "c".repeat(64);
     const stub = env.CONVERSATION_STATE.getByName(conversationRef);
