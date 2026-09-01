@@ -1,12 +1,16 @@
 # Phase 2 — Draft Order สำหรับ `มะลิปัง TEST`
 
-สถานะ: **CORRECTIVE FORM FLOW LOCAL IMPLEMENTED — NOT DEPLOYED — OWNER UAT PENDING**
+สถานะ: **TEST DEPLOYED — OWNER UAT PASS — ISSUE COMPLETE**
 
 Issue: GitHub #2 / Roadmap #9 Phase 2
 
 ฐานงาน corrective: `f11e45df11f06dd4e33809fc00ffbe1d8f1b4cde` (เริ่มจาก remote commit นี้โดยตรง)
 
 วันที่ตัดสินใจ Owner: 1 กันยายน 2026
+
+Corrective commit: `37f4f81f6327daf46bbb8e146fc51d2badc4ed61`
+
+TEST Worker version: `3e02e79b-29c9-46cf-9218-ed2d0b7d7655`
 
 ## เป้าหมายและขอบเขต
 
@@ -84,17 +88,19 @@ Source เดียวของ runtime คือ `config/product-catalog/test-a
 - เปลี่ยนเฉพาะ local parser/reply/tests/documents จากการพิมพ์ทีละ field เป็นแบบฟอร์มข้อความเดียว
 - คง consent, PII TTL 48 ชั่วโมง, Durable Object storage, redacted audit, duplicate protection, catalog checksum, promotion snapshot/control และ fail-closed behavior เดิม
 - ไม่มีการเปลี่ยน Cloudflare binding, encrypted secret, LINE OA setting, Rich Menu, Webhook หรือ Reward Card
-- commit ฐาน `f11e45d…` ที่ใช้อยู่ก่อน corrective นี้ไม่ถูกแก้ย้อนหลัง และ corrective version นี้ยังไม่ได้ deploy
+- commit ฐาน `f11e45d…` ไม่ถูกแก้ย้อนหลัง และ corrective version deploy เฉพาะ Worker `malispang-lineoa-test` หลัง frozen validation ผ่าน
 
-## Local-only infrastructure baseline
+## TEST infrastructure
 
-เพิ่ม class/binding declaration ใน source สำหรับ `DraftOrderDO` และ `PromotionControlDO` เพื่อให้ typecheck/dry-run ได้ แต่ **ยังไม่ได้ deploy หรือสร้าง resource ภายนอก** ค่า non-secret `TEST_OWNER_ALLOWLIST=OWNER_TEST` ถูกบันทึกตาม Owner decision; credential สำหรับ admin authentication ยังคงเป็น encrypted secret และไม่มีค่า secret ใน Git
+`DraftOrderDO` และ `PromotionControlDO` ทำงานเฉพาะ TEST พร้อม `TEST_OWNER_ALLOWLIST=OWNER_TEST`; credential สำหรับ admin authentication ยังคงเป็น encrypted secret และไม่มีค่า secret ใน Git การ deploy corrective ไม่เปลี่ยน binding/class lifecycle และไม่ reset Durable Object เดิม
 
-## BLOCKED ก่อน deploy TEST
+## ผล deployment และ UAT
 
-1. ชิฟฟ่อน คุกกี้ และบัตเตอร์เลมอนยัง `PRICE_BLOCKED` เพราะ Discovery พบ mapping ราคาไม่ตรงกัน
-2. ต้องตั้ง/ตรวจ TEST bindings ตาม manifest ที่ frozen ตอน deploy โดยไม่เปิดเผย secret
-3. ยังไม่มี Owner approval สำหรับ TEST deployment ของ corrective commit ที่เกิดจากรอบนี้
-4. Owner Live UAT ยังไม่ผ่าน จึงห้ามปิด Issue #2
+1. frozen validation ผ่าน 335 tests, build/typecheck/lint/validators/dry-run/secret scan/dependency audit และ `git diff --check`
+2. `/health` ได้ HTTP 200 พร้อม `TEST`, `มะลิปัง TEST` และ Durable Object SQLite
+3. invalid webhook signature ได้ HTTP 401 และ protected admin endpoint ปฏิเสธ unauthenticated request
+4. Owner Live UAT ผ่าน whole-form Draft summary, staff review, acknowledgement ครั้งเดียว และ bot silence เมื่อ 1 กันยายน 2026
+5. ชิฟฟ่อน คุกกี้ และบัตเตอร์เลมอนยังคง `PRICE_BLOCKED` ตามการออกแบบ เพราะไม่มีราคาที่อนุมัติ; ไม่ใช่ blocker ต่อการปิด Issue และห้ามระบบเดาราคา
+6. rollback target เดิม `b4e74202-ff31-4049-99d9-71e282f2e60b` ถูกเก็บไว้
 
 Production `มะลิปัง` ไม่ได้ถูกเปิด แก้ไข หรือเรียกใช้ในงานนี้
