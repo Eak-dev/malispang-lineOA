@@ -4,8 +4,10 @@ import {
   APPROVED_TEST_CATALOG,
   DRAFT_CONSENT_TEXT,
   DRAFT_LABEL,
+  DRAFT_PICKUP_SLOTS,
   DRAFT_TTL_MS,
   calculateDraft,
+  draftReservationForm,
   formatDraftSummary,
   newDraft,
   repriceDraftForStaff,
@@ -151,7 +153,7 @@ describe("Issue #2 deterministic satang calculator", () => {
 });
 
 describe("Issue #2 Draft Order state machine", () => {
-  it("requires exact consent before collecting PII", () => {
+  it("requires exact consent before showing the one-message reservation form", () => {
     const requested = transitionDraft(
       newDraft(now),
       "พรีออเดอร์",
@@ -178,30 +180,86 @@ describe("Issue #2 Draft Order state machine", () => {
     );
     expect(granted.aggregate.state).toBe("COLLECTING");
     expect(granted.aggregate.consentedAt).toBe(now + 2);
+    expect(granted.messages).toEqual([draftReservationForm(now + 2)]);
+    expect(granted.messages[0]).toContain(
+      "วันรับ: 1 กันยายน 2569 (หากต้องการรับวันอื่น กรุณาแก้ไขวันที่)",
+    );
+    expect(granted.messages[0]).toContain("รอบรับ: 08:00 / 11:00 / 14:00");
+    expect(granted.messages[0]).not.toContain("16:00");
   });
 
-  it("creates a new revision and extends the 48-hour TTL on every edit", () => {
-    let aggregate = collectingDraft();
-    const first = transitionDraft(
+  it("uses the Bangkok Buddhist date dynamically across the local-day boundary", () => {
+    const beforeMidnight = Date.UTC(2026, 8, 1, 16, 59, 59);
+    const afterMidnight = Date.UTC(2026, 8, 1, 17, 0, 0);
+    expect(draftReservationForm(beforeMidnight)).toContain(
+      "วันรับ: 1 กันยายน 2569",
+    );
+    expect(draftReservationForm(afterMidnight)).toContain(
+      "วันรับ: 2 กันยายน 2569",
+    );
+  });
+
+  it("creates exactly one revision, total, and summary from one completed form", () => {
+    const aggregate = collectingDraft();
+    const result = transitionDraft(
       aggregate,
-      "ชื่อ: มะลิ",
+      completedForm(),
       now + 10,
       false,
       DISABLED_TEST_PROMOTION,
     );
-    aggregate = first.aggregate;
-    expect(aggregate.revision).toBe(3);
-    expect(aggregate.expiresAt).toBe(now + 10 + DRAFT_TTL_MS);
-    const second = transitionDraft(
+    expect(result.aggregate.state).toBe("READY_FOR_REVIEW");
+    expect(result.aggregate.revision).toBe(aggregate.revision + 1);
+    expect(result.aggregate.expiresAt).toBe(now + 10 + DRAFT_TTL_MS);
+    expect(result.aggregate.fields.items).toHaveLength(1);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toContain(DRAFT_LABEL);
+    expect(result.messages[0]).toContain("ยอดร่าง: 78.00 บาท");
+    expect(result.messages[0]).toContain("ข้อเสนอมัดจำ 50%: 39.00 บาท");
+    expect(result.messages[0]).not.toContain("บันทึกในร่างแล้ว");
+  });
+
+  it("rejects incomplete or invalid forms atomically and names only affected fields", () => {
+    const aggregate = collectingDraft();
+    const blankItems = transitionDraft(
       aggregate,
-      "เบอร์โทร: 0812345678",
-      now + 20,
+      completedForm({ items: [] }),
+      now + 10,
       false,
       DISABLED_TEST_PROMOTION,
     );
-    expect(second.aggregate.revision).toBe(4);
-    expect(second.aggregate.expiresAt).toBe(now + 20 + DRAFT_TTL_MS);
+    expect(blankItems.aggregate).toEqual(aggregate);
+    expect(blankItems.messages).toEqual(["ยังขาดข้อมูล: รายการสินค้า ค่ะ"]);
+
+    const invalid = transitionDraft(
+      aggregate,
+      completedForm({ phone: "abc", slot: "10:30", items: [["แฮมชีส", "0"]] }),
+      now + 11,
+      false,
+      DISABLED_TEST_PROMOTION,
+    );
+    expect(invalid.aggregate).toEqual(aggregate);
+    expect(invalid.messages).toEqual([
+      "ข้อมูลไม่ถูกต้อง: เบอร์โทร, รอบรับ, แฮมชีส ค่ะ",
+    ]);
+    expect(invalid.messages[0]).not.toContain("มะลิ");
   });
+
+  it.each(["0", "-1", "1.5", "สอง"])(
+    "rejects non-positive or non-integer item quantity %s without a revision",
+    (quantity) => {
+      const aggregate = collectingDraft();
+      const result = transitionDraft(
+        aggregate,
+        completedForm({ items: [["แฮมชีส", quantity]] }),
+        now + 12,
+        false,
+        DISABLED_TEST_PROMOTION,
+      );
+      expect(result.aggregate).toEqual(aggregate);
+      expect(result.messages).toEqual(["ข้อมูลไม่ถูกต้อง: แฮมชีส ค่ะ"]);
+    },
+  );
 
   it("snapshots promotion eligibility only when a new Draft starts", () => {
     const started = transitionDraft(
@@ -230,14 +288,7 @@ describe("Issue #2 Draft Order state machine", () => {
 
   it("recalculates an existing Draft only through an explicit staff revision", () => {
     const current = completeDraft();
-    const customerReview = transitionDraft(
-      current,
-      "สรุปร่าง",
-      now + 20,
-      false,
-      activePromotion,
-    );
-    expect(customerReview.messages[0]).toContain("ยอดร่าง: 117.00 บาท");
+    expect(current.state).toBe("READY_FOR_REVIEW");
     const staffRevision = repriceDraftForStaff(
       current,
       activePromotion,
@@ -251,38 +302,29 @@ describe("Issue #2 Draft Order state machine", () => {
     });
   });
 
-  it("supports add, replace, and remove item revisions", () => {
-    let aggregate = collectingDraft();
-    aggregate = transitionDraft(
-      aggregate,
-      "รายการ: แฮมชีส x 2",
+  it("supports an approved manually typed small SKU even though it is not listed", () => {
+    const result = transitionDraft(
+      collectingDraft(),
+      completedForm({ items: [["แฮมชีสเล็ก", "2"]] }),
       now + 1,
       false,
       DISABLED_TEST_PROMOTION,
-    ).aggregate;
-    aggregate = transitionDraft(
-      aggregate,
-      "รายการ: แฮมชีส x 4",
-      now + 2,
-      false,
-      DISABLED_TEST_PROMOTION,
-    ).aggregate;
-    expect(aggregate.fields.items).toHaveLength(1);
-    expect(aggregate.fields.items[0]?.quantity).toBe(4);
-    aggregate = transitionDraft(
-      aggregate,
-      "ลบรายการ: แฮมชีส",
-      now + 3,
-      false,
-      DISABLED_TEST_PROMOTION,
-    ).aggregate;
-    expect(aggregate.fields.items).toEqual([]);
+    );
+    expect(result.aggregate.fields.items).toEqual([
+      expect.objectContaining({
+        sku: "BR-S-HAM-CHEESE",
+        size: "SMALL",
+        quantity: 2,
+        unitPriceSatang: 2_000,
+      }),
+    ]);
+    expect(result.messages[0]).toContain("ยอดร่าง: 40.00 บาท");
   });
 
   it("moves unknown products to PRICE_BLOCKED without subtotal/deposit and enters handoff", () => {
     const result = transitionDraft(
       collectingDraft(),
-      "รายการ: ชิฟฟ่อน x 2",
+      completedForm({ items: [["ชิฟฟ่อน", "2"]] }),
       now + 1,
       false,
       DISABLED_TEST_PROMOTION,
@@ -292,22 +334,36 @@ describe("Issue #2 Draft Order state machine", () => {
     expect(result.messages.join(" ")).not.toMatch(/ยอดร่าง:|มัดจำ 50%: \d/);
   });
 
-  it("builds an explicitly unconfirmed summary and then hands off for review", () => {
-    const aggregate = completeDraft();
-    const ready = transitionDraft(
-      aggregate,
-      "สรุปร่าง",
-      now + 20,
+  it("fails closed when an unapproved product is manually marked small", () => {
+    const result = transitionDraft(
+      collectingDraft(),
+      completedForm({ items: [["ไส้กรอกเล็ก", "1"]] }),
+      now + 1,
       false,
       DISABLED_TEST_PROMOTION,
     );
-    expect(ready.aggregate.state).toBe("READY_FOR_REVIEW");
-    expect(ready.messages[0]).toContain(DRAFT_LABEL);
-    expect(ready.messages[0]).toContain(
-      "ยังไม่ถือว่าได้รับหรือยืนยันการชำระเงิน",
+    expect(result.aggregate.state).toBe("PRICE_BLOCKED");
+    expect(result.enterHandoff).toBe(true);
+    expect(result.messages[0]).not.toMatch(/ยอดร่าง:|ข้อเสนอมัดจำ/);
+  });
+
+  it("keeps 16:00 in runtime policy while omitting it from the new form", () => {
+    expect(DRAFT_PICKUP_SLOTS).toContain("16:00");
+    const result = transitionDraft(
+      collectingDraft(),
+      completedForm({ slot: "16:00" }),
+      now + 1,
+      false,
+      DISABLED_TEST_PROMOTION,
     );
+    expect(result.aggregate.state).toBe("READY_FOR_REVIEW");
+    expect(result.aggregate.fields.pickupSlot).toBe("16:00");
+  });
+
+  it("automatically builds an unconfirmed summary and only hands it to staff on command", () => {
+    const aggregate = completeDraft();
     const review = transitionDraft(
-      ready.aggregate,
+      aggregate,
       "ส่งให้พนักงานตรวจ",
       now + 21,
       false,
@@ -431,22 +487,43 @@ function collectingDraft(): DraftAggregate {
 }
 
 function completeDraft(): DraftAggregate {
-  let aggregate = collectingDraft();
-  for (const [offset, text] of [
-    [2, "ชื่อ: มะลิ"],
-    [3, "เบอร์โทร: 0812345678"],
-    [4, "วันรับ: 2026-09-03"],
-    [5, "รอบรับ: 11:00"],
-    [6, "วิธีรับ: รับที่ร้าน"],
-    [7, "รายการ: แฮมชีส x 3"],
-  ] as const) {
-    aggregate = transitionDraft(
-      aggregate,
-      text,
-      now + offset,
-      false,
-      DISABLED_TEST_PROMOTION,
-    ).aggregate;
+  return transitionDraft(
+    collectingDraft(),
+    completedForm({ items: [["แฮมชีส", "3"]] }),
+    now + 2,
+    false,
+    DISABLED_TEST_PROMOTION,
+  ).aggregate;
+}
+
+function completedForm(
+  overrides: {
+    readonly name?: string;
+    readonly phone?: string;
+    readonly date?: string;
+    readonly slot?: string;
+    readonly method?: string;
+    readonly items?: readonly (readonly [string, string])[];
+  } = {},
+): string {
+  let form = draftReservationForm(now);
+  form = replaceFormLine(form, "ชื่อผู้รับ", overrides.name ?? "มะลิ");
+  form = replaceFormLine(form, "เบอร์โทร", overrides.phone ?? "0812345678");
+  if (overrides.date !== undefined)
+    form = replaceFormLine(form, "วันรับ", overrides.date);
+  form = replaceFormLine(form, "รอบรับ", overrides.slot ?? "11:00");
+  form = replaceFormLine(form, "วิธีรับ", overrides.method ?? "รับที่ร้าน");
+  for (const [product, quantity] of overrides.items ?? [["แฮมชีส", "2"]]) {
+    if (form.includes(`${product}:`))
+      form = replaceFormLine(form, product, quantity);
+    else form += `\n${product}: ${quantity}`;
   }
-  return aggregate;
+  return form;
+}
+
+function replaceFormLine(form: string, key: string, value: string): string {
+  return form
+    .split("\n")
+    .map((line) => (line.startsWith(`${key}:`) ? `${key}: ${value}` : line))
+    .join("\n");
 }

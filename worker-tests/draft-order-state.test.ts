@@ -2,6 +2,7 @@ import { env, exports } from "cloudflare:workers";
 import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 
+import { draftReservationForm } from "../src/draft-order.js";
 import { disabledPromotion } from "../worker/draft-order-objects.js";
 
 const baseNow = Math.floor(Date.now() / 1000) * 1000;
@@ -9,28 +10,50 @@ const baseNow = Math.floor(Date.now() / 1000) * 1000;
 describe("Issue #2 Durable Object persistence", () => {
   it("deduplicates Draft events and never sends the same reply twice", async () => {
     const stub = env.DRAFT_ORDER.getByName("draft-duplicate");
-    const input = draftInput("a".repeat(64), "พรีออเดอร์", true);
-    const first = await stub.processText(input);
+    const start = draftInput("a".repeat(64), "พรีออเดอร์", true);
+    const first = await stub.processText(start);
     expect(first).toMatchObject({
       handled: true,
       duplicate: false,
       state: "CONSENT_REQUIRED",
     });
-    await stub.markDelivered(input.eventRef);
-    const duplicate = await stub.processText(input);
+    await stub.markDelivered(start.eventRef);
+    const duplicate = await stub.processText(start);
     expect(duplicate).toMatchObject({ duplicate: true, messages: [] });
+
+    await stub.processText(draftInput("b".repeat(64), "ยินยอม"));
+    const submission = draftInput("c".repeat(64), completedWorkerForm());
+    const accepted = await stub.processText(submission);
+    expect(accepted).toMatchObject({
+      duplicate: false,
+      state: "READY_FOR_REVIEW",
+    });
+    await stub.markDelivered(submission.eventRef);
+    expect(await stub.processText(submission)).toMatchObject({
+      duplicate: true,
+      messages: [],
+      state: "READY_FOR_REVIEW",
+    });
+    await runInDurableObject(stub, (_instance, state) => {
+      expect(
+        state.storage.sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM draft_revisions",
+          )
+          .one().count,
+      ).toBe(3);
+    });
   });
 
-  it("persists every edit as a revision without exposing PII in audit", async () => {
+  it("persists one completed form as one revision without exposing PII in audit", async () => {
     const stub = env.DRAFT_ORDER.getByName("draft-revisions");
     await stub.processText(draftInput("b".repeat(64), "พรีออเดอร์", true));
     await stub.processText(draftInput("c".repeat(64), "ยินยอม"));
-    await stub.processText(draftInput("d".repeat(64), "ชื่อ: มะลิ"));
-    await stub.processText(draftInput("e".repeat(64), "เบอร์โทร: 0812345678"));
-    expect(await stub.state(baseNow + 10)).toBe("COLLECTING");
+    await stub.processText(draftInput("d".repeat(64), completedWorkerForm()));
+    expect(await stub.state(baseNow + 10)).toBe("READY_FOR_REVIEW");
     const audit = await stub.redactedAudit();
     expect(
-      audit.some((entry) => entry.outcome === "DRAFT_REVISION_CREATED"),
+      audit.some((entry) => entry.outcome === "DRAFT_FORM_READY_FOR_REVIEW"),
     ).toBe(true);
     expect(JSON.stringify(audit)).not.toContain("มะลิ");
     expect(JSON.stringify(audit)).not.toContain("0812345678");
@@ -40,7 +63,9 @@ describe("Issue #2 Durable Object persistence", () => {
     const stub = env.DRAFT_ORDER.getByName("draft-expiry");
     await stub.processText(draftInput("f".repeat(64), "พรีออเดอร์", true));
     await stub.processText(draftInput("1".repeat(64), "ยินยอม"));
-    await stub.processText(draftInput("2".repeat(64), "ชื่อ: ข้อมูลทดสอบ"));
+    await stub.processText(
+      draftInput("2".repeat(64), completedWorkerForm({ name: "ข้อมูลทดสอบ" })),
+    );
 
     await runInDurableObject(stub, async (_instance, state) => {
       const row = state.storage.sql
@@ -230,12 +255,7 @@ describe("Issue #2 protected TEST-only promotion admin flow", () => {
     const texts = [
       ["a", "พรีออเดอร์", true],
       ["b", "ยินยอม", false],
-      ["c", "ชื่อ: TEST", false],
-      ["d", "เบอร์โทร: 0812345678", false],
-      ["e", "วันรับ: 2026-09-03", false],
-      ["f", "รอบรับ: 11:00", false],
-      ["1", "วิธีรับ: รับที่ร้าน", false],
-      ["2", "รายการ: แฮมชีส x 3", false],
+      ["c", completedWorkerForm({ items: [["แฮมชีส", "3"]] }), false],
     ] as const;
     for (const [ref, text, startRequested] of texts) {
       await draft.processText(draftInput(ref.repeat(64), text, startRequested));
@@ -269,7 +289,7 @@ describe("Issue #2 protected TEST-only promotion admin flow", () => {
     }>();
     expect(body.draft).toEqual({
       state: "READY_FOR_REVIEW",
-      revision: 9,
+      revision: 4,
       subtotalSatang: 10_000,
       proposedDepositSatang: 5_000,
       promotionApplied: true,
@@ -314,4 +334,38 @@ function setPromotion(times: { startAt: number; endAt: number }) {
       }),
     }),
   );
+}
+
+function completedWorkerForm(
+  overrides: {
+    readonly name?: string;
+    readonly items?: readonly (readonly [string, string])[];
+  } = {},
+): string {
+  let form = draftReservationForm(baseNow);
+  const replacements = new Map([
+    ["ชื่อผู้รับ", overrides.name ?? "มะลิ"],
+    ["เบอร์โทร", "0812345678"],
+    ["รอบรับ", "11:00"],
+    ["วิธีรับ", "รับที่ร้าน"],
+  ]);
+  form = form
+    .split("\n")
+    .map((line) => {
+      const key = line.split(":", 1)[0] ?? "";
+      const replacement = replacements.get(key);
+      return replacement === undefined ? line : `${key}: ${replacement}`;
+    })
+    .join("\n");
+  for (const [product, quantity] of overrides.items ?? [["แฮมชีส", "2"]]) {
+    if (form.includes(`${product}:`)) {
+      form = form
+        .split("\n")
+        .map((line) =>
+          line.startsWith(`${product}:`) ? `${product}: ${quantity}` : line,
+        )
+        .join("\n");
+    } else form += `\n${product}: ${quantity}`;
+  }
+  return form;
 }

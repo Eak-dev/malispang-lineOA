@@ -8,6 +8,32 @@ export const DRAFT_CONSENT_TEXT = `เพื่อจัดทำร่างอ
 
 export const DRAFT_LABEL = "DRAFT — ยังไม่ยืนยันออเดอร์/สต๊อก/ชำระเงิน";
 export const DRAFT_TTL_MS = 48 * 60 * 60 * 1000;
+export const DRAFT_TIME_ZONE = "Asia/Bangkok";
+export const DRAFT_PICKUP_SLOTS = ["08:00", "11:00", "14:00", "16:00"] as const;
+
+const FORM_PRODUCT_NAMES = [
+  "ทรัฟเฟิลแฮมชีส",
+  "ฮาวายเอี้ยน",
+  "ทูน่าคอร์นสลัด",
+  "แฮมชีส",
+  "เนยสด",
+  "สังขยา",
+  "หมูหยอง",
+  "หมูหยองไส้กรอก",
+  "ไส้กรอก",
+  "ไส้กรอกชีส",
+  "หมูหยองพริกเผา",
+  "หมูหยองลูกเกด",
+  "หมูหยองน้ำสลัด",
+  "แฮมสลัด",
+  "แฮมไส้กรอก",
+  "ไส้กรอกพิซซ่า",
+  "ฝอยทอง",
+  "เผือก",
+  "ถั่วแดง",
+  "ลูกเกด",
+  "รวมมิตร",
+] as const;
 
 export type DraftState =
   | "NO_DRAFT"
@@ -118,6 +144,51 @@ export function newDraft(now: number): DraftAggregate {
   };
 }
 
+export function draftReservationForm(now: number): string {
+  const pickupDate = new Intl.DateTimeFormat("th-TH-u-ca-buddhist", {
+    timeZone: DRAFT_TIME_ZONE,
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(now));
+  return `🧾 แบบฟอร์มสั่งจองขนมปัง
+คัดลอก → กรอก → ส่งกลับมาได้เลยค่ะ
+ชื่อผู้รับ:
+เบอร์โทร:
+วันรับ: ${pickupDate} (หากต้องการรับวันอื่น กรุณาแก้ไขวันที่)
+รอบรับ: 08:00 / 11:00 / 14:00
+วิธีรับ: รับที่ร้าน / จัดส่ง
+📝 รายการที่ต้องการ:
+🎉 ไส้ใหม่ ชวนลอง
+ทรัฟเฟิลแฮมชีส:
+ฮาวายเอี้ยน:
+ทูน่าคอร์นสลัด:
+⭐ ไส้ขายดี ลูกค้าสั่งซ้ำบ่อย
+แฮมชีส:
+เนยสด:
+สังขยา:
+หมูหยอง:
+หมูหยองไส้กรอก:
+ไส้กรอก:
+ไส้กรอกชีส:
+หมูหยองพริกเผา:
+🥖 ไส้อื่น ๆ
+หมูหยองลูกเกด:
+หมูหยองน้ำสลัด:
+แฮมสลัด:
+แฮมไส้กรอก:
+ไส้กรอกพิซซ่า:
+ฝอยทอง:
+เผือก:
+ถั่วแดง:
+ลูกเกด:
+รวมมิตร:
+หมายเหตุ: (ถ้ามี)
+หลังได้รับข้อมูล แอดมินจะตรวจสอบสินค้าและสรุปให้ พร้อมแจ้งรายการ จำนวน ยอดชำระ และรอบอบที่ยืนยันค่ะ
+รีบสั่งจองกันนะคะ ไส้ขายดีหมดไวมาก!
+เลือกไส้ที่ชอบ แล้วให้เราจัดเตรียมขนมปังอบใหม่ หอม นุ่ม อร่อย ส่งต่อความสุขให้ทุกคำเลยค่ะ`;
+}
+
 export function isDraftActive(state: DraftState): boolean {
   return [
     "CONSENT_REQUIRED",
@@ -206,66 +277,18 @@ export function transitionDraft(
       now,
       "COLLECTING",
       current.fields,
-      [draftInstructions()],
+      [draftReservationForm(now)],
       "DRAFT_CONSENT_GRANTED",
     );
-  }
-
-  if (normalized === "สรุปร่าง") {
-    const required = missingRequiredFields(current.fields);
-    if (required.length > 0) {
-      return {
-        ...unchanged(current),
-        messages: [`ยังขาดข้อมูล: ${required.join(", ")} ค่ะ`],
-        auditOutcome: "DRAFT_REVIEW_BLOCKED_MISSING_FIELDS",
-      };
-    }
-    try {
-      const calculation = calculateDraft(
-        current.fields.items,
-        current.pricingPromotion ?? {
-          enabled: false,
-          revision: 0,
-          startAt: 0,
-          endAt: 0,
-        },
-        now,
-      );
-      const aggregate = revise(
-        current,
-        now,
-        "READY_FOR_REVIEW",
-        current.fields,
-      );
-      return {
-        aggregate,
-        changed: true,
-        messages: [formatDraftSummary(aggregate, calculation)],
-        enterHandoff: false,
-        purgePii: false,
-        auditOutcome: "DRAFT_READY_FOR_REVIEW",
-      };
-    } catch (error) {
-      const code = safeDomainError(error);
-      const blocked = revise(current, now, "PRICE_BLOCKED", current.fields);
-      return {
-        aggregate: blocked,
-        changed: true,
-        messages: [
-          `${DRAFT_LABEL}\nไม่สามารถคำนวณราคา/มัดจำได้ (${code}) กรุณาให้พนักงานตรวจสอบค่ะ`,
-        ],
-        enterHandoff: true,
-        purgePii: false,
-        auditOutcome: code,
-      };
-    }
   }
 
   if (normalized === "ส่งให้พนักงานตรวจ") {
     if (current.state !== "READY_FOR_REVIEW") {
       return {
         ...unchanged(current),
-        messages: ["กรุณาพิมพ์ “สรุปร่าง” และตรวจข้อมูลก่อนส่งให้พนักงานค่ะ"],
+        messages: [
+          "กรุณากรอกแบบฟอร์มให้ครบและตรวจสอบ Draft ก่อนส่งให้พนักงานค่ะ",
+        ],
         auditOutcome: "DRAFT_STAFF_REVIEW_BLOCKED",
       };
     }
@@ -284,25 +307,28 @@ export function transitionDraft(
     };
   }
 
-  const edit = parseEdit(normalized, current.fields);
-  if (edit === undefined) {
+  const submission = parseReservationForm(normalized);
+  if (submission === undefined) {
     return {
       ...unchanged(current),
-      messages: [draftInstructions()],
+      messages: [draftReservationForm(now)],
       auditOutcome: "DRAFT_INPUT_NOT_RECOGNIZED",
     };
   }
-  if (edit.kind === "PRICE_BLOCKED") {
-    const fields = {
-      ...current.fields,
-      items: [...current.fields.items, edit.line],
+  if (submission.kind === "INVALID") {
+    return {
+      ...unchanged(current),
+      messages: [formatFormIssues(submission.missing, submission.invalid)],
+      auditOutcome: "DRAFT_FORM_VALIDATION_REJECTED",
     };
+  }
+  if (submission.kind === "PRICE_BLOCKED") {
     return {
       ...changed(
         current,
         now,
         "PRICE_BLOCKED",
-        fields,
+        submission.fields,
         [
           `${DRAFT_LABEL}\nสินค้านี้ไม่มีราคาใน Approved TEST Catalog จึงไม่คำนวณยอดหรือมัดจำ และต้องให้พนักงานตรวจสอบค่ะ`,
         ],
@@ -311,14 +337,45 @@ export function transitionDraft(
       enterHandoff: true,
     };
   }
-  return changed(
-    current,
-    now,
-    "COLLECTING",
-    edit.fields,
-    ["บันทึกในร่างแล้วค่ะ พิมพ์ “สรุปร่าง” เมื่อต้องการตรวจสอบ"],
-    "DRAFT_REVISION_CREATED",
-  );
+  try {
+    const calculation = calculateDraft(
+      submission.fields.items,
+      current.pricingPromotion ?? {
+        enabled: false,
+        revision: 0,
+        startAt: 0,
+        endAt: 0,
+      },
+      now,
+    );
+    const aggregate = revise(
+      current,
+      now,
+      "READY_FOR_REVIEW",
+      submission.fields,
+    );
+    return {
+      aggregate,
+      changed: true,
+      messages: [formatDraftSummary(aggregate, calculation)],
+      enterHandoff: false,
+      purgePii: false,
+      auditOutcome: "DRAFT_FORM_READY_FOR_REVIEW",
+    };
+  } catch (error) {
+    const code = safeDomainError(error);
+    const blocked = revise(current, now, "PRICE_BLOCKED", submission.fields);
+    return {
+      aggregate: blocked,
+      changed: true,
+      messages: [
+        `${DRAFT_LABEL}\nไม่สามารถคำนวณราคา/มัดจำได้ (${code}) กรุณาให้พนักงานตรวจสอบค่ะ`,
+      ],
+      enterHandoff: true,
+      purgePii: false,
+      auditOutcome: code,
+    };
+  }
 }
 
 export function calculateDraft(
@@ -469,76 +526,151 @@ export function formatDraftSummary(
   ].join("\n");
 }
 
-function parseEdit(
-  text: string,
-  current: DraftFields,
-):
-  | { readonly kind: "EDIT"; readonly fields: DraftFields }
-  | { readonly kind: "PRICE_BLOCKED"; readonly line: DraftLine }
-  | undefined {
-  const match = /^([^:：]{1,30})[:：]\s*(.{1,500})$/u.exec(text);
-  if (!match) return undefined;
-  const key = match[1]?.trim();
-  const value = match[2]?.trim();
-  if (!key || !value) return undefined;
-  if (key === "ชื่อ" || key === "ชื่อผู้รับ") {
-    return { kind: "EDIT", fields: { ...current, name: value.slice(0, 100) } };
+type ReservationFormResult =
+  | {
+      readonly kind: "VALID" | "PRICE_BLOCKED";
+      readonly fields: DraftFields;
+    }
+  | {
+      readonly kind: "INVALID";
+      readonly missing: readonly string[];
+      readonly invalid: readonly string[];
+    };
+
+function parseReservationForm(text: string): ReservationFormResult | undefined {
+  if (!text.includes("🧾 แบบฟอร์มสั่งจองขนมปัง")) return undefined;
+  const values = new Map<string, string>();
+  const itemInputs: { readonly name: string; readonly value: string }[] = [];
+  const knownFormProducts = new Set<string>(FORM_PRODUCT_NAMES);
+  for (const rawLine of text.split(/\r?\n/u)) {
+    const match = /^([^:：\n]{1,80})[:：]\s*(.*)$/u.exec(rawLine.trim());
+    if (!match?.[1]) continue;
+    const key = match[1].trim();
+    const value = (match[2] ?? "").trim();
+    if (
+      [
+        "ชื่อผู้รับ",
+        "เบอร์โทร",
+        "วันรับ",
+        "รอบรับ",
+        "วิธีรับ",
+        "หมายเหตุ",
+      ].includes(key)
+    ) {
+      values.set(key, value);
+      continue;
+    }
+    if (key === "📝 รายการที่ต้องการ") continue;
+    if (
+      knownFormProducts.has(key) ||
+      APPROVED_TEST_CATALOG.products.some((product) =>
+        [product.displayName, ...product.aliases].some(
+          (name) => normalizeProductName(key) === normalizeProductName(name),
+        ),
+      ) ||
+      value.length > 0
+    ) {
+      itemInputs.push({ name: key, value });
+    }
   }
-  if (key === "เบอร์" || key === "เบอร์โทร") {
-    if (!/^[0-9+ -]{8,20}$/.test(value)) return undefined;
-    return { kind: "EDIT", fields: { ...current, phone: value } };
+
+  const missing: string[] = [];
+  const invalid: string[] = [];
+  const name = values.get("ชื่อผู้รับ") ?? "";
+  const phone = values.get("เบอร์โทร") ?? "";
+  const pickupDate = stripPickupDateInstruction(values.get("วันรับ") ?? "");
+  const pickupSlot = values.get("รอบรับ") ?? "";
+  const pickupMethod = values.get("วิธีรับ") ?? "";
+  const notesValue = values.get("หมายเหตุ") ?? "";
+
+  validateRequiredText("ชื่อผู้รับ", name, 100, missing, invalid);
+  if (!phone) missing.push("เบอร์โทร");
+  else if (!/^[0-9+ -]{8,20}$/u.test(phone)) invalid.push("เบอร์โทร");
+  validateRequiredText("วันรับ", pickupDate, 40, missing, invalid);
+  if (!pickupSlot) missing.push("รอบรับ");
+  else if (!(DRAFT_PICKUP_SLOTS as readonly string[]).includes(pickupSlot))
+    invalid.push("รอบรับ");
+  if (!pickupMethod) missing.push("วิธีรับ");
+  else if (!["รับที่ร้าน", "จัดส่ง"].includes(pickupMethod))
+    invalid.push("วิธีรับ");
+
+  const items: DraftLine[] = [];
+  let hasItemInput = false;
+  let priceBlocked = false;
+  for (const input of itemInputs) {
+    if (input.value === "") continue;
+    hasItemInput = true;
+    if (!/^[1-9]\d{0,2}$/u.test(input.value)) {
+      invalid.push(input.name);
+      continue;
+    }
+    const line = resolveCatalogLine(input.name, Number(input.value));
+    if (line.status === "PRICE_BLOCKED") priceBlocked = true;
+    const existingIndex = items.findIndex((item) => item.sku === line.sku);
+    if (existingIndex === -1) items.push(line);
+    else {
+      const existing = items[existingIndex];
+      if (!existing) continue;
+      const quantity = safeAdd(existing.quantity, line.quantity);
+      if (quantity > 999) {
+        invalid.push(input.name);
+        continue;
+      }
+      items[existingIndex] = { ...existing, quantity };
+    }
   }
-  if (key === "วันรับ") {
+  if (!hasItemInput) missing.push("รายการสินค้า");
+  if (missing.length > 0 || invalid.length > 0) {
     return {
-      kind: "EDIT",
-      fields: { ...current, pickupDate: value.slice(0, 40) },
+      kind: "INVALID",
+      missing: unique(missing),
+      invalid: unique(invalid),
     };
   }
-  if (key === "รอบรับ" || key === "เวลารับ") {
-    return {
-      kind: "EDIT",
-      fields: { ...current, pickupSlot: value.slice(0, 40) },
-    };
-  }
-  if (key === "วิธีรับ") {
-    return {
-      kind: "EDIT",
-      fields: { ...current, pickupMethod: value.slice(0, 80) },
-    };
-  }
-  if (key === "วิธีชำระ") {
-    return {
-      kind: "EDIT",
-      fields: { ...current, paymentPreference: value.slice(0, 80) },
-    };
-  }
-  if (key === "หมายเหตุ") {
-    return { kind: "EDIT", fields: { ...current, notes: value.slice(0, 500) } };
-  }
-  if (key === "รายการ" || key === "เพิ่ม") {
-    const item = /^(.+?)\s+(?:x|×)\s*(\d{1,3})$/iu.exec(value);
-    if (!item?.[1] || !item[2]) return undefined;
-    const line = resolveCatalogLine(item[1], Number(item[2]));
-    if (line.status === "PRICE_BLOCKED") return { kind: "PRICE_BLOCKED", line };
-    const withoutSameSku = current.items.filter(
-      (entry) => entry.sku !== line.sku,
-    );
-    return {
-      kind: "EDIT",
-      fields: { ...current, items: [...withoutSameSku, line] },
-    };
-  }
-  if (key === "ลบรายการ" || key === "ลบ") {
-    const candidate = resolveCatalogLine(value, 1);
-    return {
-      kind: "EDIT",
-      fields: {
-        ...current,
-        items: current.items.filter((entry) => entry.sku !== candidate.sku),
-      },
-    };
-  }
-  return undefined;
+
+  const notes = notesValue === "(ถ้ามี)" ? undefined : notesValue.slice(0, 500);
+  const fields: DraftFields = {
+    name,
+    phone,
+    pickupDate,
+    pickupSlot,
+    pickupMethod,
+    ...(notes ? { notes } : {}),
+    items,
+  };
+  return { kind: priceBlocked ? "PRICE_BLOCKED" : "VALID", fields };
+}
+
+function stripPickupDateInstruction(value: string): string {
+  return value
+    .replace(/\s*\(หากต้องการรับวันอื่น กรุณาแก้ไขวันที่\)\s*$/u, "")
+    .trim();
+}
+
+function validateRequiredText(
+  field: string,
+  value: string,
+  maxLength: number,
+  missing: string[],
+  invalid: string[],
+): void {
+  if (!value) missing.push(field);
+  else if (value.length > maxLength) invalid.push(field);
+}
+
+function formatFormIssues(
+  missing: readonly string[],
+  invalid: readonly string[],
+): string {
+  const messages: string[] = [];
+  if (missing.length > 0) messages.push(`ยังขาดข้อมูล: ${missing.join(", ")}`);
+  if (invalid.length > 0)
+    messages.push(`ข้อมูลไม่ถูกต้อง: ${invalid.join(", ")}`);
+  return `${messages.join("\n")} ค่ะ`;
+}
+
+function unique(values: readonly string[]): string[] {
+  return [...new Set(values)];
 }
 
 function changed(
@@ -603,15 +735,6 @@ function missingRequiredFields(fields: DraftFields): string[] {
   if (!fields.pickupMethod) missing.push("วิธีรับ");
   if (fields.items.length === 0) missing.push("รายการสินค้า");
   return missing;
-}
-
-function draftInstructions(): string {
-  return [
-    DRAFT_LABEL,
-    "กรอกทีละบรรทัด เช่น ชื่อ: มะลิ, เบอร์โทร: 08xxxxxxxx, วันรับ: 2026-09-03, รอบรับ: 11:00, วิธีรับ: รับที่ร้าน",
-    "เพิ่มสินค้า: รายการ: แฮมชีส x 2 (ใส่คำว่า เล็ก สำหรับขนมปังชิ้นเล็ก)",
-    "แก้ไขโดยส่งฟิลด์เดิมอีกครั้ง, ลบด้วย ลบรายการ: แฮมชีส, แล้วพิมพ์ “สรุปร่าง”",
-  ].join("\n");
 }
 
 function normalizeProductName(value: string): string {

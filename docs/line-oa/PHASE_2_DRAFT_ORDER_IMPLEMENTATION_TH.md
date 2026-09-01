@@ -1,10 +1,10 @@
 # Phase 2 — Draft Order สำหรับ `มะลิปัง TEST`
 
-สถานะ: **LOCAL IMPLEMENTED — NOT DEPLOYED — OWNER UAT PENDING**
+สถานะ: **CORRECTIVE FORM FLOW LOCAL IMPLEMENTED — NOT DEPLOYED — OWNER UAT PENDING**
 
 Issue: GitHub #2 / Roadmap #9 Phase 2
 
-ฐานงาน: `04fa0fd457d65ea16d025a2d06572b435ce84a99`
+ฐานงาน corrective: `f11e45df11f06dd4e33809fc00ffbe1d8f1b4cde` (เริ่มจาก remote commit นี้โดยตรง)
 
 วันที่ตัดสินใจ Owner: 1 กันยายน 2026
 
@@ -24,7 +24,8 @@ State machine ที่อนุญาต:
 
 - ก่อนเก็บชื่อ/เบอร์ ต้องส่งข้อความ consent ที่ Owner อนุมัติและรับคำว่า `ยินยอม` ตรงตัว
 - ชื่อและเบอร์รวมถึง revision ที่มีข้อมูลดังกล่าวหมดอายุไม่เกิน 48 ชั่วโมงหลังแก้ไขล่าสุด
-- ทุกการแก้ไขสร้าง revision ใหม่และเลื่อน TTL เป็น 48 ชั่วโมงจากการแก้ไขนั้น
+- การส่งแบบฟอร์มที่ valid ทั้งก้อนสร้าง revision ใหม่เพียงหนึ่ง revision และเลื่อน TTL เป็น 48 ชั่วโมงจากเวลาส่งแบบฟอร์ม
+- แบบฟอร์มที่ขาด/ผิดถูกปฏิเสธแบบ atomic: ไม่บันทึกชื่อ เบอร์ หรือ field บางส่วน และไม่สร้าง revision
 - Durable Object alarm ลบ revision ที่มี PII และคงเฉพาะหลักฐาน audit แบบ redacted (`outcome`, `revision`, เวลา)
 - การยกเลิกร่างลบ PII เช่นกัน
 - log/audit ไม่บันทึกชื่อ เบอร์ ข้อความเต็ม Owner ID, token หรือ secret
@@ -54,17 +55,19 @@ Source เดียวของ runtime คือ `config/product-catalog/test-a
 - สิทธิ์โปรถูก snapshot ตอนสร้าง Draft ใหม่ การเปลี่ยนโปรไม่คำนวณ Draft เดิมย้อนหลัง
 - staff-created repricing revision ใช้ protected TEST admin endpoint, ตรวจ staff allowlist และคืนเฉพาะยอด/สถานะที่ไม่ใช่ PII; ลูกค้าไม่มีคำสั่ง reprice
 
-## Command contract สำหรับ UAT
+## Form contract สำหรับ UAT
 
-- เริ่ม: ข้อความ intent พรีออเดอร์
-- Consent: `ยินยอม`
-- แก้ไข: `ชื่อ:`, `เบอร์โทร:`, `วันรับ:`, `รอบรับ:`, `วิธีรับ:`, `วิธีชำระ:`, `หมายเหตุ:`
-- เพิ่ม/แทนรายการ: `รายการ: แฮมชีส x 2`
-- ชิ้นเล็ก: `รายการ: แฮมชีสเล็ก x 2`
-- ลบ: `ลบรายการ: แฮมชีส`
-- สรุป: `สรุปร่าง`
-- ส่งพนักงาน: `ส่งให้พนักงานตรวจ`
-- ยกเลิกและ purge: `ยกเลิกร่าง`
+- เริ่มด้วยข้อความ intent พรีออเดอร์ แล้วรับ consent exact เดิม
+- หลังลูกค้าพิมพ์ `ยินยอม` บอตส่งแบบฟอร์มที่ Owner อนุมัติให้คัดลอก กรอก และส่งกลับเป็นข้อความเดียว
+- `วันรับ` ในแบบฟอร์มสร้างจากเวลาปัจจุบัน `Asia/Bangkok` ด้วยวันที่ภาษาไทย พ.ศ.; ไม่มีวันที่ hard-code
+- แบบฟอร์มแสดงรอบ `08:00 / 11:00 / 14:00` เท่านั้น แต่ runtime policy เดิมยังยอมรับ `16:00` จนกว่า Owner จะอนุมัติเปลี่ยนกติกาเวลา
+- รายการใช้รูปแบบ `ชื่อสินค้า: จำนวน`; ช่องว่างถูกข้ามและจำนวนต้องเป็นจำนวนเต็มบวกไม่เกิน 999
+- หากทุกช่องสินค้าว่าง ระบบแจ้งเฉพาะ `รายการสินค้า`; field ที่ขาด/ผิดอื่นแจ้งเฉพาะชื่อ field ที่ต้องแก้
+- แบบฟอร์ม valid สร้าง revision เดียวและส่ง Draft summary พร้อมยอดโดยอัตโนมัติ ไม่ต้องพิมพ์ `สรุปร่าง` และไม่มี acknowledgement รายบรรทัด
+- ชิ้นเล็กที่อนุมัติสามารถเพิ่มในแบบฟอร์มเอง เช่น `แฮมชีสเล็ก: 2`; SKU ชิ้นเล็กอื่น fail closed
+- สินค้าไม่มีราคาอนุมัติเป็น `PRICE_BLOCKED`, ไม่แสดงยอด/มัดจำ และเข้าสู่ human handoff
+- `ส่งให้พนักงานตรวจ` เปลี่ยนเฉพาะ Draft ที่ `READY_FOR_REVIEW` ไป `AWAITING_STAFF_REVIEW` และ handoff; ไม่สร้างหรือยืนยันออเดอร์
+- `ยกเลิกร่าง` ยกเลิกและ purge PII
 
 ทุก summary ขึ้นต้นด้วย `DRAFT — ยังไม่ยืนยันออเดอร์/สต๊อก/ชำระเงิน`
 
@@ -76,7 +79,14 @@ Source เดียวของ runtime คือ `config/product-catalog/test-a
 - calculator overflow: `PRICE_BLOCKED`, handoff
 - หลัง `AWAITING_STAFF_REVIEW`: conversation เข้าสู่ human handoff; Draft ไม่เปลี่ยนเป็น confirmed order
 
-## Local-only infrastructure changes
+## Corrective change รอบนี้
+
+- เปลี่ยนเฉพาะ local parser/reply/tests/documents จากการพิมพ์ทีละ field เป็นแบบฟอร์มข้อความเดียว
+- คง consent, PII TTL 48 ชั่วโมง, Durable Object storage, redacted audit, duplicate protection, catalog checksum, promotion snapshot/control และ fail-closed behavior เดิม
+- ไม่มีการเปลี่ยน Cloudflare binding, encrypted secret, LINE OA setting, Rich Menu, Webhook หรือ Reward Card
+- commit ฐาน `f11e45d…` ที่ใช้อยู่ก่อน corrective นี้ไม่ถูกแก้ย้อนหลัง และ corrective version นี้ยังไม่ได้ deploy
+
+## Local-only infrastructure baseline
 
 เพิ่ม class/binding declaration ใน source สำหรับ `DraftOrderDO` และ `PromotionControlDO` เพื่อให้ typecheck/dry-run ได้ แต่ **ยังไม่ได้ deploy หรือสร้าง resource ภายนอก** ค่า non-secret `TEST_OWNER_ALLOWLIST=OWNER_TEST` ถูกบันทึกตาม Owner decision; credential สำหรับ admin authentication ยังคงเป็น encrypted secret และไม่มีค่า secret ใน Git
 
@@ -84,7 +94,7 @@ Source เดียวของ runtime คือ `config/product-catalog/test-a
 
 1. ชิฟฟ่อน คุกกี้ และบัตเตอร์เลมอนยัง `PRICE_BLOCKED` เพราะ Discovery พบ mapping ราคาไม่ตรงกัน
 2. ต้องตั้ง/ตรวจ TEST bindings ตาม manifest ที่ frozen ตอน deploy โดยไม่เปิดเผย secret
-3. ยังไม่มี Owner approval สำหรับ TEST deployment ของ commit นี้
+3. ยังไม่มี Owner approval สำหรับ TEST deployment ของ corrective commit ที่เกิดจากรอบนี้
 4. Owner Live UAT ยังไม่ผ่าน จึงห้ามปิด Issue #2
 
 Production `มะลิปัง` ไม่ได้ถูกเปิด แก้ไข หรือเรียกใช้ในงานนี้
