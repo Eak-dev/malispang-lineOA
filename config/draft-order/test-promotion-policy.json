@@ -1,0 +1,21 @@
+{
+  "environment": "TEST",
+  "accountName": "มะลิปัง TEST",
+  "policyVersion": "TEST-PROMO-2026-09-01-v1",
+  "defaultEnabled": false,
+  "rule": {
+    "eligibleProductSize": "NORMAL",
+    "eligibleQuantity": 3,
+    "bundlePriceSatang": 10000,
+    "remainderPriceSatang": 3900,
+    "mixEligibleFillings": true,
+    "excluded": ["SMALL", "CHIFFON", "COOKIE", "OTHER"]
+  },
+  "activation": {
+    "requiresTestAdminAuthentication": true,
+    "requiresSeparateOwnerAllowlist": true,
+    "requiresStartAndEndTime": true,
+    "appliesTo": ["NEW_DRAFT", "STAFF_CREATED_REPRICING_REVISION"],
+    "ownerIdentifierStoredInRepository": false
+  }
+}

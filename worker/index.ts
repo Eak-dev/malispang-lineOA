@@ -1,4 +1,6 @@
 import { ConversationStateDO, HandoffRegistryDO } from "./durable-objects.js";
+import { DraftOrderDO, PromotionControlDO } from "./draft-order-objects.js";
+import { authorizeTestPromotionChange } from "../src/test-promotion-control.js";
 import {
   approvedAnswerForReplyKind,
   enforceApprovedKnowledge,
@@ -24,7 +26,12 @@ import {
 } from "./security.js";
 import { parseWebhook, type ParsedLineEvent } from "./webhook-schema.js";
 
-export { ConversationStateDO, HandoffRegistryDO };
+export {
+  ConversationStateDO,
+  DraftOrderDO,
+  HandoffRegistryDO,
+  PromotionControlDO,
+};
 
 const decoder = new TextDecoder();
 
@@ -108,6 +115,70 @@ async function processLineEvent(
   const decision = enforceApprovedKnowledge(eventDecision(event));
   const now = Date.now();
   const conversation = env.CONVERSATION_STATE.getByName(conversationRef);
+  if (event.kind === "text" && (await conversation.state()) === "BOT_ACTIVE") {
+    const decisionForStart = classifyText(event.text);
+    const draft = env.DRAFT_ORDER.getByName(conversationRef);
+    const draftResult = await draft.processText({
+      eventRef,
+      text: event.text,
+      now,
+      startRequested: decisionForStart.replyKind === "ADVANCE_ORDER",
+      promotion: await env.PROMOTION_CONTROL.getByName(
+        "test-draft-promotion",
+      ).current(),
+      auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
+    });
+    if (draftResult.handled) {
+      if (draftResult.duplicate) {
+        logOutcome(eventRef, "DUPLICATE", "DRAFT_EVENT_ALREADY_DELIVERED");
+        return;
+      }
+      if (draftResult.enterHandoff) {
+        const handoffResult = await conversation.processEvent({
+          eventRef,
+          decision: {
+            replyKind: "HANDOFF_ACK",
+            reasonCode: "DRAFT_REQUIRES_STAFF_REVIEW",
+            handoff: true,
+            allowDuringHandoff: false,
+          },
+          now,
+          processedRetentionSeconds: positiveInteger(
+            env.PROCESSED_EVENT_RETENTION_SECONDS,
+          ),
+          auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
+        });
+        if (handoffResult.enteredHandoff) {
+          await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
+            conversationRef,
+            now,
+          );
+        }
+      }
+      const draftMessages = draftResult.messages.map((text) => ({
+        type: "text" as const,
+        text,
+      }));
+      if (draftResult.enterHandoff) {
+        draftMessages.push({
+          type: "text",
+          text: "รับเรื่องแล้วค่ะ พนักงานมะลิปังจะเข้ามาตอบโดยเร็วที่สุดนะคะ ระหว่างนี้สามารถพิมพ์รายละเอียดเพิ่มเติมไว้ได้เลยค่ะ 😊",
+        });
+      }
+      if (draftMessages.length > 0) {
+        await sendLineReply(
+          event.replyToken,
+          draftMessages,
+          env.LINE_CHANNEL_ACCESS_TOKEN,
+        );
+        await draft.markDelivered(eventRef);
+        if (draftResult.enterHandoff)
+          await conversation.markDelivered(eventRef);
+      }
+      logOutcome(eventRef, "REPLIED", `DRAFT_${draftResult.state}`);
+      return;
+    }
+  }
   const result = await conversation.processEvent({
     eventRef,
     decision,
@@ -167,6 +238,7 @@ async function handleAdmin(
     return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
   const registry = env.HANDOFF_REGISTRY.getByName("test-active-handoffs");
+  const promotion = env.PROMOTION_CONTROL.getByName("test-draft-promotion");
   if (request.method === "GET" && url.pathname === "/admin/handoffs") {
     return Response.json({ active: await registry.listActive() });
   }
@@ -184,6 +256,81 @@ async function handleAdmin(
     const snapshot =
       await env.CONVERSATION_STATE.getByName(conversationRef).auditSnapshot();
     return Response.json({ conversationRef, events: snapshot });
+  }
+  if (request.method === "GET" && url.pathname === "/admin/promotion") {
+    if (env.TEST_OWNER_ALLOWLIST.trim().length === 0) {
+      return Response.json(
+        { error: "PROMOTION_OWNER_ALLOWLIST_MISSING" },
+        { status: 503 },
+      );
+    }
+    return Response.json({ promotion: await promotion.current() });
+  }
+  if (request.method === "POST" && url.pathname === "/admin/promotion") {
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    const input = parsePromotionInput(decoder.decode(body));
+    if (!input) {
+      return Response.json(
+        { error: "INVALID_PROMOTION_REQUEST" },
+        { status: 400 },
+      );
+    }
+    try {
+      const authorized = authorizeTestPromotionChange({
+        environment: env.ENVIRONMENT,
+        accountName: env.LINE_OA_ACCOUNT_NAME,
+        ownerId: input.ownerId,
+        ownerAllowlist: env.TEST_OWNER_ALLOWLIST,
+        enabled: input.enabled,
+        startAt: input.startAt,
+        endAt: input.endAt,
+      });
+      const state = await promotion.change(
+        authorized,
+        await sha256Reference(input.ownerId),
+        Date.now(),
+      );
+      return Response.json({ promotion: state });
+    } catch (error) {
+      const code =
+        error instanceof Error
+          ? safeErrorCode(error.message)
+          : "PROMOTION_CHANGE_REJECTED";
+      return Response.json({ error: code }, { status: 403 });
+    }
+  }
+  if (request.method === "POST" && url.pathname === "/admin/draft/reprice") {
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    const input = parseCloseInput(decoder.decode(body));
+    if (!input) {
+      return Response.json(
+        { error: "INVALID_DRAFT_REPRICE_REQUEST" },
+        { status: 400 },
+      );
+    }
+    const allowedStaff = env.TEST_STAFF_ALLOWLIST.split(",").map((value) =>
+      value.trim(),
+    );
+    if (!allowedStaff.includes(input.staffId)) {
+      return Response.json({ error: "STAFF_NOT_AUTHORIZED" }, { status: 403 });
+    }
+    try {
+      const result = await env.DRAFT_ORDER.getByName(
+        input.conversationRef,
+      ).repriceByStaff(
+        await sha256Reference(input.staffId),
+        await promotion.current(),
+        Date.now(),
+        positiveInteger(env.AUDIT_RETENTION_SECONDS),
+      );
+      return Response.json({ draft: result });
+    } catch (error) {
+      const code =
+        error instanceof Error
+          ? safeErrorCode(error.message)
+          : "DRAFT_REPRICE_FAILED";
+      return Response.json({ error: code }, { status: 409 });
+    }
   }
   if (request.method === "POST" && url.pathname === "/admin/handoff/close") {
     const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
@@ -214,6 +361,42 @@ async function handleAdmin(
     return Response.json({ closed });
   }
   return Response.json({ error: "NOT_FOUND" }, { status: 404 });
+}
+
+function parsePromotionInput(raw: string):
+  | {
+      readonly ownerId: string;
+      readonly enabled: boolean;
+      readonly startAt: number;
+      readonly endAt: number;
+    }
+  | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "ownerId" in value &&
+      typeof value.ownerId === "string" &&
+      /^[A-Z0-9_-]{1,64}$/.test(value.ownerId) &&
+      "enabled" in value &&
+      typeof value.enabled === "boolean" &&
+      "startAt" in value &&
+      Number.isSafeInteger(value.startAt) &&
+      "endAt" in value &&
+      Number.isSafeInteger(value.endAt)
+    ) {
+      return {
+        ownerId: value.ownerId,
+        enabled: value.enabled,
+        startAt: value.startAt as number,
+        endAt: value.endAt as number,
+      };
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 function parseCloseInput(

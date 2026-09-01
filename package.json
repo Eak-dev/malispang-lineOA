@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check": "pnpm render:rich-menu && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm validate:flex && pnpm validate:rich-menu && pnpm validate:approved-knowledge-base && pnpm validate:production-readiness && pnpm preview && pnpm preview:rich-menu && pnpm worker:dry-run",
+    "check": "pnpm render:rich-menu && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm validate:flex && pnpm validate:rich-menu && pnpm validate:approved-knowledge-base && pnpm validate:product-catalog && pnpm validate:production-readiness && pnpm preview && pnpm preview:rich-menu && pnpm worker:dry-run",
     "audit:dependencies": "pnpm audit --audit-level high",
     "deploy:test": "wrangler deploy --minify",
     "format": "prettier --write --ignore-unknown .",
@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json",
     "validate:flex": "node --import tsx scripts/validate-flex.ts",
     "validate:approved-knowledge-base": "node --import tsx scripts/validate-approved-knowledge-base.ts",
+    "validate:product-catalog": "node --import tsx scripts/validate-product-catalog.ts",
     "validate:production-readiness": "node --import tsx scripts/validate-production-readiness.ts",
     "validate:rich-menu": "node --import tsx scripts/validate-rich-menu.ts",
     "worker:dry-run": "wrangler deploy --dry-run --outdir dist/worker",
