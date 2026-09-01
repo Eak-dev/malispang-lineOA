@@ -296,6 +296,11 @@ async function handleAdmin(
         error instanceof Error
           ? safeErrorCode(error.message)
           : "PROMOTION_CHANGE_REJECTED";
+      await promotion.recordRejected(
+        code,
+        await sha256Reference(input.ownerId),
+        Date.now(),
+      );
       return Response.json({ error: code }, { status: 403 });
     }
   }

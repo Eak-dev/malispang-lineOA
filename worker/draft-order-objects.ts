@@ -308,7 +308,45 @@ export class PromotionControlDO extends DurableObject<Env> {
     });
   }
 
-  current(): TestPromotion {
+  current(now = Date.now()): TestPromotion {
+    return this.expireIfNeeded(now);
+  }
+
+  alarm(): void {
+    this.expireIfNeeded(Date.now());
+  }
+
+  redactedAudit(): readonly {
+    outcome: string;
+    revision: number;
+    createdAt: number;
+  }[] {
+    return this.ctx.storage.sql
+      .exec<{ outcome: string; revision: number; created_at: number }>(
+        "SELECT outcome, revision, created_at FROM promotion_audit ORDER BY id DESC LIMIT 100",
+      )
+      .toArray()
+      .map((row) => ({
+        outcome: row.outcome,
+        revision: row.revision,
+        createdAt: row.created_at,
+      }));
+  }
+
+  recordRejected(outcome: string, actorRef: string, now: number): void {
+    const current = this.readCurrent();
+    this.ctx.storage.sql.exec(
+      "INSERT INTO promotion_audit (actor_ref, outcome, revision, start_at, end_at, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      actorRef,
+      outcome,
+      current.revision,
+      current.startAt,
+      current.endAt,
+      now,
+    );
+  }
+
+  private readCurrent(): TestPromotion {
     const row = this.ctx.storage.sql
       .exec<PromotionRow>(
         "SELECT enabled, revision, start_at, end_at FROM promotion_state WHERE id = 1",
@@ -322,7 +360,7 @@ export class PromotionControlDO extends DurableObject<Env> {
     };
   }
 
-  change(
+  async change(
     change: {
       readonly enabled: boolean;
       readonly startAt: number;
@@ -330,8 +368,8 @@ export class PromotionControlDO extends DurableObject<Env> {
     },
     actorRef: string,
     now: number,
-  ): TestPromotion {
-    const current = this.current();
+  ): Promise<TestPromotion> {
+    const current = this.readCurrent();
     const revision = current.revision + 1;
     this.ctx.storage.sql.exec(
       "UPDATE promotion_state SET enabled = ?, revision = ?, start_at = ?, end_at = ?, updated_at = ? WHERE id = 1",
@@ -350,7 +388,28 @@ export class PromotionControlDO extends DurableObject<Env> {
       change.endAt,
       now,
     );
+    if (change.enabled) await this.ctx.storage.setAlarm(change.endAt);
+    else await this.ctx.storage.deleteAlarm();
     return { ...change, revision };
+  }
+
+  private expireIfNeeded(now: number): TestPromotion {
+    const current = this.readCurrent();
+    if (!current.enabled || now < current.endAt) return current;
+    const revision = current.revision + 1;
+    this.ctx.storage.sql.exec(
+      "UPDATE promotion_state SET enabled = 0, revision = ?, updated_at = ? WHERE id = 1",
+      revision,
+      now,
+    );
+    this.ctx.storage.sql.exec(
+      "INSERT INTO promotion_audit (actor_ref, outcome, revision, start_at, end_at, created_at) VALUES ('SYSTEM', 'TEST_PROMOTION_AUTO_EXPIRED', ?, ?, ?, ?)",
+      revision,
+      current.startAt,
+      current.endAt,
+      now,
+    );
+    return { ...current, enabled: false, revision };
   }
 }
 

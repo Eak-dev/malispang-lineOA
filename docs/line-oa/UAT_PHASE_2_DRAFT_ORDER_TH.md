@@ -6,7 +6,8 @@
 
 - [ ] commit ที่ขอ deploy ตรงกับ commit ที่ validation ผ่าน
 - [ ] Worker target เป็น `malispang-lineoa-test` และ account เป็น `มะลิปัง TEST`
-- [ ] กำหนด TEST Owner allowlist แยกจาก staff allowlist โดยไม่เปิดเผย/commit ID
+- [ ] `TEST_OWNER_ALLOWLIST` เป็นค่า non-secret `OWNER_TEST` และ admin credential ยังคงเป็น encrypted secret
+- [ ] ช่วงโปรใช้ `Asia/Bangkok`, end หลัง start, วันไทยเดียวกัน และไม่เกิน `23:59:59`
 - [ ] โปรเริ่มต้น OFF
 - [ ] ไม่มี Production credential/binding
 - [ ] rollback version ถูกบันทึกก่อน deploy
@@ -33,6 +34,10 @@
 18. [ ] persistence/catalog/calculator failure → fail closed
 19. [ ] staff allowlist ใช้เปิด/ปิดโปรไม่ได้; ต้องเป็น Owner allowlist เท่านั้น
 20. [ ] ไม่มี order, stock reservation, payment acceptance/verification หรือ Production write
+21. [ ] `OWNER_TEST` เปิดและปิดโปรได้ผ่าน protected TEST admin flow
+22. [ ] ช่วงเวลาที่ข้ามวันตาม `Asia/Bangkok` ถูกปฏิเสธและมี redacted audit
+23. [ ] end ก่อนหรือเท่ากับ start ถูกปฏิเสธและมี redacted audit
+24. [ ] เมื่อถึง end time โปรถูกปิดอัตโนมัติและมี `TEST_PROMOTION_AUTO_EXPIRED`
 
 ## Evidence ที่ต้องบันทึกหลัง UAT
 

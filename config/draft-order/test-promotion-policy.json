@@ -15,7 +15,15 @@
     "requiresTestAdminAuthentication": true,
     "requiresSeparateOwnerAllowlist": true,
     "requiresStartAndEndTime": true,
+    "timeZone": "Asia/Bangkok",
+    "timestampPrecision": "WHOLE_SECOND",
+    "requiresSameCalendarDay": true,
+    "latestEndLocalTime": "23:59:59",
+    "endMustBeAfterStart": true,
+    "autoDisableAtEnd": true,
+    "approvedOwnerAllowlist": ["OWNER_TEST"],
     "appliesTo": ["NEW_DRAFT", "STAFF_CREATED_REPRICING_REVISION"],
-    "ownerIdentifierStoredInRepository": false
+    "ownerIdentifierStoredInRepository": true,
+    "rejectedChangesAreAuditedRedacted": true
   }
 }

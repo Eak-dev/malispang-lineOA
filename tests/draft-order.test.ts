@@ -24,7 +24,7 @@ const now = Date.UTC(2026, 8, 1, 2, 0, 0);
 const activePromotion: TestPromotion = {
   enabled: true,
   revision: 3,
-  startAt: now - 1,
+  startAt: now - 1_000,
   endAt: now + 60_000,
 };
 
@@ -360,19 +360,30 @@ describe("TEST-only promotion authorization", () => {
   const request = {
     environment: "TEST",
     accountName: "มะลิปัง TEST",
-    ownerId: "OWNER_TEST_ONLY",
-    ownerAllowlist: "OWNER_TEST_ONLY",
+    ownerId: "OWNER_TEST",
+    ownerAllowlist: "OWNER_TEST",
     enabled: true,
     startAt: now,
     endAt: now + 60_000,
   } as const;
 
-  it("authorizes a separately allowlisted Test Owner", () => {
-    expect(authorizeTestPromotionChange(request)).toEqual({
-      enabled: true,
-      startAt: now,
-      endAt: now + 60_000,
-    });
+  it.each([true, false])(
+    "authorizes OWNER_TEST to set enabled=%s",
+    (enabled) => {
+      expect(authorizeTestPromotionChange({ ...request, enabled })).toEqual({
+        enabled,
+        startAt: now,
+        endAt: now + 60_000,
+      });
+    },
+  );
+
+  it("accepts an end time at 23:59:59 on the same Bangkok day", () => {
+    const startAt = Date.UTC(2026, 8, 1, 2, 0, 0);
+    const endAt = Date.UTC(2026, 8, 1, 16, 59, 59);
+    expect(
+      authorizeTestPromotionChange({ ...request, startAt, endAt }),
+    ).toMatchObject({ startAt, endAt });
   });
 
   it.each([
@@ -383,6 +394,20 @@ describe("TEST-only promotion authorization", () => {
     [{ ...request, accountName: "มะลิปัง" }, "PROMOTION_FAIL_CLOSED_NON_TEST"],
     [{ ...request, ownerAllowlist: "" }, "PROMOTION_OWNER_ALLOWLIST_MISSING"],
     [{ ...request, ownerId: "STAFF_ONLY" }, "PROMOTION_OWNER_NOT_AUTHORIZED"],
+    [
+      {
+        ...request,
+        startAt: Date.UTC(2026, 8, 1, 16, 59, 59),
+        endAt: Date.UTC(2026, 8, 1, 17, 0, 0),
+      },
+      "PROMOTION_RANGE_CROSSES_BANGKOK_DAY",
+    ],
+    [
+      { ...request, startAt: now + 60_000, endAt: now },
+      "PROMOTION_END_NOT_AFTER_START",
+    ],
+    [{ ...request, startAt: now, endAt: now }, "PROMOTION_END_NOT_AFTER_START"],
+    [{ ...request, startAt: now + 1 }, "PROMOTION_TIMESTAMP_PRECISION_INVALID"],
   ] as const)("fails closed for unsafe promotion control", (input, code) => {
     expect(() => authorizeTestPromotionChange(input)).toThrow(code);
   });

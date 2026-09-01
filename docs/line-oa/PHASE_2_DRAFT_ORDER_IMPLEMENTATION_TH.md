@@ -47,7 +47,10 @@ Source เดียวของ runtime คือ `config/product-catalog/test-a
 - โปร 3 ชิ้น 100 บาทรวมไส้ปกติได้, คิดทีละกลุ่ม 3, เศษคิด 39 บาท
 - ชิ้นเล็ก/ชิฟฟ่อน/คุกกี้/สินค้าอื่นไม่ร่วมโปร
 - โปรปิดเป็นค่าเริ่มต้น
-- การเปิด/ปิดต้องผ่าน TEST admin authentication และ Owner allowlist ที่แยกจาก staff allowlist พร้อม start/end time
+- การเปิด/ปิดต้องผ่าน TEST admin authentication และ Owner allowlist ที่แยกจาก staff allowlist; ค่า Owner ที่อนุมัติสำหรับ TEST คือ `OWNER_TEST`
+- ทุกช่วงโปรใช้เวลา `Asia/Bangkok`, start/end ต้องเป็นวินาทีเต็ม, end ต้องหลัง start และอยู่ในวันปฏิทินไทยเดียวกัน โดยเวลาสิ้นสุดล่าสุดคือ `23:59:59`
+- ช่วงเวลาข้ามวัน, end ก่อน/เท่ากับ start หรือ timestamp ไม่ตรงวินาทีถูกปฏิเสธแบบ fail closed และบันทึกเฉพาะ outcome/revision/time ใน audit; ไม่บันทึก Owner ID ดิบ
+- `PromotionControlDO` ตั้ง alarm ที่ end time และเปลี่ยน state เป็น disabled โดยอัตโนมัติเมื่อหมดเวลา พร้อม audit `TEST_PROMOTION_AUTO_EXPIRED`
 - สิทธิ์โปรถูก snapshot ตอนสร้าง Draft ใหม่ การเปลี่ยนโปรไม่คำนวณ Draft เดิมย้อนหลัง
 - staff-created repricing revision ใช้ protected TEST admin endpoint, ตรวจ staff allowlist และคืนเฉพาะยอด/สถานะที่ไม่ใช่ PII; ลูกค้าไม่มีคำสั่ง reprice
 
@@ -75,12 +78,12 @@ Source เดียวของ runtime คือ `config/product-catalog/test-a
 
 ## Local-only infrastructure changes
 
-เพิ่ม class/binding declaration ใน source สำหรับ `DraftOrderDO` และ `PromotionControlDO` เพื่อให้ typecheck/dry-run ได้ แต่ **ยังไม่ได้ deploy หรือสร้าง resource ภายนอก** ค่า `TEST_OWNER_ALLOWLIST` ใน repository เป็นค่าว่างและ fail closed; ห้ามใส่ Owner ID ลง Git ต้องกำหนดเป็นค่า TEST ที่ปลอดภัยในการอนุมัติ deploy รอบแยก
+เพิ่ม class/binding declaration ใน source สำหรับ `DraftOrderDO` และ `PromotionControlDO` เพื่อให้ typecheck/dry-run ได้ แต่ **ยังไม่ได้ deploy หรือสร้าง resource ภายนอก** ค่า non-secret `TEST_OWNER_ALLOWLIST=OWNER_TEST` ถูกบันทึกตาม Owner decision; credential สำหรับ admin authentication ยังคงเป็น encrypted secret และไม่มีค่า secret ใน Git
 
 ## BLOCKED ก่อน deploy TEST
 
-1. `TEST_OWNER_ALLOWLIST` ยังไม่ถูกกำหนดภายนอก (ตั้งใจ fail closed)
-2. ชิฟฟ่อน คุกกี้ และบัตเตอร์เลมอนยัง `PRICE_BLOCKED` เพราะ Discovery พบ mapping ราคาไม่ตรงกัน
+1. ชิฟฟ่อน คุกกี้ และบัตเตอร์เลมอนยัง `PRICE_BLOCKED` เพราะ Discovery พบ mapping ราคาไม่ตรงกัน
+2. ต้องตั้ง/ตรวจ TEST bindings ตาม manifest ที่ frozen ตอน deploy โดยไม่เปิดเผย secret
 3. ยังไม่มี Owner approval สำหรับ TEST deployment ของ commit นี้
 4. Owner Live UAT ยังไม่ผ่าน จึงห้ามปิด Issue #2
 
