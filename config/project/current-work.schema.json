@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Eak-dev/malispang-lineOA/config/project/current-work.schema.json",
+  "title": "MalisPang authorized current work",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "roadmapId",
+    "roadmapVersion",
+    "workId",
+    "githubIssue",
+    "status",
+    "base",
+    "implementationBranch",
+    "targetEnvironment",
+    "allowedScope",
+    "forbiddenScope",
+    "authorization",
+    "nextWork",
+    "conflicts",
+    "workingTreePolicy",
+    "failureMode"
+  ],
+  "properties": {
+    "$schema": { "const": "./current-work.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "roadmapId": { "const": "MP-ROADMAP" },
+    "roadmapVersion": {
+      "type": "string",
+      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-v\\d+$"
+    },
+    "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
+    "githubIssue": { "type": "integer", "minimum": 1 },
+    "status": { "const": "AUTHORIZED_LOCAL_IMPLEMENTATION" },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "branch"],
+      "properties": {
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "branch": { "type": "string", "minLength": 1 }
+      }
+    },
+    "implementationBranch": { "type": "string", "minLength": 1 },
+    "targetEnvironment": { "const": "LOCAL_ONLY" },
+    "allowedScope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "forbiddenScope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localImplementation",
+        "commit",
+        "pushBranch",
+        "testDeployment",
+        "production"
+      ],
+      "properties": {
+        "localImplementation": { "type": "boolean" },
+        "commit": { "type": "boolean" },
+        "pushBranch": { "type": "boolean" },
+        "testDeployment": { "type": "boolean" },
+        "production": { "type": "boolean" }
+      }
+    },
+    "nextWork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "githubIssue", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
+        "githubIssue": { "type": "integer", "minimum": 1 },
+        "status": { "type": "string", "minLength": 1 }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "blocking", "detail", "resolution"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "blocking": { "type": "boolean" },
+          "detail": { "type": "string", "minLength": 1 },
+          "resolution": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "workingTreePolicy": { "const": "CLEAN_OR_PRESERVE_OWNER_CHANGES" },
+    "failureMode": { "const": "ROADMAP_UNVERIFIED" }
+  }
+}

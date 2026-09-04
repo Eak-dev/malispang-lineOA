@@ -1,0 +1,133 @@
+{
+  "$schema": "./roadmap.schema.json",
+  "schemaVersion": 1,
+  "roadmapId": "MP-ROADMAP",
+  "githubIssue": 9,
+  "repository": "Eak-dev/malispang-lineOA",
+  "version": "2026.09.02-v4",
+  "status": "ACTIVE",
+  "ownerDecision": {
+    "decisionId": "MP-OD-2026-09-02-V4",
+    "decidedAt": "2026-09-02",
+    "supersedes": "2026.09.02-v3"
+  },
+  "sourceOfTruthPrecedence": [
+    "OWNER_DECISION_REPOSITORY_RECORD",
+    "VERSIONED_ROADMAP_MANIFEST",
+    "CURRENT_WORK_MANIFEST",
+    "GITHUB_ROADMAP_AND_AUTHORIZED_ISSUE",
+    "PHASE_DOCUMENTS_AND_MANIFESTS",
+    "CHAT_CONTEXT_ONLY"
+  ],
+  "verifiedLatestBaseline": {
+    "commit": "a0612489b4b5ce4394042891513371d5bf10fdb2",
+    "branch": "codex/issue-2-draft-order-form",
+    "verifiedAt": "2026-09-04",
+    "contains": ["MP-01", "MP-02", "MP-03", "MP-04"]
+  },
+  "authorization": {
+    "testDeployment": false,
+    "productionStatus": "NO_GO",
+    "productionAuthorizationReference": null
+  },
+  "items": [
+    {
+      "order": 1,
+      "id": "MP-01",
+      "githubIssue": 8,
+      "title": "Approved Knowledge Base",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 2,
+      "id": "MP-02",
+      "githubIssue": 6,
+      "title": "Conversation UX / Thai Intent Routing",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 3,
+      "id": "MP-03",
+      "githubIssue": 2,
+      "title": "Draft Order",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 4,
+      "id": "MP-04",
+      "githubIssue": 10,
+      "title": "Historical Question Taxonomy / Discovery",
+      "state": "COMPLETED_EVIDENCE"
+    },
+    {
+      "order": 5,
+      "id": "MP-05",
+      "githubIssue": 11,
+      "title": "Versioned Roadmap Governance",
+      "state": "CURRENT"
+    },
+    {
+      "order": 6,
+      "id": "MP-06",
+      "githubIssue": 12,
+      "title": "Guardrailed AI Answer Pilot — TEST",
+      "state": "NEXT_BLOCKED",
+      "blockedBy": ["MP-05_OWNER_PO_REVIEW"],
+      "benchmark": {
+        "piiFree": true,
+        "minimumTotal": 5000,
+        "minimumFunctional": 3000,
+        "minimumThaiLanguageVariation": 1000,
+        "minimumAdversarialSafety": 1000
+      }
+    },
+    {
+      "order": 7,
+      "id": "MP-07",
+      "githubIssue": 7,
+      "title": "Staff Stock Confirmation",
+      "state": "PLANNED"
+    },
+    {
+      "order": 8,
+      "id": "MP-08",
+      "githubIssue": 3,
+      "title": "Payment Review / Loyalty Isolation",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 9,
+      "id": "MP-09",
+      "githubIssue": 4,
+      "title": "Staff Operations / Auth / Observability",
+      "state": "PLANNED"
+    },
+    {
+      "order": 10,
+      "id": "MP-10",
+      "githubIssue": 1,
+      "title": "Rich Menu 39 บาท — TEST",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 11,
+      "id": "MP-11",
+      "githubIssue": 13,
+      "title": "Admin Copilot & Conversation Context",
+      "state": "PLANNED_BLOCKED"
+    },
+    {
+      "order": 12,
+      "id": "MP-12",
+      "githubIssue": 5,
+      "title": "Production Readiness / Controlled Rollout",
+      "state": "FINAL_BLOCKED"
+    }
+  ],
+  "externalReferences": {
+    "roadmapIssue": 9,
+    "authorizedIssue": 11,
+    "nextIssue": 12,
+    "lastVerifiedAt": "2026-09-04"
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Eak-dev/malispang-lineOA/config/project/roadmap.schema.json",
+  "title": "MalisPang versioned roadmap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "roadmapId",
+    "githubIssue",
+    "repository",
+    "version",
+    "status",
+    "ownerDecision",
+    "sourceOfTruthPrecedence",
+    "verifiedLatestBaseline",
+    "authorization",
+    "items",
+    "externalReferences"
+  ],
+  "properties": {
+    "$schema": { "const": "./roadmap.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "roadmapId": { "const": "MP-ROADMAP" },
+    "githubIssue": { "const": 9 },
+    "repository": { "const": "Eak-dev/malispang-lineOA" },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-v\\d+$"
+    },
+    "status": { "const": "ACTIVE" },
+    "ownerDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionId", "decidedAt", "supersedes"],
+      "properties": {
+        "decisionId": { "type": "string", "minLength": 1 },
+        "decidedAt": { "type": "string", "format": "date" },
+        "supersedes": { "type": ["string", "null"] }
+      }
+    },
+    "sourceOfTruthPrecedence": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "verifiedLatestBaseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "branch", "verifiedAt", "contains"],
+      "properties": {
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "branch": { "type": "string", "minLength": 1 },
+        "verifiedAt": { "type": "string", "format": "date" },
+        "contains": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" }
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "testDeployment",
+        "productionStatus",
+        "productionAuthorizationReference"
+      ],
+      "properties": {
+        "testDeployment": { "type": "boolean" },
+        "productionStatus": { "enum": ["NO_GO", "GO"] },
+        "productionAuthorizationReference": { "type": ["string", "null"] }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["order", "id", "githubIssue", "title", "state"],
+        "properties": {
+          "order": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "id": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
+          "githubIssue": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "state": {
+            "enum": [
+              "COMPLETED",
+              "COMPLETED_EVIDENCE",
+              "CURRENT",
+              "NEXT_BLOCKED",
+              "PLANNED",
+              "PLANNED_BLOCKED",
+              "FINAL_BLOCKED"
+            ]
+          },
+          "blockedBy": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "benchmark": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "piiFree",
+              "minimumTotal",
+              "minimumFunctional",
+              "minimumThaiLanguageVariation",
+              "minimumAdversarialSafety"
+            ],
+            "properties": {
+              "piiFree": { "const": true },
+              "minimumTotal": { "type": "integer", "minimum": 5000 },
+              "minimumFunctional": { "type": "integer", "minimum": 3000 },
+              "minimumThaiLanguageVariation": {
+                "type": "integer",
+                "minimum": 1000
+              },
+              "minimumAdversarialSafety": { "type": "integer", "minimum": 1000 }
+            }
+          }
+        }
+      }
+    },
+    "externalReferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roadmapIssue",
+        "authorizedIssue",
+        "nextIssue",
+        "lastVerifiedAt"
+      ],
+      "properties": {
+        "roadmapIssue": { "const": 9 },
+        "authorizedIssue": { "const": 11 },
+        "nextIssue": { "const": 12 },
+        "lastVerifiedAt": { "type": "string", "format": "date" }
+      }
+    }
+  }
+}

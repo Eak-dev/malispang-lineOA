@@ -1,0 +1,60 @@
+{
+  "$schema": "./current-work.schema.json",
+  "schemaVersion": 1,
+  "roadmapId": "MP-ROADMAP",
+  "roadmapVersion": "2026.09.02-v4",
+  "workId": "MP-05",
+  "githubIssue": 11,
+  "status": "AUTHORIZED_LOCAL_IMPLEMENTATION",
+  "base": {
+    "commit": "a0612489b4b5ce4394042891513371d5bf10fdb2",
+    "branch": "codex/issue-2-draft-order-form"
+  },
+  "implementationBranch": "codex/mp-05-roadmap-control",
+  "targetEnvironment": "LOCAL_ONLY",
+  "allowedScope": [
+    "PROJECT_CONTROL_FILES",
+    "PROJECT_CONTROL_SCHEMAS",
+    "PROJECT_CONTROL_VALIDATOR",
+    "PROJECT_CONTROL_TESTS",
+    "PROJECT_CONTROL_DOCUMENTATION",
+    "COMMIT_MP_05_BRANCH",
+    "PUSH_MP_05_BRANCH"
+  ],
+  "forbiddenScope": [
+    "START_MP_06_OR_OTHER_WORK",
+    "DEPLOY_TEST",
+    "DEPLOY_PRODUCTION",
+    "MERGE_DEFAULT_BRANCH",
+    "CHANGE_LINE_OA",
+    "CHANGE_CLOUDFLARE",
+    "CHANGE_WEBHOOK",
+    "CHANGE_RICH_MENU",
+    "CHANGE_REWARD_CARD",
+    "READ_OR_CHANGE_SECRETS",
+    "OPEN_OR_CHANGE_PRODUCTION",
+    "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET"
+  ],
+  "authorization": {
+    "localImplementation": true,
+    "commit": true,
+    "pushBranch": true,
+    "testDeployment": false,
+    "production": false
+  },
+  "nextWork": {
+    "id": "MP-06",
+    "githubIssue": 12,
+    "status": "BLOCKED_PENDING_MP_05_OWNER_PO_REVIEW"
+  },
+  "conflicts": [
+    {
+      "code": "DEFAULT_BRANCH_DRIFT",
+      "blocking": false,
+      "detail": "GitHub default branch remains on the Phase 1A baseline.",
+      "resolution": "Use the verified latest baseline and dedicated MP-05 branch; do not merge default."
+    }
+  ],
+  "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES",
+  "failureMode": "ROADMAP_UNVERIFIED"
+}

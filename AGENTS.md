@@ -15,3 +15,22 @@ Production `มะลิปัง` เป็นระบบใช้งานจ
 - ปิด Issue ได้ต่อเมื่อ acceptance criteria ผ่านครบและมีหลักฐาน test/UAT จริงเท่านั้น
 - หากงานผ่านแล้ว ให้เริ่มได้เฉพาะ Issue ถัดไปตามลำดับใน Roadmap
 - Production `มะลิปัง` ยังคงอยู่ภายใต้กฎ Production Safety เสมอ แม้ Roadmap จะระบุงาน Production ในอนาคต
+
+# Versioned Project Control
+
+ก่อนเริ่มหรือทำงานต่อทุกครั้ง ต้องอ่านและตรวจให้ตรงกัน:
+
+1. `config/project/roadmap.json`
+2. `config/project/current-work.json`
+3. MP-ROADMAP (GitHub #9)
+4. GitHub Issue ของ `workId` ปัจจุบัน
+
+ต้องรัน `pnpm validate:project-control` และรายงาน Roadmap version, canonical work ID, GitHub Issue, base commit, scope, target environment, deploy/Production authorization, conflicts และ working-tree status ก่อนแก้ไฟล์
+
+- ใช้ `MP-01`–`MP-12` เป็น canonical IDs และเก็บหมายเลข GitHub Issue เป็น immutable external reference
+- ต้องมี `CURRENT` เพียงหนึ่งรายการ และต้องตรงกับ `current-work.json`
+- Roadmap/current-work หาย ล้าสมัย หรือขัดกับ GitHub/Owner decision ให้หยุดด้วย `ROADMAP_UNVERIFIED`
+- deployment ต้องเป็น `false` โดยปริยายจนมี Owner approval แยกเฉพาะขั้น
+- Production ต้องเป็น `NO_GO` จนมี Owner approval แยกเฉพาะ action และ safety gates ผ่าน
+- ห้ามเริ่ม `nextWork` อัตโนมัติหลังงานปัจจุบันเสร็จ ต้องรอ Owner/PO review และ Roadmap version ใหม่
+- การเปลี่ยน Roadmap ต้อง append Owner decision, ระบุ `supersedes`, bump version, reconcile GitHub #9 และผ่าน validator/tests ก่อนใช้เป็นฐานงานใหม่
