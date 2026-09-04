@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-05 versioned Roadmap control", () => {
-  it("accepts the frozen v4 control snapshot and records default-branch drift", () => {
+describe("MP-06 Roadmap transition control", () => {
+  it("accepts the 2026.09.04-v1 transition snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -46,12 +46,12 @@ describe("MP-05 versioned Roadmap control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("allows only the local MP-05 actions authorized by current-work", () => {
+  it("allows only transition evidence actions while MP-06 implementation is blocked", () => {
     expect(
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "LOCAL_IMPLEMENTATION_NOT_AUTHORIZED",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -59,6 +59,12 @@ describe("MP-05 versioned Roadmap control", () => {
     expect(
       evaluateProjectAction(roadmap, currentWork, "PUSH_BRANCH").allowed,
     ).toBe(true);
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "UPDATE_GITHUB_ROADMAP"),
+    ).toEqual({
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
+    });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
       allowed: false,
       reason: "DEPLOY_TEST_NOT_AUTHORIZED",
@@ -73,7 +79,7 @@ describe("MP-05 versioned Roadmap control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.02-v3";
+    changed.roadmapVersion = "2026.09.02-v4";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -92,8 +98,8 @@ describe("MP-05 versioned Roadmap control", () => {
     const changed = clone(roadmap) as {
       items: Array<{ id: string; state: string }>;
     };
-    const next = changed.items.find((item) => item.id === "MP-06");
-    if (!next) throw new Error("fixture MP-06 missing");
+    const next = changed.items.find((item) => item.id === "MP-07");
+    if (!next) throw new Error("fixture MP-07 missing");
     next.state = "CURRENT";
     expect(validateProjectControl(changed, currentWork).errors).toContain(
       "EXACTLY_ONE_CURRENT_ITEM_REQUIRED",
@@ -112,7 +118,7 @@ describe("MP-05 versioned Roadmap control", () => {
     );
   });
 
-  it("enforces the 5,000-case PII-free MP-06 benchmark while keeping it blocked", () => {
+  it("enforces the 5,000-case PII-free benchmark while MP-06 is current", () => {
     const changed = clone(roadmap) as {
       items: Array<{
         id: string;
@@ -124,12 +130,12 @@ describe("MP-05 versioned Roadmap control", () => {
     if (!item?.benchmark) throw new Error("fixture MP-06 benchmark missing");
     item.benchmark.minimumTotal = 4_999;
     item.benchmark.piiFree = false;
-    item.state = "PLANNED";
+    item.state = "NEXT_BLOCKED";
     expect(validateProjectControl(changed, currentWork).errors).toEqual(
       expect.arrayContaining([
         "MP_06_BENCHMARK_MUST_BE_PII_FREE",
         "MP_06_BENCHMARK_TOTAL_TOO_SMALL",
-        "MP_06_MUST_REMAIN_BLOCKED",
+        "MP_06_MUST_BE_CURRENT",
       ]),
     );
   });
@@ -160,6 +166,19 @@ describe("MP-05 versioned Roadmap control", () => {
         "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
       ]),
     );
+  });
+
+  it("rejects any attempt to self-authorize MP-06 implementation", () => {
+    const changed = clone(currentWork) as {
+      authorization: { localImplementation: boolean };
+    };
+    changed.authorization.localImplementation = true;
+    expect(validateProjectControl(roadmap, changed).errors).toContain(
+      "LOCAL_IMPLEMENTATION_MUST_REMAIN_FALSE",
+    );
+    expect(
+      evaluateProjectAction(roadmap, changed, "LOCAL_IMPLEMENTATION"),
+    ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
   it("turns an unresolved blocking conflict into ROADMAP_UNVERIFIED", () => {

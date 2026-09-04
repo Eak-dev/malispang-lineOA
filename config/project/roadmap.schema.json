@@ -139,8 +139,8 @@
       ],
       "properties": {
         "roadmapIssue": { "const": 9 },
-        "authorizedIssue": { "const": 11 },
-        "nextIssue": { "const": 12 },
+        "authorizedIssue": { "const": 12 },
+        "nextIssue": { "const": 7 },
         "lastVerifiedAt": { "type": "string", "format": "date" }
       }
     }

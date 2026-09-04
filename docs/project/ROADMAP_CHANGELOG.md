@@ -1,6 +1,16 @@
 # Roadmap Changelog
 
-## 2026.09.02-v4 — current
+## 2026.09.04-v1 — current
+
+- supersedes `2026.09.02-v4`
+- records Owner/PO approval of MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b` as the governance baseline
+- marks MP-05 (GitHub #11) completed and MP-06 (GitHub #12) current
+- explicitly keeps MP-06 implementation unauthorized; only the transition record, commit/push and GitHub #9 reconciliation are allowed
+- keeps the MP-06 minimum 5,000-case PII-free benchmark composition unchanged
+- keeps MP-07 (GitHub #7) blocked pending MP-06 completion and Owner/PO review
+- keeps TEST deployment false and Production `NO_GO`
+
+## 2026.09.02-v4 — superseded
 
 - supersedes `2026.09.02-v3`
 - introduces canonical work IDs `MP-01`–`MP-12` without replacing historical GitHub Issues
@@ -20,4 +30,6 @@ At MP-05 preflight on 4 September 2026:
 - MP-06 (GitHub #12) declared itself next/blocked with the same benchmark
 - all three declared TEST deployment unauthorized and Production `NO-GO`
 
-Any later GitHub edit that changes those control fields requires a new Owner decision and Roadmap version before implementation. The validator cannot treat chat history or an unversioned Issue edit as authorization.
+On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. GitHub #9 must be reconciled to that decision.
+
+Any later GitHub edit that changes those control fields requires a new Owner decision and Roadmap version before implementation. The validator cannot treat `CURRENT`, chat history or an unversioned Issue edit as implementation authorization.

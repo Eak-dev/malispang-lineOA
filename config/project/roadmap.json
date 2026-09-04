@@ -4,12 +4,12 @@
   "roadmapId": "MP-ROADMAP",
   "githubIssue": 9,
   "repository": "Eak-dev/malispang-lineOA",
-  "version": "2026.09.02-v4",
+  "version": "2026.09.04-v1",
   "status": "ACTIVE",
   "ownerDecision": {
-    "decisionId": "MP-OD-2026-09-02-V4",
-    "decidedAt": "2026-09-02",
-    "supersedes": "2026.09.02-v3"
+    "decisionId": "MP-OD-2026-09-04-V1",
+    "decidedAt": "2026-09-04",
+    "supersedes": "2026.09.02-v4"
   },
   "sourceOfTruthPrecedence": [
     "OWNER_DECISION_REPOSITORY_RECORD",
@@ -20,10 +20,10 @@
     "CHAT_CONTEXT_ONLY"
   ],
   "verifiedLatestBaseline": {
-    "commit": "a0612489b4b5ce4394042891513371d5bf10fdb2",
-    "branch": "codex/issue-2-draft-order-form",
-    "verifiedAt": "2026-09-04",
-    "contains": ["MP-01", "MP-02", "MP-03", "MP-04"]
+    "commit": "d036063a562a4fa780f162c69f7824ebcb9a250b",
+    "branch": "codex/mp-05-roadmap-control",
+    "verifiedAt": "2026-09-05",
+    "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05"]
   },
   "authorization": {
     "testDeployment": false,
@@ -64,15 +64,14 @@
       "id": "MP-05",
       "githubIssue": 11,
       "title": "Versioned Roadmap Governance",
-      "state": "CURRENT"
+      "state": "COMPLETED"
     },
     {
       "order": 6,
       "id": "MP-06",
       "githubIssue": 12,
       "title": "Guardrailed AI Answer Pilot — TEST",
-      "state": "NEXT_BLOCKED",
-      "blockedBy": ["MP-05_OWNER_PO_REVIEW"],
+      "state": "CURRENT",
       "benchmark": {
         "piiFree": true,
         "minimumTotal": 5000,
@@ -126,8 +125,8 @@
   ],
   "externalReferences": {
     "roadmapIssue": 9,
-    "authorizedIssue": 11,
-    "nextIssue": 12,
-    "lastVerifiedAt": "2026-09-04"
+    "authorizedIssue": 12,
+    "nextIssue": 7,
+    "lastVerifiedAt": "2026-09-05"
   }
 }

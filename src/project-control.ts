@@ -18,6 +18,7 @@ export type ProjectAction =
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
+  | "UPDATE_GITHUB_ROADMAP"
   | "DEPLOY_TEST"
   | "CHANGE_PRODUCTION";
 
@@ -34,7 +35,8 @@ export interface ProjectActionDecision {
 const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
-  "START_MP_06_OR_OTHER_WORK",
+  "IMPLEMENT_MP_06",
+  "START_MP_07_OR_OTHER_WORK",
   "DEPLOY_TEST",
   "DEPLOY_PRODUCTION",
   "MERGE_DEFAULT_BRANCH",
@@ -70,7 +72,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.02-v4",
+    "2026.09.04-v1",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -81,7 +83,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.02-v3",
+      "2026.09.02-v4",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -98,13 +100,13 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "a0612489b4b5ce4394042891513371d5bf10fdb2",
+      "d036063a562a4fa780f162c69f7824ebcb9a250b",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.branch,
-      "codex/issue-2-draft-order-form",
+      "codex/mp-05-roadmap-control",
       "VERIFIED_BASELINE_BRANCH_MISMATCH",
     );
   }
@@ -184,12 +186,12 @@ export function validateProjectControl(
   }
   const currentItem = currentItems[0];
   if (currentItem) {
-    expectEqual(errors, currentItem.id, "MP-05", "CURRENT_ITEM_MUST_BE_MP_05");
+    expectEqual(errors, currentItem.id, "MP-06", "CURRENT_ITEM_MUST_BE_MP_06");
     expectEqual(
       errors,
       currentItem.githubIssue,
-      11,
-      "CURRENT_ISSUE_MUST_BE_11",
+      12,
+      "CURRENT_ISSUE_MUST_BE_12",
     );
   }
 
@@ -200,13 +202,35 @@ export function validateProjectControl(
   if (!mp06) {
     errors.push("MP_06_MISSING");
   } else {
+    expectEqual(errors, mp06.state, "CURRENT", "MP_06_MUST_BE_CURRENT");
+    validateBenchmark(errors, mp06.benchmark);
+  }
+
+  const mp05 = items.find(
+    (item): item is Record<string, unknown> =>
+      isRecord(item) && item.id === "MP-05",
+  );
+  if (!mp05) {
+    errors.push("MP_05_MISSING");
+  } else {
+    expectEqual(errors, mp05.state, "COMPLETED", "MP_05_MUST_BE_COMPLETED");
+  }
+
+  if (!isRecord(roadmap.externalReferences)) {
+    errors.push("EXTERNAL_REFERENCES_MISSING");
+  } else {
     expectEqual(
       errors,
-      mp06.state,
-      "NEXT_BLOCKED",
-      "MP_06_MUST_REMAIN_BLOCKED",
+      roadmap.externalReferences.authorizedIssue,
+      12,
+      "AUTHORIZED_ISSUE_MUST_BE_12",
     );
-    validateBenchmark(errors, mp06.benchmark);
+    expectEqual(
+      errors,
+      roadmap.externalReferences.nextIssue,
+      7,
+      "NEXT_ISSUE_MUST_BE_7",
+    );
   }
 
   expectEqual(
@@ -230,19 +254,19 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.workId,
-    "MP-05",
-    "CURRENT_WORK_MUST_BE_MP_05",
+    "MP-06",
+    "CURRENT_WORK_MUST_BE_MP_06",
   );
   expectEqual(
     errors,
     currentWork.githubIssue,
-    11,
-    "CURRENT_WORK_ISSUE_MUST_BE_11",
+    12,
+    "CURRENT_WORK_ISSUE_MUST_BE_12",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_LOCAL_IMPLEMENTATION",
+    "CURRENT_AWAITING_IMPLEMENTATION_AUTHORIZATION",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -281,7 +305,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.implementationBranch,
-    "codex/mp-05-roadmap-control",
+    "codex/mp-06-guardrailed-ai",
     "IMPLEMENTATION_BRANCH_INVALID",
   );
 
@@ -291,8 +315,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.localImplementation,
-      true,
-      "LOCAL_IMPLEMENTATION_NOT_AUTHORIZED",
+      false,
+      "LOCAL_IMPLEMENTATION_MUST_REMAIN_FALSE",
     );
     expectEqual(
       errors,
@@ -305,6 +329,12 @@ export function validateProjectControl(
       currentWork.authorization.pushBranch,
       true,
       "PUSH_NOT_AUTHORIZED",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.githubRoadmapUpdate,
+      true,
+      "GITHUB_ROADMAP_UPDATE_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -326,19 +356,19 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.nextWork.id,
-      "MP-06",
-      "NEXT_WORK_MUST_BE_MP_06",
+      "MP-07",
+      "NEXT_WORK_MUST_BE_MP_07",
     );
     expectEqual(
       errors,
       currentWork.nextWork.githubIssue,
-      12,
-      "NEXT_WORK_ISSUE_MUST_BE_12",
+      7,
+      "NEXT_WORK_ISSUE_MUST_BE_7",
     );
     expectEqual(
       errors,
       currentWork.nextWork.status,
-      "BLOCKED_PENDING_MP_05_OWNER_PO_REVIEW",
+      "BLOCKED_PENDING_MP_06_COMPLETION_AND_OWNER_PO_REVIEW",
       "NEXT_WORK_MUST_REMAIN_BLOCKED",
     );
   }
@@ -395,6 +425,7 @@ export function evaluateProjectAction(
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
+    UPDATE_GITHUB_ROADMAP: "githubRoadmapUpdate",
     DEPLOY_TEST: "testDeployment",
     CHANGE_PRODUCTION: "production",
   };

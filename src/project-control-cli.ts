@@ -26,7 +26,11 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
-  for (const action of ["DEPLOY_TEST", "CHANGE_PRODUCTION"] as const) {
+  for (const action of [
+    "LOCAL_IMPLEMENTATION",
+    "DEPLOY_TEST",
+    "CHANGE_PRODUCTION",
+  ] as const) {
     const decision = evaluateProjectAction(roadmap, currentWork, action);
     if (decision.allowed) {
       throw new Error(`ROADMAP_UNVERIFIED: ${action} must remain blocked`);
@@ -38,7 +42,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.02-v4, MP-05 (GitHub #11), ${warningSuffix}`,
+    `Project control validation passed: 2026.09.04-v1, MP-06 (GitHub #12), implementation blocked, ${warningSuffix}`,
   );
 }
 

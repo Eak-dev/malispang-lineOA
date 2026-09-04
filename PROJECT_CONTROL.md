@@ -1,22 +1,25 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-05 (GitHub #11)
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ Roadmap transition ที่ทำให้ MP-06 (GitHub #12) เป็น current โดยยังไม่อนุญาต implementation
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.02-v4`                                        |
-| Current               | `MP-05 (GitHub #11)`                                   |
-| Next                  | `MP-06 (GitHub #12)` — blocked pending Owner/PO review |
-| Verified baseline     | `a0612489b4b5ce4394042891513371d5bf10fdb2`             |
-| Implementation branch | `codex/mp-05-roadmap-control`                          |
+| Version               | `2026.09.04-v1`                                        |
+| Current               | `MP-06 (GitHub #12)`                                   |
+| Current authorization | Roadmap transition only; implementation not authorized |
+| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
+| Verified baseline     | `d036063a562a4fa780f162c69f7824ebcb9a250b`             |
+| Implementation branch | `codex/mp-06-guardrailed-ai`                           |
 | Target                | `LOCAL_ONLY`                                           |
 | TEST deployment       | Not authorized                                         |
 | Production            | `NO_GO`                                                |
 
-GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะ MP-05 ใช้ dedicated worktree จาก baseline ที่ตรวจ ancestry แล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น ไม่ใช่สิทธิ์เริ่ม implementation โดยอัตโนมัติ รอบนี้ `localImplementation=false` และอนุญาตเพียงการบันทึก/reconcile transition, commit และ push เท่านั้น
+
+GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะ transition ใช้ dedicated worktree จาก MP-05 governance baseline ที่ Owner/PO อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
 ## Machine-readable controls
 

@@ -33,7 +33,9 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "status": { "const": "AUTHORIZED_LOCAL_IMPLEMENTATION" },
+    "status": {
+      "const": "CURRENT_AWAITING_IMPLEMENTATION_AUTHORIZATION"
+    },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -64,6 +66,7 @@
         "localImplementation",
         "commit",
         "pushBranch",
+        "githubRoadmapUpdate",
         "testDeployment",
         "production"
       ],
@@ -71,6 +74,7 @@
         "localImplementation": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
+        "githubRoadmapUpdate": { "type": "boolean" },
         "testDeployment": { "type": "boolean" },
         "production": { "type": "boolean" }
       }

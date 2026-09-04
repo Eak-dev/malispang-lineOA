@@ -2,27 +2,29 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.02-v4",
-  "workId": "MP-05",
-  "githubIssue": 11,
-  "status": "AUTHORIZED_LOCAL_IMPLEMENTATION",
+  "roadmapVersion": "2026.09.04-v1",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "status": "CURRENT_AWAITING_IMPLEMENTATION_AUTHORIZATION",
   "base": {
-    "commit": "a0612489b4b5ce4394042891513371d5bf10fdb2",
-    "branch": "codex/issue-2-draft-order-form"
+    "commit": "d036063a562a4fa780f162c69f7824ebcb9a250b",
+    "branch": "codex/mp-05-roadmap-control"
   },
-  "implementationBranch": "codex/mp-05-roadmap-control",
+  "implementationBranch": "codex/mp-06-guardrailed-ai",
   "targetEnvironment": "LOCAL_ONLY",
   "allowedScope": [
-    "PROJECT_CONTROL_FILES",
+    "ROADMAP_TRANSITION_FILES",
     "PROJECT_CONTROL_SCHEMAS",
     "PROJECT_CONTROL_VALIDATOR",
     "PROJECT_CONTROL_TESTS",
     "PROJECT_CONTROL_DOCUMENTATION",
-    "COMMIT_MP_05_BRANCH",
-    "PUSH_MP_05_BRANCH"
+    "COMMIT_MP_06_BRANCH",
+    "PUSH_MP_06_BRANCH",
+    "UPDATE_GITHUB_ROADMAP_ISSUE_9"
   ],
   "forbiddenScope": [
-    "START_MP_06_OR_OTHER_WORK",
+    "IMPLEMENT_MP_06",
+    "START_MP_07_OR_OTHER_WORK",
     "DEPLOY_TEST",
     "DEPLOY_PRODUCTION",
     "MERGE_DEFAULT_BRANCH",
@@ -36,23 +38,24 @@
     "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET"
   ],
   "authorization": {
-    "localImplementation": true,
+    "localImplementation": false,
     "commit": true,
     "pushBranch": true,
+    "githubRoadmapUpdate": true,
     "testDeployment": false,
     "production": false
   },
   "nextWork": {
-    "id": "MP-06",
-    "githubIssue": 12,
-    "status": "BLOCKED_PENDING_MP_05_OWNER_PO_REVIEW"
+    "id": "MP-07",
+    "githubIssue": 7,
+    "status": "BLOCKED_PENDING_MP_06_COMPLETION_AND_OWNER_PO_REVIEW"
   },
   "conflicts": [
     {
       "code": "DEFAULT_BRANCH_DRIFT",
       "blocking": false,
       "detail": "GitHub default branch remains on the Phase 1A baseline.",
-      "resolution": "Use the verified latest baseline and dedicated MP-05 branch; do not merge default."
+      "resolution": "Use the verified MP-05 governance baseline and dedicated MP-06 branch; do not merge default."
     }
   ],
   "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES",

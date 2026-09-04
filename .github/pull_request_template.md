@@ -5,6 +5,7 @@
 - GitHub Issue:
 - Verified base commit:
 - Implementation branch:
+- Implementation authorized: `NO` unless current-work explicitly records `true`
 
 ## Mandatory preflight
 
