@@ -2,29 +2,37 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.05-v3",
+  "roadmapVersion": "2026.09.05-v4",
   "workId": "MP-06",
   "githubIssue": 12,
-  "status": "AUTHORIZED_BENCHMARK_WP2_ONLY",
+  "currentPhase": "WP3_RUNTIME_REMEDIATION",
+  "status": "AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY",
   "base": {
     "commit": "2a2571369f7e845c5d72883d816556ce24be18c0",
     "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
   "targetEnvironment": "LOCAL_ONLY",
-  "authorizedWorkPackage": "WP2",
+  "authorizedWorkPackage": "WP3",
   "allowedScope": [
-    "MP_06_WP2_BENCHMARK_HARNESS",
-    "MP_06_WP2_PII_FREE_CASE_DATASET",
-    "MP_06_WP2_COVERAGE_REPORT",
-    "MP_06_WP2_CONFUSION_MATRIX_AND_FALSE_AUTO_REPORT",
-    "MP_06_WP2_TESTS_AND_DOCUMENTATION",
+    "MP_06_WP3_AUTHORIZED_GAP_RUNTIME_REMEDIATION",
+    "MP_06_WP3_TARGETED_REGRESSION_TESTS",
+    "MP_06_WP2_DATASET_READ_ONLY",
+    "MP_06_WP2_HARNESS_AND_ORACLE_READ_ONLY",
+    "MP_06_WP2_FULL_5000_CASE_RERUN",
+    "MP_06_WP2_REPORT_REGENERATION_AFTER_PASS",
+    "MP_06_WP2_ACCEPTANCE_GATES_UNCHANGED",
+    "MP_06_WP3_REMEDIATION_DOCUMENTATION",
     "POLICY_SNAPSHOT_READ_ONLY",
     "COMMIT_MP_06_BRANCH",
     "PUSH_MP_06_BRANCH"
   ],
   "forbiddenScope": [
-    "CHANGE_MP_06_RUNTIME",
+    "CHANGE_RUNTIME_OUTSIDE_AUTHORIZED_WP3_GAPS",
+    "CHANGE_WP2_BENCHMARK_HARNESS",
+    "CHANGE_WP2_DATASET",
+    "CHANGE_WP2_ORACLE_OR_EXPECTED_RESULT",
+    "LOWER_WP2_ACCEPTANCE_THRESHOLDS",
     "CHANGE_MP_06_POLICY_SNAPSHOT",
     "CHANGE_MP_06_TEMPLATES",
     "CHANGE_OWNER_DECISIONS",
@@ -52,12 +60,13 @@
   "authorization": {
     "localImplementation": false,
     "runtimeWp1": false,
-    "benchmarkWp2": true,
+    "benchmarkWp2": false,
+    "runtimeRemediationWp3": true,
     "policySnapshot": false,
     "policySnapshotReadOnly": true,
     "commit": true,
     "pushBranch": true,
-    "githubRoadmapUpdate": false,
+    "githubRoadmapUpdate": true,
     "testDeployment": false,
     "production": false
   },
@@ -65,6 +74,44 @@
     "version": "2026.09.05-policy-v1",
     "checksum": "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0",
     "mode": "READ_ONLY"
+  },
+  "wp2BenchmarkReference": {
+    "datasetChecksum": "6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa",
+    "failedResultChecksum": "4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6",
+    "datasetHarnessOracleMode": "READ_ONLY",
+    "reportRegeneration": "AFTER_RUNTIME_PASSES_ONLY",
+    "totalCases": 5000,
+    "failedMetrics": {
+      "autoCorrectnessPercent": 96.4,
+      "falseAutoCount": 144,
+      "riskyFailClosedPercent": 85.3387,
+      "unsupportedClaims": 144,
+      "piiOrRawChatLeakage": 0,
+      "authorityFailureFailClosedPercent": 100
+    }
+  },
+  "runtimeRemediationPlan": {
+    "authorizedGaps": [
+      {
+        "id": "DELIVERY_FEE_AREA_OVERLAP",
+        "caseCount": 72,
+        "requiredOutcome": "STAFF_ONLY"
+      },
+      {
+        "id": "INDIVIDUAL_LOYALTY_BALANCE_OVERLAP",
+        "caseCount": 72,
+        "requiredOutcome": "STAFF_ONLY"
+      },
+      {
+        "id": "GUESS_PRICE_PRECEDENCE",
+        "caseCount": 1,
+        "requiredOutcome": "STAFF_ONLY"
+      }
+    ],
+    "runtimeFileAllowlist": ["worker/mp-06-wp1.ts", "tests/mp-06-wp1.test.ts"],
+    "additionalRuntimeFilesRequireRecordedGapJustification": true,
+    "datasetChecksumMustRemainUnchanged": true,
+    "noPartialAuto": true
   },
   "benchmarkAcceptanceCriteria": {
     "piiFree": true,

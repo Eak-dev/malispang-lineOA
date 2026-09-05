@@ -18,6 +18,7 @@ export type ProjectAction =
   | "POLICY_SNAPSHOT"
   | "RUNTIME_WP1"
   | "BENCHMARK_WP2"
+  | "RUNTIME_REMEDIATION_WP3"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -38,7 +39,11 @@ export interface ProjectActionDecision {
 const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
-  "CHANGE_MP_06_RUNTIME",
+  "CHANGE_RUNTIME_OUTSIDE_AUTHORIZED_WP3_GAPS",
+  "CHANGE_WP2_BENCHMARK_HARNESS",
+  "CHANGE_WP2_DATASET",
+  "CHANGE_WP2_ORACLE_OR_EXPECTED_RESULT",
+  "LOWER_WP2_ACCEPTANCE_THRESHOLDS",
   "CHANGE_MP_06_POLICY_SNAPSHOT",
   "CHANGE_MP_06_TEMPLATES",
   "CHANGE_OWNER_DECISIONS",
@@ -64,12 +69,15 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP2_SCOPE = [
-  "MP_06_WP2_BENCHMARK_HARNESS",
-  "MP_06_WP2_PII_FREE_CASE_DATASET",
-  "MP_06_WP2_COVERAGE_REPORT",
-  "MP_06_WP2_CONFUSION_MATRIX_AND_FALSE_AUTO_REPORT",
-  "MP_06_WP2_TESTS_AND_DOCUMENTATION",
+const REQUIRED_WP3_SCOPE = [
+  "MP_06_WP3_AUTHORIZED_GAP_RUNTIME_REMEDIATION",
+  "MP_06_WP3_TARGETED_REGRESSION_TESTS",
+  "MP_06_WP2_DATASET_READ_ONLY",
+  "MP_06_WP2_HARNESS_AND_ORACLE_READ_ONLY",
+  "MP_06_WP2_FULL_5000_CASE_RERUN",
+  "MP_06_WP2_REPORT_REGENERATION_AFTER_PASS",
+  "MP_06_WP2_ACCEPTANCE_GATES_UNCHANGED",
+  "MP_06_WP3_REMEDIATION_DOCUMENTATION",
   "POLICY_SNAPSHOT_READ_ONLY",
   "COMMIT_MP_06_BRANCH",
   "PUSH_MP_06_BRANCH",
@@ -77,6 +85,19 @@ const REQUIRED_WP2_SCOPE = [
 
 const EXPECTED_POLICY_SNAPSHOT_CHECKSUM =
   "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0";
+const EXPECTED_WP2_DATASET_CHECKSUM =
+  "6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa";
+const EXPECTED_WP2_FAILED_RESULT_CHECKSUM =
+  "4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6";
+const EXPECTED_WP3_GAPS = [
+  ["DELIVERY_FEE_AREA_OVERLAP", 72],
+  ["INDIVIDUAL_LOYALTY_BALANCE_OVERLAP", 72],
+  ["GUESS_PRICE_PRECEDENCE", 1],
+] as const;
+const EXPECTED_WP3_RUNTIME_FILES = [
+  "worker/mp-06-wp1.ts",
+  "tests/mp-06-wp1.test.ts",
+] as const;
 
 export function validateProjectControl(
   roadmapInput: unknown,
@@ -106,7 +127,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.05-v3",
+    "2026.09.05-v4",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -117,19 +138,19 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-05-V3",
+      "MP-OD-2026-09-05-V4",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.decidedAt,
-      "2026-09-05",
+      "2026-09-06",
       "OWNER_DECISION_DATE_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.05-v2",
+      "2026.09.05-v3",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -317,8 +338,14 @@ export function validateProjectControl(
   );
   expectEqual(
     errors,
+    currentWork.currentPhase,
+    "WP3_RUNTIME_REMEDIATION",
+    "CURRENT_WORK_PHASE_INVALID",
+  );
+  expectEqual(
+    errors,
     currentWork.status,
-    "AUTHORIZED_BENCHMARK_WP2_ONLY",
+    "AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -330,8 +357,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP2",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP2",
+    "WP3",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP3",
   );
   expectEqual(
     errors,
@@ -385,8 +412,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.benchmarkWp2,
+      false,
+      "WP2_BENCHMARK_MUST_BE_SCOPED_THROUGH_WP3",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.runtimeRemediationWp3,
       true,
-      "WP2_BENCHMARK_NOT_AUTHORIZED",
+      "WP3_RUNTIME_REMEDIATION_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -415,8 +448,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.githubRoadmapUpdate,
-      false,
-      "GITHUB_ROADMAP_UPDATE_MUST_REMAIN_FALSE",
+      true,
+      "GITHUB_ROADMAP_RECONCILIATION_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -436,11 +469,14 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP2_SCOPE.length ||
-    REQUIRED_WP2_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP3_SCOPE.length ||
+    REQUIRED_WP3_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP2_SCOPE_INVALID");
+    errors.push("WP3_SCOPE_INVALID");
   }
+
+  validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
+  validateRuntimeRemediationPlan(errors, currentWork.runtimeRemediationPlan);
 
   if (!isRecord(currentWork.policySnapshotReference)) {
     errors.push("POLICY_SNAPSHOT_REFERENCE_MISSING");
@@ -550,12 +586,16 @@ export function evaluateProjectAction(
   }
   const authorization = currentWork.authorization;
   if (action === "LOCAL_IMPLEMENTATION") {
-    return { allowed: false, reason: "USE_SCOPED_BENCHMARK_WP2_ACTION" };
+    return {
+      allowed: false,
+      reason: "USE_SCOPED_RUNTIME_REMEDIATION_WP3_ACTION",
+    };
   }
   const keyByAction: Record<ProjectAction, string> = {
     POLICY_SNAPSHOT: "policySnapshot",
     RUNTIME_WP1: "runtimeWp1",
     BENCHMARK_WP2: "benchmarkWp2",
+    RUNTIME_REMEDIATION_WP3: "runtimeRemediationWp3",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -597,6 +637,148 @@ export function validateSchemaDocuments(
     }
   }
   return uniqueSorted(errors);
+}
+
+function validateWp2BenchmarkReference(
+  errors: string[],
+  reference: unknown,
+): void {
+  if (!isRecord(reference)) {
+    errors.push("WP2_BENCHMARK_REFERENCE_MISSING");
+    return;
+  }
+  expectEqual(
+    errors,
+    reference.datasetChecksum,
+    EXPECTED_WP2_DATASET_CHECKSUM,
+    "WP2_DATASET_CHECKSUM_INVALID",
+  );
+  expectEqual(
+    errors,
+    reference.failedResultChecksum,
+    EXPECTED_WP2_FAILED_RESULT_CHECKSUM,
+    "WP2_FAILED_RESULT_CHECKSUM_INVALID",
+  );
+  expectEqual(
+    errors,
+    reference.datasetHarnessOracleMode,
+    "READ_ONLY",
+    "WP2_DATASET_HARNESS_ORACLE_MUST_BE_READ_ONLY",
+  );
+  expectEqual(
+    errors,
+    reference.reportRegeneration,
+    "AFTER_RUNTIME_PASSES_ONLY",
+    "WP2_REPORT_REGENERATION_SCOPE_INVALID",
+  );
+  expectEqual(errors, reference.totalCases, 5000, "WP2_CASE_COUNT_INVALID");
+
+  if (!isRecord(reference.failedMetrics)) {
+    errors.push("WP2_FAILED_METRICS_MISSING");
+    return;
+  }
+  const metrics = reference.failedMetrics;
+  expectEqual(
+    errors,
+    metrics.autoCorrectnessPercent,
+    96.4,
+    "WP2_FAILED_AUTO_CORRECTNESS_INVALID",
+  );
+  expectEqual(
+    errors,
+    metrics.falseAutoCount,
+    144,
+    "WP2_FAILED_FALSE_AUTO_COUNT_INVALID",
+  );
+  expectEqual(
+    errors,
+    metrics.riskyFailClosedPercent,
+    85.3387,
+    "WP2_FAILED_RISKY_FAIL_CLOSED_INVALID",
+  );
+  expectEqual(
+    errors,
+    metrics.unsupportedClaims,
+    144,
+    "WP2_FAILED_UNSUPPORTED_CLAIMS_INVALID",
+  );
+  expectEqual(
+    errors,
+    metrics.piiOrRawChatLeakage,
+    0,
+    "WP2_FAILED_LEAKAGE_INVALID",
+  );
+  expectEqual(
+    errors,
+    metrics.authorityFailureFailClosedPercent,
+    100,
+    "WP2_FAILED_AUTHORITY_FAIL_CLOSED_INVALID",
+  );
+}
+
+function validateRuntimeRemediationPlan(errors: string[], plan: unknown): void {
+  if (!isRecord(plan)) {
+    errors.push("WP3_RUNTIME_REMEDIATION_PLAN_MISSING");
+    return;
+  }
+
+  const gaps: unknown[] = Array.isArray(plan.authorizedGaps)
+    ? (plan.authorizedGaps as unknown[])
+    : [];
+  if (gaps.length !== EXPECTED_WP3_GAPS.length) {
+    errors.push("WP3_AUTHORIZED_GAP_COUNT_INVALID");
+  }
+  for (const [
+    index,
+    [expectedId, expectedCount],
+  ] of EXPECTED_WP3_GAPS.entries()) {
+    const gap = gaps[index];
+    if (!isRecord(gap)) {
+      errors.push(`WP3_AUTHORIZED_GAP_MISSING_${expectedId}`);
+      continue;
+    }
+    expectEqual(
+      errors,
+      gap.id,
+      expectedId,
+      `WP3_AUTHORIZED_GAP_ID_INVALID_${expectedId}`,
+    );
+    expectEqual(
+      errors,
+      gap.caseCount,
+      expectedCount,
+      `WP3_AUTHORIZED_GAP_CASE_COUNT_INVALID_${expectedId}`,
+    );
+    expectEqual(
+      errors,
+      gap.requiredOutcome,
+      "STAFF_ONLY",
+      `WP3_AUTHORIZED_GAP_OUTCOME_INVALID_${expectedId}`,
+    );
+  }
+
+  const runtimeFiles = Array.isArray(plan.runtimeFileAllowlist)
+    ? plan.runtimeFileAllowlist
+    : [];
+  if (
+    runtimeFiles.length !== EXPECTED_WP3_RUNTIME_FILES.length ||
+    EXPECTED_WP3_RUNTIME_FILES.some((file) => !runtimeFiles.includes(file))
+  ) {
+    errors.push("WP3_RUNTIME_FILE_ALLOWLIST_INVALID");
+  }
+  expectEqual(
+    errors,
+    plan.additionalRuntimeFilesRequireRecordedGapJustification,
+    true,
+    "WP3_ADDITIONAL_RUNTIME_FILE_JUSTIFICATION_REQUIRED",
+  );
+  expectEqual(
+    errors,
+    plan.datasetChecksumMustRemainUnchanged,
+    true,
+    "WP3_DATASET_CHECKSUM_IMMUTABILITY_REQUIRED",
+  );
+  expectEqual(errors, plan.noPartialAuto, true, "WP3_NO_PARTIAL_AUTO_REQUIRED");
 }
 
 function validateBenchmark(

@@ -38,3 +38,4 @@ Production `มะลิปัง` เป็นระบบใช้งานจ
 - สถานะ `AUTHORIZED_POLICY_SNAPSHOT_ONLY` อนุญาตเฉพาะ specification/schema/validator/tests ที่ current-work ระบุ และไม่อนุญาต runtime, AI integration, provider call หรือ deployment
 - สถานะ `AUTHORIZED_RUNTIME_WP1_ONLY` อนุญาตเฉพาะ WP1 scopes ที่ current-work ระบุ โดย policy snapshot ต้อง read-only; ไม่อนุญาต T-C03 runtime, AI/provider, benchmark 5,000 cases หรือ deployment
 - สถานะ `AUTHORIZED_BENCHMARK_WP2_ONLY` อนุญาตเฉพาะ benchmark harness, ชุดกรณี PII-free, coverage/confusion-matrix/false-AUTO report และ tests/docs ตาม allowed scope; ไม่อนุญาตแก้ runtime/policy/KB/catalog, ใช้ข้อมูลแชตจริง, AI/provider หรือ deployment
+- สถานะ `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` อนุญาตเฉพาะ scoped action `RUNTIME_REMEDIATION_WP3` สำหรับสามช่องว่างที่ WP2 ระบุ โดย policy และ WP2 dataset/harness/oracle เป็น read-only, ห้ามลดเกณฑ์, ห้าม deploy และห้ามแตะ Production

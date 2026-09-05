@@ -38,8 +38,9 @@
 - `AUTHORIZED_POLICY_SNAPSHOT_ONLY` permits only the exact policy artifacts/scopes in current-work; runtime and AI integration remain blocked
 - `AUTHORIZED_RUNTIME_WP1_ONLY` permits only the exact WP1 scopes in current-work through `RUNTIME_WP1`; generic implementation, policy mutation, T-C03 runtime, AI/provider, benchmark and deployment remain blocked
 - `AUTHORIZED_BENCHMARK_WP2_ONLY` permits only the exact PII-free benchmark scopes through `BENCHMARK_WP2`; runtime/policy/KB/catalog mutation, real-chat data, AI/provider and deployment remain blocked
+- `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` permits only the three benchmark-proven gaps through `RUNTIME_REMEDIATION_WP3`; policy and WP2 dataset/harness/oracle stay read-only, acceptance thresholds cannot be lowered and deployment remains blocked
 - no validator output may contain PII, raw chat, tokens or secrets
 
 ## Review handoff
 
-After the `2026.09.05-v3` control transition is validated and pushed, stop. WP2 benchmark implementation begins only in a later Owner-instructed round using the frozen policy checksum. This transition does not authorize a GitHub Roadmap edit or any deployment.
+After the `2026.09.05-v4` control transition is validated, pushed and reconciled with GitHub #9/#12, stop. WP3 runtime remediation begins only in a later Owner-instructed round using the frozen policy and WP2 dataset checksums. This transition does not modify runtime and does not authorize any deployment.

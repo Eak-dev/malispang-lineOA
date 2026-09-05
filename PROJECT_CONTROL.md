@@ -1,15 +1,16 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยเตรียมอนุญาตเฉพาะ WP2 benchmark implementation ในรอบถัดไปหลัง Owner/PO review
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยเตรียมอนุญาตเฉพาะ WP3 runtime remediation ในรอบถัดไปหลัง Owner/PO review
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.05-v3`                                        |
+| Version               | `2026.09.05-v4`                                        |
 | Current               | `MP-06 (GitHub #12)`                                   |
-| Current authorization | `AUTHORIZED_BENCHMARK_WP2_ONLY`                        |
+| Current phase         | `WP3_RUNTIME_REMEDIATION`                              |
+| Current authorization | `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY`              |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
 | Verified baseline     | `2a2571369f7e845c5d72883d816556ce24be18c0`             |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                           |
@@ -17,9 +18,11 @@
 | TEST deployment       | Not authorized                                         |
 | Production            | `NO_GO`                                                |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะใหม่อนุญาตเฉพาะ action `BENCHMARK_WP2` และ allowed scopes ที่ระบุ Generic local implementation และ WP1 runtime ถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` เป็น read-only ห้ามแก้ runtime/policy/KB/catalog, ใช้ข้อมูลแชตจริง, เรียก AI/provider หรือ deploy
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะใหม่อนุญาตเฉพาะ action `RUNTIME_REMEDIATION_WP3` และ allowed scopes ที่ระบุ Generic local implementation และ WP1/WP2 action เดิมถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` เป็น read-only เช่นเดียวกับ WP2 dataset/harness/oracle
 
-WP2 acceptance criteria ที่ตรึงไว้คืออย่างน้อย 5,000 กรณี PII-free และแตกต่างอย่างมีนัยสำคัญ (functional 3,000, Thai variation 1,000, adversarial/safety 1,000), AUTO correctness ≥98%, risky STAFF_ONLY/fail-closed 100%, unsupported claim และ PII/raw-chat leakage เท่ากับ 0, authority failure ต้อง fail closed 100% พร้อม confusion matrix และรายงาน false-AUTO ทุกกรณี
+WP2 dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa` และ failed-result checksum `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` ถูกตรึงไว้ WP3 อนุญาตให้แก้เฉพาะ delivery fee/area overlap 72 cases, individual loyalty balance overlap 72 cases และ guess-price precedence 1 case ให้เป็น `STAFF_ONLY` จากนั้นต้องรัน dataset เดิมครบ 5,000 cases และ regenerate report ได้หลัง runtime ผ่านเท่านั้น
+
+Acceptance criteria เดิมห้ามลด: AUTO correctness ≥98%, risky STAFF_ONLY/fail-closed 100%, unsupported claim และ PII/raw-chat leakage เท่ากับ 0, authority failure fail closed 100% พร้อมไม่มี regression ด้าน intent/order/template/PRICE/clarification/atomic cancellation/dedup/idempotency
 
 GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
@@ -53,7 +56,7 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
 
-Control transition `2026.09.05-v3` ไม่ได้สร้าง harness, dataset หรือ benchmark จริง การเริ่ม WP2 ต้องเกิดในรอบถัดไปหลัง Owner/PO review transition commit นี้
+Control transition `2026.09.05-v4` ไม่ได้แก้ runtime, benchmark, policy, KB หรือ catalog การเริ่ม WP3 runtime remediation ต้องเกิดในรอบถัดไปหลัง Owner/PO review transition commit นี้
 
 ## Safe commands
 

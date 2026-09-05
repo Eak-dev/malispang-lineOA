@@ -11,3 +11,5 @@ Project Instructions และสถานะ `CURRENT` ไม่ใช่ imple
 หาก current-work เป็น `AUTHORIZED_RUNTIME_WP1_ONLY` ให้ทำได้เฉพาะ WP1 scopes ที่ระบุ ใช้ policy snapshot/checksum แบบ read-only และเรียก authorization ด้วย scoped action `RUNTIME_WP1`; ห้าม generic implementation, T-C03 runtime, AI/provider, benchmark 5,000 cases, deployment หรือ Production
 
 หาก current-work เป็น `AUTHORIZED_BENCHMARK_WP2_ONLY` ให้ทำได้เฉพาะ WP2 benchmark scopes ที่ระบุและเรียก authorization ด้วย scoped action `BENCHMARK_WP2`; ห้ามแก้ runtime/policy/KB/catalog, ใช้ข้อมูลแชตจริง, เรียก AI/provider, deploy หรือแตะ Production
+
+หาก current-work เป็น `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` ให้ทำได้เฉพาะสามช่องว่างที่บันทึกใน remediation plan และเรียก authorization ด้วย scoped action `RUNTIME_REMEDIATION_WP3`; policy กับ WP2 dataset/harness/oracle ต้อง read-only, ห้ามลด acceptance thresholds, ห้ามส่ง partial AUTO, deploy หรือแตะ Production
