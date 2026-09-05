@@ -6,6 +6,7 @@ import {
   enforceApprovedKnowledge,
 } from "./knowledge.js";
 import { sendLineReply } from "./line-api.js";
+import { planMp06Wp1Text, type Mp06Wp1Plan } from "./mp-06-wp1.js";
 import {
   classifyPostback,
   classifyText,
@@ -179,6 +180,27 @@ async function processLineEvent(
       return;
     }
   }
+  if (event.kind === "text") {
+    const mp06Context = await conversation.mp06Context();
+    const plan = await planMp06Wp1Text(
+      event.text,
+      env.PUBLIC_ASSET_BASE_URL,
+      now,
+      mp06Context,
+    );
+    if (plan) {
+      await processMp06Plan(
+        plan,
+        event,
+        eventRef,
+        conversationRef,
+        conversation,
+        env,
+        now,
+      );
+      return;
+    }
+  }
   const result = await conversation.processEvent({
     eventRef,
     decision,
@@ -213,6 +235,59 @@ async function processLineEvent(
   );
   await conversation.markDelivered(eventRef);
   logOutcome(eventRef, "REPLIED", decision.reasonCode);
+}
+
+async function processMp06Plan(
+  plan: Mp06Wp1Plan,
+  event: ParsedLineEvent,
+  eventRef: string,
+  conversationRef: string,
+  conversation: DurableObjectStub<ConversationStateDO>,
+  env: Env,
+  now: number,
+): Promise<void> {
+  const result = await conversation.processEvent({
+    eventRef,
+    decision: plan.decision,
+    ...(plan.responseFingerprint
+      ? { responseFingerprint: plan.responseFingerprint }
+      : {}),
+    ...(plan.clarificationTemplateId
+      ? { clarificationTemplateId: plan.clarificationTemplateId }
+      : {}),
+    now,
+    processedRetentionSeconds: positiveInteger(
+      env.PROCESSED_EVENT_RETENTION_SECONDS,
+    ),
+    auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
+  });
+  if (result.status === "DUPLICATE" || result.status === "SILENT") {
+    logOutcome(eventRef, result.status, "MP06_NO_REPLY");
+    return;
+  }
+  if (result.enteredHandoff) {
+    await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
+      conversationRef,
+      now,
+    );
+  }
+  const messages =
+    result.replyKind === "HANDOFF_ACK" || plan.classification === "STAFF_ONLY"
+      ? replyMessages(
+          result.replyKind,
+          env.PUBLIC_ASSET_BASE_URL,
+          approvedAnswerForReplyKind(result.replyKind),
+          result.enteredHandoff,
+        )
+      : plan.messages;
+  if (messages.length === 0) return;
+  await sendLineReply(
+    event.replyToken,
+    messages,
+    env.LINE_CHANNEL_ACCESS_TOKEN,
+  );
+  await conversation.markDelivered(eventRef);
+  logOutcome(eventRef, "REPLIED", `MP06_${plan.classification}`);
 }
 
 function eventDecision(event: ParsedLineEvent): RouteDecision {

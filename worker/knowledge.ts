@@ -4,6 +4,7 @@ import {
   parseApprovedKnowledgeManifest,
 } from "../src/approved-knowledge-manifest.js";
 import { ApprovedFaqKnowledgeBase, type FaqIntent } from "../src/faq.js";
+import { sha256Hex } from "./mp-06-crypto.js";
 import type { ReplyKind, RouteDecision } from "./routing.js";
 
 const manifest = parseApprovedKnowledgeManifest(manifestInput);
@@ -50,6 +51,41 @@ export function approvedAnswerForReplyKind(
   if (!intent) return undefined;
   const result = knowledgeBase.lookupIntent(intent);
   return result.status === "APPROVED" ? result.answer : undefined;
+}
+
+export interface ApprovedKnowledgeResponseUnit {
+  readonly replyKind: ReplyKind;
+  readonly intent: FaqIntent;
+  readonly templateId: string;
+  readonly approvedRecordId: string;
+  readonly answer: string;
+  readonly checksum: string;
+}
+
+export async function approvedKnowledgeResponseUnit(
+  replyKind: ReplyKind,
+): Promise<ApprovedKnowledgeResponseUnit | undefined> {
+  const intent = intentForReplyKind(replyKind);
+  if (!intent) return undefined;
+  const record = manifest.categories[intent];
+  const lookup = knowledgeBase.lookupIntent(intent);
+  if (
+    record.status !== "APPROVED" ||
+    lookup.status !== "APPROVED" ||
+    lookup.answer !== record.customerFacingAnswer ||
+    lookup.provenance?.checksum !== record.checksum ||
+    (await sha256Hex(record.customerFacingAnswer)) !== record.checksum
+  ) {
+    return undefined;
+  }
+  return {
+    replyKind,
+    intent,
+    templateId: `KB:${intent}`,
+    approvedRecordId: `${intent}:${record.version}`,
+    answer: record.customerFacingAnswer,
+    checksum: record.checksum,
+  };
 }
 
 function intentForReplyKind(replyKind: ReplyKind): FaqIntent | undefined {

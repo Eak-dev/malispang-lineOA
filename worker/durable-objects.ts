@@ -5,6 +5,8 @@ import type { ReplyKind, RouteDecision } from "./routing.js";
 export interface ProcessEventInput {
   readonly eventRef: string;
   readonly decision: RouteDecision;
+  readonly responseFingerprint?: string;
+  readonly clarificationTemplateId?: "T-C01" | "T-C04";
   readonly now: number;
   readonly processedRetentionSeconds: number;
   readonly auditRetentionSeconds: number;
@@ -24,6 +26,16 @@ interface ProcessedRow extends Record<string, SqlStorageValue> {
 
 interface StateRow extends Record<string, SqlStorageValue> {
   mode: "BOT_ACTIVE" | "HUMAN_HANDOFF";
+}
+
+interface Wp1PlanRow extends Record<string, SqlStorageValue> {
+  response_fingerprint: string;
+  delivered: number;
+}
+
+interface Wp1StateRow extends Record<string, SqlStorageValue> {
+  clarification_used: number;
+  pending_template_id: string | null;
 }
 
 export class ConversationStateDO extends DurableObject<Env> {
@@ -58,6 +70,21 @@ export class ConversationStateDO extends DurableObject<Env> {
           expires_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_audit_expiry ON audit_events(expires_at);
+        CREATE TABLE IF NOT EXISTS mp06_conversation_state (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          clarification_used INTEGER NOT NULL,
+          pending_template_id TEXT
+        );
+        INSERT OR IGNORE INTO mp06_conversation_state (id, clarification_used, pending_template_id)
+        VALUES (1, 0, NULL);
+        CREATE TABLE IF NOT EXISTS mp06_response_plans (
+          event_ref TEXT PRIMARY KEY,
+          response_fingerprint TEXT NOT NULL,
+          delivered INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_mp06_plan_expiry ON mp06_response_plans(expires_at);
       `);
       return Promise.resolve();
     });
@@ -67,6 +94,10 @@ export class ConversationStateDO extends DurableObject<Env> {
     const sql = this.ctx.storage.sql;
     sql.exec("DELETE FROM processed_events WHERE expires_at <= ?", input.now);
     sql.exec("DELETE FROM audit_events WHERE expires_at <= ?", input.now);
+    sql.exec(
+      "DELETE FROM mp06_response_plans WHERE expires_at <= ?",
+      input.now,
+    );
 
     const existing = sql
       .exec<ProcessedRow>(
@@ -75,12 +106,38 @@ export class ConversationStateDO extends DurableObject<Env> {
       )
       .toArray()[0];
     if (existing) {
+      const storedPlan = sql
+        .exec<Wp1PlanRow>(
+          "SELECT response_fingerprint, delivered FROM mp06_response_plans WHERE event_ref = ?",
+          input.eventRef,
+        )
+        .toArray()[0];
       if (existing.delivered === 1) {
         this.audit(input, "DUPLICATE_IGNORED", "EVENT_ALREADY_DELIVERED");
         return {
           status: "DUPLICATE",
           replyKind: "NONE",
           enteredHandoff: false,
+        };
+      }
+      if (
+        (storedPlan &&
+          storedPlan.response_fingerprint !== input.responseFingerprint) ||
+        (!storedPlan && input.responseFingerprint !== undefined)
+      ) {
+        sql.exec(
+          "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
+          input.now,
+        );
+        sql.exec(
+          "UPDATE processed_events SET reply_kind = 'HANDOFF_ACK', entered_handoff = 1 WHERE event_ref = ?",
+          input.eventRef,
+        );
+        this.audit(input, "HANDOFF_STARTED", "MP06_RETRY_PLAN_MISMATCH");
+        return {
+          status: "RESPOND",
+          replyKind: "HANDOFF_ACK",
+          enteredHandoff: true,
         };
       }
       return {
@@ -124,8 +181,54 @@ export class ConversationStateDO extends DurableObject<Env> {
       return { status: "SILENT", replyKind: "NONE", enteredHandoff: false };
     }
 
-    const { replyKind } = input.decision;
-    if (input.decision.handoff) {
+    let decision = input.decision;
+    let responseFingerprint = input.responseFingerprint;
+    if (
+      responseFingerprint !== undefined &&
+      !/^[a-f0-9]{64}$/.test(responseFingerprint)
+    ) {
+      decision = {
+        replyKind: "HANDOFF_ACK",
+        reasonCode: "MP06_RESPONSE_FINGERPRINT_INVALID",
+        handoff: true,
+        allowDuringHandoff: false,
+      };
+      responseFingerprint = undefined;
+    }
+    if (input.clarificationTemplateId) {
+      const clarification = sql
+        .exec<Wp1StateRow>(
+          "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
+        )
+        .one();
+      if (clarification.clarification_used === 1) {
+        decision = {
+          replyKind: "HANDOFF_ACK",
+          reasonCode: "MP06_I22_CLARIFICATION_BUDGET_EXHAUSTED",
+          handoff: true,
+          allowDuringHandoff: false,
+        };
+        responseFingerprint = undefined;
+        sql.exec(
+          "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
+        );
+      } else {
+        sql.exec(
+          "UPDATE mp06_conversation_state SET clarification_used = 1, pending_template_id = ? WHERE id = 1",
+          input.clarificationTemplateId,
+        );
+      }
+    } else if (responseFingerprint) {
+      sql.exec(
+        "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
+      );
+    }
+
+    const { replyKind } = decision;
+    if (decision.handoff) {
+      sql.exec(
+        "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
+      );
       sql.exec(
         "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
         input.now,
@@ -135,25 +238,38 @@ export class ConversationStateDO extends DurableObject<Env> {
       "INSERT INTO processed_events VALUES (?, ?, 0, ?, ?, ?)",
       input.eventRef,
       replyKind,
-      input.decision.handoff ? 1 : 0,
+      decision.handoff ? 1 : 0,
       input.now,
       processedExpiry,
     );
+    if (responseFingerprint) {
+      sql.exec(
+        "INSERT INTO mp06_response_plans (event_ref, response_fingerprint, delivered, created_at, expires_at) VALUES (?, ?, 0, ?, ?)",
+        input.eventRef,
+        responseFingerprint,
+        input.now,
+        processedExpiry,
+      );
+    }
     this.audit(
       input,
-      input.decision.handoff ? "HANDOFF_STARTED" : "RESPONSE_SELECTED",
-      input.decision.reasonCode,
+      decision.handoff ? "HANDOFF_STARTED" : "RESPONSE_SELECTED",
+      decision.reasonCode,
     );
     return {
       status: "RESPOND",
       replyKind,
-      enteredHandoff: input.decision.handoff,
+      enteredHandoff: decision.handoff,
     };
   }
 
   markDelivered(eventRef: string): void {
     this.ctx.storage.sql.exec(
       "UPDATE processed_events SET delivered = 1 WHERE event_ref = ?",
+      eventRef,
+    );
+    this.ctx.storage.sql.exec(
+      "UPDATE mp06_response_plans SET delivered = 1 WHERE event_ref = ?",
       eventRef,
     );
   }
@@ -172,6 +288,9 @@ export class ConversationStateDO extends DurableObject<Env> {
       now,
     );
     this.ctx.storage.sql.exec(
+      "UPDATE mp06_conversation_state SET clarification_used = 0, pending_template_id = NULL WHERE id = 1",
+    );
+    this.ctx.storage.sql.exec(
       "INSERT INTO audit_events (event_ref, outcome, reason_code, actor_ref, created_at, expires_at) VALUES ('STAFF_CLOSE', 'HANDOFF_CLOSED', 'AUTHORIZED_TEST_STAFF', ?, ?, ?)",
       actorRef,
       now,
@@ -184,6 +303,20 @@ export class ConversationStateDO extends DurableObject<Env> {
     return this.ctx.storage.sql
       .exec<StateRow>("SELECT mode FROM conversation_state WHERE id = 1")
       .one().mode;
+  }
+
+  mp06Context(): {
+    readonly pendingClarificationTemplateId?: "T-C01" | "T-C04";
+  } {
+    const row = this.ctx.storage.sql
+      .exec<Wp1StateRow>(
+        "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
+      )
+      .one();
+    return row.pending_template_id === "T-C01" ||
+      row.pending_template_id === "T-C04"
+      ? { pendingClarificationTemplateId: row.pending_template_id }
+      : {};
   }
 
   auditSnapshot(): readonly {

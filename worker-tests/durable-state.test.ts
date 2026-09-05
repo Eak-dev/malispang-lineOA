@@ -301,6 +301,211 @@ describe("Durable Object persistence and webhook security", () => {
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
+  it("persists a composite fingerprint and deduplicates the delivered retry", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("mp06-composite-retry");
+    const input: ProcessEventInput = {
+      ...baseInput,
+      eventRef: "8".repeat(64),
+      decision: {
+        replyKind: "MENU",
+        reasonCode: "MP06_AUTO_COMPOSITE",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "9".repeat(64),
+    };
+    expect(await stub.processEvent(input)).toMatchObject({
+      status: "RESPOND",
+      enteredHandoff: false,
+    });
+    await stub.markDelivered(input.eventRef);
+    expect(await stub.processEvent(input)).toMatchObject({
+      status: "DUPLICATE",
+      replyKind: "NONE",
+    });
+    expect(await stub.state()).toBe("BOT_ACTIVE");
+  });
+
+  it("fails a changed undelivered retry plan closed without sending partial AUTO", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("mp06-plan-drift");
+    const input: ProcessEventInput = {
+      ...baseInput,
+      eventRef: "a1".repeat(32),
+      decision: {
+        replyKind: "LOCATION",
+        reasonCode: "MP06_AUTO_COMPOSITE",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "b1".repeat(32),
+    };
+    await stub.processEvent(input);
+    const changed = await stub.processEvent({
+      ...input,
+      responseFingerprint: "c1".repeat(32),
+    });
+    expect(changed).toEqual({
+      status: "RESPOND",
+      replyKind: "HANDOFF_ACK",
+      enteredHandoff: true,
+    });
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+  });
+
+  it("fails closed when an undelivered AUTO retry loses its authoritative plan", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("mp06-plan-lost");
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "b3".repeat(32),
+      decision: {
+        replyKind: "LOCATION",
+        reasonCode: "MP06_AUTO",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "c3".repeat(32),
+    });
+    const retry = await stub.processEvent({
+      ...baseInput,
+      eventRef: "b3".repeat(32),
+      decision: {
+        replyKind: "HANDOFF_ACK",
+        reasonCode: "MP06_LOCATION_AUTHORITY_INVALID",
+        handoff: true,
+        allowDuringHandoff: false,
+      },
+    });
+    expect(retry).toEqual({
+      status: "RESPOND",
+      replyKind: "HANDOFF_ACK",
+      enteredHandoff: true,
+    });
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+  });
+
+  it("shares one clarification budget between T-C01 and T-C04", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("mp06-clarification-budget");
+    const first = await stub.processEvent({
+      ...baseInput,
+      eventRef: "d1".repeat(32),
+      decision: {
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C01",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "e1".repeat(32),
+      clarificationTemplateId: "T-C01",
+    });
+    expect(first).toEqual({
+      status: "RESPOND",
+      replyKind: "NONE",
+      enteredHandoff: false,
+    });
+    await stub.markDelivered("d1".repeat(32));
+
+    const second = await stub.processEvent({
+      ...baseInput,
+      eventRef: "f1".repeat(32),
+      decision: {
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C04",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "a2".repeat(32),
+      clarificationTemplateId: "T-C04",
+    });
+    expect(second).toEqual({
+      status: "RESPOND",
+      replyKind: "HANDOFF_ACK",
+      enteredHandoff: true,
+    });
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+  });
+
+  it("persists pending T-C01 context and clears it after an authoritative response", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("mp06-pending-price");
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "d3".repeat(32),
+      decision: {
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C01",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "e3".repeat(32),
+      clarificationTemplateId: "T-C01",
+    });
+    expect(await stub.mp06Context()).toEqual({
+      pendingClarificationTemplateId: "T-C01",
+    });
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "f3".repeat(32),
+      decision: {
+        replyKind: "PRICE",
+        reasonCode: "MP06_AUTO",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "a4".repeat(32),
+    });
+    expect(await stub.mp06Context()).toEqual({});
+    expect(await stub.state()).toBe("BOT_ACTIVE");
+  });
+
+  it("resets the clarification budget only after an authorized handoff close", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("mp06-budget-reset");
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "b2".repeat(32),
+      decision: {
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C01",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "c2".repeat(32),
+      clarificationTemplateId: "T-C01",
+    });
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "d2".repeat(32),
+      decision: {
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C04",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "e2".repeat(32),
+      clarificationTemplateId: "T-C04",
+    });
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(
+      await stub.closeHandoff("staff-ref", baseInput.now + 1, 604_800),
+    ).toBe(true);
+    const afterClose = await stub.processEvent({
+      ...baseInput,
+      eventRef: "f2".repeat(32),
+      decision: {
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C01",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "a3".repeat(32),
+      clarificationTemplateId: "T-C01",
+    });
+    expect(afterClose).toEqual({
+      status: "RESPOND",
+      replyKind: "NONE",
+      enteredHandoff: false,
+    });
+    expect(await stub.state()).toBe("BOT_ACTIVE");
+  });
+
   it("rejects an invalid LINE signature before parsing or persistence", async () => {
     const response = await exports.default.fetch(
       new Request("https://test.invalid/webhook", {
