@@ -26,14 +26,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
-  const runtimeRemediationWp3 = evaluateProjectAction(
+  const benchmarkCompletionWp4 = evaluateProjectAction(
     roadmap,
     currentWork,
-    "RUNTIME_REMEDIATION_WP3",
+    "BENCHMARK_COMPLETION_WP4",
   );
-  if (!runtimeRemediationWp3.allowed) {
+  if (!benchmarkCompletionWp4.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: RUNTIME_REMEDIATION_WP3 must be authorized",
+      "ROADMAP_UNVERIFIED: BENCHMARK_COMPLETION_WP4 must be authorized",
     );
   }
   const githubReconciliation = evaluateProjectAction(
@@ -51,6 +51,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "POLICY_SNAPSHOT",
     "RUNTIME_WP1",
     "BENCHMARK_WP2",
+    "RUNTIME_REMEDIATION_WP3",
     "LOCAL_IMPLEMENTATION",
     "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
@@ -66,7 +67,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.05-v4, MP-06 (GitHub #12), WP3 runtime remediation authorized for a subsequent round, policy and WP2 dataset/harness/oracle read-only, deployment blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.05-v5, MP-06 (GitHub #12), WP4 benchmark completion authorized for a subsequent round, runtime/policy/dataset/oracle read-only, deployment blocked, ${warningSuffix}`,
   );
 }
 

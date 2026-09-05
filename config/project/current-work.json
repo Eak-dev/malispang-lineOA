@@ -2,37 +2,44 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.05-v4",
+  "roadmapVersion": "2026.09.05-v5",
   "workId": "MP-06",
   "githubIssue": 12,
-  "currentPhase": "WP3_RUNTIME_REMEDIATION",
-  "status": "AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY",
+  "currentPhase": "WP4_WP2_BENCHMARK_COMPLETION",
+  "status": "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY",
   "base": {
-    "commit": "2a2571369f7e845c5d72883d816556ce24be18c0",
+    "commit": "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5",
     "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
   "targetEnvironment": "LOCAL_ONLY",
-  "authorizedWorkPackage": "WP3",
+  "authorizedWorkPackage": "WP4",
   "allowedScope": [
-    "MP_06_WP3_AUTHORIZED_GAP_RUNTIME_REMEDIATION",
-    "MP_06_WP3_TARGETED_REGRESSION_TESTS",
-    "MP_06_WP2_DATASET_READ_ONLY",
-    "MP_06_WP2_HARNESS_AND_ORACLE_READ_ONLY",
-    "MP_06_WP2_FULL_5000_CASE_RERUN",
-    "MP_06_WP2_REPORT_REGENERATION_AFTER_PASS",
-    "MP_06_WP2_ACCEPTANCE_GATES_UNCHANGED",
-    "MP_06_WP3_REMEDIATION_DOCUMENTATION",
+    "MP_06_WP4_COMMIT_EXISTING_WP2_BENCHMARK_FILES",
+    "MP_06_WP4_COMMIT_FROZEN_5000_CASE_DATASET",
+    "MP_06_WP4_COMMIT_INDEPENDENT_ORACLE_READ_ONLY_CONTENT",
+    "MP_06_WP4_COMMIT_BENCHMARK_SPECIFICATION",
+    "MP_06_WP4_REGENERATE_AND_COMMIT_REPORTS",
+    "MP_06_WP4_ADDITIVE_REPORT_PROVENANCE_REMEDIATION_IF_REQUIRED",
+    "MP_06_WP4_PROVENANCE_REGRESSION_TESTS",
+    "MP_06_WP4_FULL_VALIDATION",
+    "RUNTIME_READ_ONLY",
     "POLICY_SNAPSHOT_READ_ONLY",
+    "DATASET_EXPECTED_CASES_READ_ONLY",
+    "INDEPENDENT_ORACLE_READ_ONLY",
+    "ACCEPTANCE_THRESHOLDS_READ_ONLY",
     "COMMIT_MP_06_BRANCH",
-    "PUSH_MP_06_BRANCH"
+    "PUSH_MP_06_BRANCH",
+    "UPDATE_GITHUB_EVIDENCE_AFTER_PASS"
   ],
   "forbiddenScope": [
-    "CHANGE_RUNTIME_OUTSIDE_AUTHORIZED_WP3_GAPS",
-    "CHANGE_WP2_BENCHMARK_HARNESS",
-    "CHANGE_WP2_DATASET",
-    "CHANGE_WP2_ORACLE_OR_EXPECTED_RESULT",
+    "CHANGE_MP_06_RUNTIME",
+    "CHANGE_RUNTIME_TEST_BEHAVIOR",
+    "CHANGE_WP2_DATASET_CASES",
+    "CHANGE_WP2_EXPECTED_RESULT",
+    "CHANGE_WP2_INDEPENDENT_ORACLE",
     "LOWER_WP2_ACCEPTANCE_THRESHOLDS",
+    "DELETE_WP2_FAILED_HISTORY",
     "CHANGE_MP_06_POLICY_SNAPSHOT",
     "CHANGE_MP_06_TEMPLATES",
     "CHANGE_OWNER_DECISIONS",
@@ -60,8 +67,9 @@
   "authorization": {
     "localImplementation": false,
     "runtimeWp1": false,
-    "benchmarkWp2": false,
-    "runtimeRemediationWp3": true,
+    "benchmarkWp2": true,
+    "runtimeRemediationWp3": false,
+    "benchmarkCompletionWp4": true,
     "policySnapshot": false,
     "policySnapshotReadOnly": true,
     "commit": true,
@@ -76,10 +84,16 @@
     "mode": "READ_ONLY"
   },
   "wp2BenchmarkReference": {
+    "benchmarkImplementationBaseCommit": "8117f7c0b7cb190af81ea8f9481bd257db8a5a51",
+    "runtimeUnderTestCommit": "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5",
     "datasetChecksum": "6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa",
     "failedResultChecksum": "4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6",
-    "datasetHarnessOracleMode": "READ_ONLY",
-    "reportRegeneration": "AFTER_RUNTIME_PASSES_ONLY",
+    "remediatedPassResultChecksum": "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6",
+    "runtimeMode": "READ_ONLY",
+    "datasetExpectedCasesMode": "READ_ONLY",
+    "independentOracleMode": "READ_ONLY",
+    "acceptanceThresholdsMode": "READ_ONLY",
+    "reportRegeneration": "AUTHORIZED_WITH_EXPLICIT_PROVENANCE",
     "totalCases": 5000,
     "failedMetrics": {
       "autoCorrectnessPercent": 96.4,
@@ -88,30 +102,63 @@
       "unsupportedClaims": 144,
       "piiOrRawChatLeakage": 0,
       "authorityFailureFailClosedPercent": 100
+    },
+    "passMetrics": {
+      "functionalCases": 3000,
+      "thaiLanguageVariationCases": 1000,
+      "adversarialSafetyCases": 1000,
+      "autoCorrectnessPercent": 100,
+      "falseAutoCount": 0,
+      "riskyFailClosedPercent": 100,
+      "unsupportedClaims": 0,
+      "piiOrRawChatLeakage": 0,
+      "authorityFailureFailClosedPercent": 100,
+      "confusionMatrixOffDiagonal": 0
     }
   },
-  "runtimeRemediationPlan": {
-    "authorizedGaps": [
-      {
-        "id": "DELIVERY_FEE_AREA_OVERLAP",
-        "caseCount": 72,
-        "requiredOutcome": "STAFF_ONLY"
-      },
-      {
-        "id": "INDIVIDUAL_LOYALTY_BALANCE_OVERLAP",
-        "caseCount": 72,
-        "requiredOutcome": "STAFF_ONLY"
-      },
-      {
-        "id": "GUESS_PRICE_PRECEDENCE",
-        "caseCount": 1,
-        "requiredOutcome": "STAFF_ONLY"
-      }
+  "benchmarkCompletionPlan": {
+    "benchmarkArtifactAllowlist": [
+      "package.json",
+      "tsconfig.json",
+      "artifacts/mp-06/benchmark-dataset.json",
+      "artifacts/mp-06/benchmark-report.json",
+      "benchmark/mp-06/case-builder.ts",
+      "benchmark/mp-06/dataset-validation.ts",
+      "benchmark/mp-06/evaluator.ts",
+      "benchmark/mp-06/io.ts",
+      "benchmark/mp-06/report.ts",
+      "benchmark/mp-06/runner.ts",
+      "benchmark/mp-06/safety-checks.ts",
+      "benchmark/mp-06/scenarios.ts",
+      "benchmark/mp-06/signatures.ts",
+      "benchmark/mp-06/types.ts",
+      "docs/line-oa/mp-06/MP_06_WP2_BENCHMARK_REPORT.md",
+      "docs/line-oa/mp-06/MP_06_WP2_BENCHMARK_SPEC_TH.md",
+      "scripts/run-mp-06-benchmark.ts",
+      "tests/mp-06-wp2-benchmark.test.ts"
     ],
-    "runtimeFileAllowlist": ["worker/mp-06-wp1.ts", "tests/mp-06-wp1.test.ts"],
-    "additionalRuntimeFilesRequireRecordedGapJustification": true,
+    "narrowProvenanceFileAllowlist": [
+      "benchmark/mp-06/report.ts",
+      "benchmark/mp-06/types.ts",
+      "tests/mp-06-wp2-benchmark.test.ts",
+      "artifacts/mp-06/benchmark-report.json",
+      "docs/line-oa/mp-06/MP_06_WP2_BENCHMARK_REPORT.md"
+    ],
+    "provenanceRequirements": {
+      "benchmarkBaseCommit": "8117f7c0b7cb190af81ea8f9481bd257db8a5a51",
+      "runtimeUnderTestCommit": "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5",
+      "runtimeAuthorizationRoadmapVersion": "2026.09.05-v4",
+      "benchmarkCompletionRoadmapVersion": "2026.09.05-v5",
+      "ambiguousSingleCommitFieldForbidden": true,
+      "selfReferentialArtifactCommitForbidden": true,
+      "provenanceMustNotAffectSemanticResultChecksum": true,
+      "deploymentStatus": "NOT_DEPLOYED"
+    },
     "datasetChecksumMustRemainUnchanged": true,
-    "noPartialAuto": true
+    "independentOracleMustRemainUnchanged": true,
+    "expectedResultsMustRemainUnchanged": true,
+    "acceptanceThresholdsMustRemainUnchanged": true,
+    "failedHistoryMustBeRetained": true
   },
   "benchmarkAcceptanceCriteria": {
     "piiFree": true,

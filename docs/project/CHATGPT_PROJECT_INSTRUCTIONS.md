@@ -13,3 +13,5 @@ Project Instructions และสถานะ `CURRENT` ไม่ใช่ imple
 หาก current-work เป็น `AUTHORIZED_BENCHMARK_WP2_ONLY` ให้ทำได้เฉพาะ WP2 benchmark scopes ที่ระบุและเรียก authorization ด้วย scoped action `BENCHMARK_WP2`; ห้ามแก้ runtime/policy/KB/catalog, ใช้ข้อมูลแชตจริง, เรียก AI/provider, deploy หรือแตะ Production
 
 หาก current-work เป็น `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` ให้ทำได้เฉพาะสามช่องว่างที่บันทึกใน remediation plan และเรียก authorization ด้วย scoped action `RUNTIME_REMEDIATION_WP3`; policy กับ WP2 dataset/harness/oracle ต้อง read-only, ห้ามลด acceptance thresholds, ห้ามส่ง partial AUTO, deploy หรือแตะ Production
+
+หาก current-work เป็น `AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY` ให้ทำได้เฉพาะ benchmark completion และ additive provenance remediation ตาม artifact/file allowlist ผ่าน scoped action `BENCHMARK_COMPLETION_WP4`; runtime, policy, dataset expected cases, independent oracle และ thresholds ต้อง read-only, ห้ามใช้ commit field เดียวแบบกำกวม, deploy หรือแตะ Production

@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP3-only runtime remediation control", () => {
-  it("accepts the 2026.09.05-v4 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP4-only benchmark completion control", () => {
+  it("accepts the 2026.09.05-v5 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -38,18 +38,28 @@ describe("MP-06 WP3-only runtime remediation control", () => {
         currentPhase: { const: string };
         status: { const: string };
         authorization: {
-          properties: { runtimeRemediationWp3: { const: boolean } };
+          properties: {
+            benchmarkWp2: { const: boolean };
+            runtimeRemediationWp3: { const: boolean };
+            benchmarkCompletionWp4: { const: boolean };
+          };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP3_RUNTIME_REMEDIATION",
+      "WP4_WP2_BENCHMARK_COMPLETION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY",
+      "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY",
+    );
+    expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
+      true,
     );
     expect(
       schema.properties.authorization.properties.runtimeRemediationWp3.const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties.benchmarkCompletionWp4.const,
     ).toBe(true);
   });
 
@@ -64,9 +74,9 @@ describe("MP-06 WP3-only runtime remediation control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only scoped WP3 runtime remediation work", () => {
+  it("authorizes only scoped WP4 benchmark completion work", () => {
     expect(
-      evaluateProjectAction(roadmap, currentWork, "RUNTIME_REMEDIATION_WP3"),
+      evaluateProjectAction(roadmap, currentWork, "BENCHMARK_COMPLETION_WP4"),
     ).toEqual({
       allowed: true,
       reason: "AUTHORIZED_BY_CURRENT_WORK",
@@ -79,7 +89,13 @@ describe("MP-06 WP3-only runtime remediation control", () => {
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
     ).toEqual({
       allowed: false,
-      reason: "BENCHMARK_WP2_NOT_AUTHORIZED",
+      reason: "USE_SCOPED_BENCHMARK_COMPLETION_WP4_ACTION",
+    });
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "RUNTIME_REMEDIATION_WP3"),
+    ).toEqual({
+      allowed: false,
+      reason: "RUNTIME_REMEDIATION_WP3_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "POLICY_SNAPSHOT"),
@@ -91,7 +107,7 @@ describe("MP-06 WP3-only runtime remediation control", () => {
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
       allowed: false,
-      reason: "USE_SCOPED_RUNTIME_REMEDIATION_WP3_ACTION",
+      reason: "USE_SCOPED_BENCHMARK_COMPLETION_WP4_ACTION",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -119,7 +135,7 @@ describe("MP-06 WP3-only runtime remediation control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.05-v3";
+    changed.roadmapVersion = "2026.09.05-v4";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -131,14 +147,14 @@ describe("MP-06 WP3-only runtime remediation control", () => {
     });
   });
 
-  it("requires the verified baseline to contain MP-06 WP1", () => {
+  it("requires the verified runtime baseline to contain MP-06", () => {
     const changed = clone(roadmap) as {
       verifiedLatestBaseline: { contains: string[] };
     };
     changed.verifiedLatestBaseline.contains =
       changed.verifiedLatestBaseline.contains.filter((id) => id !== "MP-06");
     expect(validateProjectControl(changed, currentWork).errors).toContain(
-      "VERIFIED_BASELINE_MUST_CONTAIN_MP_06_WP1",
+      "VERIFIED_BASELINE_MUST_CONTAIN_MP_06",
     );
   });
 
@@ -191,7 +207,7 @@ describe("MP-06 WP3-only runtime remediation control", () => {
     );
   });
 
-  it("preserves WP2 quality thresholds and required reports for remediation", () => {
+  it("preserves WP2 quality thresholds and required reports for completion", () => {
     const changed = clone(currentWork) as {
       benchmarkAcceptanceCriteria: {
         meaningfullyDistinct: boolean;
@@ -256,20 +272,30 @@ describe("MP-06 WP3-only runtime remediation control", () => {
     );
   });
 
-  it("rejects removal of the explicit WP3 runtime remediation authorization", () => {
+  it("rejects removal of WP4 authorization or restoration of WP3 write access", () => {
     const changed = clone(currentWork) as {
-      authorization: { runtimeRemediationWp3: boolean };
+      authorization: {
+        benchmarkWp2: boolean;
+        runtimeRemediationWp3: boolean;
+        benchmarkCompletionWp4: boolean;
+      };
     };
-    changed.authorization.runtimeRemediationWp3 = false;
-    expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "WP3_RUNTIME_REMEDIATION_NOT_AUTHORIZED",
+    changed.authorization.benchmarkWp2 = false;
+    changed.authorization.runtimeRemediationWp3 = true;
+    changed.authorization.benchmarkCompletionWp4 = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP2_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
+        "WP3_RUNTIME_REMEDIATION_MUST_BE_READ_ONLY",
+        "WP4_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
+      ]),
     );
     expect(
-      evaluateProjectAction(roadmap, changed, "RUNTIME_REMEDIATION_WP3"),
+      evaluateProjectAction(roadmap, changed, "BENCHMARK_COMPLETION_WP4"),
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP3 scope expansion", () => {
+  it("rejects policy checksum drift or WP4 scope expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -281,7 +307,7 @@ describe("MP-06 WP3-only runtime remediation control", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP3_SCOPE_INVALID",
+      "WP4_SCOPE_INVALID",
     );
   });
 
@@ -306,54 +332,92 @@ describe("MP-06 WP3-only runtime remediation control", () => {
     });
   });
 
-  it("fails closed if the out-of-gap runtime prohibition is removed", () => {
+  it("fails closed if the runtime read-only prohibition is removed", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) => scope !== "CHANGE_RUNTIME_OUTSIDE_AUTHORIZED_WP3_GAPS",
+      (scope) => scope !== "CHANGE_MP_06_RUNTIME",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_CHANGE_RUNTIME_OUTSIDE_AUTHORIZED_WP3_GAPS",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME",
     );
   });
 
-  it("pins the failed WP2 evidence and immutable 5,000-case dataset", () => {
+  it("pins failed and PASS WP2 evidence plus the immutable dataset", () => {
     const checksumDrift = clone(currentWork) as {
       wp2BenchmarkReference: {
         datasetChecksum: string;
         failedResultChecksum: string;
+        remediatedPassResultChecksum: string;
       };
     };
     checksumDrift.wp2BenchmarkReference.datasetChecksum = "0".repeat(64);
     checksumDrift.wp2BenchmarkReference.failedResultChecksum = "f".repeat(64);
+    checksumDrift.wp2BenchmarkReference.remediatedPassResultChecksum =
+      "1".repeat(64);
     expect(validateProjectControl(roadmap, checksumDrift).errors).toEqual(
       expect.arrayContaining([
         "WP2_DATASET_CHECKSUM_INVALID",
         "WP2_FAILED_RESULT_CHECKSUM_INVALID",
+        "WP2_PASS_RESULT_CHECKSUM_INVALID",
       ]),
     );
   });
 
-  it("permits exactly the three benchmark-proven remediation gaps", () => {
+  it("pins unambiguous benchmark/runtime provenance without a circular artifact commit", () => {
     const changed = clone(currentWork) as {
-      runtimeRemediationPlan: {
-        authorizedGaps: Array<{
-          id: string;
-          caseCount: number;
-          requiredOutcome: string;
-        }>;
-        runtimeFileAllowlist: string[];
+      benchmarkCompletionPlan: {
+        benchmarkArtifactAllowlist: string[];
+        provenanceRequirements: {
+          benchmarkBaseCommit: string;
+          runtimeUnderTestCommit: string;
+          ambiguousSingleCommitFieldForbidden: boolean;
+          selfReferentialArtifactCommitForbidden: boolean;
+          provenanceMustNotAffectSemanticResultChecksum: boolean;
+        };
       };
     };
-    changed.runtimeRemediationPlan.authorizedGaps[0]!.caseCount = 71;
-    changed.runtimeRemediationPlan.authorizedGaps[1]!.requiredOutcome = "AUTO";
-    changed.runtimeRemediationPlan.runtimeFileAllowlist.push(
-      "worker/another-runtime.ts",
-    );
+    changed.benchmarkCompletionPlan.benchmarkArtifactAllowlist.pop();
+    const provenance = changed.benchmarkCompletionPlan.provenanceRequirements;
+    provenance.benchmarkBaseCommit = "0".repeat(40);
+    provenance.runtimeUnderTestCommit = "f".repeat(40);
+    provenance.ambiguousSingleCommitFieldForbidden = false;
+    provenance.selfReferentialArtifactCommitForbidden = false;
+    provenance.provenanceMustNotAffectSemanticResultChecksum = false;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
-        "WP3_AUTHORIZED_GAP_CASE_COUNT_INVALID_DELIVERY_FEE_AREA_OVERLAP",
-        "WP3_AUTHORIZED_GAP_OUTCOME_INVALID_INDIVIDUAL_LOYALTY_BALANCE_OVERLAP",
-        "WP3_RUNTIME_FILE_ALLOWLIST_INVALID",
+        "WP4_BENCHMARK_ARTIFACT_ALLOWLIST_INVALID",
+        "WP4_PROVENANCE_BENCHMARK_BASE_INVALID",
+        "WP4_PROVENANCE_RUNTIME_COMMIT_INVALID",
+        "WP4_AMBIGUOUS_COMMIT_FIELD_MUST_BE_FORBIDDEN",
+        "WP4_SELF_REFERENTIAL_COMMIT_MUST_BE_FORBIDDEN",
+        "WP4_PROVENANCE_MUST_NOT_CHANGE_RESULT_CHECKSUM",
+      ]),
+    );
+  });
+
+  it("preserves the frozen dataset, oracle, expected results, thresholds and failed history", () => {
+    const changed = clone(currentWork) as {
+      benchmarkCompletionPlan: {
+        datasetChecksumMustRemainUnchanged: boolean;
+        independentOracleMustRemainUnchanged: boolean;
+        expectedResultsMustRemainUnchanged: boolean;
+        acceptanceThresholdsMustRemainUnchanged: boolean;
+        failedHistoryMustBeRetained: boolean;
+      };
+    };
+    const plan = changed.benchmarkCompletionPlan;
+    plan.datasetChecksumMustRemainUnchanged = false;
+    plan.independentOracleMustRemainUnchanged = false;
+    plan.expectedResultsMustRemainUnchanged = false;
+    plan.acceptanceThresholdsMustRemainUnchanged = false;
+    plan.failedHistoryMustBeRetained = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP4_DATASET_CHECKSUM_IMMUTABILITY_REQUIRED",
+        "WP4_ORACLE_IMMUTABILITY_REQUIRED",
+        "WP4_EXPECTED_RESULTS_IMMUTABILITY_REQUIRED",
+        "WP4_ACCEPTANCE_THRESHOLDS_IMMUTABILITY_REQUIRED",
+        "WP4_FAILED_HISTORY_RETENTION_REQUIRED",
       ]),
     );
   });

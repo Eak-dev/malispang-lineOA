@@ -22,7 +22,7 @@
     "authorization",
     "policySnapshotReference",
     "wp2BenchmarkReference",
-    "runtimeRemediationPlan",
+    "benchmarkCompletionPlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -39,8 +39,8 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP3_RUNTIME_REMEDIATION" },
-    "status": { "const": "AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY" },
+    "currentPhase": { "const": "WP4_WP2_BENCHMARK_COMPLETION" },
+    "status": { "const": "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -52,7 +52,7 @@
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
     "targetEnvironment": { "const": "LOCAL_ONLY" },
-    "authorizedWorkPackage": { "const": "WP3" },
+    "authorizedWorkPackage": { "const": "WP4" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -73,6 +73,7 @@
         "runtimeWp1",
         "benchmarkWp2",
         "runtimeRemediationWp3",
+        "benchmarkCompletionWp4",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -84,8 +85,9 @@
       "properties": {
         "localImplementation": { "const": false },
         "runtimeWp1": { "const": false },
-        "benchmarkWp2": { "const": false },
-        "runtimeRemediationWp3": { "const": true },
+        "benchmarkWp2": { "const": true },
+        "runtimeRemediationWp3": { "const": false },
+        "benchmarkCompletionWp4": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -111,22 +113,43 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "benchmarkImplementationBaseCommit",
+        "runtimeUnderTestCommit",
         "datasetChecksum",
         "failedResultChecksum",
-        "datasetHarnessOracleMode",
+        "remediatedPassResultChecksum",
+        "runtimeMode",
+        "datasetExpectedCasesMode",
+        "independentOracleMode",
+        "acceptanceThresholdsMode",
         "reportRegeneration",
         "totalCases",
-        "failedMetrics"
+        "failedMetrics",
+        "passMetrics"
       ],
       "properties": {
+        "benchmarkImplementationBaseCommit": {
+          "const": "8117f7c0b7cb190af81ea8f9481bd257db8a5a51"
+        },
+        "runtimeUnderTestCommit": {
+          "const": "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5"
+        },
         "datasetChecksum": {
           "const": "6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa"
         },
         "failedResultChecksum": {
           "const": "4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6"
         },
-        "datasetHarnessOracleMode": { "const": "READ_ONLY" },
-        "reportRegeneration": { "const": "AFTER_RUNTIME_PASSES_ONLY" },
+        "remediatedPassResultChecksum": {
+          "const": "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6"
+        },
+        "runtimeMode": { "const": "READ_ONLY" },
+        "datasetExpectedCasesMode": { "const": "READ_ONLY" },
+        "independentOracleMode": { "const": "READ_ONLY" },
+        "acceptanceThresholdsMode": { "const": "READ_ONLY" },
+        "reportRegeneration": {
+          "const": "AUTHORIZED_WITH_EXPLICIT_PROVENANCE"
+        },
         "totalCases": { "const": 5000 },
         "failedMetrics": {
           "type": "object",
@@ -147,52 +170,103 @@
             "piiOrRawChatLeakage": { "const": 0 },
             "authorityFailureFailClosedPercent": { "const": 100 }
           }
+        },
+        "passMetrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "functionalCases",
+            "thaiLanguageVariationCases",
+            "adversarialSafetyCases",
+            "autoCorrectnessPercent",
+            "falseAutoCount",
+            "riskyFailClosedPercent",
+            "unsupportedClaims",
+            "piiOrRawChatLeakage",
+            "authorityFailureFailClosedPercent",
+            "confusionMatrixOffDiagonal"
+          ],
+          "properties": {
+            "functionalCases": { "const": 3000 },
+            "thaiLanguageVariationCases": { "const": 1000 },
+            "adversarialSafetyCases": { "const": 1000 },
+            "autoCorrectnessPercent": { "const": 100 },
+            "falseAutoCount": { "const": 0 },
+            "riskyFailClosedPercent": { "const": 100 },
+            "unsupportedClaims": { "const": 0 },
+            "piiOrRawChatLeakage": { "const": 0 },
+            "authorityFailureFailClosedPercent": { "const": 100 },
+            "confusionMatrixOffDiagonal": { "const": 0 }
+          }
         }
       }
     },
-    "runtimeRemediationPlan": {
+    "benchmarkCompletionPlan": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "authorizedGaps",
-        "runtimeFileAllowlist",
-        "additionalRuntimeFilesRequireRecordedGapJustification",
+        "benchmarkArtifactAllowlist",
+        "narrowProvenanceFileAllowlist",
+        "provenanceRequirements",
         "datasetChecksumMustRemainUnchanged",
-        "noPartialAuto"
+        "independentOracleMustRemainUnchanged",
+        "expectedResultsMustRemainUnchanged",
+        "acceptanceThresholdsMustRemainUnchanged",
+        "failedHistoryMustBeRetained"
       ],
       "properties": {
-        "authorizedGaps": {
+        "benchmarkArtifactAllowlist": {
           "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["id", "caseCount", "requiredOutcome"],
-            "properties": {
-              "id": {
-                "enum": [
-                  "DELIVERY_FEE_AREA_OVERLAP",
-                  "INDIVIDUAL_LOYALTY_BALANCE_OVERLAP",
-                  "GUESS_PRICE_PRECEDENCE"
-                ]
-              },
-              "caseCount": { "type": "integer", "minimum": 1 },
-              "requiredOutcome": { "const": "STAFF_ONLY" }
-            }
-          }
-        },
-        "runtimeFileAllowlist": {
-          "type": "array",
-          "minItems": 2,
+          "minItems": 18,
+          "maxItems": 18,
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 }
         },
-        "additionalRuntimeFilesRequireRecordedGapJustification": {
-          "const": true
+        "narrowProvenanceFileAllowlist": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "provenanceRequirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "benchmarkBaseCommit",
+            "runtimeUnderTestCommit",
+            "runtimeAuthorizationRoadmapVersion",
+            "benchmarkCompletionRoadmapVersion",
+            "ambiguousSingleCommitFieldForbidden",
+            "selfReferentialArtifactCommitForbidden",
+            "provenanceMustNotAffectSemanticResultChecksum",
+            "deploymentStatus"
+          ],
+          "properties": {
+            "benchmarkBaseCommit": {
+              "const": "8117f7c0b7cb190af81ea8f9481bd257db8a5a51"
+            },
+            "runtimeUnderTestCommit": {
+              "const": "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5"
+            },
+            "runtimeAuthorizationRoadmapVersion": {
+              "const": "2026.09.05-v4"
+            },
+            "benchmarkCompletionRoadmapVersion": {
+              "const": "2026.09.05-v5"
+            },
+            "ambiguousSingleCommitFieldForbidden": { "const": true },
+            "selfReferentialArtifactCommitForbidden": { "const": true },
+            "provenanceMustNotAffectSemanticResultChecksum": {
+              "const": true
+            },
+            "deploymentStatus": { "const": "NOT_DEPLOYED" }
+          }
         },
         "datasetChecksumMustRemainUnchanged": { "const": true },
-        "noPartialAuto": { "const": true }
+        "independentOracleMustRemainUnchanged": { "const": true },
+        "expectedResultsMustRemainUnchanged": { "const": true },
+        "acceptanceThresholdsMustRemainUnchanged": { "const": true },
+        "failedHistoryMustBeRetained": { "const": true }
       }
     },
     "benchmarkAcceptanceCriteria": {

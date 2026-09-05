@@ -19,6 +19,7 @@ export type ProjectAction =
   | "RUNTIME_WP1"
   | "BENCHMARK_WP2"
   | "RUNTIME_REMEDIATION_WP3"
+  | "BENCHMARK_COMPLETION_WP4"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -39,11 +40,13 @@ export interface ProjectActionDecision {
 const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
-  "CHANGE_RUNTIME_OUTSIDE_AUTHORIZED_WP3_GAPS",
-  "CHANGE_WP2_BENCHMARK_HARNESS",
-  "CHANGE_WP2_DATASET",
-  "CHANGE_WP2_ORACLE_OR_EXPECTED_RESULT",
+  "CHANGE_MP_06_RUNTIME",
+  "CHANGE_RUNTIME_TEST_BEHAVIOR",
+  "CHANGE_WP2_DATASET_CASES",
+  "CHANGE_WP2_EXPECTED_RESULT",
+  "CHANGE_WP2_INDEPENDENT_ORACLE",
   "LOWER_WP2_ACCEPTANCE_THRESHOLDS",
+  "DELETE_WP2_FAILED_HISTORY",
   "CHANGE_MP_06_POLICY_SNAPSHOT",
   "CHANGE_MP_06_TEMPLATES",
   "CHANGE_OWNER_DECISIONS",
@@ -69,18 +72,23 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP3_SCOPE = [
-  "MP_06_WP3_AUTHORIZED_GAP_RUNTIME_REMEDIATION",
-  "MP_06_WP3_TARGETED_REGRESSION_TESTS",
-  "MP_06_WP2_DATASET_READ_ONLY",
-  "MP_06_WP2_HARNESS_AND_ORACLE_READ_ONLY",
-  "MP_06_WP2_FULL_5000_CASE_RERUN",
-  "MP_06_WP2_REPORT_REGENERATION_AFTER_PASS",
-  "MP_06_WP2_ACCEPTANCE_GATES_UNCHANGED",
-  "MP_06_WP3_REMEDIATION_DOCUMENTATION",
+const REQUIRED_WP4_SCOPE = [
+  "MP_06_WP4_COMMIT_EXISTING_WP2_BENCHMARK_FILES",
+  "MP_06_WP4_COMMIT_FROZEN_5000_CASE_DATASET",
+  "MP_06_WP4_COMMIT_INDEPENDENT_ORACLE_READ_ONLY_CONTENT",
+  "MP_06_WP4_COMMIT_BENCHMARK_SPECIFICATION",
+  "MP_06_WP4_REGENERATE_AND_COMMIT_REPORTS",
+  "MP_06_WP4_ADDITIVE_REPORT_PROVENANCE_REMEDIATION_IF_REQUIRED",
+  "MP_06_WP4_PROVENANCE_REGRESSION_TESTS",
+  "MP_06_WP4_FULL_VALIDATION",
+  "RUNTIME_READ_ONLY",
   "POLICY_SNAPSHOT_READ_ONLY",
+  "DATASET_EXPECTED_CASES_READ_ONLY",
+  "INDEPENDENT_ORACLE_READ_ONLY",
+  "ACCEPTANCE_THRESHOLDS_READ_ONLY",
   "COMMIT_MP_06_BRANCH",
   "PUSH_MP_06_BRANCH",
+  "UPDATE_GITHUB_EVIDENCE_AFTER_PASS",
 ] as const;
 
 const EXPECTED_POLICY_SNAPSHOT_CHECKSUM =
@@ -89,14 +97,37 @@ const EXPECTED_WP2_DATASET_CHECKSUM =
   "6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa";
 const EXPECTED_WP2_FAILED_RESULT_CHECKSUM =
   "4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6";
-const EXPECTED_WP3_GAPS = [
-  ["DELIVERY_FEE_AREA_OVERLAP", 72],
-  ["INDIVIDUAL_LOYALTY_BALANCE_OVERLAP", 72],
-  ["GUESS_PRICE_PRECEDENCE", 1],
+const EXPECTED_WP2_PASS_RESULT_CHECKSUM =
+  "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6";
+const EXPECTED_WP2_BASE_COMMIT = "8117f7c0b7cb190af81ea8f9481bd257db8a5a51";
+const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
+  "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
+const EXPECTED_WP2_ARTIFACT_FILES = [
+  "package.json",
+  "tsconfig.json",
+  "artifacts/mp-06/benchmark-dataset.json",
+  "artifacts/mp-06/benchmark-report.json",
+  "benchmark/mp-06/case-builder.ts",
+  "benchmark/mp-06/dataset-validation.ts",
+  "benchmark/mp-06/evaluator.ts",
+  "benchmark/mp-06/io.ts",
+  "benchmark/mp-06/report.ts",
+  "benchmark/mp-06/runner.ts",
+  "benchmark/mp-06/safety-checks.ts",
+  "benchmark/mp-06/scenarios.ts",
+  "benchmark/mp-06/signatures.ts",
+  "benchmark/mp-06/types.ts",
+  "docs/line-oa/mp-06/MP_06_WP2_BENCHMARK_REPORT.md",
+  "docs/line-oa/mp-06/MP_06_WP2_BENCHMARK_SPEC_TH.md",
+  "scripts/run-mp-06-benchmark.ts",
+  "tests/mp-06-wp2-benchmark.test.ts",
 ] as const;
-const EXPECTED_WP3_RUNTIME_FILES = [
-  "worker/mp-06-wp1.ts",
-  "tests/mp-06-wp1.test.ts",
+const EXPECTED_PROVENANCE_FILES = [
+  "benchmark/mp-06/report.ts",
+  "benchmark/mp-06/types.ts",
+  "tests/mp-06-wp2-benchmark.test.ts",
+  "artifacts/mp-06/benchmark-report.json",
+  "docs/line-oa/mp-06/MP_06_WP2_BENCHMARK_REPORT.md",
 ] as const;
 
 export function validateProjectControl(
@@ -127,7 +158,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.05-v4",
+    "2026.09.05-v5",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -138,7 +169,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-05-V4",
+      "MP-OD-2026-09-05-V5",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -150,7 +181,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.05-v3",
+      "2026.09.05-v4",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -167,7 +198,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "2a2571369f7e845c5d72883d816556ce24be18c0",
+      EXPECTED_RUNTIME_UNDER_TEST_COMMIT,
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -180,7 +211,7 @@ export function validateProjectControl(
       !Array.isArray(roadmap.verifiedLatestBaseline.contains) ||
       !roadmap.verifiedLatestBaseline.contains.includes("MP-06")
     ) {
-      errors.push("VERIFIED_BASELINE_MUST_CONTAIN_MP_06_WP1");
+      errors.push("VERIFIED_BASELINE_MUST_CONTAIN_MP_06");
     }
   }
 
@@ -339,13 +370,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP3_RUNTIME_REMEDIATION",
+    "WP4_WP2_BENCHMARK_COMPLETION",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY",
+    "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -357,8 +388,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP3",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP3",
+    "WP4",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP4",
   );
   expectEqual(
     errors,
@@ -412,14 +443,20 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.benchmarkWp2,
-      false,
-      "WP2_BENCHMARK_MUST_BE_SCOPED_THROUGH_WP3",
+      true,
+      "WP2_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
       currentWork.authorization.runtimeRemediationWp3,
+      false,
+      "WP3_RUNTIME_REMEDIATION_MUST_BE_READ_ONLY",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.benchmarkCompletionWp4,
       true,
-      "WP3_RUNTIME_REMEDIATION_NOT_AUTHORIZED",
+      "WP4_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -469,14 +506,14 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP3_SCOPE.length ||
-    REQUIRED_WP3_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP4_SCOPE.length ||
+    REQUIRED_WP4_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP3_SCOPE_INVALID");
+    errors.push("WP4_SCOPE_INVALID");
   }
 
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
-  validateRuntimeRemediationPlan(errors, currentWork.runtimeRemediationPlan);
+  validateBenchmarkCompletionPlan(errors, currentWork.benchmarkCompletionPlan);
 
   if (!isRecord(currentWork.policySnapshotReference)) {
     errors.push("POLICY_SNAPSHOT_REFERENCE_MISSING");
@@ -585,10 +622,10 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
-  if (action === "LOCAL_IMPLEMENTATION") {
+  if (action === "LOCAL_IMPLEMENTATION" || action === "BENCHMARK_WP2") {
     return {
       allowed: false,
-      reason: "USE_SCOPED_RUNTIME_REMEDIATION_WP3_ACTION",
+      reason: "USE_SCOPED_BENCHMARK_COMPLETION_WP4_ACTION",
     };
   }
   const keyByAction: Record<ProjectAction, string> = {
@@ -596,6 +633,7 @@ export function evaluateProjectAction(
     RUNTIME_WP1: "runtimeWp1",
     BENCHMARK_WP2: "benchmarkWp2",
     RUNTIME_REMEDIATION_WP3: "runtimeRemediationWp3",
+    BENCHMARK_COMPLETION_WP4: "benchmarkCompletionWp4",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -649,6 +687,18 @@ function validateWp2BenchmarkReference(
   }
   expectEqual(
     errors,
+    reference.benchmarkImplementationBaseCommit,
+    EXPECTED_WP2_BASE_COMMIT,
+    "WP2_BENCHMARK_BASE_COMMIT_INVALID",
+  );
+  expectEqual(
+    errors,
+    reference.runtimeUnderTestCommit,
+    EXPECTED_RUNTIME_UNDER_TEST_COMMIT,
+    "WP2_RUNTIME_UNDER_TEST_COMMIT_INVALID",
+  );
+  expectEqual(
+    errors,
     reference.datasetChecksum,
     EXPECTED_WP2_DATASET_CHECKSUM,
     "WP2_DATASET_CHECKSUM_INVALID",
@@ -661,14 +711,38 @@ function validateWp2BenchmarkReference(
   );
   expectEqual(
     errors,
-    reference.datasetHarnessOracleMode,
+    reference.remediatedPassResultChecksum,
+    EXPECTED_WP2_PASS_RESULT_CHECKSUM,
+    "WP2_PASS_RESULT_CHECKSUM_INVALID",
+  );
+  expectEqual(
+    errors,
+    reference.runtimeMode,
     "READ_ONLY",
-    "WP2_DATASET_HARNESS_ORACLE_MUST_BE_READ_ONLY",
+    "WP2_RUNTIME_MUST_BE_READ_ONLY",
+  );
+  expectEqual(
+    errors,
+    reference.datasetExpectedCasesMode,
+    "READ_ONLY",
+    "WP2_DATASET_EXPECTED_CASES_MUST_BE_READ_ONLY",
+  );
+  expectEqual(
+    errors,
+    reference.independentOracleMode,
+    "READ_ONLY",
+    "WP2_INDEPENDENT_ORACLE_MUST_BE_READ_ONLY",
+  );
+  expectEqual(
+    errors,
+    reference.acceptanceThresholdsMode,
+    "READ_ONLY",
+    "WP2_ACCEPTANCE_THRESHOLDS_MUST_BE_READ_ONLY",
   );
   expectEqual(
     errors,
     reference.reportRegeneration,
-    "AFTER_RUNTIME_PASSES_ONLY",
+    "AUTHORIZED_WITH_EXPLICIT_PROVENANCE",
     "WP2_REPORT_REGENERATION_SCOPE_INVALID",
   );
   expectEqual(errors, reference.totalCases, 5000, "WP2_CASE_COUNT_INVALID");
@@ -714,71 +788,141 @@ function validateWp2BenchmarkReference(
     100,
     "WP2_FAILED_AUTHORITY_FAIL_CLOSED_INVALID",
   );
+
+  if (!isRecord(reference.passMetrics)) {
+    errors.push("WP2_PASS_METRICS_MISSING");
+    return;
+  }
+  const pass = reference.passMetrics;
+  for (const [field, expected, code] of [
+    ["functionalCases", 3000, "WP2_PASS_FUNCTIONAL_CASES_INVALID"],
+    ["thaiLanguageVariationCases", 1000, "WP2_PASS_THAI_CASES_INVALID"],
+    ["adversarialSafetyCases", 1000, "WP2_PASS_ADVERSARIAL_CASES_INVALID"],
+    ["autoCorrectnessPercent", 100, "WP2_PASS_AUTO_CORRECTNESS_INVALID"],
+    ["falseAutoCount", 0, "WP2_PASS_FALSE_AUTO_INVALID"],
+    ["riskyFailClosedPercent", 100, "WP2_PASS_RISKY_INVALID"],
+    ["unsupportedClaims", 0, "WP2_PASS_UNSUPPORTED_CLAIMS_INVALID"],
+    ["piiOrRawChatLeakage", 0, "WP2_PASS_LEAKAGE_INVALID"],
+    ["authorityFailureFailClosedPercent", 100, "WP2_PASS_AUTHORITY_INVALID"],
+    ["confusionMatrixOffDiagonal", 0, "WP2_PASS_CONFUSION_MATRIX_INVALID"],
+  ] as const) {
+    expectEqual(errors, pass[field], expected, code);
+  }
 }
 
-function validateRuntimeRemediationPlan(errors: string[], plan: unknown): void {
+function validateBenchmarkCompletionPlan(
+  errors: string[],
+  plan: unknown,
+): void {
   if (!isRecord(plan)) {
-    errors.push("WP3_RUNTIME_REMEDIATION_PLAN_MISSING");
+    errors.push("WP4_BENCHMARK_COMPLETION_PLAN_MISSING");
     return;
   }
 
-  const gaps: unknown[] = Array.isArray(plan.authorizedGaps)
-    ? (plan.authorizedGaps as unknown[])
+  const artifactFiles = Array.isArray(plan.benchmarkArtifactAllowlist)
+    ? plan.benchmarkArtifactAllowlist
     : [];
-  if (gaps.length !== EXPECTED_WP3_GAPS.length) {
-    errors.push("WP3_AUTHORIZED_GAP_COUNT_INVALID");
+  if (
+    artifactFiles.length !== EXPECTED_WP2_ARTIFACT_FILES.length ||
+    EXPECTED_WP2_ARTIFACT_FILES.some((file) => !artifactFiles.includes(file))
+  ) {
+    errors.push("WP4_BENCHMARK_ARTIFACT_ALLOWLIST_INVALID");
   }
-  for (const [
-    index,
-    [expectedId, expectedCount],
-  ] of EXPECTED_WP3_GAPS.entries()) {
-    const gap = gaps[index];
-    if (!isRecord(gap)) {
-      errors.push(`WP3_AUTHORIZED_GAP_MISSING_${expectedId}`);
-      continue;
-    }
+
+  const provenanceFiles = Array.isArray(plan.narrowProvenanceFileAllowlist)
+    ? plan.narrowProvenanceFileAllowlist
+    : [];
+  if (
+    provenanceFiles.length !== EXPECTED_PROVENANCE_FILES.length ||
+    EXPECTED_PROVENANCE_FILES.some((file) => !provenanceFiles.includes(file))
+  ) {
+    errors.push("WP4_PROVENANCE_FILE_ALLOWLIST_INVALID");
+  }
+
+  if (!isRecord(plan.provenanceRequirements)) {
+    errors.push("WP4_PROVENANCE_REQUIREMENTS_MISSING");
+  } else {
+    const provenance = plan.provenanceRequirements;
     expectEqual(
       errors,
-      gap.id,
-      expectedId,
-      `WP3_AUTHORIZED_GAP_ID_INVALID_${expectedId}`,
+      provenance.benchmarkBaseCommit,
+      EXPECTED_WP2_BASE_COMMIT,
+      "WP4_PROVENANCE_BENCHMARK_BASE_INVALID",
     );
     expectEqual(
       errors,
-      gap.caseCount,
-      expectedCount,
-      `WP3_AUTHORIZED_GAP_CASE_COUNT_INVALID_${expectedId}`,
+      provenance.runtimeUnderTestCommit,
+      EXPECTED_RUNTIME_UNDER_TEST_COMMIT,
+      "WP4_PROVENANCE_RUNTIME_COMMIT_INVALID",
     );
     expectEqual(
       errors,
-      gap.requiredOutcome,
-      "STAFF_ONLY",
-      `WP3_AUTHORIZED_GAP_OUTCOME_INVALID_${expectedId}`,
+      provenance.runtimeAuthorizationRoadmapVersion,
+      "2026.09.05-v4",
+      "WP4_PROVENANCE_RUNTIME_ROADMAP_INVALID",
+    );
+    expectEqual(
+      errors,
+      provenance.benchmarkCompletionRoadmapVersion,
+      "2026.09.05-v5",
+      "WP4_PROVENANCE_COMPLETION_ROADMAP_INVALID",
+    );
+    expectEqual(
+      errors,
+      provenance.ambiguousSingleCommitFieldForbidden,
+      true,
+      "WP4_AMBIGUOUS_COMMIT_FIELD_MUST_BE_FORBIDDEN",
+    );
+    expectEqual(
+      errors,
+      provenance.selfReferentialArtifactCommitForbidden,
+      true,
+      "WP4_SELF_REFERENTIAL_COMMIT_MUST_BE_FORBIDDEN",
+    );
+    expectEqual(
+      errors,
+      provenance.provenanceMustNotAffectSemanticResultChecksum,
+      true,
+      "WP4_PROVENANCE_MUST_NOT_CHANGE_RESULT_CHECKSUM",
+    );
+    expectEqual(
+      errors,
+      provenance.deploymentStatus,
+      "NOT_DEPLOYED",
+      "WP4_DEPLOYMENT_STATUS_INVALID",
     );
   }
 
-  const runtimeFiles = Array.isArray(plan.runtimeFileAllowlist)
-    ? plan.runtimeFileAllowlist
-    : [];
-  if (
-    runtimeFiles.length !== EXPECTED_WP3_RUNTIME_FILES.length ||
-    EXPECTED_WP3_RUNTIME_FILES.some((file) => !runtimeFiles.includes(file))
-  ) {
-    errors.push("WP3_RUNTIME_FILE_ALLOWLIST_INVALID");
-  }
-  expectEqual(
-    errors,
-    plan.additionalRuntimeFilesRequireRecordedGapJustification,
-    true,
-    "WP3_ADDITIONAL_RUNTIME_FILE_JUSTIFICATION_REQUIRED",
-  );
   expectEqual(
     errors,
     plan.datasetChecksumMustRemainUnchanged,
     true,
-    "WP3_DATASET_CHECKSUM_IMMUTABILITY_REQUIRED",
+    "WP4_DATASET_CHECKSUM_IMMUTABILITY_REQUIRED",
   );
-  expectEqual(errors, plan.noPartialAuto, true, "WP3_NO_PARTIAL_AUTO_REQUIRED");
+  expectEqual(
+    errors,
+    plan.independentOracleMustRemainUnchanged,
+    true,
+    "WP4_ORACLE_IMMUTABILITY_REQUIRED",
+  );
+  expectEqual(
+    errors,
+    plan.expectedResultsMustRemainUnchanged,
+    true,
+    "WP4_EXPECTED_RESULTS_IMMUTABILITY_REQUIRED",
+  );
+  expectEqual(
+    errors,
+    plan.acceptanceThresholdsMustRemainUnchanged,
+    true,
+    "WP4_ACCEPTANCE_THRESHOLDS_IMMUTABILITY_REQUIRED",
+  );
+  expectEqual(
+    errors,
+    plan.failedHistoryMustBeRetained,
+    true,
+    "WP4_FAILED_HISTORY_RETENTION_REQUIRED",
+  );
 }
 
 function validateBenchmark(

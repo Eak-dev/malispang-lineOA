@@ -39,8 +39,9 @@
 - `AUTHORIZED_RUNTIME_WP1_ONLY` permits only the exact WP1 scopes in current-work through `RUNTIME_WP1`; generic implementation, policy mutation, T-C03 runtime, AI/provider, benchmark and deployment remain blocked
 - `AUTHORIZED_BENCHMARK_WP2_ONLY` permits only the exact PII-free benchmark scopes through `BENCHMARK_WP2`; runtime/policy/KB/catalog mutation, real-chat data, AI/provider and deployment remain blocked
 - `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` permits only the three benchmark-proven gaps through `RUNTIME_REMEDIATION_WP3`; policy and WP2 dataset/harness/oracle stay read-only, acceptance thresholds cannot be lowered and deployment remains blocked
+- `AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY` permits only frozen WP2 artifact completion and narrowly scoped additive provenance work through `BENCHMARK_COMPLETION_WP4`; runtime, policy, expected cases, oracle and thresholds stay read-only, ambiguous single-commit provenance is forbidden and deployment remains blocked
 - no validator output may contain PII, raw chat, tokens or secrets
 
 ## Review handoff
 
-After the `2026.09.05-v4` control transition is validated, pushed and reconciled with GitHub #9/#12, stop. WP3 runtime remediation begins only in a later Owner-instructed round using the frozen policy and WP2 dataset checksums. This transition does not modify runtime and does not authorize any deployment.
+After the `2026.09.05-v5` control transition is validated, pushed and reconciled with GitHub #9/#12, stop. WP4 benchmark completion begins only in a later Owner-instructed round using the frozen runtime, policy, dataset, oracle and acceptance thresholds. This transition does not modify or commit benchmark artifacts and does not authorize any deployment.

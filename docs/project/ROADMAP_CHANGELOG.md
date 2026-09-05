@@ -1,6 +1,18 @@
 # Roadmap Changelog
 
-## 2026.09.05-v4 — current
+## 2026.09.05-v5 — current
+
+- supersedes `2026.09.05-v4`
+- retains MP-06 (GitHub #12) as the only current Roadmap item and sets phase `WP4_WP2_BENCHMARK_COMPLETION`
+- changes current-work status/action to `AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY` / `BENCHMARK_COMPLETION_WP4` and sets `benchmarkWp2=true`, `runtimeRemediationWp3=false`
+- sets verified runtime baseline to `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`
+- pins policy checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0`, dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, failed result `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` and PASS result `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`
+- requires report provenance to distinguish benchmark/dataset base `8117f7c0b7cb190af81ea8f9481bd257db8a5a51` from runtime under test `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`
+- authorizes a later Owner-instructed round to commit the 18 frozen WP2 artifacts and make only the narrowest additive provenance remediation if required
+- keeps runtime, policy, expected cases, oracle and acceptance thresholds read-only; retains failed history; keeps TEST deployment false and Production `NO_GO`
+- this transition changes control/schema/validator/tests/docs only; WP4 benchmark completion implementation is not started
+
+## 2026.09.05-v4 — superseded
 
 - supersedes `2026.09.05-v3`
 - retains MP-06 (GitHub #12) as the only current Roadmap item and sets phase `WP3_RUNTIME_REMEDIATION`
@@ -76,6 +88,6 @@ At MP-05 preflight on 4 September 2026:
 - MP-06 (GitHub #12) declared itself next/blocked with the same benchmark
 - all three declared TEST deployment unauthorized and Production `NO-GO`
 
-On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized `2026.09.05-v2` and WP1 runtime commit `2a2571369f7e845c5d72883d816556ce24be18c0`. Roadmap `2026.09.05-v3` authorized WP2, whose unchanged 5,000-case benchmark exposed the three recorded gaps. Roadmap `2026.09.05-v4` now authorizes only a later WP3 remediation round and this control transition's GitHub #9/#12 reconciliation; the transition commit must not modify runtime or any WP2 artifact.
+On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized `2026.09.05-v2` and WP1 runtime commit `2a2571369f7e845c5d72883d816556ce24be18c0`. Roadmap `2026.09.05-v3` authorized WP2, whose unchanged 5,000-case benchmark exposed the three recorded gaps. Roadmap `2026.09.05-v4` authorized the WP3 remediation now recorded at `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`; the unchanged benchmark reproduced PASS with result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`. Roadmap `2026.09.05-v5` now authorizes only a later WP4 benchmark completion round and this control transition's GitHub #9/#12 reconciliation; this transition must not modify or commit a WP2 artifact.
 
 Any later GitHub edit that changes those control fields requires a new Owner decision and Roadmap version before implementation. The validator cannot treat `CURRENT`, chat history or an unversioned Issue edit as implementation authorization.
