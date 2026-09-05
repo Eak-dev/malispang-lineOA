@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malispang.example/schemas/mp-06-policy-snapshot.schema.json",
+  "title": "MP-06 Guardrailed AI Policy Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "policyId",
+    "policyVersion",
+    "roadmapVersion",
+    "workId",
+    "githubIssue",
+    "status",
+    "ownerDecision",
+    "scope",
+    "classification",
+    "deduplication",
+    "priceBinding",
+    "authoritativeUnitGate",
+    "templates",
+    "integrity"
+  ],
+  "properties": {
+    "$schema": { "const": "./policy-snapshot.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "policyId": { "const": "MP-06-GUARDRAILED-AI-SAFETY-GATE" },
+    "policyVersion": { "const": "2026.09.05-policy-v1" },
+    "roadmapVersion": { "const": "2026.09.05-v1" },
+    "workId": { "const": "MP-06" },
+    "githubIssue": { "const": 12 },
+    "status": { "const": "OWNER_APPROVED_POLICY_SNAPSHOT" },
+    "ownerDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionId", "decidedAt", "source"],
+      "properties": {
+        "decisionId": { "const": "MP-06-POLICY-2026-09-05-V1" },
+        "decidedAt": { "const": "2026-09-05" },
+        "source": { "const": "OWNER_APPROVED_CONVERSATION_DECISIONS" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactType",
+        "runtimeImplementation",
+        "aiProviderCalls",
+        "testDeployment",
+        "productionStatus"
+      ],
+      "properties": {
+        "artifactType": { "const": "SPECIFICATION_ONLY" },
+        "runtimeImplementation": { "const": false },
+        "aiProviderCalls": { "const": false },
+        "testDeployment": { "const": false },
+        "productionStatus": { "const": "NO_GO" }
+      }
+    },
+    "classification": { "$ref": "#/$defs/classification" },
+    "deduplication": { "$ref": "#/$defs/deduplication" },
+    "priceBinding": { "$ref": "#/$defs/priceBinding" },
+    "authoritativeUnitGate": { "$ref": "#/$defs/authoritativeUnitGate" },
+    "templates": { "$ref": "#/$defs/templates" },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "canonicalization", "policyChecksum"],
+      "properties": {
+        "algorithm": { "const": "SHA-256" },
+        "canonicalization": {
+          "const": "RECURSIVE_LEXICOGRAPHIC_JSON_WITH_EMPTY_POLICY_CHECKSUM"
+        },
+        "policyChecksum": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  },
+  "$defs": {
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["safetyPrecedence", "autoComposite", "clarification"],
+      "properties": {
+        "safetyPrecedence": {
+          "const": ["STAFF_ONLY", "CLARIFY", "AUTO_COMPOSITE", "AUTO"]
+        },
+        "autoComposite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intentId",
+            "minimumUnitsAfterDedup",
+            "maximumUnitsAfterDedup",
+            "overflowClassification",
+            "overflowTemplateId",
+            "sendPartialAuto",
+            "responseOrder",
+            "anyStaffOnlyIntent",
+            "missingRequiredField",
+            "invalidResponseUnit",
+            "invalidResponseUnitCancelsEntireComposite",
+            "aiMayMergeSummarizeOrBridgeTemplates"
+          ],
+          "properties": {
+            "intentId": { "const": "I-13" },
+            "minimumUnitsAfterDedup": { "const": 2 },
+            "maximumUnitsAfterDedup": { "const": 3 },
+            "overflowClassification": { "const": "CLARIFY" },
+            "overflowTemplateId": { "const": "T-C04" },
+            "sendPartialAuto": { "const": false },
+            "responseOrder": {
+              "const": [
+                "MENU",
+                "PRICE",
+                "LOCATION",
+                "OPENING_HOURS",
+                "PICKUP",
+                "STORAGE",
+                "DELIVERY",
+                "LOYALTY",
+                "CONTACT"
+              ]
+            },
+            "anyStaffOnlyIntent": { "const": "STAFF_ONLY" },
+            "missingRequiredField": { "const": "CLARIFY" },
+            "invalidResponseUnit": { "const": "STAFF_ONLY" },
+            "invalidResponseUnitCancelsEntireComposite": { "const": true },
+            "aiMayMergeSummarizeOrBridgeTemplates": { "const": false }
+          }
+        },
+        "clarification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sharedBudgetPerConversation",
+            "singleUseTemplateIds",
+            "unresolvedAfterBudgetIntentId",
+            "unresolvedAfterBudgetClassification",
+            "templateWithoutApprovedTriggerOrBudgetRule"
+          ],
+          "properties": {
+            "sharedBudgetPerConversation": { "const": 1 },
+            "singleUseTemplateIds": { "const": ["T-C01", "T-C04"] },
+            "unresolvedAfterBudgetIntentId": { "const": "I-22" },
+            "unresolvedAfterBudgetClassification": {
+              "const": "STAFF_ONLY"
+            },
+            "templateWithoutApprovedTriggerOrBudgetRule": { "const": "T-C03" }
+          }
+        }
+      }
+    },
+    "deduplication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dynamicUnitFingerprintFields",
+        "staticUnitFingerprintFields",
+        "templateChecksumAloneAllowedForDynamicUnit",
+        "forbiddenFingerprintAndAuditInputs",
+        "serializationAndHashAlgorithm"
+      ],
+      "properties": {
+        "dynamicUnitFingerprintFields": {
+          "const": [
+            "templateId",
+            "approvedRecordId",
+            "boundFieldValues",
+            "sku",
+            "catalogVersionOrChecksum"
+          ]
+        },
+        "staticUnitFingerprintFields": {
+          "const": ["templateId", "checksum"]
+        },
+        "templateChecksumAloneAllowedForDynamicUnit": { "const": false },
+        "forbiddenFingerprintAndAuditInputs": {
+          "const": ["rawCustomerText", "personallyIdentifiableInformation"]
+        },
+        "serializationAndHashAlgorithm": {
+          "const": "IMPLEMENTATION_NOT_AUTHORIZED"
+        }
+      }
+    },
+    "priceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateId",
+        "authoritativeSource",
+        "requiredResolvedRows",
+        "uniqueNameMayResolveWithoutSize",
+        "ambiguousNameRequiresUniqueSizeResolution",
+        "notFoundMoreThanOneOrIncomplete",
+        "unitPriceSatang",
+        "catalogDisplaySize",
+        "aiMayGuessCanonicalNameSizePriceOrBinding"
+      ],
+      "properties": {
+        "templateId": { "const": "T-A02" },
+        "authoritativeSource": { "const": "APPROVED_PRODUCT_CATALOG" },
+        "requiredResolvedRows": { "const": 1 },
+        "uniqueNameMayResolveWithoutSize": { "const": true },
+        "ambiguousNameRequiresUniqueSizeResolution": { "const": true },
+        "notFoundMoreThanOneOrIncomplete": {
+          "const": { "classification": "CLARIFY", "templateId": "T-C01" }
+        },
+        "unitPriceSatang": {
+          "const": {
+            "mustBeInteger": true,
+            "mustBePositive": true,
+            "mustBeDivisibleBy": 100,
+            "catalogPriceCalculation": "unitPriceSatang / 100",
+            "catalogPriceDisplay": "POSITIVE_INTEGER_BAHT_ONLY",
+            "fractionalSatangOrInvalidRow": "STAFF_ONLY",
+            "roundingAllowed": false
+          }
+        },
+        "catalogDisplaySize": {
+          "const": {
+            "NORMAL": " ขนาดปกติ",
+            "SMALL": " ขนาดเล็ก",
+            "invalidEmptyOrUnknown": "STAFF_ONLY",
+            "leadingSpaceIncluded": true
+          }
+        },
+        "aiMayGuessCanonicalNameSizePriceOrBinding": { "const": false }
+      }
+    },
+    "authoritativeUnitGate": {
+      "const": {
+        "validateEveryUnitBeforeSend": true,
+        "failureConditions": [
+          "MISSING",
+          "STALE",
+          "CONFLICT",
+          "CHECKSUM_MISMATCH",
+          "INCOMPLETE_BINDING"
+        ],
+        "failureClassification": "STAFF_ONLY",
+        "cancelEntireComposite": true
+      }
+    },
+    "templates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["T-A02", "T-C01", "T-C03", "T-C04"],
+      "properties": {
+        "T-A02": {
+          "const": {
+            "classification": "AUTO",
+            "text": "{catalogDisplayName}{catalogDisplaySize} ราคา {catalogPrice} บาทค่ะ\n\nราคานี้เป็นราคาตามรายการที่ร้านอนุมัติ และไม่ใช่การยืนยันสต๊อก โปรโมชั่น คิวรับสินค้า หรือราคาส่งนะคะ หากต้องการตรวจสอบสินค้าวันนี้ กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊"
+          }
+        },
+        "T-C01": {
+          "const": {
+            "classification": "CLARIFY",
+            "text": "ต้องการสอบถามราคาสินค้าอะไรคะ หากสินค้ามีหลายขนาด กรุณาระบุขนาดด้วย เช่น “แฮมชีส ขนาดปกติ” ได้เลยค่ะ 😊"
+          }
+        },
+        "T-C03": {
+          "const": {
+            "classification": "CLARIFY",
+            "text": "เพื่อให้น้องมะลิตอบได้ตรงคำถาม รบกวนเลือกหัวข้อที่ต้องการสอบถามค่ะ: เมนูและราคา, ที่ตั้งร้าน, เวลาเปิด, การเก็บรักษา, Delivery หรือกติกาสะสมแต้ม 😊"
+          }
+        },
+        "T-C04": {
+          "const": {
+            "classification": "CLARIFY",
+            "text": "มีหลายหัวข้อที่ต้องการสอบถามค่ะ รบกวนเลือกหนึ่งหัวข้อก่อนนะคะ: เมนูและราคา, ที่ตั้งร้าน, เวลาเปิด, การเก็บรักษา, Delivery หรือกติกาสะสมแต้ม 😊"
+          }
+        }
+      }
+    }
+  }
+}

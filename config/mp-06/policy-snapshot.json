@@ -1,0 +1,134 @@
+{
+  "$schema": "./policy-snapshot.schema.json",
+  "schemaVersion": 1,
+  "policyId": "MP-06-GUARDRAILED-AI-SAFETY-GATE",
+  "policyVersion": "2026.09.05-policy-v1",
+  "roadmapVersion": "2026.09.05-v1",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "status": "OWNER_APPROVED_POLICY_SNAPSHOT",
+  "ownerDecision": {
+    "decisionId": "MP-06-POLICY-2026-09-05-V1",
+    "decidedAt": "2026-09-05",
+    "source": "OWNER_APPROVED_CONVERSATION_DECISIONS"
+  },
+  "scope": {
+    "artifactType": "SPECIFICATION_ONLY",
+    "runtimeImplementation": false,
+    "aiProviderCalls": false,
+    "testDeployment": false,
+    "productionStatus": "NO_GO"
+  },
+  "classification": {
+    "safetyPrecedence": ["STAFF_ONLY", "CLARIFY", "AUTO_COMPOSITE", "AUTO"],
+    "autoComposite": {
+      "intentId": "I-13",
+      "minimumUnitsAfterDedup": 2,
+      "maximumUnitsAfterDedup": 3,
+      "overflowClassification": "CLARIFY",
+      "overflowTemplateId": "T-C04",
+      "sendPartialAuto": false,
+      "responseOrder": [
+        "MENU",
+        "PRICE",
+        "LOCATION",
+        "OPENING_HOURS",
+        "PICKUP",
+        "STORAGE",
+        "DELIVERY",
+        "LOYALTY",
+        "CONTACT"
+      ],
+      "anyStaffOnlyIntent": "STAFF_ONLY",
+      "missingRequiredField": "CLARIFY",
+      "invalidResponseUnit": "STAFF_ONLY",
+      "invalidResponseUnitCancelsEntireComposite": true,
+      "aiMayMergeSummarizeOrBridgeTemplates": false
+    },
+    "clarification": {
+      "sharedBudgetPerConversation": 1,
+      "singleUseTemplateIds": ["T-C01", "T-C04"],
+      "unresolvedAfterBudgetIntentId": "I-22",
+      "unresolvedAfterBudgetClassification": "STAFF_ONLY",
+      "templateWithoutApprovedTriggerOrBudgetRule": "T-C03"
+    }
+  },
+  "deduplication": {
+    "dynamicUnitFingerprintFields": [
+      "templateId",
+      "approvedRecordId",
+      "boundFieldValues",
+      "sku",
+      "catalogVersionOrChecksum"
+    ],
+    "staticUnitFingerprintFields": ["templateId", "checksum"],
+    "templateChecksumAloneAllowedForDynamicUnit": false,
+    "forbiddenFingerprintAndAuditInputs": [
+      "rawCustomerText",
+      "personallyIdentifiableInformation"
+    ],
+    "serializationAndHashAlgorithm": "IMPLEMENTATION_NOT_AUTHORIZED"
+  },
+  "priceBinding": {
+    "templateId": "T-A02",
+    "authoritativeSource": "APPROVED_PRODUCT_CATALOG",
+    "requiredResolvedRows": 1,
+    "uniqueNameMayResolveWithoutSize": true,
+    "ambiguousNameRequiresUniqueSizeResolution": true,
+    "notFoundMoreThanOneOrIncomplete": {
+      "classification": "CLARIFY",
+      "templateId": "T-C01"
+    },
+    "unitPriceSatang": {
+      "mustBeInteger": true,
+      "mustBePositive": true,
+      "mustBeDivisibleBy": 100,
+      "catalogPriceCalculation": "unitPriceSatang / 100",
+      "catalogPriceDisplay": "POSITIVE_INTEGER_BAHT_ONLY",
+      "fractionalSatangOrInvalidRow": "STAFF_ONLY",
+      "roundingAllowed": false
+    },
+    "catalogDisplaySize": {
+      "NORMAL": " ขนาดปกติ",
+      "SMALL": " ขนาดเล็ก",
+      "invalidEmptyOrUnknown": "STAFF_ONLY",
+      "leadingSpaceIncluded": true
+    },
+    "aiMayGuessCanonicalNameSizePriceOrBinding": false
+  },
+  "authoritativeUnitGate": {
+    "validateEveryUnitBeforeSend": true,
+    "failureConditions": [
+      "MISSING",
+      "STALE",
+      "CONFLICT",
+      "CHECKSUM_MISMATCH",
+      "INCOMPLETE_BINDING"
+    ],
+    "failureClassification": "STAFF_ONLY",
+    "cancelEntireComposite": true
+  },
+  "templates": {
+    "T-A02": {
+      "classification": "AUTO",
+      "text": "{catalogDisplayName}{catalogDisplaySize} ราคา {catalogPrice} บาทค่ะ\n\nราคานี้เป็นราคาตามรายการที่ร้านอนุมัติ และไม่ใช่การยืนยันสต๊อก โปรโมชั่น คิวรับสินค้า หรือราคาส่งนะคะ หากต้องการตรวจสอบสินค้าวันนี้ กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊"
+    },
+    "T-C01": {
+      "classification": "CLARIFY",
+      "text": "ต้องการสอบถามราคาสินค้าอะไรคะ หากสินค้ามีหลายขนาด กรุณาระบุขนาดด้วย เช่น “แฮมชีส ขนาดปกติ” ได้เลยค่ะ 😊"
+    },
+    "T-C03": {
+      "classification": "CLARIFY",
+      "text": "เพื่อให้น้องมะลิตอบได้ตรงคำถาม รบกวนเลือกหัวข้อที่ต้องการสอบถามค่ะ: เมนูและราคา, ที่ตั้งร้าน, เวลาเปิด, การเก็บรักษา, Delivery หรือกติกาสะสมแต้ม 😊"
+    },
+    "T-C04": {
+      "classification": "CLARIFY",
+      "text": "มีหลายหัวข้อที่ต้องการสอบถามค่ะ รบกวนเลือกหนึ่งหัวข้อก่อนนะคะ: เมนูและราคา, ที่ตั้งร้าน, เวลาเปิด, การเก็บรักษา, Delivery หรือกติกาสะสมแต้ม 😊"
+    }
+  },
+  "integrity": {
+    "algorithm": "SHA-256",
+    "canonicalization": "RECURSIVE_LEXICOGRAPHIC_JSON_WITH_EMPTY_POLICY_CHECKSUM",
+    "policyChecksum": "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0"
+  }
+}

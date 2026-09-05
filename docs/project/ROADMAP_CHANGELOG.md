@@ -6,7 +6,7 @@
 - retains MP-06 (GitHub #12) as the only current Roadmap item
 - changes current-work status to `AUTHORIZED_POLICY_SNAPSHOT_ONLY`
 - authorizes a later policy-snapshot-only round covering specification, schema, validator, tests and governance evidence
-- records the seven mandatory locked policy topics without creating the policy snapshot itself
+- records the seven mandatory locked policy topics and policy snapshot `2026.09.05-policy-v1` as specification-only evidence
 - keeps runtime implementation and AI/provider work unauthorized
 - keeps TEST deployment false and Production `NO_GO`
 - records transition baseline `5ddf9cc88d0bb868aadbc8f2a41860b56a5f2682`

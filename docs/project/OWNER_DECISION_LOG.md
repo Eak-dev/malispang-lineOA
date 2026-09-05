@@ -56,3 +56,23 @@ GitHub Issue numbers remain immutable external references; `MP-01`–`MP-12` are
 | Transition-round limit        | This decision authorizes only the control transition to the new status. The actual policy snapshot must be performed in a later round under the resulting current-work manifest; it must not be created in the same transition commit. |
 
 No raw customer text, PII, credential or secret may appear in the future snapshot, fingerprint or audit evidence.
+
+## MP-06-POLICY-2026-09-05-V1
+
+| Field           | Decision                                                                                                             |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Decided         | 5 September 2026                                                                                                     |
+| Roadmap         | `2026.09.05-v1`                                                                                                      |
+| Work            | `MP-06 (GitHub #12)`                                                                                                 |
+| Artifact        | Policy snapshot `2026.09.05-policy-v1`; specification/schema/validator/tests only                                    |
+| Classification  | `STAFF_ONLY > CLARIFY > AUTO_COMPOSITE > AUTO`                                                                       |
+| I-13            | 2–3 deduplicated AUTO units; deterministic order; over 3 uses T-C04; no partial AUTO                                 |
+| Clarification   | T-C01/T-C04 share one use per conversation; unresolved afterward becomes I-22 / `STAFF_ONLY`                         |
+| Fingerprint     | Binding-aware dynamic inputs; static template/checksum; raw customer text and PII prohibited                         |
+| PRICE           | Exactly one Approved Catalog row, integer positive whole-baht price only, invalid binding fails to `STAFF_ONLY`      |
+| Size display    | `NORMAL` → ` ขนาดปกติ`; `SMALL` → ` ขนาดเล็ก`; invalid/empty/unknown → `STAFF_ONLY`                                  |
+| Exact templates | T-A02, T-C01, T-C03 and T-C04 frozen in the versioned snapshot                                                       |
+| T-C03 boundary  | Exact text approved; trigger and clarification-budget behavior remain undecided and therefore unavailable to runtime |
+| Runtime/deploy  | Not authorized; no Worker, routing, AI provider, TEST deployment or Production action                                |
+
+The machine-readable snapshot contains no raw chat, PII, token, secret or customer data.
