@@ -1,23 +1,25 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยเตรียมอนุญาตเฉพาะ WP1 runtime implementation ในรอบถัดไปหลัง Owner/PO review
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยเตรียมอนุญาตเฉพาะ WP2 benchmark implementation ในรอบถัดไปหลัง Owner/PO review
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.05-v2`                                        |
+| Version               | `2026.09.05-v3`                                        |
 | Current               | `MP-06 (GitHub #12)`                                   |
-| Current authorization | `AUTHORIZED_RUNTIME_WP1_ONLY`                          |
+| Current authorization | `AUTHORIZED_BENCHMARK_WP2_ONLY`                        |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
-| Verified baseline     | `a701eac403aef924d587b4427397c63553bdda3e`             |
+| Verified baseline     | `2a2571369f7e845c5d72883d816556ce24be18c0`             |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                           |
 | Target                | `LOCAL_ONLY`                                           |
 | TEST deployment       | Not authorized                                         |
 | Production            | `NO_GO`                                                |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะใหม่ให้ `localImplementation=true` เฉพาะ action `RUNTIME_WP1` และ allowed scopes ที่ระบุเท่านั้น generic local implementation ยังคงถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` เป็น read-only ห้ามใช้ T-C03 ใน runtime, เริ่ม AI/provider, benchmark 5,000 cases หรือ deploy
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะใหม่อนุญาตเฉพาะ action `BENCHMARK_WP2` และ allowed scopes ที่ระบุ Generic local implementation และ WP1 runtime ถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` เป็น read-only ห้ามแก้ runtime/policy/KB/catalog, ใช้ข้อมูลแชตจริง, เรียก AI/provider หรือ deploy
+
+WP2 acceptance criteria ที่ตรึงไว้คืออย่างน้อย 5,000 กรณี PII-free และแตกต่างอย่างมีนัยสำคัญ (functional 3,000, Thai variation 1,000, adversarial/safety 1,000), AUTO correctness ≥98%, risky STAFF_ONLY/fail-closed 100%, unsupported claim และ PII/raw-chat leakage เท่ากับ 0, authority failure ต้อง fail closed 100% พร้อม confusion matrix และรายงาน false-AUTO ทุกกรณี
 
 GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
@@ -50,6 +52,8 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 6. รัน validator, regression suite, secret scan และ `git diff --check`
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
+
+Control transition `2026.09.05-v3` ไม่ได้สร้าง harness, dataset หรือ benchmark จริง การเริ่ม WP2 ต้องเกิดในรอบถัดไปหลัง Owner/PO review transition commit นี้
 
 ## Safe commands
 

@@ -20,6 +20,7 @@
     "forbiddenScope",
     "authorization",
     "policySnapshotReference",
+    "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
     "workingTreePolicy",
@@ -35,7 +36,7 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "status": { "const": "AUTHORIZED_RUNTIME_WP1_ONLY" },
+    "status": { "const": "AUTHORIZED_BENCHMARK_WP2_ONLY" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -47,7 +48,7 @@
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
     "targetEnvironment": { "const": "LOCAL_ONLY" },
-    "authorizedWorkPackage": { "const": "WP1" },
+    "authorizedWorkPackage": { "const": "WP2" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -65,6 +66,8 @@
       "additionalProperties": false,
       "required": [
         "localImplementation",
+        "runtimeWp1",
+        "benchmarkWp2",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -74,7 +77,9 @@
         "production"
       ],
       "properties": {
-        "localImplementation": { "type": "boolean" },
+        "localImplementation": { "const": false },
+        "runtimeWp1": { "const": false },
+        "benchmarkWp2": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -94,6 +99,50 @@
           "const": "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0"
         },
         "mode": { "const": "READ_ONLY" }
+      }
+    },
+    "benchmarkAcceptanceCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "piiFree",
+        "minimumTotal",
+        "minimumFunctional",
+        "minimumThaiLanguageVariation",
+        "minimumAdversarialSafety",
+        "meaningfullyDistinct",
+        "minimumAutoCorrectnessPercent",
+        "riskyStaffOnlyOrFailClosedPercent",
+        "maximumUnsupportedClaims",
+        "maximumPiiOrRawChatLeakage",
+        "authorityFailureFailClosedPercent",
+        "confusionMatrixRequired",
+        "falseAutoReportRequired"
+      ],
+      "properties": {
+        "piiFree": { "const": true },
+        "minimumTotal": { "type": "integer", "minimum": 5000 },
+        "minimumFunctional": { "type": "integer", "minimum": 3000 },
+        "minimumThaiLanguageVariation": {
+          "type": "integer",
+          "minimum": 1000
+        },
+        "minimumAdversarialSafety": {
+          "type": "integer",
+          "minimum": 1000
+        },
+        "meaningfullyDistinct": { "const": true },
+        "minimumAutoCorrectnessPercent": {
+          "type": "number",
+          "minimum": 98,
+          "maximum": 100
+        },
+        "riskyStaffOnlyOrFailClosedPercent": { "const": 100 },
+        "maximumUnsupportedClaims": { "const": 0 },
+        "maximumPiiOrRawChatLeakage": { "const": 0 },
+        "authorityFailureFailClosedPercent": { "const": 100 },
+        "confusionMatrixRequired": { "const": true },
+        "falseAutoReportRequired": { "const": true }
       }
     },
     "nextWork": {

@@ -26,14 +26,20 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
-  const runtimeWp1 = evaluateProjectAction(roadmap, currentWork, "RUNTIME_WP1");
-  if (!runtimeWp1.allowed) {
-    throw new Error("ROADMAP_UNVERIFIED: RUNTIME_WP1 must be authorized");
+  const benchmarkWp2 = evaluateProjectAction(
+    roadmap,
+    currentWork,
+    "BENCHMARK_WP2",
+  );
+  if (!benchmarkWp2.allowed) {
+    throw new Error("ROADMAP_UNVERIFIED: BENCHMARK_WP2 must be authorized");
   }
 
   for (const action of [
     "POLICY_SNAPSHOT",
+    "RUNTIME_WP1",
     "LOCAL_IMPLEMENTATION",
+    "UPDATE_GITHUB_ROADMAP",
     "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
   ] as const) {
@@ -48,7 +54,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.05-v2, MP-06 (GitHub #12), WP1 runtime authorized for a subsequent round, policy snapshot read-only, deployment blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.05-v3, MP-06 (GitHub #12), WP2 benchmark authorized for a subsequent round, policy snapshot read-only, runtime/deployment blocked, ${warningSuffix}`,
   );
 }
 

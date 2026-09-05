@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP1-only runtime control", () => {
-  it("accepts the 2026.09.05-v2 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP2-only benchmark control", () => {
+  it("accepts the 2026.09.05-v3 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -46,10 +46,16 @@ describe("MP-06 WP1-only runtime control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only scoped WP1 runtime work while snapshot mutation stays blocked", () => {
-    expect(evaluateProjectAction(roadmap, currentWork, "RUNTIME_WP1")).toEqual({
+  it("authorizes only scoped WP2 benchmark work", () => {
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
+    ).toEqual({
       allowed: true,
       reason: "AUTHORIZED_BY_CURRENT_WORK",
+    });
+    expect(evaluateProjectAction(roadmap, currentWork, "RUNTIME_WP1")).toEqual({
+      allowed: false,
+      reason: "RUNTIME_WP1_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "POLICY_SNAPSHOT"),
@@ -61,7 +67,7 @@ describe("MP-06 WP1-only runtime control", () => {
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
       allowed: false,
-      reason: "USE_SCOPED_RUNTIME_WP1_ACTION",
+      reason: "USE_SCOPED_BENCHMARK_WP2_ACTION",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -72,8 +78,8 @@ describe("MP-06 WP1-only runtime control", () => {
     expect(
       evaluateProjectAction(roadmap, currentWork, "UPDATE_GITHUB_ROADMAP"),
     ).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "UPDATE_GITHUB_ROADMAP_NOT_AUTHORIZED",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
       allowed: false,
@@ -89,7 +95,7 @@ describe("MP-06 WP1-only runtime control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.05-v1";
+    changed.roadmapVersion = "2026.09.05-v2";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -99,6 +105,17 @@ describe("MP-06 WP1-only runtime control", () => {
       allowed: false,
       reason: "ROADMAP_UNVERIFIED",
     });
+  });
+
+  it("requires the verified baseline to contain MP-06 WP1", () => {
+    const changed = clone(roadmap) as {
+      verifiedLatestBaseline: { contains: string[] };
+    };
+    changed.verifiedLatestBaseline.contains =
+      changed.verifiedLatestBaseline.contains.filter((id) => id !== "MP-06");
+    expect(validateProjectControl(changed, currentWork).errors).toContain(
+      "VERIFIED_BASELINE_MUST_CONTAIN_MP_06_WP1",
+    );
   });
 
   it("fails closed when current work is missing or more than one item is current", () => {
@@ -150,6 +167,43 @@ describe("MP-06 WP1-only runtime control", () => {
     );
   });
 
+  it("enforces WP2 quality thresholds and required reports", () => {
+    const changed = clone(currentWork) as {
+      benchmarkAcceptanceCriteria: {
+        meaningfullyDistinct: boolean;
+        minimumAutoCorrectnessPercent: number;
+        riskyStaffOnlyOrFailClosedPercent: number;
+        maximumUnsupportedClaims: number;
+        maximumPiiOrRawChatLeakage: number;
+        authorityFailureFailClosedPercent: number;
+        confusionMatrixRequired: boolean;
+        falseAutoReportRequired: boolean;
+      };
+    };
+    const criteria = changed.benchmarkAcceptanceCriteria;
+    criteria.meaningfullyDistinct = false;
+    criteria.minimumAutoCorrectnessPercent = 97;
+    criteria.riskyStaffOnlyOrFailClosedPercent = 99;
+    criteria.maximumUnsupportedClaims = 1;
+    criteria.maximumPiiOrRawChatLeakage = 1;
+    criteria.authorityFailureFailClosedPercent = 99;
+    criteria.confusionMatrixRequired = false;
+    criteria.falseAutoReportRequired = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "CURRENT_WORK_BENCHMARK_CASES_MUST_BE_MEANINGFULLY_DISTINCT",
+        "CURRENT_WORK_AUTO_CORRECTNESS_BELOW_98_PERCENT",
+        "CURRENT_WORK_RISKY_FAIL_CLOSED_MUST_BE_100_PERCENT",
+        "CURRENT_WORK_UNSUPPORTED_CLAIMS_MUST_BE_ZERO",
+        "CURRENT_WORK_PII_RAW_CHAT_LEAKAGE_MUST_BE_ZERO",
+        "CURRENT_WORK_AUTHORITY_FAILURE_FAIL_CLOSED_MUST_BE_100_PERCENT",
+        "CURRENT_WORK_CONFUSION_MATRIX_REQUIRED",
+        "CURRENT_WORK_FALSE_AUTO_REPORT_REQUIRED",
+        "BENCHMARK_ACCEPTANCE_CRITERIA_MISMATCH",
+      ]),
+    );
+  });
+
   it("rejects TEST deploy or Production authorization drift", () => {
     const changedRoadmap = clone(roadmap) as {
       authorization: {
@@ -178,21 +232,21 @@ describe("MP-06 WP1-only runtime control", () => {
     );
   });
 
-  it("rejects removal of the explicit WP1 runtime authorization", () => {
+  it("rejects removal of the explicit WP2 benchmark authorization", () => {
     const changed = clone(currentWork) as {
-      authorization: { localImplementation: boolean };
+      authorization: { benchmarkWp2: boolean };
     };
-    changed.authorization.localImplementation = false;
+    changed.authorization.benchmarkWp2 = false;
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "WP1_LOCAL_IMPLEMENTATION_NOT_AUTHORIZED",
+      "WP2_BENCHMARK_NOT_AUTHORIZED",
     );
-    expect(evaluateProjectAction(roadmap, changed, "RUNTIME_WP1")).toEqual({
+    expect(evaluateProjectAction(roadmap, changed, "BENCHMARK_WP2")).toEqual({
       allowed: false,
       reason: "ROADMAP_UNVERIFIED",
     });
   });
 
-  it("rejects policy checksum drift or WP1 scope expansion", () => {
+  it("rejects policy checksum drift or WP2 scope expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -202,9 +256,9 @@ describe("MP-06 WP1-only runtime control", () => {
     );
 
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
-    expandedScope.allowedScope.push("IMPLEMENT_MP_06_BENCHMARK_5000");
+    expandedScope.allowedScope.push("CHANGE_MP_06_RUNTIME");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP1_SCOPE_INVALID",
+      "WP2_SCOPE_INVALID",
     );
   });
 
@@ -229,13 +283,13 @@ describe("MP-06 WP1-only runtime control", () => {
     });
   });
 
-  it("fails closed if the T-C03 runtime prohibition is removed", () => {
+  it("fails closed if the runtime-change prohibition is removed", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) => scope !== "USE_T_C03_RUNTIME",
+      (scope) => scope !== "CHANGE_MP_06_RUNTIME",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_USE_T_C03_RUNTIME",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME",
     );
   });
 

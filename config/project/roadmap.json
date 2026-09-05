@@ -4,12 +4,12 @@
   "roadmapId": "MP-ROADMAP",
   "githubIssue": 9,
   "repository": "Eak-dev/malispang-lineOA",
-  "version": "2026.09.05-v2",
+  "version": "2026.09.05-v3",
   "status": "ACTIVE",
   "ownerDecision": {
-    "decisionId": "MP-OD-2026-09-05-V2",
+    "decisionId": "MP-OD-2026-09-05-V3",
     "decidedAt": "2026-09-05",
-    "supersedes": "2026.09.05-v1"
+    "supersedes": "2026.09.05-v2"
   },
   "sourceOfTruthPrecedence": [
     "OWNER_DECISION_REPOSITORY_RECORD",
@@ -20,10 +20,10 @@
     "CHAT_CONTEXT_ONLY"
   ],
   "verifiedLatestBaseline": {
-    "commit": "a701eac403aef924d587b4427397c63553bdda3e",
+    "commit": "2a2571369f7e845c5d72883d816556ce24be18c0",
     "branch": "codex/mp-06-guardrailed-ai",
     "verifiedAt": "2026-09-05",
-    "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05"]
+    "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05", "MP-06"]
   },
   "authorization": {
     "testDeployment": false,
@@ -77,7 +77,15 @@
         "minimumTotal": 5000,
         "minimumFunctional": 3000,
         "minimumThaiLanguageVariation": 1000,
-        "minimumAdversarialSafety": 1000
+        "minimumAdversarialSafety": 1000,
+        "meaningfullyDistinct": true,
+        "minimumAutoCorrectnessPercent": 98,
+        "riskyStaffOnlyOrFailClosedPercent": 100,
+        "maximumUnsupportedClaims": 0,
+        "maximumPiiOrRawChatLeakage": 0,
+        "authorityFailureFailClosedPercent": 100,
+        "confusionMatrixRequired": true,
+        "falseAutoReportRequired": true
       }
     },
     {

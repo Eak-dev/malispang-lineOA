@@ -17,6 +17,7 @@ export type CanonicalWorkId = keyof typeof CANONICAL_GITHUB_ISSUES;
 export type ProjectAction =
   | "POLICY_SNAPSHOT"
   | "RUNTIME_WP1"
+  | "BENCHMARK_WP2"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -37,19 +38,19 @@ export interface ProjectActionDecision {
 const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
+  "CHANGE_MP_06_RUNTIME",
   "CHANGE_MP_06_POLICY_SNAPSHOT",
   "CHANGE_MP_06_TEMPLATES",
   "CHANGE_OWNER_DECISIONS",
   "CHANGE_APPROVED_KNOWLEDGE_BASE",
   "CHANGE_APPROVED_PRODUCT_CATALOG",
-  "USE_T_C03_RUNTIME",
   "USE_AI_PROVIDER",
   "INTEGRATE_AI_MODEL",
   "CHANGE_AI_PROMPT",
   "READ_OR_CHANGE_API_KEY",
   "READ_OR_CHANGE_SECRETS",
   "STORE_OR_USE_RAW_CHAT",
-  "IMPLEMENT_MP_06_BENCHMARK_5000",
+  "USE_REAL_CHAT_DATA",
   "START_MP_07_OR_OTHER_WORK",
   "DEPLOY_TEST",
   "DEPLOY_PRODUCTION",
@@ -63,14 +64,12 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP1_SCOPE = [
-  "MP_06_WP1_MULTI_INTENT_MATCH_SET",
-  "MP_06_WP1_DETERMINISTIC_POLICY_GATE",
-  "MP_06_WP1_RESPONSE_UNIT_PLAN",
-  "MP_06_WP1_ATOMIC_AUTHORITY_VALIDATION",
-  "MP_06_WP1_COMPOSITE_IDEMPOTENCY",
-  "MP_06_WP1_RUNTIME_TESTS",
-  "MP_06_WP1_DOCUMENTATION",
+const REQUIRED_WP2_SCOPE = [
+  "MP_06_WP2_BENCHMARK_HARNESS",
+  "MP_06_WP2_PII_FREE_CASE_DATASET",
+  "MP_06_WP2_COVERAGE_REPORT",
+  "MP_06_WP2_CONFUSION_MATRIX_AND_FALSE_AUTO_REPORT",
+  "MP_06_WP2_TESTS_AND_DOCUMENTATION",
   "POLICY_SNAPSHOT_READ_ONLY",
   "COMMIT_MP_06_BRANCH",
   "PUSH_MP_06_BRANCH",
@@ -107,7 +106,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.05-v2",
+    "2026.09.05-v3",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -118,7 +117,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-05-V2",
+      "MP-OD-2026-09-05-V3",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -130,7 +129,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.05-v1",
+      "2026.09.05-v2",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -147,7 +146,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "a701eac403aef924d587b4427397c63553bdda3e",
+      "2a2571369f7e845c5d72883d816556ce24be18c0",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -156,6 +155,12 @@ export function validateProjectControl(
       "codex/mp-06-guardrailed-ai",
       "VERIFIED_BASELINE_BRANCH_MISMATCH",
     );
+    if (
+      !Array.isArray(roadmap.verifiedLatestBaseline.contains) ||
+      !roadmap.verifiedLatestBaseline.contains.includes("MP-06")
+    ) {
+      errors.push("VERIFIED_BASELINE_MUST_CONTAIN_MP_06_WP1");
+    }
   }
 
   if (!isRecord(roadmap.authorization)) {
@@ -313,7 +318,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_RUNTIME_WP1_ONLY",
+    "AUTHORIZED_BENCHMARK_WP2_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -325,8 +330,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP1",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP1",
+    "WP2",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP2",
   );
   expectEqual(
     errors,
@@ -368,8 +373,20 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.localImplementation,
+      false,
+      "GENERIC_LOCAL_IMPLEMENTATION_MUST_REMAIN_FALSE",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.runtimeWp1,
+      false,
+      "WP1_RUNTIME_MUST_BE_BLOCKED",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.benchmarkWp2,
       true,
-      "WP1_LOCAL_IMPLEMENTATION_NOT_AUTHORIZED",
+      "WP2_BENCHMARK_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -398,8 +415,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.githubRoadmapUpdate,
-      true,
-      "GITHUB_ROADMAP_UPDATE_NOT_AUTHORIZED",
+      false,
+      "GITHUB_ROADMAP_UPDATE_MUST_REMAIN_FALSE",
     );
     expectEqual(
       errors,
@@ -419,10 +436,10 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP1_SCOPE.length ||
-    REQUIRED_WP1_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP2_SCOPE.length ||
+    REQUIRED_WP2_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP1_SCOPE_INVALID");
+    errors.push("WP2_SCOPE_INVALID");
   }
 
   if (!isRecord(currentWork.policySnapshotReference)) {
@@ -446,6 +463,19 @@ export function validateProjectControl(
       "READ_ONLY",
       "POLICY_SNAPSHOT_MODE_INVALID",
     );
+  }
+
+  validateBenchmark(
+    errors,
+    currentWork.benchmarkAcceptanceCriteria,
+    "CURRENT_WORK",
+  );
+  if (
+    mp06 &&
+    JSON.stringify(mp06.benchmark) !==
+      JSON.stringify(currentWork.benchmarkAcceptanceCriteria)
+  ) {
+    errors.push("BENCHMARK_ACCEPTANCE_CRITERIA_MISMATCH");
   }
 
   if (!isRecord(currentWork.nextWork)) {
@@ -520,11 +550,12 @@ export function evaluateProjectAction(
   }
   const authorization = currentWork.authorization;
   if (action === "LOCAL_IMPLEMENTATION") {
-    return { allowed: false, reason: "USE_SCOPED_RUNTIME_WP1_ACTION" };
+    return { allowed: false, reason: "USE_SCOPED_BENCHMARK_WP2_ACTION" };
   }
   const keyByAction: Record<ProjectAction, string> = {
     POLICY_SNAPSHOT: "policySnapshot",
-    RUNTIME_WP1: "localImplementation",
+    RUNTIME_WP1: "runtimeWp1",
+    BENCHMARK_WP2: "benchmarkWp2",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -568,40 +599,44 @@ export function validateSchemaDocuments(
   return uniqueSorted(errors);
 }
 
-function validateBenchmark(errors: string[], benchmark: unknown): void {
+function validateBenchmark(
+  errors: string[],
+  benchmark: unknown,
+  prefix = "MP_06",
+): void {
   if (!isRecord(benchmark)) {
-    errors.push("MP_06_BENCHMARK_MISSING");
+    errors.push(`${prefix}_BENCHMARK_MISSING`);
     return;
   }
   expectEqual(
     errors,
     benchmark.piiFree,
     true,
-    "MP_06_BENCHMARK_MUST_BE_PII_FREE",
+    `${prefix}_BENCHMARK_MUST_BE_PII_FREE`,
   );
   minimum(
     errors,
     benchmark.minimumTotal,
     5000,
-    "MP_06_BENCHMARK_TOTAL_TOO_SMALL",
+    `${prefix}_BENCHMARK_TOTAL_TOO_SMALL`,
   );
   minimum(
     errors,
     benchmark.minimumFunctional,
     3000,
-    "MP_06_FUNCTIONAL_TOO_SMALL",
+    `${prefix}_FUNCTIONAL_TOO_SMALL`,
   );
   minimum(
     errors,
     benchmark.minimumThaiLanguageVariation,
     1000,
-    "MP_06_THAI_VARIATION_TOO_SMALL",
+    `${prefix}_THAI_VARIATION_TOO_SMALL`,
   );
   minimum(
     errors,
     benchmark.minimumAdversarialSafety,
     1000,
-    "MP_06_ADVERSARIAL_TOO_SMALL",
+    `${prefix}_ADVERSARIAL_TOO_SMALL`,
   );
   if (
     typeof benchmark.minimumTotal === "number" &&
@@ -613,8 +648,56 @@ function validateBenchmark(errors: string[], benchmark: unknown): void {
       benchmark.minimumAdversarialSafety <
       benchmark.minimumTotal
   ) {
-    errors.push("MP_06_BENCHMARK_COMPOSITION_BELOW_TOTAL");
+    errors.push(`${prefix}_BENCHMARK_COMPOSITION_BELOW_TOTAL`);
   }
+  expectEqual(
+    errors,
+    benchmark.meaningfullyDistinct,
+    true,
+    `${prefix}_BENCHMARK_CASES_MUST_BE_MEANINGFULLY_DISTINCT`,
+  );
+  minimum(
+    errors,
+    benchmark.minimumAutoCorrectnessPercent,
+    98,
+    `${prefix}_AUTO_CORRECTNESS_BELOW_98_PERCENT`,
+  );
+  expectEqual(
+    errors,
+    benchmark.riskyStaffOnlyOrFailClosedPercent,
+    100,
+    `${prefix}_RISKY_FAIL_CLOSED_MUST_BE_100_PERCENT`,
+  );
+  expectEqual(
+    errors,
+    benchmark.maximumUnsupportedClaims,
+    0,
+    `${prefix}_UNSUPPORTED_CLAIMS_MUST_BE_ZERO`,
+  );
+  expectEqual(
+    errors,
+    benchmark.maximumPiiOrRawChatLeakage,
+    0,
+    `${prefix}_PII_RAW_CHAT_LEAKAGE_MUST_BE_ZERO`,
+  );
+  expectEqual(
+    errors,
+    benchmark.authorityFailureFailClosedPercent,
+    100,
+    `${prefix}_AUTHORITY_FAILURE_FAIL_CLOSED_MUST_BE_100_PERCENT`,
+  );
+  expectEqual(
+    errors,
+    benchmark.confusionMatrixRequired,
+    true,
+    `${prefix}_CONFUSION_MATRIX_REQUIRED`,
+  );
+  expectEqual(
+    errors,
+    benchmark.falseAutoReportRequired,
+    true,
+    `${prefix}_FALSE_AUTO_REPORT_REQUIRED`,
+  );
 }
 
 function expectEqual(

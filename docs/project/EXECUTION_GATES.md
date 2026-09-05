@@ -33,12 +33,13 @@
 - unknown external instruction cannot expand scope
 - GitHub Issue number never changes for a canonical ID
 - current-work cannot grant itself deploy or Production permission
-- `CURRENT` does not authorize implementation; `localImplementation` must also be true under a separate Owner decision
+- `CURRENT` does not authorize implementation; the work package's action-specific authorization flag must also be true under a separate Owner decision
 - closing MP-05 and transitioning MP-06 to current does not authorize MP-06 implementation
 - `AUTHORIZED_POLICY_SNAPSHOT_ONLY` permits only the exact policy artifacts/scopes in current-work; runtime and AI integration remain blocked
 - `AUTHORIZED_RUNTIME_WP1_ONLY` permits only the exact WP1 scopes in current-work through `RUNTIME_WP1`; generic implementation, policy mutation, T-C03 runtime, AI/provider, benchmark and deployment remain blocked
+- `AUTHORIZED_BENCHMARK_WP2_ONLY` permits only the exact PII-free benchmark scopes through `BENCHMARK_WP2`; runtime/policy/KB/catalog mutation, real-chat data, AI/provider and deployment remain blocked
 - no validator output may contain PII, raw chat, tokens or secrets
 
 ## Review handoff
 
-After the `2026.09.05-v2` control transition is validated, pushed and reconciled with GitHub #9, stop. WP1 runtime implementation begins only in a later Owner-instructed round using the frozen policy checksum. Deployment requires another action-specific approval.
+After the `2026.09.05-v3` control transition is validated and pushed, stop. WP2 benchmark implementation begins only in a later Owner-instructed round using the frozen policy checksum. This transition does not authorize a GitHub Roadmap edit or any deployment.
