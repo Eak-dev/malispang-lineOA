@@ -7,3 +7,5 @@
 Project Instructions และสถานะ `CURRENT` ไม่ใช่ implementation authorization เอง การอนุญาต action ต้องมาจาก Owner decision และ current Roadmap version ที่ reconcile แล้ว โดย `localImplementation` ต้องเป็น `true` จึงเริ่มแก้ implementation ได้
 
 หาก current-work เป็น `AUTHORIZED_POLICY_SNAPSHOT_ONLY` ให้ทำได้เฉพาะ policy specification/schema/validator/tests ตาม allowed scope; ห้ามแก้ runtime หรือเรียก AI provider
+
+หาก current-work เป็น `AUTHORIZED_RUNTIME_WP1_ONLY` ให้ทำได้เฉพาะ WP1 scopes ที่ระบุ ใช้ policy snapshot/checksum แบบ read-only และเรียก authorization ด้วย scoped action `RUNTIME_WP1`; ห้าม generic implementation, T-C03 runtime, AI/provider, benchmark 5,000 cases, deployment หรือ Production

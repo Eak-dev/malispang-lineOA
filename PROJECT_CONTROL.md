@@ -1,23 +1,23 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยอนุญาตเฉพาะ policy snapshot และยังไม่อนุญาต runtime implementation
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยเตรียมอนุญาตเฉพาะ WP1 runtime implementation ในรอบถัดไปหลัง Owner/PO review
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.05-v1`                                        |
+| Version               | `2026.09.05-v2`                                        |
 | Current               | `MP-06 (GitHub #12)`                                   |
-| Current authorization | `AUTHORIZED_POLICY_SNAPSHOT_ONLY`                      |
+| Current authorization | `AUTHORIZED_RUNTIME_WP1_ONLY`                          |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
-| Verified baseline     | `5ddf9cc88d0bb868aadbc8f2a41860b56a5f2682`             |
+| Verified baseline     | `a701eac403aef924d587b4427397c63553bdda3e`             |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                           |
 | Target                | `LOCAL_ONLY`                                           |
 | TEST deployment       | Not authorized                                         |
 | Production            | `NO_GO`                                                |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น รอบนี้ `policySnapshot=true` แต่ `localImplementation=false`: สร้าง specification/schema/validator/tests สำหรับ policy snapshot ได้ในรอบถัดไป แต่ห้ามแก้ runtime, เริ่ม AI integration หรือ deploy
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะใหม่ให้ `localImplementation=true` เฉพาะ action `RUNTIME_WP1` และ allowed scopes ที่ระบุเท่านั้น generic local implementation ยังคงถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` เป็น read-only ห้ามใช้ T-C03 ใน runtime, เริ่ม AI/provider, benchmark 5,000 cases หรือ deploy
 
 GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 

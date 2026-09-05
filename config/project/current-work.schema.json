@@ -15,10 +15,11 @@
     "base",
     "implementationBranch",
     "targetEnvironment",
+    "authorizedWorkPackage",
     "allowedScope",
     "forbiddenScope",
     "authorization",
-    "requiredPolicySnapshotContent",
+    "policySnapshotReference",
     "nextWork",
     "conflicts",
     "workingTreePolicy",
@@ -34,7 +35,7 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "status": { "const": "AUTHORIZED_POLICY_SNAPSHOT_ONLY" },
+    "status": { "const": "AUTHORIZED_RUNTIME_WP1_ONLY" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -46,6 +47,7 @@
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
     "targetEnvironment": { "const": "LOCAL_ONLY" },
+    "authorizedWorkPackage": { "const": "WP1" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -64,6 +66,7 @@
       "required": [
         "localImplementation",
         "policySnapshot",
+        "policySnapshotReadOnly",
         "commit",
         "pushBranch",
         "githubRoadmapUpdate",
@@ -73,6 +76,7 @@
       "properties": {
         "localImplementation": { "type": "boolean" },
         "policySnapshot": { "type": "boolean" },
+        "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
@@ -80,12 +84,17 @@
         "production": { "type": "boolean" }
       }
     },
-    "requiredPolicySnapshotContent": {
-      "type": "array",
-      "minItems": 7,
-      "maxItems": 7,
-      "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+    "policySnapshotReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "checksum", "mode"],
+      "properties": {
+        "version": { "const": "2026.09.05-policy-v1" },
+        "checksum": {
+          "const": "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0"
+        },
+        "mode": { "const": "READ_ONLY" }
+      }
     },
     "nextWork": {
       "type": "object",

@@ -1,6 +1,17 @@
 # Roadmap Changelog
 
-## 2026.09.05-v1 — current
+## 2026.09.05-v2 — current
+
+- supersedes `2026.09.05-v1`
+- retains MP-06 (GitHub #12) as the only current Roadmap item
+- changes current-work status to `AUTHORIZED_RUNTIME_WP1_ONLY`
+- sets verified baseline to policy snapshot commit `a701eac403aef924d587b4427397c63553bdda3e`
+- authorizes only the ten exact WP1 scopes for a later Owner-instructed runtime round
+- pins policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` as read-only
+- keeps T-C03 runtime, policy/template/Owner-decision/KB/catalog changes, AI/provider/prompt/key/secret/raw-chat work and benchmark 5,000 cases forbidden
+- keeps TEST deployment false, Production `NO_GO`, MP-07 blocked and default-branch merge forbidden
+
+## 2026.09.05-v1 — superseded
 
 - supersedes `2026.09.04-v1`
 - retains MP-06 (GitHub #12) as the only current Roadmap item
@@ -41,6 +52,6 @@ At MP-05 preflight on 4 September 2026:
 - MP-06 (GitHub #12) declared itself next/blocked with the same benchmark
 - all three declared TEST deployment unauthorized and Production `NO-GO`
 
-On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the project-control transition to policy-snapshot-only status; GitHub #9 must be reconciled to `2026.09.05-v1`.
+On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized the project-control transition to `2026.09.05-v2` for WP1-only runtime work in a later round. GitHub #9 must be reconciled to v2; this transition commit must not contain WP1 runtime implementation.
 
 Any later GitHub edit that changes those control fields requires a new Owner decision and Roadmap version before implementation. The validator cannot treat `CURRENT`, chat history or an unversioned Issue edit as implementation authorization.

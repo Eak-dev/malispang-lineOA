@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 policy-snapshot-only control", () => {
-  it("accepts the 2026.09.05-v1 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP1-only runtime control", () => {
+  it("accepts the 2026.09.05-v2 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -46,18 +46,22 @@ describe("MP-06 policy-snapshot-only control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes policy snapshot work while runtime implementation is blocked", () => {
+  it("authorizes only scoped WP1 runtime work while snapshot mutation stays blocked", () => {
+    expect(evaluateProjectAction(roadmap, currentWork, "RUNTIME_WP1")).toEqual({
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
+    });
     expect(
       evaluateProjectAction(roadmap, currentWork, "POLICY_SNAPSHOT"),
     ).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "POLICY_SNAPSHOT_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
       allowed: false,
-      reason: "LOCAL_IMPLEMENTATION_NOT_AUTHORIZED",
+      reason: "USE_SCOPED_RUNTIME_WP1_ACTION",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -85,7 +89,7 @@ describe("MP-06 policy-snapshot-only control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.04-v1";
+    changed.roadmapVersion = "2026.09.05-v1";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -174,47 +178,65 @@ describe("MP-06 policy-snapshot-only control", () => {
     );
   });
 
-  it("rejects any attempt to self-authorize MP-06 implementation", () => {
+  it("rejects removal of the explicit WP1 runtime authorization", () => {
     const changed = clone(currentWork) as {
       authorization: { localImplementation: boolean };
     };
-    changed.authorization.localImplementation = true;
+    changed.authorization.localImplementation = false;
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "LOCAL_IMPLEMENTATION_MUST_REMAIN_FALSE",
+      "WP1_LOCAL_IMPLEMENTATION_NOT_AUTHORIZED",
     );
-    expect(
-      evaluateProjectAction(roadmap, changed, "LOCAL_IMPLEMENTATION"),
-    ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
+    expect(evaluateProjectAction(roadmap, changed, "RUNTIME_WP1")).toEqual({
+      allowed: false,
+      reason: "ROADMAP_UNVERIFIED",
+    });
   });
 
-  it("rejects missing locked policy content or scope expansion", () => {
-    const missingContent = clone(currentWork) as {
-      requiredPolicySnapshotContent: string[];
+  it("rejects policy checksum drift or WP1 scope expansion", () => {
+    const checksumDrift = clone(currentWork) as {
+      policySnapshotReference: { checksum: string };
     };
-    missingContent.requiredPolicySnapshotContent.pop();
-    expect(validateProjectControl(roadmap, missingContent).errors).toContain(
-      "REQUIRED_POLICY_SNAPSHOT_CONTENT_INVALID",
+    checksumDrift.policySnapshotReference.checksum = "0".repeat(64);
+    expect(validateProjectControl(roadmap, checksumDrift).errors).toContain(
+      "POLICY_SNAPSHOT_CHECKSUM_INVALID",
     );
 
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
-    expandedScope.allowedScope.push("IMPLEMENT_MP_06_RUNTIME");
+    expandedScope.allowedScope.push("IMPLEMENT_MP_06_BENCHMARK_5000");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "POLICY_SNAPSHOT_SCOPE_INVALID",
+      "WP1_SCOPE_INVALID",
     );
   });
 
-  it("rejects removal of policy-snapshot authorization", () => {
+  it("requires the policy snapshot to remain read-only", () => {
     const changed = clone(currentWork) as {
-      authorization: { policySnapshot: boolean };
+      authorization: {
+        policySnapshot: boolean;
+        policySnapshotReadOnly: boolean;
+      };
     };
-    changed.authorization.policySnapshot = false;
-    expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "POLICY_SNAPSHOT_NOT_AUTHORIZED",
+    changed.authorization.policySnapshot = true;
+    changed.authorization.policySnapshotReadOnly = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "POLICY_SNAPSHOT_MUTATION_MUST_BE_FALSE",
+        "POLICY_SNAPSHOT_READ_ONLY_NOT_AUTHORIZED",
+      ]),
     );
     expect(evaluateProjectAction(roadmap, changed, "POLICY_SNAPSHOT")).toEqual({
       allowed: false,
       reason: "ROADMAP_UNVERIFIED",
     });
+  });
+
+  it("fails closed if the T-C03 runtime prohibition is removed", () => {
+    const changed = clone(currentWork) as { forbiddenScope: string[] };
+    changed.forbiddenScope = changed.forbiddenScope.filter(
+      (scope) => scope !== "USE_T_C03_RUNTIME",
+    );
+    expect(validateProjectControl(roadmap, changed).errors).toContain(
+      "FORBIDDEN_SCOPE_MISSING_USE_T_C03_RUNTIME",
+    );
   });
 
   it("turns an unresolved blocking conflict into ROADMAP_UNVERIFIED", () => {
