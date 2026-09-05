@@ -15,6 +15,7 @@ export const CANONICAL_GITHUB_ISSUES = {
 
 export type CanonicalWorkId = keyof typeof CANONICAL_GITHUB_ISSUES;
 export type ProjectAction =
+  | "POLICY_SNAPSHOT"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -35,13 +36,45 @@ export interface ProjectActionDecision {
 const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
-  "IMPLEMENT_MP_06",
+  "IMPLEMENT_MP_06_RUNTIME",
+  "START_AI_INTEGRATION",
+  "CALL_AI_PROVIDER",
   "START_MP_07_OR_OTHER_WORK",
   "DEPLOY_TEST",
   "DEPLOY_PRODUCTION",
   "MERGE_DEFAULT_BRANCH",
+  "CHANGE_LINE_OA",
+  "CHANGE_CLOUDFLARE",
+  "CHANGE_WEBHOOK",
+  "CHANGE_RICH_MENU",
+  "CHANGE_REWARD_CARD",
+  "CHANGE_APPROVED_KNOWLEDGE_BASE",
+  "CHANGE_APPROVED_PRODUCT_CATALOG",
+  "READ_OR_CHANGE_SECRETS",
   "OPEN_OR_CHANGE_PRODUCTION",
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
+] as const;
+
+const REQUIRED_POLICY_SNAPSHOT_CONTENT = [
+  "I_13_AUTO_COMPOSITE",
+  "SAFETY_PRECEDENCE_COMPOSITE_LIMIT_AND_CLARIFICATION_BUDGET",
+  "NO_PARTIAL_AUTO",
+  "RESPONSE_UNIT_FINGERPRINT_AND_PII_PROHIBITION",
+  "T_A02_EXACT_TEXT",
+  "PRICE_BINDING_AND_UNIT_PRICE_SATANG",
+  "NORMAL_AND_SMALL_DISPLAY_MAPPING",
+] as const;
+
+const REQUIRED_POLICY_SNAPSHOT_SCOPE = [
+  "PROJECT_CONTROL_TRANSITION",
+  "MP_06_POLICY_SPECIFICATION",
+  "MP_06_POLICY_SCHEMA",
+  "MP_06_POLICY_VALIDATOR",
+  "MP_06_POLICY_TESTS",
+  "OWNER_DECISION_LOG",
+  "ROADMAP_CHANGELOG",
+  "COMMIT_MP_06_BRANCH",
+  "PUSH_MP_06_BRANCH",
 ] as const;
 
 export function validateProjectControl(
@@ -72,7 +105,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.04-v1",
+    "2026.09.05-v1",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -82,8 +115,20 @@ export function validateProjectControl(
   } else {
     expectEqual(
       errors,
+      roadmap.ownerDecision.decisionId,
+      "MP-OD-2026-09-05-V1",
+      "OWNER_DECISION_ID_INVALID",
+    );
+    expectEqual(
+      errors,
+      roadmap.ownerDecision.decidedAt,
+      "2026-09-05",
+      "OWNER_DECISION_DATE_INVALID",
+    );
+    expectEqual(
+      errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.02-v4",
+      "2026.09.04-v1",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -100,13 +145,13 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "d036063a562a4fa780f162c69f7824ebcb9a250b",
+      "5ddf9cc88d0bb868aadbc8f2a41860b56a5f2682",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.branch,
-      "codex/mp-05-roadmap-control",
+      "codex/mp-06-guardrailed-ai",
       "VERIFIED_BASELINE_BRANCH_MISMATCH",
     );
   }
@@ -266,7 +311,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.status,
-    "CURRENT_AWAITING_IMPLEMENTATION_AUTHORIZATION",
+    "AUTHORIZED_POLICY_SNAPSHOT_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -320,6 +365,12 @@ export function validateProjectControl(
     );
     expectEqual(
       errors,
+      currentWork.authorization.policySnapshot,
+      true,
+      "POLICY_SNAPSHOT_NOT_AUTHORIZED",
+    );
+    expectEqual(
+      errors,
       currentWork.authorization.commit,
       true,
       "COMMIT_NOT_AUTHORIZED",
@@ -348,6 +399,32 @@ export function validateProjectControl(
       false,
       "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
     );
+  }
+
+  const allowedScope = Array.isArray(currentWork.allowedScope)
+    ? currentWork.allowedScope
+    : [];
+  if (
+    allowedScope.length !== REQUIRED_POLICY_SNAPSHOT_SCOPE.length ||
+    REQUIRED_POLICY_SNAPSHOT_SCOPE.some(
+      (scope) => !allowedScope.includes(scope),
+    )
+  ) {
+    errors.push("POLICY_SNAPSHOT_SCOPE_INVALID");
+  }
+
+  const requiredPolicyContent = Array.isArray(
+    currentWork.requiredPolicySnapshotContent,
+  )
+    ? currentWork.requiredPolicySnapshotContent
+    : [];
+  if (
+    requiredPolicyContent.length !== REQUIRED_POLICY_SNAPSHOT_CONTENT.length ||
+    REQUIRED_POLICY_SNAPSHOT_CONTENT.some(
+      (content) => !requiredPolicyContent.includes(content),
+    )
+  ) {
+    errors.push("REQUIRED_POLICY_SNAPSHOT_CONTENT_INVALID");
   }
 
   if (!isRecord(currentWork.nextWork)) {
@@ -422,6 +499,7 @@ export function evaluateProjectAction(
   }
   const authorization = currentWork.authorization;
   const keyByAction: Record<ProjectAction, string> = {
+    POLICY_SNAPSHOT: "policySnapshot",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",

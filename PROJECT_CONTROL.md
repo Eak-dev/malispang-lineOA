@@ -1,25 +1,25 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ Roadmap transition ที่ทำให้ MP-06 (GitHub #12) เป็น current โดยยังไม่อนุญาต implementation
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยอนุญาตเฉพาะ policy snapshot และยังไม่อนุญาต runtime implementation
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.04-v1`                                        |
+| Version               | `2026.09.05-v1`                                        |
 | Current               | `MP-06 (GitHub #12)`                                   |
-| Current authorization | Roadmap transition only; implementation not authorized |
+| Current authorization | `AUTHORIZED_POLICY_SNAPSHOT_ONLY`                      |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
-| Verified baseline     | `d036063a562a4fa780f162c69f7824ebcb9a250b`             |
+| Verified baseline     | `5ddf9cc88d0bb868aadbc8f2a41860b56a5f2682`             |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                           |
 | Target                | `LOCAL_ONLY`                                           |
 | TEST deployment       | Not authorized                                         |
 | Production            | `NO_GO`                                                |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น ไม่ใช่สิทธิ์เริ่ม implementation โดยอัตโนมัติ รอบนี้ `localImplementation=false` และอนุญาตเพียงการบันทึก/reconcile transition, commit และ push เท่านั้น
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น รอบนี้ `policySnapshot=true` แต่ `localImplementation=false`: สร้าง specification/schema/validator/tests สำหรับ policy snapshot ได้ในรอบถัดไป แต่ห้ามแก้ runtime, เริ่ม AI integration หรือ deploy
 
-GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะ transition ใช้ dedicated worktree จาก MP-05 governance baseline ที่ Owner/PO อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
+GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
 ## Machine-readable controls
 

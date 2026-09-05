@@ -18,6 +18,7 @@
     "allowedScope",
     "forbiddenScope",
     "authorization",
+    "requiredPolicySnapshotContent",
     "nextWork",
     "conflicts",
     "workingTreePolicy",
@@ -33,9 +34,7 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "status": {
-      "const": "CURRENT_AWAITING_IMPLEMENTATION_AUTHORIZATION"
-    },
+    "status": { "const": "AUTHORIZED_POLICY_SNAPSHOT_ONLY" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -64,6 +63,7 @@
       "additionalProperties": false,
       "required": [
         "localImplementation",
+        "policySnapshot",
         "commit",
         "pushBranch",
         "githubRoadmapUpdate",
@@ -72,12 +72,20 @@
       ],
       "properties": {
         "localImplementation": { "type": "boolean" },
+        "policySnapshot": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
         "testDeployment": { "type": "boolean" },
         "production": { "type": "boolean" }
       }
+    },
+    "requiredPolicySnapshotContent": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
     },
     "nextWork": {
       "type": "object",

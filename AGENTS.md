@@ -35,3 +35,4 @@ Production `มะลิปัง` เป็นระบบใช้งานจ
 - ห้ามเริ่ม `nextWork` อัตโนมัติหลังงานปัจจุบันเสร็จ ต้องรอ Owner/PO review และ Roadmap version ใหม่
 - การเปลี่ยน Roadmap ต้อง append Owner decision, ระบุ `supersedes`, bump version, reconcile GitHub #9 และผ่าน validator/tests ก่อนใช้เป็นฐานงานใหม่
 - สถานะ `CURRENT` ระบุลำดับ Roadmap แต่ไม่ให้สิทธิ์ implementation โดยอัตโนมัติ ต้องมี `localImplementation: true` และ Owner authorization แยกชัดเจนก่อนแก้ implementation
+- สถานะ `AUTHORIZED_POLICY_SNAPSHOT_ONLY` อนุญาตเฉพาะ specification/schema/validator/tests ที่ current-work ระบุ และไม่อนุญาต runtime, AI integration, provider call หรือ deployment

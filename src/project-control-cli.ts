@@ -26,6 +26,15 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
+  const policySnapshot = evaluateProjectAction(
+    roadmap,
+    currentWork,
+    "POLICY_SNAPSHOT",
+  );
+  if (!policySnapshot.allowed) {
+    throw new Error("ROADMAP_UNVERIFIED: POLICY_SNAPSHOT must be authorized");
+  }
+
   for (const action of [
     "LOCAL_IMPLEMENTATION",
     "DEPLOY_TEST",
@@ -42,7 +51,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.04-v1, MP-06 (GitHub #12), implementation blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.05-v1, MP-06 (GitHub #12), policy snapshot only, runtime implementation blocked, ${warningSuffix}`,
   );
 }
 

@@ -37,3 +37,22 @@ GitHub Issue numbers remain immutable external references; `MP-01`–`MP-12` are
 | Explicitly prohibited | MP-06/runtime/benchmark implementation, MP-07 or other work, deployment, default-branch merge, LINE OA/Cloudflare/Webhook/Rich Menu/Reward Card/secret changes, Production |
 
 `CURRENT` records sequencing only. It does not grant implementation or deployment permission.
+
+## MP-OD-2026-09-05-V1
+
+| Field                         | Decision                                                                                                                                                                                                                               |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Decided                       | 5 September 2026                                                                                                                                                                                                                       |
+| Roadmap                       | `2026.09.05-v1`                                                                                                                                                                                                                        |
+| Supersedes                    | `2026.09.04-v1`                                                                                                                                                                                                                        |
+| Baseline                      | `5ddf9cc88d0bb868aadbc8f2a41860b56a5f2682` on `codex/mp-06-guardrailed-ai`                                                                                                                                                             |
+| Current                       | `MP-06 (GitHub #12)`                                                                                                                                                                                                                   |
+| Status                        | `AUTHORIZED_POLICY_SNAPSHOT_ONLY`                                                                                                                                                                                                      |
+| Authorized future scope       | MP-06 policy specification, schema, validator, regression tests, Owner decision log, Roadmap changelog, commit and push on the dedicated MP-06 branch                                                                                  |
+| Required locked policy topics | I-13 AUTO_COMPOSITE; precedence/limit/clarification budget; no partial AUTO; response-unit fingerprint and PII prohibition; T-A02 exact text; PRICE binding/unitPriceSatang; NORMAL/SMALL display mapping                              |
+| Runtime/AI                    | `false`; no routing, matcher, Worker, Durable Object, LINE handler, KB/catalog, AI integration or provider call                                                                                                                        |
+| TEST deployment               | `false`                                                                                                                                                                                                                                |
+| Production                    | `NO_GO`                                                                                                                                                                                                                                |
+| Transition-round limit        | This decision authorizes only the control transition to the new status. The actual policy snapshot must be performed in a later round under the resulting current-work manifest; it must not be created in the same transition commit. |
+
+No raw customer text, PII, credential or secret may appear in the future snapshot, fingerprint or audit evidence.

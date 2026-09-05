@@ -2,28 +2,31 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.04-v1",
+  "roadmapVersion": "2026.09.05-v1",
   "workId": "MP-06",
   "githubIssue": 12,
-  "status": "CURRENT_AWAITING_IMPLEMENTATION_AUTHORIZATION",
+  "status": "AUTHORIZED_POLICY_SNAPSHOT_ONLY",
   "base": {
-    "commit": "d036063a562a4fa780f162c69f7824ebcb9a250b",
-    "branch": "codex/mp-05-roadmap-control"
+    "commit": "5ddf9cc88d0bb868aadbc8f2a41860b56a5f2682",
+    "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
   "targetEnvironment": "LOCAL_ONLY",
   "allowedScope": [
-    "ROADMAP_TRANSITION_FILES",
-    "PROJECT_CONTROL_SCHEMAS",
-    "PROJECT_CONTROL_VALIDATOR",
-    "PROJECT_CONTROL_TESTS",
-    "PROJECT_CONTROL_DOCUMENTATION",
+    "PROJECT_CONTROL_TRANSITION",
+    "MP_06_POLICY_SPECIFICATION",
+    "MP_06_POLICY_SCHEMA",
+    "MP_06_POLICY_VALIDATOR",
+    "MP_06_POLICY_TESTS",
+    "OWNER_DECISION_LOG",
+    "ROADMAP_CHANGELOG",
     "COMMIT_MP_06_BRANCH",
-    "PUSH_MP_06_BRANCH",
-    "UPDATE_GITHUB_ROADMAP_ISSUE_9"
+    "PUSH_MP_06_BRANCH"
   ],
   "forbiddenScope": [
-    "IMPLEMENT_MP_06",
+    "IMPLEMENT_MP_06_RUNTIME",
+    "START_AI_INTEGRATION",
+    "CALL_AI_PROVIDER",
     "START_MP_07_OR_OTHER_WORK",
     "DEPLOY_TEST",
     "DEPLOY_PRODUCTION",
@@ -33,18 +36,30 @@
     "CHANGE_WEBHOOK",
     "CHANGE_RICH_MENU",
     "CHANGE_REWARD_CARD",
+    "CHANGE_APPROVED_KNOWLEDGE_BASE",
+    "CHANGE_APPROVED_PRODUCT_CATALOG",
     "READ_OR_CHANGE_SECRETS",
     "OPEN_OR_CHANGE_PRODUCTION",
     "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET"
   ],
   "authorization": {
     "localImplementation": false,
+    "policySnapshot": true,
     "commit": true,
     "pushBranch": true,
     "githubRoadmapUpdate": true,
     "testDeployment": false,
     "production": false
   },
+  "requiredPolicySnapshotContent": [
+    "I_13_AUTO_COMPOSITE",
+    "SAFETY_PRECEDENCE_COMPOSITE_LIMIT_AND_CLARIFICATION_BUDGET",
+    "NO_PARTIAL_AUTO",
+    "RESPONSE_UNIT_FINGERPRINT_AND_PII_PROHIBITION",
+    "T_A02_EXACT_TEXT",
+    "PRICE_BINDING_AND_UNIT_PRICE_SATANG",
+    "NORMAL_AND_SMALL_DISPLAY_MAPPING"
+  ],
   "nextWork": {
     "id": "MP-07",
     "githubIssue": 7,
@@ -55,7 +70,7 @@
       "code": "DEFAULT_BRANCH_DRIFT",
       "blocking": false,
       "detail": "GitHub default branch remains on the Phase 1A baseline.",
-      "resolution": "Use the verified MP-05 governance baseline and dedicated MP-06 branch; do not merge default."
+      "resolution": "Use the verified MP-06 transition baseline and dedicated MP-06 branch; do not merge default."
     }
   ],
   "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES",

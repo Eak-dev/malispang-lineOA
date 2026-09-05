@@ -35,8 +35,9 @@
 - current-work cannot grant itself deploy or Production permission
 - `CURRENT` does not authorize implementation; `localImplementation` must also be true under a separate Owner decision
 - closing MP-05 and transitioning MP-06 to current does not authorize MP-06 implementation
+- `AUTHORIZED_POLICY_SNAPSHOT_ONLY` permits only the exact policy artifacts/scopes in current-work; runtime and AI integration remain blocked
 - no validator output may contain PII, raw chat, tokens or secrets
 
 ## Review handoff
 
-After the `2026.09.04-v1` transition is validated, pushed and reconciled with GitHub #9, stop for Owner/PO review. MP-06 implementation requires a later explicit authorization that identifies the exact transition commit; deployment requires another action-specific approval.
+After the `2026.09.05-v1` control transition is validated, pushed and reconciled with GitHub #9, stop. The actual MP-06 policy snapshot begins only in a later Owner-instructed round. Runtime implementation requires a later explicit authorization; deployment requires another action-specific approval.
