@@ -87,6 +87,142 @@ const STAFF_ONLY_INTENTS = new Set<ConversationIntent>([
   "STAFF",
 ]);
 
+type Mp06ProtectedRisk =
+  "DELIVERY_VARIABLE_STATE" | "INDIVIDUAL_LOYALTY_STATE" | "PRICE_SPECULATION";
+
+const DELIVERY_VARIABLE_MARKERS = [
+  "ค่าส่ง",
+  "ค่าจัดส่ง",
+  "ค่าบริการจัดส่ง",
+  "ค่ารถส่ง",
+  "พื้นที่ส่ง",
+  "พื้นที่จัดส่ง",
+  "เขตส่ง",
+  "เขตจัดส่ง",
+  "โซนส่ง",
+  "โซนจัดส่ง",
+  "รัศมีส่ง",
+  "รัศมีจัดส่ง",
+  "ระยะทางส่ง",
+  "ระยะทางจัดส่ง",
+  "ไรเดอร์",
+  "rider",
+  "คนส่งว่าง",
+  "พนักงานส่งว่าง",
+  "ใบเสนอราคาจัดส่ง",
+  "ใบเสนอราคาค่าส่ง",
+  "เวลาจัดส่ง",
+  "ใช้เวลาส่ง",
+  "พร้อมส่งไหม",
+  "พร้อมจัดส่งไหม",
+] as const;
+
+const DELIVERY_CONTEXT_MARKERS = [
+  "delivery",
+  "เดลิเวอรี",
+  "เดลิเวอรี่",
+  "จัดส่ง",
+  "ส่งถึง",
+  "ส่งของ",
+  "คนส่ง",
+  "ไรเดอร์",
+  "rider",
+] as const;
+
+const DELIVERY_TIMING_OR_AVAILABILITY_MARKERS = [
+  "กี่นาทีถึง",
+  "กี่โมงถึง",
+  "ถึงเมื่อไหร่",
+  "รับงานไหม",
+] as const;
+
+const INDIVIDUAL_LOYALTY_MARKERS = [
+  "ยอดแต้ม",
+  "ยอดคะแนน",
+  "แต้มคงเหลือ",
+  "คะแนนคงเหลือ",
+  "แต้มเหลือ",
+  "คะแนนเหลือ",
+  "เหลือกี่แต้ม",
+  "เหลือกี่คะแนน",
+  "มีแต้มเท่าไหร่",
+  "มีคะแนนเท่าไหร่",
+  "แต้มของฉัน",
+  "คะแนนของฉัน",
+  "แต้มของผม",
+  "คะแนนของผม",
+  "แต้มของหนู",
+  "คะแนนของหนู",
+  "แต้มในบัตร",
+  "คะแนนในบัตร",
+  "สถานะแต้ม",
+  "สถานะคะแนน",
+  "ประวัติแต้ม",
+  "ประวัติคะแนน",
+  "เช็กแต้ม",
+  "เช็คแต้ม",
+  "ตรวจแต้ม",
+  "ดูแต้ม",
+  "เช็กคะแนน",
+  "เช็คคะแนน",
+  "ตรวจคะแนน",
+  "ดูคะแนน",
+  "เพิ่มแต้ม",
+  "เพิ่มคะแนน",
+  "เติมแต้ม",
+  "เติมคะแนน",
+  "หักแต้ม",
+  "หักคะแนน",
+  "ลดแต้ม",
+  "ลดคะแนน",
+  "แก้แต้ม",
+  "แก้คะแนน",
+  "ปรับแต้ม",
+  "ปรับคะแนน",
+  "โอนแต้ม",
+  "โอนคะแนน",
+  "แลกแต้ม",
+  "แลกคะแนน",
+  "ใช้แต้ม",
+  "ใช้คะแนน",
+  "point balance",
+  "points balance",
+  "my point",
+  "my points",
+] as const;
+
+const PRICE_CONTEXT_MARKERS = ["ราคา", "กี่บาท", "price"] as const;
+const DIRECT_PRICE_SPECULATION_MARKERS = [
+  "เดาราคา",
+  "คาดเดาราคา",
+  "คาดราคา",
+  "กะราคา",
+  "สุ่มราคา",
+  "มโนราคา",
+  "guess price",
+  "guess ราคา",
+  "estimate price",
+  "estimate ราคา",
+] as const;
+const NO_AUTHORITY_MARKERS = [
+  "ถ้าไม่รู้",
+  "ถ้าไม่มีข้อมูล",
+  "ไม่มีข้อมูล",
+  "ไม่มีราคาก็",
+  "ไม่ต้องใช้ข้อมูล",
+  "ไม่ต้องเช็ก",
+  "ไม่ต้องตรวจ",
+] as const;
+const SPECULATION_VERBS = [
+  "เดา",
+  "คาดเดา",
+  "กะ",
+  "สุ่ม",
+  "มโน",
+  "guess",
+  "estimate",
+] as const;
+
 const AUTO_MATCHERS: Readonly<
   Record<Mp06AutoIntent, (normalized: string) => boolean>
 > = {
@@ -171,6 +307,11 @@ export async function planMp06Wp1Text(
     return staffOnlyPlan("MP06_POLICY_INTEGRITY_FAILED");
   }
 
+  const protectedRisk = detectMp06ProtectedRisk(text);
+  if (protectedRisk) {
+    return staffOnlyPlan(`MP06_PROTECTED_${protectedRisk}`);
+  }
+
   const detectedMatches = detectMp06IntentMatches(text);
   const matches =
     detectedMatches.length === 0 &&
@@ -232,6 +373,35 @@ export async function planMp06Wp1Text(
     messages: deduplicated.flatMap((unit) => unit.messages),
     responseFingerprint,
   };
+}
+
+function detectMp06ProtectedRisk(text: string): Mp06ProtectedRisk | undefined {
+  const normalized = normalizeConversationText(text);
+  if (includesAny(normalized, DELIVERY_VARIABLE_MARKERS)) {
+    return "DELIVERY_VARIABLE_STATE";
+  }
+  if (
+    includesAny(normalized, DELIVERY_CONTEXT_MARKERS) &&
+    includesAny(normalized, DELIVERY_TIMING_OR_AVAILABILITY_MARKERS)
+  ) {
+    return "DELIVERY_VARIABLE_STATE";
+  }
+  if (includesAny(normalized, INDIVIDUAL_LOYALTY_MARKERS)) {
+    return "INDIVIDUAL_LOYALTY_STATE";
+  }
+  if (isExplicitPriceSpeculation(normalized)) {
+    return "PRICE_SPECULATION";
+  }
+  return undefined;
+}
+
+function isExplicitPriceSpeculation(normalized: string): boolean {
+  if (!includesAny(normalized, PRICE_CONTEXT_MARKERS)) return false;
+  if (includesAny(normalized, DIRECT_PRICE_SPECULATION_MARKERS)) return true;
+  return (
+    includesAny(normalized, NO_AUTHORITY_MARKERS) &&
+    includesAny(normalized, SPECULATION_VERBS)
+  );
 }
 
 export function deduplicateResponseUnits(

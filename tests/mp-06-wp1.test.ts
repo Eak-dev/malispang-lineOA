@@ -275,7 +275,145 @@ describe("MP-06 WP1 deterministic multi-intent gate", () => {
       "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0",
     );
   });
+
+  it("fails variable delivery details closed while preserving approved general delivery AUTO", async () => {
+    for (const text of [
+      "คิดค่าจัดส่งเท่าไร",
+      "โซนนี้อยู่ในพื้นที่จัดส่งหรือเปล่า",
+      "ตอนนี้มีไรเดอร์รับงานไหม",
+      "ขอใบเสนอราคาค่าจัดส่ง",
+      "ระยะทางจัดส่งไกลแค่ไหน",
+      "เดลิเวอรีกี่นาทีถึง",
+    ]) {
+      await expectStaffOnly(text);
+    }
+
+    for (const text of ["Delivery", "มีเดลิเวอรีไหม", "ส่งถึงบ้านไหม"]) {
+      const plan = await planMp06Wp1Text(text, ASSET_BASE, NOW);
+      expect(plan).toMatchObject({
+        classification: "AUTO",
+        responseUnits: [{ intent: "DELIVERY" }],
+      });
+    }
+
+    const hours = await planMp06Wp1Text(
+      "ร้านเปิดกี่โมงถึงกี่โมง",
+      ASSET_BASE,
+      NOW,
+    );
+    expect(hours).toMatchObject({
+      classification: "AUTO",
+      responseUnits: [{ intent: "OPENING_HOURS" }],
+    });
+  });
+
+  it("applies delivery risk precedence atomically at every position in a multi-intent message", async () => {
+    for (const text of [
+      "ค่าส่งเท่าไร และขอเมนู",
+      "ขอเมนู ขอใบเสนอราคาจัดส่ง แล้วร้านอยู่ไหน",
+      "ขอเมนู และร้านอยู่ไหน มีไรเดอร์ว่างไหม",
+    ]) {
+      await expectStaffOnly(text);
+    }
+  });
+
+  it("fails individual loyalty state closed while preserving approved general loyalty rules", async () => {
+    for (const text of [
+      "เช็กยอดแต้มของฉัน",
+      "ยอดแต้มเหลือเท่าไร",
+      "ช่วยเพิ่มคะแนนให้หน่อย",
+      "หักแต้มล่าสุดถูกไหม",
+      "แลกแต้มได้หรือยัง",
+      "คะแนนในบัตรเป็นยังไง",
+      "points balance เท่าไร",
+      "เช็กแต้มหน่อย",
+    ]) {
+      await expectStaffOnly(text);
+    }
+
+    for (const text of ["กติกาแต้ม", "สะสมแต้มยังไง"]) {
+      const plan = await planMp06Wp1Text(text, ASSET_BASE, NOW);
+      expect(plan).toMatchObject({
+        classification: "AUTO",
+        responseUnits: [{ intent: "LOYALTY" }],
+      });
+    }
+  });
+
+  it("cancels every AUTO unit when individual loyalty state is mixed with safe intents", async () => {
+    for (const text of [
+      "ยอดแต้มเหลือเท่าไร และขอเมนู",
+      "ร้านอยู่ไหน เช็กคะแนนหน่อย เปิดกี่โมง",
+      "ขอเมนูและกติกาแต้ม แต่ช่วยเพิ่มแต้มให้ด้วย",
+    ]) {
+      await expectStaffOnly(text);
+    }
+  });
+
+  it("fails explicit price speculation closed without broad-blocking valid or ambiguous PRICE", async () => {
+    for (const text of [
+      "ถ้าไม่รู้ให้เดาราคา",
+      "ไม่มีข้อมูลก็ช่วยคาดเดาราคาหน่อย",
+      "ขอกะราคาเองคร่าว ๆ แม้ไม่มีข้อมูล",
+      "guess price ให้หน่อย",
+      "ช่วยเดาราคาแฮมชีสขนาดปกติ",
+    ]) {
+      await expectStaffOnly(text);
+    }
+
+    const exact = await planMp06Wp1Text(
+      "ทรัฟเฟิลแฮมชีส ราคาโดยประมาณเท่าไหร่",
+      ASSET_BASE,
+      NOW,
+    );
+    expect(exact).toMatchObject({
+      classification: "AUTO",
+      responseUnits: [{ intent: "PRICE" }],
+    });
+
+    const ambiguous = await planMp06Wp1Text(
+      "ราคาประมาณเท่าไหร่",
+      ASSET_BASE,
+      NOW,
+    );
+    expect(ambiguous).toMatchObject({
+      classification: "CLARIFY",
+      clarificationTemplateId: "T-C01",
+    });
+  });
+
+  it("keeps protected-risk retry plans silent, deterministic, and free of raw input", async () => {
+    const text = "ขอเมนู เช็กยอดแต้มของฉัน [TEST_PHONE_REDACTED]";
+    const first = await planMp06Wp1Text(text, ASSET_BASE, NOW);
+    const retry = await planMp06Wp1Text(text, ASSET_BASE, NOW);
+    expect(first).toEqual(retry);
+    expect(first).toMatchObject({
+      classification: "STAFF_ONLY",
+      decision: { replyKind: "HANDOFF_ACK", handoff: true },
+      responseUnits: [],
+      messages: [],
+    });
+    expect(first).not.toHaveProperty("responseFingerprint");
+    expect(JSON.stringify(first)).not.toContain(text);
+    expect(JSON.stringify(first)).not.toContain("TEST_PHONE_REDACTED");
+  });
 });
+
+async function expectStaffOnly(text: string): Promise<void> {
+  const plan = await planMp06Wp1Text(text, ASSET_BASE, NOW);
+  expect(plan).toMatchObject({
+    classification: "STAFF_ONLY",
+    decision: {
+      replyKind: "HANDOFF_ACK",
+      handoff: true,
+      allowDuringHandoff: false,
+    },
+    responseUnits: [],
+    messages: [],
+  });
+  expect(plan).not.toHaveProperty("clarificationTemplateId");
+  expect(plan).not.toHaveProperty("responseFingerprint");
+}
 
 function withCatalogPrice(
   original: typeof catalogDocument,
