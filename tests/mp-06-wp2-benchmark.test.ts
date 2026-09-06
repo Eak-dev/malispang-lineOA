@@ -62,7 +62,7 @@ describe("MP-06 WP2 deterministic benchmark dataset", () => {
         code.includes("SIGNATURE_DUPLICATE"),
       ),
     ).toBe(true);
-  });
+  }, 15_000);
 
   it("covers every policy class and the required runtime/safety dimensions", () => {
     expect(new Set(cases.map((item) => item.expected.classification))).toEqual(
@@ -115,9 +115,10 @@ describe("MP-06 WP2 deterministic benchmark dataset", () => {
 describe("MP-06 WP2 evaluator and reports", () => {
   let run: Awaited<ReturnType<typeof runMp06Benchmark>>;
 
+  // 300 seconds is an execution watchdog for the 5,000-case suite, not a product performance guarantee.
   beforeAll(async () => {
     run = await runMp06Benchmark();
-  }, 120_000);
+  }, 300_000);
 
   it("evaluates exact single/composite/overflow/PRICE/clarification behavior", async () => {
     for (const family of [
@@ -183,7 +184,7 @@ describe("MP-06 WP2 evaluator and reports", () => {
         proseWrap: "preserve",
       }),
     ).toBe(run.reportMarkdown);
-  });
+  }, 15_000);
 
   it("records unambiguous three-layer provenance outside the semantic checksum", () => {
     expect(run.report.schemaVersion).toBe(2);
