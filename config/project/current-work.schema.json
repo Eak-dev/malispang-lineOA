@@ -23,6 +23,7 @@
     "policySnapshotReference",
     "wp2BenchmarkReference",
     "benchmarkCompletionPlan",
+    "localClosureRemediationPlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -39,8 +40,8 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP4_WP2_BENCHMARK_COMPLETION" },
-    "status": { "const": "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY" },
+    "currentPhase": { "const": "WP5_LOCAL_CLOSURE_REMEDIATION" },
+    "status": { "const": "AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -52,7 +53,7 @@
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
     "targetEnvironment": { "const": "LOCAL_ONLY" },
-    "authorizedWorkPackage": { "const": "WP4" },
+    "authorizedWorkPackage": { "const": "WP5" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -74,6 +75,7 @@
         "benchmarkWp2",
         "runtimeRemediationWp3",
         "benchmarkCompletionWp4",
+        "localClosureRemediationWp5",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -85,9 +87,10 @@
       "properties": {
         "localImplementation": { "const": false },
         "runtimeWp1": { "const": false },
-        "benchmarkWp2": { "const": true },
+        "benchmarkWp2": { "const": false },
         "runtimeRemediationWp3": { "const": false },
-        "benchmarkCompletionWp4": { "const": true },
+        "benchmarkCompletionWp4": { "const": false },
+        "localClosureRemediationWp5": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -115,6 +118,7 @@
       "required": [
         "benchmarkImplementationBaseCommit",
         "runtimeUnderTestCommit",
+        "artifactCommit",
         "datasetChecksum",
         "failedResultChecksum",
         "remediatedPassResultChecksum",
@@ -134,6 +138,9 @@
         "runtimeUnderTestCommit": {
           "const": "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5"
         },
+        "artifactCommit": {
+          "const": "12e0d27dc06052f5f9a2075aff8f12c90bf5852e"
+        },
         "datasetChecksum": {
           "const": "6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa"
         },
@@ -148,7 +155,7 @@
         "independentOracleMode": { "const": "READ_ONLY" },
         "acceptanceThresholdsMode": { "const": "READ_ONLY" },
         "reportRegeneration": {
-          "const": "AUTHORIZED_WITH_EXPLICIT_PROVENANCE"
+          "const": "READ_ONLY_VERIFICATION_ONLY"
         },
         "totalCases": { "const": 5000 },
         "failedMetrics": {
@@ -205,6 +212,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "completionStatus",
+        "artifactCommit",
         "benchmarkArtifactAllowlist",
         "narrowProvenanceFileAllowlist",
         "provenanceRequirements",
@@ -215,6 +224,12 @@
         "failedHistoryMustBeRetained"
       ],
       "properties": {
+        "completionStatus": {
+          "const": "COMPLETED_AT_ARTIFACT_COMMIT"
+        },
+        "artifactCommit": {
+          "const": "12e0d27dc06052f5f9a2075aff8f12c90bf5852e"
+        },
         "benchmarkArtifactAllowlist": {
           "type": "array",
           "minItems": 18,
@@ -267,6 +282,180 @@
         "expectedResultsMustRemainUnchanged": { "const": true },
         "acceptanceThresholdsMustRemainUnchanged": { "const": true },
         "failedHistoryMustBeRetained": { "const": true }
+      }
+    },
+    "localClosureRemediationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blocker",
+        "implementationStatus",
+        "authoritativeToolchainSource",
+        "implementationFileAllowlist",
+        "requiredVersions",
+        "requiredContract",
+        "registryPolicy",
+        "readOnlyBoundaries",
+        "acceptanceCriteria",
+        "postWp5Decision"
+      ],
+      "properties": {
+        "blocker": { "const": "UNPINNED_NODE_AND_PNPM_TOOLCHAIN" },
+        "implementationStatus": { "const": "NOT_STARTED" },
+        "authoritativeToolchainSource": { "const": "PACKAGE_JSON" },
+        "implementationFileAllowlist": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requiredVersions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["node", "pnpm", "versionMatch"],
+          "properties": {
+            "node": { "const": "24.19.0" },
+            "pnpm": { "const": "11.19.0" },
+            "versionMatch": { "const": "EXACT" }
+          }
+        },
+        "requiredContract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "packageManagerDeclaration",
+            "nodeEngineDeclaration",
+            "pnpmEngineDeclaration",
+            "nodeVersionFile",
+            "machineReadableConsistencyValidator",
+            "nodeMismatchFailsFast",
+            "pnpmMismatchFailsFast",
+            "developerBootstrapDocumentation",
+            "existingCiUsesExactVersionsIfPresent",
+            "existingCiDetectedAtTransition",
+            "newCiWorkflowAuthorized"
+          ],
+          "properties": {
+            "packageManagerDeclaration": { "const": true },
+            "nodeEngineDeclaration": { "const": true },
+            "pnpmEngineDeclaration": { "const": true },
+            "nodeVersionFile": { "const": true },
+            "machineReadableConsistencyValidator": { "const": true },
+            "nodeMismatchFailsFast": { "const": true },
+            "pnpmMismatchFailsFast": { "const": true },
+            "developerBootstrapDocumentation": { "const": true },
+            "existingCiUsesExactVersionsIfPresent": { "const": true },
+            "existingCiDetectedAtTransition": { "const": false },
+            "newCiWorkflowAuthorized": { "const": false }
+          }
+        },
+        "registryPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "offlineBuildRequired",
+            "declaredRegistryDownloadAllowed",
+            "frozenLockfileRequired",
+            "lockfileIntegrityRequired",
+            "dependencyVersionChangesAllowed",
+            "vendoringAllowed"
+          ],
+          "properties": {
+            "offlineBuildRequired": { "const": false },
+            "declaredRegistryDownloadAllowed": { "const": true },
+            "frozenLockfileRequired": { "const": true },
+            "lockfileIntegrityRequired": { "const": true },
+            "dependencyVersionChangesAllowed": { "const": false },
+            "vendoringAllowed": { "const": false }
+          }
+        },
+        "readOnlyBoundaries": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "runtime",
+            "runtimeBehaviorTests",
+            "benchmarkDataset",
+            "independentOracle",
+            "benchmarkSemantics",
+            "acceptanceThresholds",
+            "policy",
+            "knowledgeBase",
+            "productCatalog"
+          ],
+          "properties": {
+            "runtime": { "const": true },
+            "runtimeBehaviorTests": { "const": true },
+            "benchmarkDataset": { "const": true },
+            "independentOracle": { "const": true },
+            "benchmarkSemantics": { "const": true },
+            "acceptanceThresholds": { "const": true },
+            "policy": { "const": true },
+            "knowledgeBase": { "const": true },
+            "productCatalog": { "const": true }
+          }
+        },
+        "acceptanceCriteria": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "toolchainVersionsPinned",
+            "declarationsConsistent",
+            "validatorDetectsVersionDrift",
+            "cleanCheckoutBootstrapDocumented",
+            "frozenInstallWithEmptyStore",
+            "benchmarkReportReproducibleWithoutTrackedChanges",
+            "policyChecksumUnchanged",
+            "datasetChecksumUnchanged",
+            "semanticResultChecksumUnchanged",
+            "benchmarkMetricsUnchanged",
+            "fullValidationRequired",
+            "workingTreeCleanAfterCommit",
+            "localHeadMustMatchRemote",
+            "githubRoadmapAndIssueReconciled",
+            "deploymentStatus"
+          ],
+          "properties": {
+            "toolchainVersionsPinned": { "const": true },
+            "declarationsConsistent": { "const": true },
+            "validatorDetectsVersionDrift": { "const": true },
+            "cleanCheckoutBootstrapDocumented": { "const": true },
+            "frozenInstallWithEmptyStore": { "const": true },
+            "benchmarkReportReproducibleWithoutTrackedChanges": {
+              "const": true
+            },
+            "policyChecksumUnchanged": { "const": true },
+            "datasetChecksumUnchanged": { "const": true },
+            "semanticResultChecksumUnchanged": { "const": true },
+            "benchmarkMetricsUnchanged": { "const": true },
+            "fullValidationRequired": { "const": true },
+            "workingTreeCleanAfterCommit": { "const": true },
+            "localHeadMustMatchRemote": { "const": true },
+            "githubRoadmapAndIssueReconciled": { "const": true },
+            "deploymentStatus": { "const": "NOT_DEPLOYED" }
+          }
+        },
+        "postWp5Decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ownerDecisionRequired", "authorizedPath", "options"],
+          "properties": {
+            "ownerDecisionRequired": { "const": true },
+            "authorizedPath": { "const": null },
+            "options": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true,
+              "prefixItems": [
+                { "const": "AI_NLU_WORK_PACKAGE" },
+                { "const": "TEST_READINESS_ASSESSMENT" }
+              ],
+              "items": false
+            }
+          }
+        }
       }
     },
     "benchmarkAcceptanceCriteria": {

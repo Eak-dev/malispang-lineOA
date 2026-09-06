@@ -1,6 +1,20 @@
 # Roadmap Changelog
 
-## 2026.09.05-v5 — current
+## 2026.09.06-v1 — current
+
+- supersedes `2026.09.05-v5`
+- retains MP-06 (GitHub #12) as the only current Roadmap item and sets phase `WP5_LOCAL_CLOSURE_REMEDIATION`
+- changes current-work status/action to `AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY` / `LOCAL_CLOSURE_REMEDIATION_WP5` and sets `localClosureRemediationWp5=true`, `benchmarkWp2=false`, `runtimeRemediationWp3=false`, `benchmarkCompletionWp4=false`
+- sets verified baseline to WP2 artifact commit `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`; records WP1–WP4 complete with clean-checkout functional verification passed
+- limits the remaining local acceptance blocker to missing exact Node.js `24.19.0` and pnpm `11.19.0` repository declarations and enforcement
+- authorizes only a later Owner-instructed WP5 round for exact toolchain pinning, fail-fast validator/tests, developer bootstrap documentation, existing-CI alignment if present, empty-store frozen install and read-only benchmark/quality verification
+- allows declared lockfile/integrity-checked registry downloads; does not require offline build and forbids vendoring, binary commits, private mirrors, dependency changes and supply-chain redesign
+- keeps runtime, behavior tests, benchmark semantics/dataset/oracle/thresholds, policy, KB and catalog read-only; keeps TEST deployment false and Production `NO_GO`
+- records that no CI workflow exists at transition and does not authorize creating one, a PR, default-branch drift repair, merge or rebase
+- keeps Issue #12 open for AI/NLU, TEST readiness/deployment, Owner UAT and Production readiness; this transition does not choose a next path
+- this transition changes control/schema/validator/tests/governance documents only; WP5 toolchain implementation is not started
+
+## 2026.09.05-v5 — superseded
 
 - supersedes `2026.09.05-v4`
 - retains MP-06 (GitHub #12) as the only current Roadmap item and sets phase `WP4_WP2_BENCHMARK_COMPLETION`
@@ -88,6 +102,6 @@ At MP-05 preflight on 4 September 2026:
 - MP-06 (GitHub #12) declared itself next/blocked with the same benchmark
 - all three declared TEST deployment unauthorized and Production `NO-GO`
 
-On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized `2026.09.05-v2` and WP1 runtime commit `2a2571369f7e845c5d72883d816556ce24be18c0`. Roadmap `2026.09.05-v3` authorized WP2, whose unchanged 5,000-case benchmark exposed the three recorded gaps. Roadmap `2026.09.05-v4` authorized the WP3 remediation now recorded at `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`; the unchanged benchmark reproduced PASS with result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`. Roadmap `2026.09.05-v5` now authorizes only a later WP4 benchmark completion round and this control transition's GitHub #9/#12 reconciliation; this transition must not modify or commit a WP2 artifact.
+On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized `2026.09.05-v2` and WP1 runtime commit `2a2571369f7e845c5d72883d816556ce24be18c0`. Roadmap `2026.09.05-v3` authorized WP2, whose unchanged 5,000-case benchmark exposed the three recorded gaps. Roadmap `2026.09.05-v4` authorized the WP3 remediation recorded at `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`; the unchanged benchmark reproduced PASS with result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`. Roadmap `2026.09.05-v5` authorized WP4 completion, and the 18 benchmark artifacts were committed at `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`. Roadmap `2026.09.06-v1` now authorizes only a later WP5 toolchain-pinning round and the current control transition's GitHub #9/#12 reconciliation; this transition must not modify toolchain implementation files.
 
 Any later GitHub edit that changes those control fields requires a new Owner decision and Roadmap version before implementation. The validator cannot treat `CURRENT`, chat history or an unversioned Issue edit as implementation authorization.

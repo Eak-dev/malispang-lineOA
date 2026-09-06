@@ -20,6 +20,7 @@ export type ProjectAction =
   | "BENCHMARK_WP2"
   | "RUNTIME_REMEDIATION_WP3"
   | "BENCHMARK_COMPLETION_WP4"
+  | "LOCAL_CLOSURE_REMEDIATION_WP5"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -41,10 +42,11 @@ const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
   "CHANGE_MP_06_RUNTIME",
-  "CHANGE_RUNTIME_TEST_BEHAVIOR",
+  "CHANGE_WP1_WP3_RUNTIME_TEST_BEHAVIOR",
   "CHANGE_WP2_DATASET_CASES",
   "CHANGE_WP2_EXPECTED_RESULT",
   "CHANGE_WP2_INDEPENDENT_ORACLE",
+  "CHANGE_WP2_BENCHMARK_SEMANTIC_LOGIC",
   "LOWER_WP2_ACCEPTANCE_THRESHOLDS",
   "DELETE_WP2_FAILED_HISTORY",
   "CHANGE_MP_06_POLICY_SNAPSHOT",
@@ -59,10 +61,22 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "READ_OR_CHANGE_SECRETS",
   "STORE_OR_USE_RAW_CHAT",
   "USE_REAL_CHAT_DATA",
+  "COMMIT_NODE_MODULES",
+  "VENDOR_PACKAGE_REGISTRY",
+  "COMMIT_NODE_BINARY",
+  "COMMIT_PNPM_BINARY",
+  "CREATE_PRIVATE_DEPENDENCY_MIRROR",
+  "CHANGE_DEPENDENCY_VERSIONS",
+  "SUPPLY_CHAIN_REDESIGN",
+  "CREATE_NEW_CI_WORKFLOW",
   "START_MP_07_OR_OTHER_WORK",
   "DEPLOY_TEST",
   "DEPLOY_PRODUCTION",
   "MERGE_DEFAULT_BRANCH",
+  "REBASE_BRANCH",
+  "CREATE_PULL_REQUEST",
+  "CHANGE_DEFAULT_BRANCH",
+  "RESOLVE_DEFAULT_BRANCH_DRIFT",
   "CHANGE_LINE_OA",
   "CHANGE_CLOUDFLARE",
   "CHANGE_WEBHOOK",
@@ -72,23 +86,29 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP4_SCOPE = [
-  "MP_06_WP4_COMMIT_EXISTING_WP2_BENCHMARK_FILES",
-  "MP_06_WP4_COMMIT_FROZEN_5000_CASE_DATASET",
-  "MP_06_WP4_COMMIT_INDEPENDENT_ORACLE_READ_ONLY_CONTENT",
-  "MP_06_WP4_COMMIT_BENCHMARK_SPECIFICATION",
-  "MP_06_WP4_REGENERATE_AND_COMMIT_REPORTS",
-  "MP_06_WP4_ADDITIVE_REPORT_PROVENANCE_REMEDIATION_IF_REQUIRED",
-  "MP_06_WP4_PROVENANCE_REGRESSION_TESTS",
-  "MP_06_WP4_FULL_VALIDATION",
+const REQUIRED_WP5_SCOPE = [
+  "MP_06_WP5_PIN_NODE_JS_24_19_0",
+  "MP_06_WP5_PIN_PNPM_11_19_0",
+  "MP_06_WP5_TOOLCHAIN_DECLARATIONS",
+  "MP_06_WP5_TOOLCHAIN_FAIL_FAST_VALIDATOR",
+  "MP_06_WP5_TOOLCHAIN_REGRESSION_TESTS",
+  "MP_06_WP5_DEVELOPER_DOCUMENTATION",
+  "MP_06_WP5_ALIGN_EXISTING_CI_IF_PRESENT",
+  "MP_06_WP5_CLEAN_CHECKOUT_REPRODUCIBILITY",
+  "MP_06_WP5_READ_ONLY_BENCHMARK_VERIFICATION",
+  "MP_06_WP5_GITHUB_RECONCILIATION",
+  "MP_06_WP5_PREPARE_PR_REVIEW_EVIDENCE",
   "RUNTIME_READ_ONLY",
   "POLICY_SNAPSHOT_READ_ONLY",
   "DATASET_EXPECTED_CASES_READ_ONLY",
   "INDEPENDENT_ORACLE_READ_ONLY",
+  "BENCHMARK_SEMANTICS_READ_ONLY",
   "ACCEPTANCE_THRESHOLDS_READ_ONLY",
+  "APPROVED_KNOWLEDGE_BASE_READ_ONLY",
+  "APPROVED_PRODUCT_CATALOG_READ_ONLY",
   "COMMIT_MP_06_BRANCH",
   "PUSH_MP_06_BRANCH",
-  "UPDATE_GITHUB_EVIDENCE_AFTER_PASS",
+  "UPDATE_GITHUB_ROADMAP_AND_MP_06",
 ] as const;
 
 const EXPECTED_POLICY_SNAPSHOT_CHECKSUM =
@@ -102,6 +122,18 @@ const EXPECTED_WP2_PASS_RESULT_CHECKSUM =
 const EXPECTED_WP2_BASE_COMMIT = "8117f7c0b7cb190af81ea8f9481bd257db8a5a51";
 const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
   "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
+const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
+const EXPECTED_NODE_VERSION = "24.19.0";
+const EXPECTED_PNPM_VERSION = "11.19.0";
+const EXPECTED_WP5_IMPLEMENTATION_FILES = [
+  "package.json",
+  ".npmrc",
+  ".node-version",
+  "scripts/validate-toolchain.mjs",
+  "tests/toolchain-contract.test.ts",
+  "README.md",
+  "docs/line-oa/mp-06/MP_06_WP5_TOOLCHAIN_REMEDIATION_TH.md",
+] as const;
 const EXPECTED_WP2_ARTIFACT_FILES = [
   "package.json",
   "tsconfig.json",
@@ -158,7 +190,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.05-v5",
+    "2026.09.06-v1",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -169,7 +201,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-05-V5",
+      "MP-OD-2026-09-06-V1",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -181,7 +213,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.05-v4",
+      "2026.09.05-v5",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -198,7 +230,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      EXPECTED_RUNTIME_UNDER_TEST_COMMIT,
+      EXPECTED_WP2_ARTIFACT_COMMIT,
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -370,13 +402,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP4_WP2_BENCHMARK_COMPLETION",
+    "WP5_LOCAL_CLOSURE_REMEDIATION",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY",
+    "AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -388,8 +420,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP4",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP4",
+    "WP5",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP5",
   );
   expectEqual(
     errors,
@@ -443,8 +475,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.benchmarkWp2,
-      true,
-      "WP2_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
+      false,
+      "WP2_BENCHMARK_MUST_BE_READ_ONLY",
     );
     expectEqual(
       errors,
@@ -455,8 +487,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.benchmarkCompletionWp4,
+      false,
+      "WP4_BENCHMARK_COMPLETION_MUST_BE_READ_ONLY",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.localClosureRemediationWp5,
       true,
-      "WP4_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
+      "WP5_LOCAL_CLOSURE_REMEDIATION_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -506,14 +544,18 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP4_SCOPE.length ||
-    REQUIRED_WP4_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP5_SCOPE.length ||
+    REQUIRED_WP5_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP4_SCOPE_INVALID");
+    errors.push("WP5_SCOPE_INVALID");
   }
 
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
   validateBenchmarkCompletionPlan(errors, currentWork.benchmarkCompletionPlan);
+  validateLocalClosureRemediationPlan(
+    errors,
+    currentWork.localClosureRemediationPlan,
+  );
 
   if (!isRecord(currentWork.policySnapshotReference)) {
     errors.push("POLICY_SNAPSHOT_REFERENCE_MISSING");
@@ -622,10 +664,10 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
-  if (action === "LOCAL_IMPLEMENTATION" || action === "BENCHMARK_WP2") {
+  if (action === "LOCAL_IMPLEMENTATION") {
     return {
       allowed: false,
-      reason: "USE_SCOPED_BENCHMARK_COMPLETION_WP4_ACTION",
+      reason: "USE_SCOPED_LOCAL_CLOSURE_REMEDIATION_WP5_ACTION",
     };
   }
   const keyByAction: Record<ProjectAction, string> = {
@@ -634,6 +676,7 @@ export function evaluateProjectAction(
     BENCHMARK_WP2: "benchmarkWp2",
     RUNTIME_REMEDIATION_WP3: "runtimeRemediationWp3",
     BENCHMARK_COMPLETION_WP4: "benchmarkCompletionWp4",
+    LOCAL_CLOSURE_REMEDIATION_WP5: "localClosureRemediationWp5",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -699,6 +742,12 @@ function validateWp2BenchmarkReference(
   );
   expectEqual(
     errors,
+    reference.artifactCommit,
+    EXPECTED_WP2_ARTIFACT_COMMIT,
+    "WP2_ARTIFACT_COMMIT_INVALID",
+  );
+  expectEqual(
+    errors,
     reference.datasetChecksum,
     EXPECTED_WP2_DATASET_CHECKSUM,
     "WP2_DATASET_CHECKSUM_INVALID",
@@ -742,7 +791,7 @@ function validateWp2BenchmarkReference(
   expectEqual(
     errors,
     reference.reportRegeneration,
-    "AUTHORIZED_WITH_EXPLICIT_PROVENANCE",
+    "READ_ONLY_VERIFICATION_ONLY",
     "WP2_REPORT_REGENERATION_SCOPE_INVALID",
   );
   expectEqual(errors, reference.totalCases, 5000, "WP2_CASE_COUNT_INVALID");
@@ -818,6 +867,19 @@ function validateBenchmarkCompletionPlan(
     errors.push("WP4_BENCHMARK_COMPLETION_PLAN_MISSING");
     return;
   }
+
+  expectEqual(
+    errors,
+    plan.completionStatus,
+    "COMPLETED_AT_ARTIFACT_COMMIT",
+    "WP4_COMPLETION_STATUS_INVALID",
+  );
+  expectEqual(
+    errors,
+    plan.artifactCommit,
+    EXPECTED_WP2_ARTIFACT_COMMIT,
+    "WP4_ARTIFACT_COMMIT_INVALID",
+  );
 
   const artifactFiles = Array.isArray(plan.benchmarkArtifactAllowlist)
     ? plan.benchmarkArtifactAllowlist
@@ -923,6 +985,174 @@ function validateBenchmarkCompletionPlan(
     true,
     "WP4_FAILED_HISTORY_RETENTION_REQUIRED",
   );
+}
+
+function validateLocalClosureRemediationPlan(
+  errors: string[],
+  plan: unknown,
+): void {
+  if (!isRecord(plan)) {
+    errors.push("WP5_LOCAL_CLOSURE_REMEDIATION_PLAN_MISSING");
+    return;
+  }
+
+  for (const [field, expected, code] of [
+    ["blocker", "UNPINNED_NODE_AND_PNPM_TOOLCHAIN", "WP5_BLOCKER_INVALID"],
+    [
+      "implementationStatus",
+      "NOT_STARTED",
+      "WP5_IMPLEMENTATION_ALREADY_STARTED",
+    ],
+    [
+      "authoritativeToolchainSource",
+      "PACKAGE_JSON",
+      "WP5_TOOLCHAIN_SOURCE_INVALID",
+    ],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
+
+  const implementationFiles = Array.isArray(plan.implementationFileAllowlist)
+    ? plan.implementationFileAllowlist
+    : [];
+  if (
+    implementationFiles.length !== EXPECTED_WP5_IMPLEMENTATION_FILES.length ||
+    EXPECTED_WP5_IMPLEMENTATION_FILES.some(
+      (file) => !implementationFiles.includes(file),
+    )
+  ) {
+    errors.push("WP5_IMPLEMENTATION_FILE_ALLOWLIST_INVALID");
+  }
+
+  if (!isRecord(plan.requiredVersions)) {
+    errors.push("WP5_REQUIRED_VERSIONS_MISSING");
+  } else {
+    expectEqual(
+      errors,
+      plan.requiredVersions.node,
+      EXPECTED_NODE_VERSION,
+      "WP5_NODE_VERSION_INVALID",
+    );
+    expectEqual(
+      errors,
+      plan.requiredVersions.pnpm,
+      EXPECTED_PNPM_VERSION,
+      "WP5_PNPM_VERSION_INVALID",
+    );
+    expectEqual(
+      errors,
+      plan.requiredVersions.versionMatch,
+      "EXACT",
+      "WP5_VERSION_MATCH_MUST_BE_EXACT",
+    );
+  }
+
+  requireBooleanFields(errors, plan.requiredContract, "WP5_CONTRACT", [
+    ["packageManagerDeclaration", true],
+    ["nodeEngineDeclaration", true],
+    ["pnpmEngineDeclaration", true],
+    ["nodeVersionFile", true],
+    ["machineReadableConsistencyValidator", true],
+    ["nodeMismatchFailsFast", true],
+    ["pnpmMismatchFailsFast", true],
+    ["developerBootstrapDocumentation", true],
+    ["existingCiUsesExactVersionsIfPresent", true],
+    ["existingCiDetectedAtTransition", false],
+    ["newCiWorkflowAuthorized", false],
+  ]);
+  requireBooleanFields(errors, plan.registryPolicy, "WP5_REGISTRY_POLICY", [
+    ["offlineBuildRequired", false],
+    ["declaredRegistryDownloadAllowed", true],
+    ["frozenLockfileRequired", true],
+    ["lockfileIntegrityRequired", true],
+    ["dependencyVersionChangesAllowed", false],
+    ["vendoringAllowed", false],
+  ]);
+  requireBooleanFields(errors, plan.readOnlyBoundaries, "WP5_READ_ONLY", [
+    ["runtime", true],
+    ["runtimeBehaviorTests", true],
+    ["benchmarkDataset", true],
+    ["independentOracle", true],
+    ["benchmarkSemantics", true],
+    ["acceptanceThresholds", true],
+    ["policy", true],
+    ["knowledgeBase", true],
+    ["productCatalog", true],
+  ]);
+
+  if (!isRecord(plan.acceptanceCriteria)) {
+    errors.push("WP5_ACCEPTANCE_CRITERIA_MISSING");
+  } else {
+    requireBooleanFields(errors, plan.acceptanceCriteria, "WP5_ACCEPTANCE", [
+      ["toolchainVersionsPinned", true],
+      ["declarationsConsistent", true],
+      ["validatorDetectsVersionDrift", true],
+      ["cleanCheckoutBootstrapDocumented", true],
+      ["frozenInstallWithEmptyStore", true],
+      ["benchmarkReportReproducibleWithoutTrackedChanges", true],
+      ["policyChecksumUnchanged", true],
+      ["datasetChecksumUnchanged", true],
+      ["semanticResultChecksumUnchanged", true],
+      ["benchmarkMetricsUnchanged", true],
+      ["fullValidationRequired", true],
+      ["workingTreeCleanAfterCommit", true],
+      ["localHeadMustMatchRemote", true],
+      ["githubRoadmapAndIssueReconciled", true],
+    ]);
+    expectEqual(
+      errors,
+      plan.acceptanceCriteria.deploymentStatus,
+      "NOT_DEPLOYED",
+      "WP5_DEPLOYMENT_STATUS_INVALID",
+    );
+  }
+
+  if (!isRecord(plan.postWp5Decision)) {
+    errors.push("WP5_POST_DECISION_MISSING");
+  } else {
+    expectEqual(
+      errors,
+      plan.postWp5Decision.ownerDecisionRequired,
+      true,
+      "WP5_POST_DECISION_OWNER_APPROVAL_REQUIRED",
+    );
+    expectEqual(
+      errors,
+      plan.postWp5Decision.authorizedPath,
+      null,
+      "WP5_POST_DECISION_PATH_MUST_REMAIN_UNSELECTED",
+    );
+    const options = Array.isArray(plan.postWp5Decision.options)
+      ? plan.postWp5Decision.options
+      : [];
+    if (
+      options.length !== 2 ||
+      options[0] !== "AI_NLU_WORK_PACKAGE" ||
+      options[1] !== "TEST_READINESS_ASSESSMENT"
+    ) {
+      errors.push("WP5_POST_DECISION_OPTIONS_INVALID");
+    }
+  }
+}
+
+function requireBooleanFields(
+  errors: string[],
+  value: unknown,
+  prefix: string,
+  fields: ReadonlyArray<readonly [string, boolean]>,
+): void {
+  if (!isRecord(value)) {
+    errors.push(`${prefix}_MISSING`);
+    return;
+  }
+  for (const [field, expected] of fields) {
+    expectEqual(
+      errors,
+      value[field],
+      expected,
+      `${prefix}_${field.toUpperCase()}_INVALID`,
+    );
+  }
 }
 
 function validateBenchmark(

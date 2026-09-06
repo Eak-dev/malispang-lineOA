@@ -15,3 +15,5 @@ Project Instructions และสถานะ `CURRENT` ไม่ใช่ imple
 หาก current-work เป็น `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` ให้ทำได้เฉพาะสามช่องว่างที่บันทึกใน remediation plan และเรียก authorization ด้วย scoped action `RUNTIME_REMEDIATION_WP3`; policy กับ WP2 dataset/harness/oracle ต้อง read-only, ห้ามลด acceptance thresholds, ห้ามส่ง partial AUTO, deploy หรือแตะ Production
 
 หาก current-work เป็น `AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY` ให้ทำได้เฉพาะ benchmark completion และ additive provenance remediation ตาม artifact/file allowlist ผ่าน scoped action `BENCHMARK_COMPLETION_WP4`; runtime, policy, dataset expected cases, independent oracle และ thresholds ต้อง read-only, ห้ามใช้ commit field เดียวแบบกำกวม, deploy หรือแตะ Production
+
+หาก current-work เป็น `AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY` ให้ทำได้เฉพาะ pin Node.js `24.19.0` และ pnpm `11.19.0`, toolchain declarations, fail-fast validator/tests, bootstrap documentation และ clean-checkout verification ตาม allowed scope ผ่าน scoped action `LOCAL_CLOSURE_REMEDIATION_WP5`; runtime, benchmark semantics/dataset/oracle, policy, KB และ catalog ต้อง read-only ห้ามสร้าง CI ใหม่, PR, deploy หรือแตะ Production

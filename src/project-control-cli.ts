@@ -26,14 +26,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
-  const benchmarkCompletionWp4 = evaluateProjectAction(
+  const localClosureRemediationWp5 = evaluateProjectAction(
     roadmap,
     currentWork,
-    "BENCHMARK_COMPLETION_WP4",
+    "LOCAL_CLOSURE_REMEDIATION_WP5",
   );
-  if (!benchmarkCompletionWp4.allowed) {
+  if (!localClosureRemediationWp5.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: BENCHMARK_COMPLETION_WP4 must be authorized",
+      "ROADMAP_UNVERIFIED: LOCAL_CLOSURE_REMEDIATION_WP5 must be authorized",
     );
   }
   const githubReconciliation = evaluateProjectAction(
@@ -52,6 +52,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "RUNTIME_WP1",
     "BENCHMARK_WP2",
     "RUNTIME_REMEDIATION_WP3",
+    "BENCHMARK_COMPLETION_WP4",
     "LOCAL_IMPLEMENTATION",
     "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
@@ -67,7 +68,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.05-v5, MP-06 (GitHub #12), WP4 benchmark completion authorized for a subsequent round, runtime/policy/dataset/oracle read-only, deployment blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.06-v1, MP-06 (GitHub #12), WP5 local closure remediation authorized for a subsequent round, Node 24.19.0 and pnpm 11.19.0 contract pinned in control, runtime/policy/dataset/oracle/KB/catalog read-only, deployment blocked, ${warningSuffix}`,
   );
 }
 

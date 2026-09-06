@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP4-only benchmark completion control", () => {
-  it("accepts the 2026.09.05-v5 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP5-only local closure remediation control", () => {
+  it("accepts the 2026.09.06-v1 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -42,24 +42,29 @@ describe("MP-06 WP4-only benchmark completion control", () => {
             benchmarkWp2: { const: boolean };
             runtimeRemediationWp3: { const: boolean };
             benchmarkCompletionWp4: { const: boolean };
+            localClosureRemediationWp5: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP4_WP2_BENCHMARK_COMPLETION",
+      "WP5_LOCAL_CLOSURE_REMEDIATION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY",
+      "AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
-      true,
+      false,
     );
     expect(
       schema.properties.authorization.properties.runtimeRemediationWp3.const,
     ).toBe(false);
     expect(
       schema.properties.authorization.properties.benchmarkCompletionWp4.const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties.localClosureRemediationWp5
+        .const,
     ).toBe(true);
   });
 
@@ -74,9 +79,13 @@ describe("MP-06 WP4-only benchmark completion control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only scoped WP4 benchmark completion work", () => {
+  it("authorizes only scoped WP5 local closure remediation work", () => {
     expect(
-      evaluateProjectAction(roadmap, currentWork, "BENCHMARK_COMPLETION_WP4"),
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "LOCAL_CLOSURE_REMEDIATION_WP5",
+      ),
     ).toEqual({
       allowed: true,
       reason: "AUTHORIZED_BY_CURRENT_WORK",
@@ -89,13 +98,19 @@ describe("MP-06 WP4-only benchmark completion control", () => {
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
     ).toEqual({
       allowed: false,
-      reason: "USE_SCOPED_BENCHMARK_COMPLETION_WP4_ACTION",
+      reason: "BENCHMARK_WP2_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "RUNTIME_REMEDIATION_WP3"),
     ).toEqual({
       allowed: false,
       reason: "RUNTIME_REMEDIATION_WP3_NOT_AUTHORIZED",
+    });
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "BENCHMARK_COMPLETION_WP4"),
+    ).toEqual({
+      allowed: false,
+      reason: "BENCHMARK_COMPLETION_WP4_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "POLICY_SNAPSHOT"),
@@ -107,7 +122,7 @@ describe("MP-06 WP4-only benchmark completion control", () => {
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
       allowed: false,
-      reason: "USE_SCOPED_BENCHMARK_COMPLETION_WP4_ACTION",
+      reason: "USE_SCOPED_LOCAL_CLOSURE_REMEDIATION_WP5_ACTION",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -135,7 +150,7 @@ describe("MP-06 WP4-only benchmark completion control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.05-v4";
+    changed.roadmapVersion = "2026.09.05-v5";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -207,7 +222,7 @@ describe("MP-06 WP4-only benchmark completion control", () => {
     );
   });
 
-  it("preserves WP2 quality thresholds and required reports for completion", () => {
+  it("preserves completed WP2 quality thresholds and required reports", () => {
     const changed = clone(currentWork) as {
       benchmarkAcceptanceCriteria: {
         meaningfullyDistinct: boolean;
@@ -272,30 +287,33 @@ describe("MP-06 WP4-only benchmark completion control", () => {
     );
   });
 
-  it("rejects removal of WP4 authorization or restoration of WP3 write access", () => {
+  it("rejects removal of WP5 authorization or restoration of prior write access", () => {
     const changed = clone(currentWork) as {
       authorization: {
         benchmarkWp2: boolean;
         runtimeRemediationWp3: boolean;
         benchmarkCompletionWp4: boolean;
+        localClosureRemediationWp5: boolean;
       };
     };
-    changed.authorization.benchmarkWp2 = false;
+    changed.authorization.benchmarkWp2 = true;
     changed.authorization.runtimeRemediationWp3 = true;
-    changed.authorization.benchmarkCompletionWp4 = false;
+    changed.authorization.benchmarkCompletionWp4 = true;
+    changed.authorization.localClosureRemediationWp5 = false;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
-        "WP2_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
+        "WP2_BENCHMARK_MUST_BE_READ_ONLY",
         "WP3_RUNTIME_REMEDIATION_MUST_BE_READ_ONLY",
-        "WP4_BENCHMARK_COMPLETION_NOT_AUTHORIZED",
+        "WP4_BENCHMARK_COMPLETION_MUST_BE_READ_ONLY",
+        "WP5_LOCAL_CLOSURE_REMEDIATION_NOT_AUTHORIZED",
       ]),
     );
     expect(
-      evaluateProjectAction(roadmap, changed, "BENCHMARK_COMPLETION_WP4"),
+      evaluateProjectAction(roadmap, changed, "LOCAL_CLOSURE_REMEDIATION_WP5"),
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP4 scope expansion", () => {
+  it("rejects policy checksum drift or WP5 scope expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -307,7 +325,7 @@ describe("MP-06 WP4-only benchmark completion control", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP4_SCOPE_INVALID",
+      "WP5_SCOPE_INVALID",
     );
   });
 
@@ -342,20 +360,23 @@ describe("MP-06 WP4-only benchmark completion control", () => {
     );
   });
 
-  it("pins failed and PASS WP2 evidence plus the immutable dataset", () => {
+  it("pins the WP2 artifact, failed/PASS evidence, and immutable dataset", () => {
     const checksumDrift = clone(currentWork) as {
       wp2BenchmarkReference: {
+        artifactCommit: string;
         datasetChecksum: string;
         failedResultChecksum: string;
         remediatedPassResultChecksum: string;
       };
     };
+    checksumDrift.wp2BenchmarkReference.artifactCommit = "a".repeat(40);
     checksumDrift.wp2BenchmarkReference.datasetChecksum = "0".repeat(64);
     checksumDrift.wp2BenchmarkReference.failedResultChecksum = "f".repeat(64);
     checksumDrift.wp2BenchmarkReference.remediatedPassResultChecksum =
       "1".repeat(64);
     expect(validateProjectControl(roadmap, checksumDrift).errors).toEqual(
       expect.arrayContaining([
+        "WP2_ARTIFACT_COMMIT_INVALID",
         "WP2_DATASET_CHECKSUM_INVALID",
         "WP2_FAILED_RESULT_CHECKSUM_INVALID",
         "WP2_PASS_RESULT_CHECKSUM_INVALID",
@@ -391,6 +412,107 @@ describe("MP-06 WP4-only benchmark completion control", () => {
         "WP4_AMBIGUOUS_COMMIT_FIELD_MUST_BE_FORBIDDEN",
         "WP4_SELF_REFERENTIAL_COMMIT_MUST_BE_FORBIDDEN",
         "WP4_PROVENANCE_MUST_NOT_CHANGE_RESULT_CHECKSUM",
+      ]),
+    );
+  });
+
+  it("encodes the exact future Node/pnpm contract without starting WP5 implementation", () => {
+    const record = currentWork as {
+      localClosureRemediationPlan: {
+        implementationStatus: string;
+        authoritativeToolchainSource: string;
+        implementationFileAllowlist: string[];
+        requiredVersions: {
+          node: string;
+          pnpm: string;
+          versionMatch: string;
+        };
+        requiredContract: {
+          machineReadableConsistencyValidator: boolean;
+          nodeMismatchFailsFast: boolean;
+          pnpmMismatchFailsFast: boolean;
+          existingCiDetectedAtTransition: boolean;
+          newCiWorkflowAuthorized: boolean;
+        };
+        postWp5Decision: {
+          ownerDecisionRequired: boolean;
+          authorizedPath: string | null;
+          options: string[];
+        };
+      };
+    };
+    const plan = record.localClosureRemediationPlan;
+    expect(plan.implementationStatus).toBe("NOT_STARTED");
+    expect(plan.authoritativeToolchainSource).toBe("PACKAGE_JSON");
+    expect(plan.requiredVersions).toEqual({
+      node: "24.19.0",
+      pnpm: "11.19.0",
+      versionMatch: "EXACT",
+    });
+    expect(plan.implementationFileAllowlist).toEqual([
+      "package.json",
+      ".npmrc",
+      ".node-version",
+      "scripts/validate-toolchain.mjs",
+      "tests/toolchain-contract.test.ts",
+      "README.md",
+      "docs/line-oa/mp-06/MP_06_WP5_TOOLCHAIN_REMEDIATION_TH.md",
+    ]);
+    expect(plan.requiredContract).toMatchObject({
+      machineReadableConsistencyValidator: true,
+      nodeMismatchFailsFast: true,
+      pnpmMismatchFailsFast: true,
+      existingCiDetectedAtTransition: false,
+      newCiWorkflowAuthorized: false,
+    });
+    expect(plan.postWp5Decision).toEqual({
+      ownerDecisionRequired: true,
+      authorizedPath: null,
+      options: ["AI_NLU_WORK_PACKAGE", "TEST_READINESS_ASSESSMENT"],
+    });
+  });
+
+  it("fails closed on toolchain drift, premature implementation, or registry scope expansion", () => {
+    const changed = clone(currentWork) as {
+      localClosureRemediationPlan: {
+        implementationStatus: string;
+        implementationFileAllowlist: string[];
+        requiredVersions: { node: string; pnpm: string };
+        requiredContract: { nodeMismatchFailsFast: boolean };
+        registryPolicy: {
+          dependencyVersionChangesAllowed: boolean;
+          vendoringAllowed: boolean;
+        };
+        postWp5Decision: {
+          ownerDecisionRequired: boolean;
+          authorizedPath: string | null;
+          options: string[];
+        };
+      };
+    };
+    const plan = changed.localClosureRemediationPlan;
+    plan.implementationStatus = "IN_PROGRESS";
+    plan.implementationFileAllowlist.pop();
+    plan.requiredVersions.node = "24.18.0";
+    plan.requiredVersions.pnpm = "11.18.0";
+    plan.requiredContract.nodeMismatchFailsFast = false;
+    plan.registryPolicy.dependencyVersionChangesAllowed = true;
+    plan.registryPolicy.vendoringAllowed = true;
+    plan.postWp5Decision.ownerDecisionRequired = false;
+    plan.postWp5Decision.authorizedPath = "AI_NLU_WORK_PACKAGE";
+    plan.postWp5Decision.options.reverse();
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP5_IMPLEMENTATION_ALREADY_STARTED",
+        "WP5_IMPLEMENTATION_FILE_ALLOWLIST_INVALID",
+        "WP5_NODE_VERSION_INVALID",
+        "WP5_PNPM_VERSION_INVALID",
+        "WP5_CONTRACT_NODEMISMATCHFAILSFAST_INVALID",
+        "WP5_REGISTRY_POLICY_DEPENDENCYVERSIONCHANGESALLOWED_INVALID",
+        "WP5_REGISTRY_POLICY_VENDORINGALLOWED_INVALID",
+        "WP5_POST_DECISION_OWNER_APPROVAL_REQUIRED",
+        "WP5_POST_DECISION_PATH_MUST_REMAIN_UNSELECTED",
+        "WP5_POST_DECISION_OPTIONS_INVALID",
       ]),
     );
   });
