@@ -150,17 +150,20 @@ Cloudflare observability logs เปิดอยู่และ runtime มี s
 
 ## 20. PR / default-branch considerations
 
-default branch คือ `codex/phase-1a-foundation` ที่ commit `30b79f791e276fa5f420d08ffff208a231780281`; branch MP-06 อยู่ข้างหน้า 30 commitsและไม่อยู่ข้างหลัง (`0 behind / 30 ahead`) จึงไม่มี merge conflict จาก default-branch drift ณ เวลาประเมิน ไม่พบ PR สำหรับ branch นี้ และ default branch ไม่เปิด branch protection ที่ API มองเห็นได้ ต้องสร้าง PR/review ในรอบที่ได้รับอนุญาตและใช้ checklist ใน `.github/pull_request_template.md`; WP6 ห้ามสร้าง PR หรือ merge
+default branch คือ `codex/phase-1a-foundation` ที่ commit `30b79f791e276fa5f420d08ffff208a231780281`; branch MP-06 อยู่ข้างหน้า 30 commitsและไม่อยู่ข้างหลัง (`0 behind / 30 ahead`) ณ control commit และข้างหน้า 31 commitsหลังเพิ่ม assessment artifact จึงไม่มี merge conflict จาก default-branch drift ณ เวลาประเมิน ไม่พบ PR สำหรับ branch นี้ และ default branch ไม่เปิด branch protection ที่ API มองเห็นได้ ต้องสร้าง PR/review ในรอบที่ได้รับอนุญาตและใช้ checklist ใน `.github/pull_request_template.md`; WP6 ห้ามสร้าง PR หรือ merge
+
+Clean-checkout validation พบข้อจำกัดเดิมของ command ordering: `pnpm check` รัน `format:check` ก่อน `preview:rich-menu` และ preview generator สร้าง tracked HTML ที่ยังไม่ format จึงเกิด formatting diff ชั่วคราว การรัน committed formatter คืน artifact เป็น byte-identical และ checkout สุดท้ายสะอาด แต่ PR-readiness transition ต้องแก้ ordering หรือ generator ให้ validation chain จบแบบสะอาดเอง ห้ามถือขั้นตอนแก้ชั่วคราวนี้เป็น hermetic proof
 
 ## 21. Blockers / conditions
 
-1. `current-work.json` ที่ freeze ก่อน remediation ยังคงบันทึก timeout contract 120 วินาที ขณะที่ Owner-authorized dedicated benchmark lane ใช้ 300 วินาที ต้อง normalize governance metadata ก่อน deployment authorization
+1. `current-work.json` ที่ freeze ก่อน remediation ยังคงบันทึก timeout contract 120 วินาที ขณะที่ Owner-authorized dedicated benchmark lane ใช้ 300 วินาที และยังบันทึก assessment status เป็น `NOT_STARTED` ต้อง normalize governance metadata/assessment evidence ก่อน deployment authorization
 2. ต้อง freeze MP-06 TEST monitoring/alert thresholds, pilot volume/rate guard, recipients และ stop conditions
 3. ต้อง freeze current/rollback Worker versions, rollback owner/operator และ runbook checklist ณ change window
 4. ต้องเตรียม synthetic smoke/UAT fixtures และรายชื่อผู้ทดสอบ โดยห้ามใช้ Production chat
 5. MP-06 code ยังไม่ deploy; live smoke, rollback rehearsal และ Owner UAT ยังไม่เกิด
 6. AI/NLU semantic interpretation ตาม Issue #12 ยังไม่ได้ implement
 7. ไม่มี PR/review/default-branch integration
+8. `pnpm check` ยังต้องแก้ลำดับ format/preview หรือ generator เพื่อไม่ให้ tracked Rich Menu preview drift ชั่วคราว
 
 ## 22. Verdict
 
@@ -179,7 +182,7 @@ TEST/Production boundary, Worker/domain, bindings, secret presence, webhook/auth
 
 ชื่อเหล่านี้ **ยังไม่มีใน schema ปัจจุบัน** จึงต้องเพิ่มแบบแคบใน control transition ที่ Owner อนุมัติ ห้ามใช้ชื่อดังกล่าวเป็น authorization เอง
 
-Allowed scope ที่เสนอ: normalize benchmark watchdog metadata/commit references; เพิ่ม TEST-only monitoring/rate/stop manifest และ validators; freeze rollback/smoke/UAT runbook/fixtures แบบ synthetic; ทำ assessment ซ้ำ; commit/push/evidence เท่านั้น
+Allowed scope ที่เสนอ: normalize benchmark watchdog metadata/commit references และ assessment completion state; แก้ validation-chain ordering/preview formatting แบบไม่เปลี่ยน artifact semantics; เพิ่ม TEST-only monitoring/rate/stop manifest และ validators; freeze rollback/smoke/UAT runbook/fixtures แบบ synthetic; ทำ assessment ซ้ำ; commit/push/evidence เท่านั้น
 
 Forbidden scope ที่เสนอ: AI/NLU/runtime/policy/KB/catalog/dataset/oracle mutation, remote resource/secret/LINE change, TEST/Production deploy, PR/merge/rebase, Production query/action และ MP-07 หลัง condition closure ผ่านแล้ว Owner ยังต้องอนุมัติ AI/NLU work package แยก จากนั้นจึงพิจารณา TEST deployment, smoke, rollback rehearsal และ Owner UAT แบบแยก gate
 
