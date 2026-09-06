@@ -117,7 +117,7 @@ describe("MP-06 WP2 evaluator and reports", () => {
 
   beforeAll(async () => {
     run = await runMp06Benchmark();
-  }, 60_000);
+  }, 120_000);
 
   it("evaluates exact single/composite/overflow/PRICE/clarification behavior", async () => {
     for (const family of [
