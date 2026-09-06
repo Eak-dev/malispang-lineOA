@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "benchmark:mp-06": "node --import tsx scripts/run-mp-06-benchmark.ts generate",
+    "benchmark:mp-06:check": "node --import tsx scripts/run-mp-06-benchmark.ts check",
     "build": "tsc -p tsconfig.build.json",
-    "check": "pnpm render:rich-menu && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm validate:flex && pnpm validate:rich-menu && pnpm validate:approved-knowledge-base && pnpm validate:product-catalog && pnpm validate:draft-order-config && pnpm validate:production-readiness && pnpm validate:project-control && pnpm validate:mp-06-policy && pnpm preview && pnpm preview:rich-menu && pnpm worker:dry-run",
+    "check": "pnpm render:rich-menu && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm validate:flex && pnpm validate:rich-menu && pnpm validate:approved-knowledge-base && pnpm validate:product-catalog && pnpm validate:draft-order-config && pnpm validate:production-readiness && pnpm validate:project-control && pnpm validate:mp-06-policy && pnpm benchmark:mp-06:check && pnpm preview && pnpm preview:rich-menu && pnpm worker:dry-run",
     "audit:dependencies": "pnpm audit --audit-level high",
     "deploy:test": "wrangler deploy --minify",
     "format": "prettier --write --ignore-unknown .",

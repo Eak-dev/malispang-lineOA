@@ -15,6 +15,7 @@
     "types": ["node", "vitest/globals"]
   },
   "include": [
+    "benchmark/**/*.ts",
     "src/**/*.ts",
     "tests/**/*.ts",
     "scripts/**/*.ts",
