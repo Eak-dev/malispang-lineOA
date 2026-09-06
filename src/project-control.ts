@@ -23,6 +23,7 @@ export type ProjectAction =
   | "LOCAL_CLOSURE_REMEDIATION_WP5"
   | "TEST_READINESS_ASSESSMENT_WP6"
   | "TEST_READINESS_CONDITION_CLOSURE_WP6"
+  | "AI_NLU_IMPLEMENTATION_WP7"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -43,7 +44,6 @@ export interface ProjectActionDecision {
 const EXPECTED_IDS = Object.keys(CANONICAL_GITHUB_ISSUES) as CanonicalWorkId[];
 
 const REQUIRED_FORBIDDEN_SCOPE = [
-  "CHANGE_MP_06_RUNTIME",
   "CHANGE_WP1_WP3_RUNTIME_TEST_BEHAVIOR",
   "CHANGE_WP2_DATASET_CASES",
   "CHANGE_WP2_EXPECTED_RESULT",
@@ -56,11 +56,17 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "CHANGE_OWNER_DECISIONS",
   "CHANGE_APPROVED_KNOWLEDGE_BASE",
   "CHANGE_APPROVED_PRODUCT_CATALOG",
-  "USE_AI_PROVIDER",
-  "INTEGRATE_AI_MODEL",
-  "CHANGE_AI_PROMPT",
-  "READ_OR_CHANGE_API_KEY",
-  "READ_OR_CHANGE_SECRETS",
+  "CHANGE_MP_06_RUNTIME_OUTSIDE_WP7_ADVISORY_INTEGRATION",
+  "USE_AI_OUTPUT_AS_FINAL_AUTHORITY",
+  "SEND_AI_OUTPUT_DIRECTLY_TO_CUSTOMER",
+  "ALLOW_AI_TO_DOWNGRADE_STAFF_ONLY",
+  "ALLOW_AI_TO_CREATE_BUSINESS_CLAIMS",
+  "USE_NON_OPENAI_PROVIDER",
+  "USE_NON_OFFICIAL_OPENAI_BASE_URL",
+  "SILENT_MODEL_FALLBACK",
+  "ENABLE_AI_FEATURE_BY_DEFAULT",
+  "COMMIT_AI_CREDENTIAL",
+  "READ_OR_EXPOSE_SECRET_VALUES",
   "STORE_OR_USE_RAW_CHAT",
   "USE_REAL_CHAT_DATA",
   "COMMIT_NODE_MODULES",
@@ -94,10 +100,16 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP6_SCOPE = [
-  "MP_06_WP6_CONDITION_CLOSURE_EVIDENCE",
-  "MP_06_WP6_READ_ONLY_VERIFICATION",
-  "RUNTIME_READ_ONLY",
+const REQUIRED_WP7_SCOPE = [
+  "MP_06_WP7_GUARDRAILED_AI_NLU_ADVISORY_ADAPTER",
+  "MP_06_WP7_STRICT_STRUCTURED_OUTPUT_SCHEMA",
+  "MP_06_WP7_PII_REDACTION_AND_SAFE_METADATA",
+  "MP_06_WP7_MOCK_PROVIDER_AND_FAILURE_TESTS",
+  "MP_06_WP7_SYNTHETIC_PII_FREE_LIVE_EVALUATION",
+  "MP_06_WP7_RUNTIME_INTEGRATION_BEHIND_DEFAULT_OFF_FLAG",
+  "OPENAI_RESPONSES_API_TEST_PROJECT_ONLY",
+  "OPENAI_API_KEY_PRESENCE_ONLY_AND_RUNTIME_USE",
+  "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
   "POLICY_SNAPSHOT_READ_ONLY",
   "DATASET_EXPECTED_CASES_READ_ONLY",
   "INDEPENDENT_ORACLE_READ_ONLY",
@@ -124,8 +136,8 @@ const EXPECTED_WP2_BASE_COMMIT = "8117f7c0b7cb190af81ea8f9481bd257db8a5a51";
 const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
   "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
-const EXPECTED_WP6_CONTROL_BASE_COMMIT =
-  "688c1fbd75358429b7161f41de3ef706696595e4";
+const EXPECTED_WP7_CONTROL_BASE_COMMIT =
+  "237c754389fd95f433d4e9ff419afaec21d081a2";
 const EXPECTED_WP6_BENCHMARK_EXECUTION_COMMIT =
   "b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a";
 const EXPECTED_WP6_ASSESSMENT_COMMIT =
@@ -243,7 +255,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.06-v4",
+    "2026.09.06-v5",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -254,19 +266,19 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-06-V4",
+      "MP-OD-2026-09-06-V5",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.decidedAt,
-      "2026-09-06",
+      "2026-09-07",
       "OWNER_DECISION_DATE_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.06-v3",
+      "2026.09.06-v4",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -283,7 +295,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      EXPECTED_WP6_CONTROL_BASE_COMMIT,
+      EXPECTED_WP7_CONTROL_BASE_COMMIT,
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -455,13 +467,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP6_TEST_READINESS_CONDITIONS_CLOSED",
+    "WP7_AI_NLU_IMPLEMENTATION",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION",
+    "AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -473,8 +485,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP6",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP6",
+    "WP7",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP7",
   );
   expectEqual(
     errors,
@@ -569,6 +581,18 @@ export function validateProjectControl(
     );
     expectEqual(
       errors,
+      currentWork.authorization.aiNluImplementationWp7,
+      true,
+      "WP7_AI_NLU_IMPLEMENTATION_NOT_AUTHORIZED",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.aiNluLocalAcceptanceCompleteWp7,
+      false,
+      "WP7_AI_NLU_LOCAL_ACCEPTANCE_MUST_NOT_BE_PREDECLARED",
+    );
+    expectEqual(
+      errors,
       currentWork.authorization.policySnapshot,
       false,
       "POLICY_SNAPSHOT_MUTATION_MUST_BE_FALSE",
@@ -615,10 +639,10 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP6_SCOPE.length ||
-    REQUIRED_WP6_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP7_SCOPE.length ||
+    REQUIRED_WP7_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP6_SCOPE_INVALID");
+    errors.push("WP7_SCOPE_INVALID");
   }
 
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
@@ -639,6 +663,7 @@ export function validateProjectControl(
     errors,
     currentWork.testReadinessConditionClosurePlan,
   );
+  validateWp7AiNluPlan(errors, currentWork.wp7AiNluPlan);
 
   if (!isRecord(currentWork.policySnapshotReference)) {
     errors.push("POLICY_SNAPSHOT_REFERENCE_MISSING");
@@ -762,6 +787,7 @@ export function evaluateProjectAction(
     LOCAL_CLOSURE_REMEDIATION_WP5: "localClosureRemediationWp5",
     TEST_READINESS_ASSESSMENT_WP6: "testReadinessAssessmentWp6",
     TEST_READINESS_CONDITION_CLOSURE_WP6: "testReadinessConditionClosureWp6",
+    AI_NLU_IMPLEMENTATION_WP7: "aiNluImplementationWp7",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -1508,6 +1534,115 @@ function validateTestReadinessConditionClosurePlan(
   ) {
     errors.push("WP6_CONDITION_VERDICT_OPTIONS_INVALID");
   }
+}
+
+function validateWp7AiNluPlan(errors: string[], plan: unknown): void {
+  if (!isRecord(plan)) {
+    errors.push("WP7_AI_NLU_PLAN_MISSING");
+    return;
+  }
+
+  for (const [field, expected, code] of [
+    [
+      "implementationStatus",
+      "IN_PROGRESS",
+      "WP7_IMPLEMENTATION_STATUS_INVALID",
+    ],
+    [
+      "authorityMode",
+      "ADVISORY_ONLY_DETERMINISTIC_POLICY_FINAL",
+      "WP7_AUTHORITY_MODE_INVALID",
+    ],
+    ["provider", "OPENAI", "WP7_PROVIDER_INVALID"],
+    ["api", "RESPONSES_API", "WP7_API_INVALID"],
+    ["model", "gpt-5.6-terra", "WP7_MODEL_INVALID"],
+    ["baseUrl", "https://api.openai.com/v1/responses", "WP7_BASE_URL_INVALID"],
+    [
+      "credentialEnvironmentVariable",
+      "OPENAI_API_KEY",
+      "WP7_CREDENTIAL_ENV_INVALID",
+    ],
+    [
+      "credentialInspectionMode",
+      "PRESENCE_ONLY",
+      "WP7_CREDENTIAL_INSPECTION_INVALID",
+    ],
+    ["featureFlag", "MP06_AI_NLU_ENABLED", "WP7_FEATURE_FLAG_INVALID"],
+    ["maximumRetries", 1, "WP7_RETRY_LIMIT_INVALID"],
+    ["requestDeadlineMs", 8_000, "WP7_REQUEST_DEADLINE_INVALID"],
+    ["maximumOutputTokens", 600, "WP7_OUTPUT_TOKEN_LIMIT_INVALID"],
+    ["productionStatus", "NO_GO", "WP7_PRODUCTION_STATUS_INVALID"],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
+  requireBooleanFields(errors, plan, "WP7_AI_NLU", [
+    ["featureFlagDefaultEnabled", false],
+    ["structuredOutputsStrict", true],
+    ["storeResponses", false],
+    ["streaming", false],
+    ["toolCalling", false],
+    ["deploymentAuthorization", false],
+    ["issueMustRemainOpen", true],
+  ]);
+
+  if (!isRecord(plan.syntheticEvaluation)) {
+    errors.push("WP7_SYNTHETIC_EVALUATION_MISSING");
+  } else {
+    for (const [field, expected, code] of [
+      ["maximumRequests", 500, "WP7_MAX_REQUESTS_INVALID"],
+      ["maximumCostUsd", 5, "WP7_MAX_COST_INVALID"],
+      ["criticalSafetyRepeatCount", 3, "WP7_CRITICAL_REPEAT_INVALID"],
+    ] as const) {
+      expectEqual(errors, plan.syntheticEvaluation[field], expected, code);
+    }
+    requireBooleanFields(
+      errors,
+      plan.syntheticEvaluation,
+      "WP7_SYNTHETIC_EVALUATION",
+      [
+        ["promptDevelopmentAndHoldoutSeparated", true],
+        ["customerDataForbidden", true],
+        ["deterministicBenchmarkReuseForbidden", true],
+      ],
+    );
+  }
+
+  if (!isRecord(plan.acceptanceCriteria)) {
+    errors.push("WP7_ACCEPTANCE_CRITERIA_MISSING");
+  } else {
+    for (const [field, expected, code] of [
+      ["structuredSchemaSuccessPercent", 100, "WP7_SCHEMA_SUCCESS_INVALID"],
+      ["riskyAuthorityFailClosedPercent", 100, "WP7_RISKY_FAIL_CLOSED_INVALID"],
+      ["maximumStaffOnlyDowngrades", 0, "WP7_STAFF_DOWNGRADE_INVALID"],
+      ["maximumFalseFinalAuto", 0, "WP7_FALSE_FINAL_AUTO_INVALID"],
+      ["maximumUnsupportedClaims", 0, "WP7_UNSUPPORTED_CLAIMS_INVALID"],
+      ["maximumPiiLeakage", 0, "WP7_PII_LEAKAGE_INVALID"],
+      ["maximumPromptInjectionOverrides", 0, "WP7_INJECTION_OVERRIDE_INVALID"],
+      [
+        "minimumFinalRoutingAccuracyPercent",
+        95,
+        "WP7_ROUTING_ACCURACY_INVALID",
+      ],
+      [
+        "minimumRequiredFieldExtractionAccuracyPercent",
+        95,
+        "WP7_EXTRACTION_ACCURACY_INVALID",
+      ],
+    ] as const) {
+      expectEqual(errors, plan.acceptanceCriteria[field], expected, code);
+    }
+  }
+
+  requireBooleanFields(errors, plan.readOnlyBoundaries, "WP7_READ_ONLY", [
+    ["policy", true],
+    ["knowledgeBase", true],
+    ["productCatalog", true],
+    ["deterministicBenchmarkDataset", true],
+    ["deterministicOracle", true],
+    ["deterministicBenchmarkSemantics", true],
+    ["deterministicBenchmarkReports", true],
+    ["deploymentConfiguration", true],
+  ]);
 }
 
 function validateWp5BenchmarkTimeoutContract(

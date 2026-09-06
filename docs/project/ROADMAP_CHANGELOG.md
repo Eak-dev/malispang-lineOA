@@ -1,6 +1,16 @@
 # Roadmap Changelog
 
-## 2026.09.06-v4 — current
+## 2026.09.06-v5 — current
+
+- supersedes `2026.09.06-v4` while retaining MP-06 (GitHub #12) as the only current work
+- sets phase/status/action to `WP7_AI_NLU_IMPLEMENTATION` / `AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY` / `AI_NLU_IMPLEMENTATION_WP7` and verified baseline to `237c754389fd95f433d4e9ff419afaec21d081a2`
+- authorizes only advisory OpenAI Responses API NLU with strict structured outputs, PII redaction, mock/provider-failure tests, capped synthetic PII-free live evaluation and default-off runtime integration
+- requires deterministic evaluator/policy to retain final routing authority; AI may not send customer responses, downgrade `STAFF_ONLY`, invent business claims, call tools or silently fall back to another model/provider
+- records candidate model `gpt-5.6-terra`, official Responses API endpoint, `store:false`, no streaming/tool calling, one safe transient retry, request/cost guards and credential handling without exposing or committing values
+- preserves policy/dataset/result checksums and keeps deterministic benchmark reports, KB/catalog, deployment configuration and Production read-only
+- keeps TEST deployment false, Production `NO_GO`, Issue #12 open and MP-07 blocked
+
+## 2026.09.06-v4 — superseded
 
 - supersedes `2026.09.06-v3` while retaining MP-06 (GitHub #12) as the only current work
 - records assessment verdict `TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS` from commit `76d1e1302c31a35ab49e565b231cf63100e27fb6` and conditions baseline `0ad0ee261eb1f270f8a81c5874d0118768244d53`

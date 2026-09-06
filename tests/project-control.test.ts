@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
-  it("accepts the 2026.09.06-v4 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP7 guarded AI/NLU control", () => {
+  it("accepts the 2026.09.06-v5 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -46,15 +46,17 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
             testReadinessAssessmentWp6: { const: boolean };
             testReadinessConditionClosureWp6: { const: boolean };
             testReadinessConditionsClosedWp6: { const: boolean };
+            aiNluImplementationWp7: { const: boolean };
+            aiNluLocalAcceptanceCompleteWp7: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP6_TEST_READINESS_CONDITIONS_CLOSED",
+      "WP7_AI_NLU_IMPLEMENTATION",
     );
     expect(schema.properties.status.const).toBe(
-      "AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION",
+      "AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -81,6 +83,13 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
       schema.properties.authorization.properties
         .testReadinessConditionsClosedWp6.const,
     ).toBe(true);
+    expect(
+      schema.properties.authorization.properties.aiNluImplementationWp7.const,
+    ).toBe(true);
+    expect(
+      schema.properties.authorization.properties.aiNluLocalAcceptanceCompleteWp7
+        .const,
+    ).toBe(false);
   });
 
   it("keeps canonical work IDs mapped to immutable GitHub issues", () => {
@@ -94,10 +103,10 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("records closure evidence while blocking every implementation action", () => {
+  it("authorizes only WP7 AI/NLU implementation while retaining prior evidence", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP6_CONDITION_CLOSURE_EVIDENCE",
+      "MP_06_WP7_GUARDRAILED_AI_NLU_ADVISORY_ADAPTER",
     );
     expect(
       evaluateProjectAction(
@@ -163,6 +172,12 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
       allowed: false,
       reason: "OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION_REQUIRED",
     });
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "AI_NLU_IMPLEMENTATION_WP7"),
+    ).toEqual({
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
+    });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
     );
@@ -185,6 +200,120 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
       allowed: false,
       reason: "CHANGE_PRODUCTION_NOT_AUTHORIZED",
     });
+  });
+
+  it("locks WP7 to advisory OpenAI Responses API use and local synthetic evaluation", () => {
+    const record = currentWork as {
+      wp7AiNluPlan: {
+        implementationStatus: string;
+        authorityMode: string;
+        provider: string;
+        api: string;
+        model: string;
+        baseUrl: string;
+        credentialInspectionMode: string;
+        featureFlagDefaultEnabled: boolean;
+        structuredOutputsStrict: boolean;
+        storeResponses: boolean;
+        streaming: boolean;
+        toolCalling: boolean;
+        maximumRetries: number;
+        syntheticEvaluation: {
+          maximumRequests: number;
+          maximumCostUsd: number;
+          criticalSafetyRepeatCount: number;
+          customerDataForbidden: boolean;
+        };
+        acceptanceCriteria: {
+          structuredSchemaSuccessPercent: number;
+          riskyAuthorityFailClosedPercent: number;
+          maximumStaffOnlyDowngrades: number;
+          maximumFalseFinalAuto: number;
+          minimumFinalRoutingAccuracyPercent: number;
+          minimumRequiredFieldExtractionAccuracyPercent: number;
+        };
+        deploymentAuthorization: boolean;
+        productionStatus: string;
+        issueMustRemainOpen: boolean;
+      };
+    };
+    expect(record.wp7AiNluPlan).toMatchObject({
+      implementationStatus: "IN_PROGRESS",
+      authorityMode: "ADVISORY_ONLY_DETERMINISTIC_POLICY_FINAL",
+      provider: "OPENAI",
+      api: "RESPONSES_API",
+      model: "gpt-5.6-terra",
+      baseUrl: "https://api.openai.com/v1/responses",
+      credentialInspectionMode: "PRESENCE_ONLY",
+      featureFlagDefaultEnabled: false,
+      structuredOutputsStrict: true,
+      storeResponses: false,
+      streaming: false,
+      toolCalling: false,
+      maximumRetries: 1,
+      syntheticEvaluation: {
+        maximumRequests: 500,
+        maximumCostUsd: 5,
+        criticalSafetyRepeatCount: 3,
+        customerDataForbidden: true,
+      },
+      acceptanceCriteria: {
+        structuredSchemaSuccessPercent: 100,
+        riskyAuthorityFailClosedPercent: 100,
+        maximumStaffOnlyDowngrades: 0,
+        maximumFalseFinalAuto: 0,
+        minimumFinalRoutingAccuracyPercent: 95,
+        minimumRequiredFieldExtractionAccuracyPercent: 95,
+      },
+      deploymentAuthorization: false,
+      productionStatus: "NO_GO",
+      issueMustRemainOpen: true,
+    });
+  });
+
+  it("fails closed when WP7 authority, model, safety thresholds, or deployment drifts", () => {
+    const changed = clone(currentWork) as {
+      authorization: { aiNluImplementationWp7: boolean };
+      wp7AiNluPlan: {
+        authorityMode: string;
+        model: string;
+        featureFlagDefaultEnabled: boolean;
+        syntheticEvaluation: {
+          maximumRequests: number;
+          maximumCostUsd: number;
+        };
+        acceptanceCriteria: {
+          maximumFalseFinalAuto: number;
+          minimumFinalRoutingAccuracyPercent: number;
+        };
+        deploymentAuthorization: boolean;
+      };
+    };
+    changed.authorization.aiNluImplementationWp7 = false;
+    changed.wp7AiNluPlan.authorityMode = "MODEL_FINAL";
+    changed.wp7AiNluPlan.model = "fallback-model";
+    changed.wp7AiNluPlan.featureFlagDefaultEnabled = true;
+    changed.wp7AiNluPlan.syntheticEvaluation.maximumRequests = 501;
+    changed.wp7AiNluPlan.syntheticEvaluation.maximumCostUsd = 6;
+    changed.wp7AiNluPlan.acceptanceCriteria.maximumFalseFinalAuto = 1;
+    changed.wp7AiNluPlan.acceptanceCriteria.minimumFinalRoutingAccuracyPercent = 94;
+    changed.wp7AiNluPlan.deploymentAuthorization = true;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP7_AI_NLU_IMPLEMENTATION_NOT_AUTHORIZED",
+        "WP7_AUTHORITY_MODE_INVALID",
+        "WP7_MODEL_INVALID",
+        "WP7_AI_NLU_FEATUREFLAGDEFAULTENABLED_INVALID",
+        "WP7_MAX_REQUESTS_INVALID",
+        "WP7_MAX_COST_INVALID",
+        "WP7_FALSE_FINAL_AUTO_INVALID",
+        "WP7_ROUTING_ACCURACY_INVALID",
+        "WP7_AI_NLU_DEPLOYMENTAUTHORIZATION_INVALID",
+      ]),
+    );
+    expect(
+      evaluateProjectAction(roadmap, changed, "AI_NLU_IMPLEMENTATION_WP7"),
+    ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
@@ -365,7 +494,7 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP6 scope removal/expansion", () => {
+  it("rejects policy checksum drift or WP7 scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -377,7 +506,7 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP6_SCOPE_INVALID",
+      "WP7_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -385,11 +514,11 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
     };
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
-        (scope) => scope !== "MP_06_WP6_CONDITION_CLOSURE_EVIDENCE",
+        (scope) => scope !== "MP_06_WP7_STRICT_STRUCTURED_OUTPUT_SCHEMA",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP6_SCOPE_INVALID");
+    ).toContain("WP7_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {
@@ -413,13 +542,14 @@ describe("MP-06 WP6 TEST-readiness conditions-closed control", () => {
     });
   });
 
-  it("fails closed if the runtime read-only prohibition is removed", () => {
+  it("fails closed if the narrow runtime boundary is removed", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) => scope !== "CHANGE_MP_06_RUNTIME",
+      (scope) =>
+        scope !== "CHANGE_MP_06_RUNTIME_OUTSIDE_WP7_ADVISORY_INTEGRATION",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME_OUTSIDE_WP7_ADVISORY_INTEGRATION",
     );
   });
 

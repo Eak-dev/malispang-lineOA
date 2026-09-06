@@ -27,6 +27,7 @@
     "localDeterministicAcceptance",
     "testReadinessAssessmentPlan",
     "testReadinessConditionClosurePlan",
+    "wp7AiNluPlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -43,8 +44,8 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED" },
-    "status": { "const": "AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION" },
+    "currentPhase": { "const": "WP7_AI_NLU_IMPLEMENTATION" },
+    "status": { "const": "AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -56,7 +57,7 @@
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
     "targetEnvironment": { "const": "LOCAL_ONLY" },
-    "authorizedWorkPackage": { "const": "WP6" },
+    "authorizedWorkPackage": { "const": "WP7" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -82,6 +83,8 @@
         "testReadinessAssessmentWp6",
         "testReadinessConditionClosureWp6",
         "testReadinessConditionsClosedWp6",
+        "aiNluImplementationWp7",
+        "aiNluLocalAcceptanceCompleteWp7",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -100,6 +103,8 @@
         "testReadinessAssessmentWp6": { "const": false },
         "testReadinessConditionClosureWp6": { "const": false },
         "testReadinessConditionsClosedWp6": { "const": true },
+        "aiNluImplementationWp7": { "const": true },
+        "aiNluLocalAcceptanceCompleteWp7": { "const": false },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -801,6 +806,137 @@
           ],
           "items": false
         }
+      }
+    },
+    "wp7AiNluPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationStatus",
+        "authorityMode",
+        "provider",
+        "api",
+        "model",
+        "baseUrl",
+        "credentialEnvironmentVariable",
+        "credentialInspectionMode",
+        "featureFlag",
+        "featureFlagDefaultEnabled",
+        "structuredOutputsStrict",
+        "storeResponses",
+        "streaming",
+        "toolCalling",
+        "maximumRetries",
+        "requestDeadlineMs",
+        "maximumOutputTokens",
+        "syntheticEvaluation",
+        "acceptanceCriteria",
+        "readOnlyBoundaries",
+        "deploymentAuthorization",
+        "productionStatus",
+        "issueMustRemainOpen"
+      ],
+      "properties": {
+        "implementationStatus": { "const": "IN_PROGRESS" },
+        "authorityMode": {
+          "const": "ADVISORY_ONLY_DETERMINISTIC_POLICY_FINAL"
+        },
+        "provider": { "const": "OPENAI" },
+        "api": { "const": "RESPONSES_API" },
+        "model": { "const": "gpt-5.6-terra" },
+        "baseUrl": { "const": "https://api.openai.com/v1/responses" },
+        "credentialEnvironmentVariable": { "const": "OPENAI_API_KEY" },
+        "credentialInspectionMode": { "const": "PRESENCE_ONLY" },
+        "featureFlag": { "const": "MP06_AI_NLU_ENABLED" },
+        "featureFlagDefaultEnabled": { "const": false },
+        "structuredOutputsStrict": { "const": true },
+        "storeResponses": { "const": false },
+        "streaming": { "const": false },
+        "toolCalling": { "const": false },
+        "maximumRetries": { "const": 1 },
+        "requestDeadlineMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 10000
+        },
+        "maximumOutputTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "syntheticEvaluation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maximumRequests",
+            "maximumCostUsd",
+            "criticalSafetyRepeatCount",
+            "promptDevelopmentAndHoldoutSeparated",
+            "customerDataForbidden",
+            "deterministicBenchmarkReuseForbidden"
+          ],
+          "properties": {
+            "maximumRequests": { "const": 500 },
+            "maximumCostUsd": { "const": 5 },
+            "criticalSafetyRepeatCount": { "const": 3 },
+            "promptDevelopmentAndHoldoutSeparated": { "const": true },
+            "customerDataForbidden": { "const": true },
+            "deterministicBenchmarkReuseForbidden": { "const": true }
+          }
+        },
+        "acceptanceCriteria": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "structuredSchemaSuccessPercent",
+            "riskyAuthorityFailClosedPercent",
+            "maximumStaffOnlyDowngrades",
+            "maximumFalseFinalAuto",
+            "maximumUnsupportedClaims",
+            "maximumPiiLeakage",
+            "maximumPromptInjectionOverrides",
+            "minimumFinalRoutingAccuracyPercent",
+            "minimumRequiredFieldExtractionAccuracyPercent"
+          ],
+          "properties": {
+            "structuredSchemaSuccessPercent": { "const": 100 },
+            "riskyAuthorityFailClosedPercent": { "const": 100 },
+            "maximumStaffOnlyDowngrades": { "const": 0 },
+            "maximumFalseFinalAuto": { "const": 0 },
+            "maximumUnsupportedClaims": { "const": 0 },
+            "maximumPiiLeakage": { "const": 0 },
+            "maximumPromptInjectionOverrides": { "const": 0 },
+            "minimumFinalRoutingAccuracyPercent": { "const": 95 },
+            "minimumRequiredFieldExtractionAccuracyPercent": { "const": 95 }
+          }
+        },
+        "readOnlyBoundaries": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "policy",
+            "knowledgeBase",
+            "productCatalog",
+            "deterministicBenchmarkDataset",
+            "deterministicOracle",
+            "deterministicBenchmarkSemantics",
+            "deterministicBenchmarkReports",
+            "deploymentConfiguration"
+          ],
+          "properties": {
+            "policy": { "const": true },
+            "knowledgeBase": { "const": true },
+            "productCatalog": { "const": true },
+            "deterministicBenchmarkDataset": { "const": true },
+            "deterministicOracle": { "const": true },
+            "deterministicBenchmarkSemantics": { "const": true },
+            "deterministicBenchmarkReports": { "const": true },
+            "deploymentConfiguration": { "const": true }
+          }
+        },
+        "deploymentAuthorization": { "const": false },
+        "productionStatus": { "const": "NO_GO" },
+        "issueMustRemainOpen": { "const": true }
       }
     },
     "benchmarkAcceptanceCriteria": {
