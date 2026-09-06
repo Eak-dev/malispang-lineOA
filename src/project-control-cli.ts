@@ -26,16 +26,6 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
-  const testReadinessConditionClosureWp6 = evaluateProjectAction(
-    roadmap,
-    currentWork,
-    "TEST_READINESS_CONDITION_CLOSURE_WP6",
-  );
-  if (!testReadinessConditionClosureWp6.allowed) {
-    throw new Error(
-      "ROADMAP_UNVERIFIED: TEST_READINESS_CONDITION_CLOSURE_WP6 must be authorized",
-    );
-  }
   const githubReconciliation = evaluateProjectAction(
     roadmap,
     currentWork,
@@ -55,6 +45,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "BENCHMARK_COMPLETION_WP4",
     "LOCAL_CLOSURE_REMEDIATION_WP5",
     "TEST_READINESS_ASSESSMENT_WP6",
+    "TEST_READINESS_CONDITION_CLOSURE_WP6",
     "LOCAL_IMPLEMENTATION",
     "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
@@ -70,7 +61,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.06-v4, MP-06 (GitHub #12), WP5 local deterministic acceptance is PASS_WITH_LIMITATIONS, WP6 TEST-readiness assessment is PASS_WITH_CONDITIONS, condition closure is authorized but not started, runtime/policy/benchmark semantics remain read-only and deployment remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.06-v4, MP-06 (GitHub #12), WP6 TEST-readiness conditions are closed, action is NONE pending separate Owner work-package authorization, runtime/policy/benchmark semantics remain read-only and TEST/Production deployment remains blocked, ${warningSuffix}`,
   );
 }
 

@@ -95,15 +95,8 @@ const REQUIRED_FORBIDDEN_SCOPE = [
 ] as const;
 
 const REQUIRED_WP6_SCOPE = [
-  "PROJECT_CONTROL_TRANSITION",
-  "MP_06_WP6_TIMEOUT_METADATA_NORMALIZATION",
-  "MP_06_WP6_TEST_READINESS_CONTROLS",
-  "MP_06_WP6_SYNTHETIC_SMOKE_UAT_FIXTURES",
-  "MP_06_WP6_ROLLBACK_RUNBOOK",
-  "MP_06_WP6_VALIDATION_CHAIN_IDEMPOTENCE",
-  "MP_06_WP6_BENCHMARK_DOCUMENTATION_NORMALIZATION",
-  "MP_06_WP6_CONDITION_CLOSURE_TESTS",
-  "MP_06_WP6_CONDITION_CLOSURE_DOCUMENTATION",
+  "MP_06_WP6_CONDITION_CLOSURE_EVIDENCE",
+  "MP_06_WP6_READ_ONLY_VERIFICATION",
   "RUNTIME_READ_ONLY",
   "POLICY_SNAPSHOT_READ_ONLY",
   "DATASET_EXPECTED_CASES_READ_ONLY",
@@ -132,7 +125,7 @@ const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
   "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
 const EXPECTED_WP6_CONTROL_BASE_COMMIT =
-  "0ad0ee261eb1f270f8a81c5874d0118768244d53";
+  "688c1fbd75358429b7161f41de3ef706696595e4";
 const EXPECTED_WP6_BENCHMARK_EXECUTION_COMMIT =
   "b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a";
 const EXPECTED_WP6_ASSESSMENT_COMMIT =
@@ -462,13 +455,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP6_TEST_READINESS_CONDITION_CLOSURE",
+    "WP6_TEST_READINESS_CONDITIONS_CLOSED",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY",
+    "AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -565,8 +558,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testReadinessConditionClosureWp6,
+      false,
+      "WP6_TEST_READINESS_CONDITION_CLOSURE_MUST_BE_BLOCKED",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.testReadinessConditionsClosedWp6,
       true,
-      "WP6_TEST_READINESS_CONDITION_CLOSURE_NOT_AUTHORIZED",
+      "WP6_TEST_READINESS_CONDITIONS_CLOSED_EVIDENCE_MISSING",
     );
     expectEqual(
       errors,
@@ -751,7 +750,7 @@ export function evaluateProjectAction(
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
       allowed: false,
-      reason: "USE_SCOPED_TEST_READINESS_CONDITION_CLOSURE_WP6_ACTION",
+      reason: "OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION_REQUIRED",
     };
   }
   const keyByAction: Record<ProjectAction, string> = {
@@ -1310,9 +1309,11 @@ function validateLocalDeterministicAcceptance(
     : [];
   const expected = [
     "AI_NLU_NOT_IMPLEMENTED",
-    "TEST_READINESS_CONDITIONS_OPEN",
     "TEST_NOT_DEPLOYED",
+    "TEST_SMOKE_NOT_COMPLETED",
     "OWNER_TEST_UAT_NOT_COMPLETED",
+    "ROLLBACK_REHEARSAL_NOT_COMPLETED",
+    "PR_DEFAULT_BRANCH_NOT_INTEGRATED",
     "PRODUCTION_NO_GO",
   ];
   if (
@@ -1418,9 +1419,35 @@ function validateTestReadinessConditionClosurePlan(
   expectEqual(
     errors,
     plan.implementationStatus,
-    "NOT_STARTED",
-    "WP6_CONDITION_CLOSURE_ALREADY_STARTED",
+    "COMPLETED_AT_IMPLEMENTATION_COMMIT",
+    "WP6_CONDITION_CLOSURE_STATUS_INVALID",
   );
+  for (const [field, expected, code] of [
+    [
+      "implementationCommit",
+      "688c1fbd75358429b7161f41de3ef706696595e4",
+      "WP6_CONDITION_CLOSURE_COMMIT_INVALID",
+    ],
+    [
+      "verdict",
+      "WP6_TEST_READINESS_CONDITIONS_CLOSED",
+      "WP6_CONDITION_CLOSURE_VERDICT_INVALID",
+    ],
+    [
+      "testReadiness",
+      "READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION",
+      "WP6_TEST_READINESS_STATE_INVALID",
+    ],
+    ["pnpmCheckSequentialRuns", 2, "WP6_PNPM_CHECK_RUN_COUNT_INVALID"],
+    [
+      "rollbackRehearsalStatus",
+      "NOT_PERFORMED",
+      "WP6_ROLLBACK_REHEARSAL_OVERSTATED",
+    ],
+    ["ownerUatStatus", "NOT_PERFORMED", "WP6_OWNER_UAT_OVERSTATED"],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
 
   const conditions = Array.isArray(plan.authorizedConditions)
     ? plan.authorizedConditions
@@ -1464,6 +1491,7 @@ function validateTestReadinessConditionClosurePlan(
     expectEqual(errors, plan[field], expected, code);
   }
   requireBooleanFields(errors, plan, "WP6_CONDITION_CLOSURE", [
+    ["previewByteStable", true],
     ["deploymentAuthorization", false],
     ["aiNluImplementation", false],
     ["issueMustRemainOpen", true],

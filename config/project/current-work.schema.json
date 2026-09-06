@@ -43,10 +43,8 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP6_TEST_READINESS_CONDITION_CLOSURE" },
-    "status": {
-      "const": "AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY"
-    },
+    "currentPhase": { "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED" },
+    "status": { "const": "AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -83,6 +81,7 @@
         "localClosureRemediationWp5",
         "testReadinessAssessmentWp6",
         "testReadinessConditionClosureWp6",
+        "testReadinessConditionsClosedWp6",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -99,7 +98,8 @@
         "benchmarkCompletionWp4": { "const": false },
         "localClosureRemediationWp5": { "const": false },
         "testReadinessAssessmentWp6": { "const": false },
-        "testReadinessConditionClosureWp6": { "const": true },
+        "testReadinessConditionClosureWp6": { "const": false },
+        "testReadinessConditionsClosedWp6": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -630,14 +630,16 @@
         "productionStatus": { "const": "NO_GO" },
         "limitations": {
           "type": "array",
-          "minItems": 5,
-          "maxItems": 5,
+          "minItems": 7,
+          "maxItems": 7,
           "uniqueItems": true,
           "prefixItems": [
             { "const": "AI_NLU_NOT_IMPLEMENTED" },
-            { "const": "TEST_READINESS_CONDITIONS_OPEN" },
             { "const": "TEST_NOT_DEPLOYED" },
+            { "const": "TEST_SMOKE_NOT_COMPLETED" },
             { "const": "OWNER_TEST_UAT_NOT_COMPLETED" },
+            { "const": "ROLLBACK_REHEARSAL_NOT_COMPLETED" },
+            { "const": "PR_DEFAULT_BRANCH_NOT_INTEGRATED" },
             { "const": "PRODUCTION_NO_GO" }
           ],
           "items": false
@@ -712,19 +714,32 @@
       "additionalProperties": false,
       "required": [
         "implementationStatus",
+        "implementationCommit",
+        "verdict",
         "authorizedConditions",
         "timeoutContract",
         "runtimeMode",
         "policyMode",
         "datasetOracleBenchmarkSemanticsMode",
         "knowledgeBaseCatalogMode",
+        "testReadiness",
+        "pnpmCheckSequentialRuns",
+        "previewByteStable",
+        "rollbackRehearsalStatus",
+        "ownerUatStatus",
         "deploymentAuthorization",
         "aiNluImplementation",
         "issueMustRemainOpen",
         "verdictOptions"
       ],
       "properties": {
-        "implementationStatus": { "const": "NOT_STARTED" },
+        "implementationStatus": {
+          "const": "COMPLETED_AT_IMPLEMENTATION_COMMIT"
+        },
+        "implementationCommit": {
+          "const": "688c1fbd75358429b7161f41de3ef706696595e4"
+        },
+        "verdict": { "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED" },
         "authorizedConditions": {
           "type": "array",
           "minItems": 4,
@@ -762,6 +777,13 @@
         "policyMode": { "const": "READ_ONLY" },
         "datasetOracleBenchmarkSemanticsMode": { "const": "READ_ONLY" },
         "knowledgeBaseCatalogMode": { "const": "READ_ONLY" },
+        "testReadiness": {
+          "const": "READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION"
+        },
+        "pnpmCheckSequentialRuns": { "const": 2 },
+        "previewByteStable": { "const": true },
+        "rollbackRehearsalStatus": { "const": "NOT_PERFORMED" },
+        "ownerUatStatus": { "const": "NOT_PERFORMED" },
         "deploymentAuthorization": { "const": false },
         "aiNluImplementation": { "const": false },
         "issueMustRemainOpen": { "const": true },

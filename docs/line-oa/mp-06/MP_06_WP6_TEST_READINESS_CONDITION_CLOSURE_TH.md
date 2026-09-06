@@ -2,13 +2,17 @@
 
 วันที่: 6 กันยายน 2026
 
-สถานะระหว่าง implementation: `AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY`
+Verdict: `WP6_TEST_READINESS_CONDITIONS_CLOSED`
+
+Final control: `AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION` / action `NONE`
 
 ## วัตถุประสงค์และขอบเขต
 
 ปิดเฉพาะสี่ conditions จาก WP6 assessment โดยไม่เปลี่ยน runtime, policy, templates, KB/catalog, benchmark dataset/oracle/semantics/reports, dependencies, Worker/Wrangler deployment configuration หรือ remote state งานนี้ไม่ใช่ AI/NLU, TEST deployment, live smoke, rollback rehearsal, Owner UAT หรือ Production readiness
 
 Control commit ที่อนุญาตงานนี้คือ `96a5a2271969b1cc1d23cdbf1afe457fa0f6808b` ภายใต้ Roadmap `2026.09.06-v4`
+
+Condition-closure implementation commit คือ `688c1fbd75358429b7161f41de3ef706696595e4`
 
 ## Condition 1 — Active benchmark timeout metadata
 
@@ -78,6 +82,21 @@ pnpm check
 ```
 
 Validator ตรวจ timeout source/metadata, TEST namespace/no Production fallback, exact pilot controls, stop/rollback roles, synthetic fixture coverage/PII boundary และ validation-chain ordering Error output เป็น stable codes และไม่ echo input หรือ environment values
+
+## Verification evidence
+
+- Node unit lane: 17 files / 395 tests
+- dedicated MP-06 benchmark lane: 1 file / 14 tests, 5,000 cases และ 10,000 evaluator attempts
+- Worker lane: 2 files / 45 tests
+- combined inventory: 454 tests โดยไม่นับ benchmark ซ้ำ; failed/skipped/cancelled = 0
+- targeted WP1/WP5/WP6/project-control: 4 files / 85 tests
+- `pnpm check` สองรอบต่อเนื่องผ่านและไม่สร้าง tracked diff; Rich Menu preview hashคงเดิม
+- policy checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0`
+- dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`
+- semantic result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`
+- format, lint, typecheck, build, all validators, Worker dry-run, secret scan, dependency audit และ diff-check ผ่าน
+
+สถานะ TEST readiness คือ `READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION` ไม่ใช่ deployment approval Rollback rehearsal, live smoke และ Owner UAT ยังคง `NOT_PERFORMED`
 
 ## Remaining gates
 

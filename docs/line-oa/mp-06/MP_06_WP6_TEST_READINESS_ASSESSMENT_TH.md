@@ -2,7 +2,11 @@
 
 วันที่ประเมิน: 6 กันยายน 2026
 
-Verdict: **TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS**
+Original assessment verdict: **TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS**
+
+Condition-closure reassessment: **WP6_TEST_READINESS_CONDITIONS_CLOSED**
+
+Current TEST-readiness state: **READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION** — เป็น readiness evidence เท่านั้น ไม่ใช่ deployment authorization
 
 ## 1. วัตถุประสงค์
 
@@ -18,17 +22,19 @@ Verdict: **TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS**
 
 ## 3. Authoritative commits และ checksums
 
-| หลักฐาน                         | ค่า                                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------------------- |
-| Roadmap / control               | `2026.09.06-v3` / `e35e9ade546137b6ee93289caafb3d257bf008e4`                                |
-| Benchmark development base      | `8117f7c0b7cb190af81ea8f9481bd257db8a5a51`                                                  |
-| Runtime implementation          | `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`                                                  |
-| WP2 artifact                    | `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`                                                  |
-| Toolchain completion            | `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`                                                  |
-| Benchmark execution remediation | `b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a`                                                  |
-| Policy                          | `2026.09.05-policy-v1` / `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` |
-| Dataset                         | `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`                          |
-| Semantic result                 | `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`                          |
+| หลักฐาน                          | ค่า                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| Roadmap / control                | `2026.09.06-v3` / `e35e9ade546137b6ee93289caafb3d257bf008e4`                                |
+| Benchmark development base       | `8117f7c0b7cb190af81ea8f9481bd257db8a5a51`                                                  |
+| Runtime implementation           | `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`                                                  |
+| WP2 artifact                     | `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`                                                  |
+| Toolchain completion             | `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`                                                  |
+| Benchmark execution remediation  | `b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a`                                                  |
+| Roadmap v4 authorization         | `96a5a2271969b1cc1d23cdbf1afe457fa0f6808b`                                                  |
+| Condition-closure implementation | `688c1fbd75358429b7161f41de3ef706696595e4`                                                  |
+| Policy                           | `2026.09.05-policy-v1` / `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0` |
+| Dataset                          | `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`                          |
+| Semantic result                  | `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`                          |
 
 ## 4. TEST environment inventory
 
@@ -103,15 +109,17 @@ Conversation Durable Object deduplicate ด้วย hashed event reference, บ
 
 ## 13. Rollback plan
 
-มี manual TEST-only rollback path: ปิด `Use webhook` ของ `มะลิปัง TEST`, rollback Worker `malispang-lineoa-test` ไป retained version และตรวจ Durable Object state แยก เพราะ code rollback ไม่ย้อน storage ปัจจุบันมี v21 และ retained v20 แต่ต้อง capture current/stable version, config hash, rollback owner และ maximum decision time ใหม่ทันทีก่อน deployment ใด ๆ
+TEST-only rollback plan ถูก freeze ใน `config/mp-06/test-readiness-controls.json`: decision owner คือ role `OWNER_PO`, executor คือ `TEST_DEPLOYMENT_OPERATOR`, pre-MP-06 target คือ version 21 / `3e02e79b-29c9-46cf-9218-ed2d0b7d7655`, decision target 5 นาที และ recovery target 15 นาที หาก target/operator/environment identity ไม่พร้อม ให้ปิด TEST webhook และ abort โดยห้าม fallback ไป Production Code rollback ไม่ย้อน Durable Object storage จึงต้องตรวจ state แยกตาม runbook
+
+สถานะ plan: **PASS**; rollback rehearsal: **NOT_PERFORMED** และยังเป็น gate ก่อน Issue closure
 
 ## 14. Kill switch
 
-kill path ที่มีคือปิด TEST webhook ซึ่งหยุด event ใหม่โดยไม่แตะ Production และ rollback Worker เฉพาะ TEST จึงเพียงพอในเชิงสถาปัตยกรรม แต่ยังไม่มี MP-06 deployment rehearsal และผู้กด/ผู้อนุมัติที่ freeze สำหรับ change window สถานะ: **PASS** สำหรับ design และ **FAIL** สำหรับ rehearsal ที่ยังไม่ทำ
+kill switch ถูก freeze เป็นการปิด `Use webhook` ของ TEST channel เท่านั้น ผู้ตัดสินใจคือ `OWNER_PO`, ผู้ดำเนินการคือ `TEST_DEPLOYMENT_OPERATOR`, Production impact ต้องเป็น `NONE` และ missing/malformed controls ทำให้ validator fail closed สถานะ design/ownership: **PASS**; rehearsal: **NOT_PERFORMED**
 
 ## 15. Smoke-test plan
 
-หลัง Owner อนุมัติ deploy แยก ให้รันตามลำดับและหยุดทันทีเมื่อข้อใดไม่ผ่าน:
+fixtures สังเคราะห์ 8 รายการใน `config/mp-06/test-readiness-fixtures.json` ถูก freeze และผ่าน PII/Production-target validator ครอบคลุม AUTO, CLARIFY, STAFF_ONLY, authority fail closed, invalid signature, duplicate, idempotency และ kill-switch หลัง Owner อนุมัติ deploy แยก ให้รันตามลำดับและหยุดทันทีเมื่อข้อใดไม่ผ่าน:
 
 1. freeze commit, Worker/config hash, current/rollback version และ operator
 2. `/health` ต้องเป็น 200 และระบุ TEST เท่านั้น
@@ -129,11 +137,11 @@ kill path ที่มีคือปิด TEST webhook ซึ่งหยุ�
 
 ## 17. Monitoring / alert plan
 
-Cloudflare observability logs เปิดอยู่และ runtime มี structured redacted outcome/reason codes แต่ repository ยังไม่มี MP-06 TEST alert thresholds/recipient manifest ที่ freeze สำหรับ pilot ก่อน deploy ต้องกำหนดอย่างน้อย error/signature/destination/duplicate/handoff/unsupported-claim signals, observation window, owner/operator และ stop/rollback threshold โดยไม่เพิ่ม raw payload logging สถานะ: **FAIL — condition ยังเปิด**
+Cloudflare observability logs เปิดอยู่และ runtime มี structured redacted outcome/reason codes TEST-only manifest ตรึง alert/stop signals สำหรับ environment/destination mismatch, PII/raw-text, unsupported/partial response, authority failure, duplicate และ rate budget พร้อม roles `OWNER_PO`, `TEST_DEPLOYMENT_OPERATOR`, `TEST_MONITOR`; webhook errors หยุด pilotที่ 3 ครั้งใน 5 นาที ส่วน safety signals หยุดตั้งแต่ occurrence แรก ไม่มี raw payload หรือ secret value ใน manifest สถานะ configuration: **PASS**; live alert observation ยังไม่เกิดเพราะยังไม่ deploy
 
 ## 18. Rate / cost / abuse limits
 
-มี signature, destination, admin auth, request-size limit, event deduplication และ fail-closed policy; AI provider ยังไม่มีจึงไม่มี model cost ใน WP6 แต่ไม่มี explicit TEST pilot request-rate budget/circuit breaker หรือ alert threshold ก่อน deployment authorization ต้องกำหนด test-user scope, maximum pilot volume และ stop condition สถานะ: **FAIL — condition ยังเปิด**
+มี signature, destination, admin auth, request-size limit, event deduplication และ fail-closed policy TEST-only pilot ถูกจำกัดไม่เกิน 5 internal testers, 20 accepted webhook events/นาที, 200/ชั่วโมง และ 60 นาทีต่อ session ค่า missing/malformed หรือ namespace ที่ชน Production ทำให้ readiness validator fail closed Repository ยังไม่มี runtime rate-limiter primitiveและรอบนี้ห้ามแก้ runtime จึงเป็น pre-deployment/operator gate ไม่ใช่คำกล่าวว่ามี product-side throttling สถานะ readiness control: **PASS**; live enforcement verification ต้องอยู่ใน separate deployment gate
 
 ## 19. Failure scenarios
 
@@ -152,39 +160,42 @@ Cloudflare observability logs เปิดอยู่และ runtime มี s
 
 default branch คือ `codex/phase-1a-foundation` ที่ commit `30b79f791e276fa5f420d08ffff208a231780281`; branch MP-06 อยู่ข้างหน้า 30 commitsและไม่อยู่ข้างหลัง (`0 behind / 30 ahead`) ณ control commit และข้างหน้า 31 commitsหลังเพิ่ม assessment artifact จึงไม่มี merge conflict จาก default-branch drift ณ เวลาประเมิน ไม่พบ PR สำหรับ branch นี้ และ default branch ไม่เปิด branch protection ที่ API มองเห็นได้ ต้องสร้าง PR/review ในรอบที่ได้รับอนุญาตและใช้ checklist ใน `.github/pull_request_template.md`; WP6 ห้ามสร้าง PR หรือ merge
 
-Clean-checkout validation พบข้อจำกัดเดิมของ command ordering: `pnpm check` รัน `format:check` ก่อน `preview:rich-menu` และ preview generator สร้าง tracked HTML ที่ยังไม่ format จึงเกิด formatting diff ชั่วคราว การรัน committed formatter คืน artifact เป็น byte-identical และ checkout สุดท้ายสะอาด แต่ PR-readiness transition ต้องแก้ ordering หรือ generator ให้ validation chain จบแบบสะอาดเอง ห้ามถือขั้นตอนแก้ชั่วคราวนี้เป็น hermetic proof
+Condition closure ย้าย preview generation ก่อน `format:check` และทำ generator ให้ emit canonical Prettier output โดยตรง สอง consecutive `pnpm check` runs จบด้วย preview byte-identical และไม่มี tracked drift Rich Menu content/dimensions/actions/labels/design ไม่เปลี่ยน สถานะ validation-chain idempotence: **PASS**
 
 ## 21. Blockers / conditions
 
-1. `current-work.json` ที่ freeze ก่อน remediation ยังคงบันทึก timeout contract 120 วินาที ขณะที่ Owner-authorized dedicated benchmark lane ใช้ 300 วินาที และยังบันทึก assessment status เป็น `NOT_STARTED` ต้อง normalize governance metadata/assessment evidence ก่อน deployment authorization
-2. ต้อง freeze MP-06 TEST monitoring/alert thresholds, pilot volume/rate guard, recipients และ stop conditions
-3. ต้อง freeze current/rollback Worker versions, rollback owner/operator และ runbook checklist ณ change window
-4. ต้องเตรียม synthetic smoke/UAT fixtures และรายชื่อผู้ทดสอบ โดยห้ามใช้ Production chat
+Conditions 1–4 จาก original assessment ปิดแล้วด้วย implementation commit `688c1fbd75358429b7161f41de3ef706696595e4`:
+
+1. active timeout metadata ตรง dedicated hook `300_000` ms และ two test-specific `15_000` ms limits
+2. TEST alert/rate/stop controls และ responsible roles ถูก freeze แบบ non-secret/fail-closed
+3. rollback target/owner/runbook และ 8 synthetic smoke/UAT fixtures ถูก freeze
+4. `pnpm check` สองรอบจบ clean และ preview byte-stable
+
+Remaining gates ที่ไม่ได้ถูกอ้างว่าปิด:
+
 5. MP-06 code ยังไม่ deploy; live smoke, rollback rehearsal และ Owner UAT ยังไม่เกิด
 6. AI/NLU semantic interpretation ตาม Issue #12 ยังไม่ได้ implement
 7. ไม่มี PR/review/default-branch integration
-8. `pnpm check` ยังต้องแก้ลำดับ format/preview หรือ generator เพื่อไม่ให้ tracked Rich Menu preview drift ชั่วคราว
+8. Production ยังคง `NO_GO`
 
 ## 22. Verdict
 
-**TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS**
+Original verdict คงเป็น **TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS** เพื่อรักษาประวัติ ณ assessment commit
 
-TEST/Production boundary, Worker/domain, bindings, secret presence, webhook/auth guard, redaction, idempotency และ rollback/kill path มีหลักฐานเพียงพอสำหรับการวางแผนขั้นถัดไป แต่ยังห้าม deploy จน conditions ในหัวข้อ 21 ปิดด้วย control transition และหลักฐานจริง Verdict นี้ไม่ใช่ `TEST_DEPLOYED`, ไม่ใช่ Production readiness และไม่ทำให้ Issue #12 เสร็จ
+Reassessment verdict: **WP6_TEST_READINESS_CONDITIONS_CLOSED**
+
+TEST/Production boundary, Worker/domain, bindings, secret presence, webhook/auth guard, redaction, idempotency, TEST controls, rollback/runbook, fixtures และ validation-chain idempotence มีหลักฐานครบสำหรับสถานะ `READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION` แต่ action ปัจจุบันคือ `NONE` Verdict นี้ไม่ใช่ deployment approval, `TEST_DEPLOYED`, Production readiness หรือ Issue #12 completion
 
 ## 23. Exact next transition proposal
 
-เสนอ Roadmap `2026.09.06-v4`, current `MP-06 (GitHub #12)` และ phase/status/action ใหม่ดังนี้:
+Roadmap `2026.09.06-v4` บันทึก phase/status/action เป็น `WP6_TEST_READINESS_CONDITIONS_CLOSED` / `AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION` / `NONE` โดย closure authorization flag เป็น false และ evidence flag เป็น true
 
-- phase: `WP6_TEST_READINESS_CONDITION_CLOSURE`
-- status: `AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY`
-- action: `TEST_READINESS_CONDITION_CLOSURE_WP6`
-- flag: `testReadinessConditionClosureWp6=true`
+Owner/PO ต้องเลือกเพียงหนึ่ง next work package และทำ control transition ใหม่:
 
-ชื่อเหล่านี้ **ยังไม่มีใน schema ปัจจุบัน** จึงต้องเพิ่มแบบแคบใน control transition ที่ Owner อนุมัติ ห้ามใช้ชื่อดังกล่าวเป็น authorization เอง
+- AI/NLU work package โดยยังห้าม deploy; หรือ
+- separate TEST deployment authorization พร้อม change-window roles, live smoke, rollback rehearsal และ Owner UAT gates
 
-Allowed scope ที่เสนอ: normalize benchmark watchdog metadata/commit references และ assessment completion state; แก้ validation-chain ordering/preview formatting แบบไม่เปลี่ยน artifact semantics; เพิ่ม TEST-only monitoring/rate/stop manifest และ validators; freeze rollback/smoke/UAT runbook/fixtures แบบ synthetic; ทำ assessment ซ้ำ; commit/push/evidence เท่านั้น
-
-Forbidden scope ที่เสนอ: AI/NLU/runtime/policy/KB/catalog/dataset/oracle mutation, remote resource/secret/LINE change, TEST/Production deploy, PR/merge/rebase, Production query/action และ MP-07 หลัง condition closure ผ่านแล้ว Owner ยังต้องอนุมัติ AI/NLU work package แยก จากนั้นจึงพิจารณา TEST deployment, smoke, rollback rehearsal และ Owner UAT แบบแยก gate
+ห้ามเริ่มสองทางนี้จาก readiness evidence เอง PR/merge/rebase, Production query/action และ MP-07 ยังถูก block Issue #9 คง MP-06 เป็น CURRENT และ Issue #12 ต้องเปิดต่อ
 
 Issue #9 ควรคง MP-06 เป็น CURRENT และ Issue #12 ต้องเปิดต่อ
 
