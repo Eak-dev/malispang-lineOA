@@ -1,6 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
-type PreviewMap = {
+import { format } from "prettier";
+
+export type PreviewMap = {
   readonly name: string;
   readonly imagePath: string;
   readonly image: { readonly width: number; readonly height: number };
@@ -17,24 +21,18 @@ type PreviewMap = {
   }[];
 };
 
-const map = JSON.parse(
-  await readFile(
-    "docs/line-oa/production-mirror/test-rich-menu-action-map.json",
-    "utf8",
-  ),
-) as PreviewMap;
+export async function renderRichMenuPreview(map: PreviewMap): Promise<string> {
+  const areaHtml = map.areas
+    .map(({ id, label, bounds, action }) => {
+      const left = (bounds.x / map.image.width) * 100;
+      const top = (bounds.y / map.image.height) * 100;
+      const width = (bounds.width / map.image.width) * 100;
+      const height = (bounds.height / map.image.height) * 100;
+      return `<div class="area ${action.type === "none" ? "none" : ""}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%"><strong>${id}</strong><span>${label}</span><small>${action.type}</small></div>`;
+    })
+    .join("\n");
 
-const areaHtml = map.areas
-  .map(({ id, label, bounds, action }) => {
-    const left = (bounds.x / map.image.width) * 100;
-    const top = (bounds.y / map.image.height) * 100;
-    const width = (bounds.width / map.image.width) * 100;
-    const height = (bounds.height / map.image.height) * 100;
-    return `<div class="area ${action.type === "none" ? "none" : ""}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%"><strong>${id}</strong><span>${label}</span><small>${action.type}</small></div>`;
-  })
-  .join("\n");
-
-const html = `<!doctype html>
+  const html = `<!doctype html>
 <html lang="th">
 <meta charset="utf-8">
 <title>${map.name}</title>
@@ -55,5 +53,21 @@ const html = `<!doctype html>
 </html>
 `;
 
-await writeFile("artifacts/rich-menu-preview.html", html, "utf8");
-console.log("Preview generated: artifacts/rich-menu-preview.html");
+  return format(html, { parser: "html" });
+}
+
+export async function generateRichMenuPreview(
+  inputPath = "docs/line-oa/production-mirror/test-rich-menu-action-map.json",
+  outputPath = "artifacts/rich-menu-preview.html",
+): Promise<void> {
+  const map = JSON.parse(await readFile(inputPath, "utf8")) as PreviewMap;
+  await writeFile(outputPath, await renderRichMenuPreview(map), "utf8");
+}
+
+if (
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  await generateRichMenuPreview();
+  console.log("Preview generated: artifacts/rich-menu-preview.html");
+}

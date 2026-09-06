@@ -22,6 +22,8 @@ WP2 benchmark ประเมิน 5,000 cases แบบ deterministic แล�
 
 Benchmark `beforeAll` มี explicit watchdog `300_000` มิลลิวินาที เป็น execution safety ceiling สำหรับ 5,000-case suite ไม่ใช่ product performance guarantee และไม่ใช้แทน correctness assertions
 
+Roadmap `2026.09.06-v4` normalize active governance metadata ให้ตรงกับค่านี้และ test-specific watchdog `15_000` มิลลิวินาทีสองจุด Historical 60/120/180-second evidence ยังคงเป็นหลักฐานของ transition เดิมและถูก supersede โดย commit `b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a`
+
 สอง test ที่เคยชน default 5 วินาทีมี explicit timeout `15_000` มิลลิวินาที:
 
 - meaningful-distinctness/uniqueness validation
