@@ -26,14 +26,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(`ROADMAP_UNVERIFIED: ${errors.join(", ")}`);
   }
 
-  const localClosureRemediationWp5 = evaluateProjectAction(
+  const testReadinessAssessmentWp6 = evaluateProjectAction(
     roadmap,
     currentWork,
-    "LOCAL_CLOSURE_REMEDIATION_WP5",
+    "TEST_READINESS_ASSESSMENT_WP6",
   );
-  if (!localClosureRemediationWp5.allowed) {
+  if (!testReadinessAssessmentWp6.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: LOCAL_CLOSURE_REMEDIATION_WP5 must be authorized",
+      "ROADMAP_UNVERIFIED: TEST_READINESS_ASSESSMENT_WP6 must be authorized",
     );
   }
   const githubReconciliation = evaluateProjectAction(
@@ -53,6 +53,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "BENCHMARK_WP2",
     "RUNTIME_REMEDIATION_WP3",
     "BENCHMARK_COMPLETION_WP4",
+    "LOCAL_CLOSURE_REMEDIATION_WP5",
     "LOCAL_IMPLEMENTATION",
     "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
@@ -68,7 +69,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.06-v2, MP-06 (GitHub #12), prepared WP5 toolchain work remains uncommitted and timeout-only remediation is authorized for a subsequent round, 60_000 to 120_000 ms is the sole benchmark-test change allowed, runtime/policy/dataset/oracle/benchmark semantics/KB/catalog read-only, deployment blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.06-v3, MP-06 (GitHub #12), WP5 local deterministic acceptance recorded as PASS_WITH_LIMITATIONS, WP6 TEST-readiness assessment is authorized for a subsequent round but not started, TEST metadata inspection is read-only and secret values/Production access/deployment remain blocked, ${warningSuffix}`,
   );
 }
 

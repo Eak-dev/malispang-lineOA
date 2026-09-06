@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP5-only local closure remediation control", () => {
-  it("accepts the 2026.09.06-v2 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP6-only TEST-readiness assessment control", () => {
+  it("accepts the 2026.09.06-v3 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -43,15 +43,16 @@ describe("MP-06 WP5-only local closure remediation control", () => {
             runtimeRemediationWp3: { const: boolean };
             benchmarkCompletionWp4: { const: boolean };
             localClosureRemediationWp5: { const: boolean };
+            testReadinessAssessmentWp6: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP5_LOCAL_CLOSURE_REMEDIATION",
+      "WP6_TEST_READINESS_ASSESSMENT",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY",
+      "AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -64,6 +65,10 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     ).toBe(false);
     expect(
       schema.properties.authorization.properties.localClosureRemediationWp5
+        .const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties.testReadinessAssessmentWp6
         .const,
     ).toBe(true);
   });
@@ -79,16 +84,16 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only scoped WP5 local closure remediation work", () => {
+  it("authorizes only scoped WP6 TEST-readiness assessment work", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY",
+      "MP_06_WP6_TEST_SECRET_NAMES_AND_PRESENCE_ONLY",
     );
     expect(
       evaluateProjectAction(
         roadmap,
         currentWork,
-        "LOCAL_CLOSURE_REMEDIATION_WP5",
+        "TEST_READINESS_ASSESSMENT_WP6",
       ),
     ).toEqual({
       allowed: true,
@@ -117,6 +122,16 @@ describe("MP-06 WP5-only local closure remediation control", () => {
       reason: "BENCHMARK_COMPLETION_WP4_NOT_AUTHORIZED",
     });
     expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "LOCAL_CLOSURE_REMEDIATION_WP5",
+      ),
+    ).toEqual({
+      allowed: false,
+      reason: "LOCAL_CLOSURE_REMEDIATION_WP5_NOT_AUTHORIZED",
+    });
+    expect(
       evaluateProjectAction(roadmap, currentWork, "POLICY_SNAPSHOT"),
     ).toEqual({
       allowed: false,
@@ -126,7 +141,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
       allowed: false,
-      reason: "USE_SCOPED_LOCAL_CLOSURE_REMEDIATION_WP5_ACTION",
+      reason: "USE_SCOPED_TEST_READINESS_ASSESSMENT_WP6_ACTION",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -154,7 +169,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.05-v5";
+    changed.roadmapVersion = "2026.09.06-v2";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -291,33 +306,36 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     );
   });
 
-  it("rejects removal of WP5 authorization or restoration of prior write access", () => {
+  it("rejects removal of WP6 authorization or restoration of prior write access", () => {
     const changed = clone(currentWork) as {
       authorization: {
         benchmarkWp2: boolean;
         runtimeRemediationWp3: boolean;
         benchmarkCompletionWp4: boolean;
         localClosureRemediationWp5: boolean;
+        testReadinessAssessmentWp6: boolean;
       };
     };
     changed.authorization.benchmarkWp2 = true;
     changed.authorization.runtimeRemediationWp3 = true;
     changed.authorization.benchmarkCompletionWp4 = true;
-    changed.authorization.localClosureRemediationWp5 = false;
+    changed.authorization.localClosureRemediationWp5 = true;
+    changed.authorization.testReadinessAssessmentWp6 = false;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
         "WP2_BENCHMARK_MUST_BE_READ_ONLY",
         "WP3_RUNTIME_REMEDIATION_MUST_BE_READ_ONLY",
         "WP4_BENCHMARK_COMPLETION_MUST_BE_READ_ONLY",
-        "WP5_LOCAL_CLOSURE_REMEDIATION_NOT_AUTHORIZED",
+        "WP5_LOCAL_CLOSURE_REMEDIATION_MUST_BE_READ_ONLY",
+        "WP6_TEST_READINESS_ASSESSMENT_NOT_AUTHORIZED",
       ]),
     );
     expect(
-      evaluateProjectAction(roadmap, changed, "LOCAL_CLOSURE_REMEDIATION_WP5"),
+      evaluateProjectAction(roadmap, changed, "TEST_READINESS_ASSESSMENT_WP6"),
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP5 timeout-scope removal/expansion", () => {
+  it("rejects policy checksum drift or WP6 scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -329,18 +347,19 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP5_SCOPE_INVALID",
+      "WP6_SCOPE_INVALID",
     );
 
-    const missingTimeoutScope = clone(currentWork) as {
+    const missingAssessmentScope = clone(currentWork) as {
       allowedScope: string[];
     };
-    missingTimeoutScope.allowedScope = missingTimeoutScope.allowedScope.filter(
-      (scope) => scope !== "MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY",
-    );
+    missingAssessmentScope.allowedScope =
+      missingAssessmentScope.allowedScope.filter(
+        (scope) => scope !== "MP_06_WP6_TEST_METADATA_READ_ONLY",
+      );
     expect(
-      validateProjectControl(roadmap, missingTimeoutScope).errors,
-    ).toContain("WP5_SCOPE_INVALID");
+      validateProjectControl(roadmap, missingAssessmentScope).errors,
+    ).toContain("WP6_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {
@@ -430,19 +449,24 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     );
   });
 
-  it("records the prepared toolchain work and exact timeout-only contract", () => {
+  it("records completed WP5 evidence and the selected TEST-readiness path", () => {
     const record = currentWork as {
       localClosureRemediationPlan: {
         blocker: string;
         implementationStatus: string;
+        timeoutCommit: string;
+        toolchainCommit: string;
+        localVerdict: string;
         authoritativeToolchainSource: string;
         implementationFileAllowlist: string[];
         timeoutRemediationFileAllowlist: string[];
         benchmarkTestTimeoutContract: {
           rootCause: string;
           implementationStatus: string;
+          implementationCommit: string;
           targetFile: string;
           targetHook: string;
+          previousTimeoutMs: number;
           currentTimeoutMs: number;
           authorizedTimeoutMs: number;
           maximumTimeoutMs: number;
@@ -479,10 +503,13 @@ describe("MP-06 WP5-only local closure remediation control", () => {
       };
     };
     const plan = record.localClosureRemediationPlan;
-    expect(plan.blocker).toBe("BENCHMARK_TEST_TIMEOUT_HEADROOM");
-    expect(plan.implementationStatus).toBe(
-      "PREPARED_UNCOMMITTED_AWAITING_TIMEOUT_REMEDIATION",
+    expect(plan.blocker).toBe("RESOLVED");
+    expect(plan.implementationStatus).toBe("COMPLETED_AT_TOOLCHAIN_COMMIT");
+    expect(plan.timeoutCommit).toBe("98f6bc0843e376de9932acad767fb463932514cc");
+    expect(plan.toolchainCommit).toBe(
+      "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331",
     );
+    expect(plan.localVerdict).toBe("PASS_WITH_LIMITATIONS");
     expect(plan.authoritativeToolchainSource).toBe("PACKAGE_JSON");
     expect(plan.requiredVersions).toEqual({
       node: "24.19.0",
@@ -491,7 +518,6 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     });
     expect(plan.implementationFileAllowlist).toEqual([
       "package.json",
-      ".npmrc",
       ".node-version",
       "scripts/validate-toolchain.mjs",
       "tests/toolchain-contract.test.ts",
@@ -503,10 +529,12 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     ]);
     expect(plan.benchmarkTestTimeoutContract).toMatchObject({
       rootCause: "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM",
-      implementationStatus: "NOT_STARTED",
+      implementationStatus: "COMPLETED_AT_TIMEOUT_COMMIT",
+      implementationCommit: "98f6bc0843e376de9932acad767fb463932514cc",
       targetFile: "tests/mp-06-wp2-benchmark.test.ts",
       targetHook: "runMp06Benchmark beforeAll",
-      currentTimeoutMs: 60_000,
+      previousTimeoutMs: 60_000,
+      currentTimeoutMs: 120_000,
       authorizedTimeoutMs: 120_000,
       maximumTimeoutMs: 120_000,
       hardCeilingNotPerformanceThreshold: true,
@@ -530,8 +558,8 @@ describe("MP-06 WP5-only local closure remediation control", () => {
       newCiWorkflowAuthorized: false,
     });
     expect(plan.postWp5Decision).toEqual({
-      ownerDecisionRequired: true,
-      authorizedPath: null,
+      ownerDecisionRequired: false,
+      authorizedPath: "TEST_READINESS_ASSESSMENT",
       options: ["AI_NLU_WORK_PACKAGE", "TEST_READINESS_ASSESSMENT"],
     });
   });
@@ -562,7 +590,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     plan.requiredContract.nodeMismatchFailsFast = false;
     plan.registryPolicy.dependencyVersionChangesAllowed = true;
     plan.registryPolicy.vendoringAllowed = true;
-    plan.postWp5Decision.ownerDecisionRequired = false;
+    plan.postWp5Decision.ownerDecisionRequired = true;
     plan.postWp5Decision.authorizedPath = "AI_NLU_WORK_PACKAGE";
     plan.postWp5Decision.options.reverse();
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
@@ -574,8 +602,8 @@ describe("MP-06 WP5-only local closure remediation control", () => {
         "WP5_CONTRACT_NODEMISMATCHFAILSFAST_INVALID",
         "WP5_REGISTRY_POLICY_DEPENDENCYVERSIONCHANGESALLOWED_INVALID",
         "WP5_REGISTRY_POLICY_VENDORINGALLOWED_INVALID",
-        "WP5_POST_DECISION_OWNER_APPROVAL_REQUIRED",
-        "WP5_POST_DECISION_PATH_MUST_REMAIN_UNSELECTED",
+        "WP5_POST_DECISION_MUST_BE_RECORDED",
+        "WP5_POST_DECISION_PATH_INVALID",
         "WP5_POST_DECISION_OPTIONS_INVALID",
       ]),
     );
@@ -611,7 +639,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
         "WP5_TIMEOUT_FILE_ALLOWLIST_INVALID",
-        "WP5_TIMEOUT_ALREADY_CHANGED",
+        "WP5_TIMEOUT_IMPLEMENTATION_STATUS_INVALID",
         "WP5_TIMEOUT_TARGET_FILE_INVALID",
         "WP5_AUTHORIZED_TIMEOUT_INVALID",
         "WP5_MAXIMUM_TIMEOUT_INVALID",
@@ -619,6 +647,129 @@ describe("MP-06 WP5-only local closure remediation control", () => {
         "WP5_TIMEOUT_CONTRACT_BENCHMARKSEMANTICCHANGESFORBIDDEN_INVALID",
         "WP5_TIMEOUT_RUN_COUNT_INVALID",
         "WP5_TIMEOUT_SKIP_BUDGET_INVALID",
+      ]),
+    );
+  });
+
+  it("records local deterministic acceptance with unresolved environment limitations", () => {
+    const record = currentWork as {
+      localDeterministicAcceptance: {
+        verdict: string;
+        cleanCheckoutReproducible: boolean;
+        benchmarkCases: number;
+        aiNluImplemented: boolean;
+        testEnvironmentAssessed: boolean;
+        testDeployment: boolean;
+        ownerTestUatComplete: boolean;
+        productionStatus: string;
+        limitations: string[];
+      };
+    };
+    expect(record.localDeterministicAcceptance).toMatchObject({
+      verdict: "PASS_WITH_LIMITATIONS",
+      cleanCheckoutReproducible: true,
+      benchmarkCases: 5000,
+      aiNluImplemented: false,
+      testEnvironmentAssessed: false,
+      testDeployment: false,
+      ownerTestUatComplete: false,
+      productionStatus: "NO_GO",
+    });
+    expect(record.localDeterministicAcceptance.limitations).toEqual([
+      "AI_NLU_NOT_IMPLEMENTED",
+      "TEST_READINESS_NOT_ASSESSED",
+      "TEST_NOT_DEPLOYED",
+      "OWNER_TEST_UAT_NOT_COMPLETED",
+      "PRODUCTION_NO_GO",
+    ]);
+  });
+
+  it("fails closed when local acceptance evidence is overstated", () => {
+    const changed = clone(currentWork) as {
+      localDeterministicAcceptance: {
+        verdict: string;
+        aiNluImplemented: boolean;
+        testEnvironmentAssessed: boolean;
+        testDeployment: boolean;
+        productionStatus: string;
+      };
+    };
+    const acceptance = changed.localDeterministicAcceptance;
+    acceptance.verdict = "PASS";
+    acceptance.aiNluImplemented = true;
+    acceptance.testEnvironmentAssessed = true;
+    acceptance.testDeployment = true;
+    acceptance.productionStatus = "GO";
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "LOCAL_ACCEPTANCE_VERDICT_INVALID",
+        "LOCAL_ACCEPTANCE_AINLUIMPLEMENTED_INVALID",
+        "LOCAL_ACCEPTANCE_TESTENVIRONMENTASSESSED_INVALID",
+        "LOCAL_ACCEPTANCE_TESTDEPLOYMENT_INVALID",
+        "LOCAL_ACCEPTANCE_PRODUCTION_INVALID",
+      ]),
+    );
+  });
+
+  it("authorizes a not-started, read-only WP6 assessment without deployment", () => {
+    const record = currentWork as {
+      testReadinessAssessmentPlan: {
+        implementationStatus: string;
+        remoteInspectionMode: string;
+        secretInspectionMode: string;
+        productionRemoteInspection: string;
+        deploymentAuthorization: boolean;
+        aiNluImplementation: boolean;
+        verdictOptions: string[];
+        unknownMustNotBeAssumedPass: boolean;
+        notApplicableRequiresReason: boolean;
+        issueMustRemainOpen: boolean;
+      };
+    };
+    expect(record.testReadinessAssessmentPlan).toMatchObject({
+      implementationStatus: "NOT_STARTED",
+      remoteInspectionMode: "TEST_METADATA_READ_ONLY",
+      secretInspectionMode: "NAMES_AND_PRESENCE_ONLY",
+      productionRemoteInspection: "FORBIDDEN",
+      deploymentAuthorization: false,
+      aiNluImplementation: false,
+      unknownMustNotBeAssumedPass: true,
+      notApplicableRequiresReason: true,
+      issueMustRemainOpen: true,
+    });
+    expect(record.testReadinessAssessmentPlan.verdictOptions).toEqual([
+      "TEST_READINESS_ASSESSMENT_PASS",
+      "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS",
+      "TEST_READINESS_BLOCKED",
+    ]);
+  });
+
+  it("rejects starting WP6 early, reading Production, or granting deployment", () => {
+    const changed = clone(currentWork) as {
+      testReadinessAssessmentPlan: {
+        implementationStatus: string;
+        secretInspectionMode: string;
+        productionRemoteInspection: string;
+        deploymentAuthorization: boolean;
+        unknownMustNotBeAssumedPass: boolean;
+        issueMustRemainOpen: boolean;
+      };
+    };
+    const plan = changed.testReadinessAssessmentPlan;
+    plan.implementationStatus = "IN_PROGRESS";
+    plan.secretInspectionMode = "VALUES_ALLOWED";
+    plan.productionRemoteInspection = "READ_ONLY";
+    plan.deploymentAuthorization = true;
+    plan.unknownMustNotBeAssumedPass = false;
+    plan.issueMustRemainOpen = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP6_ASSESSMENT_ALREADY_STARTED",
+        "WP6_SECRET_INSPECTION_MODE_INVALID",
+        "WP6_PRODUCTION_REMOTE_INSPECTION_MUST_BE_FORBIDDEN",
+        "WP6_ASSESSMENT_DEPLOYMENTAUTHORIZATION_INVALID",
+        "WP6_ASSESSMENT_UNKNOWNMUSTNOTBEASSUMEDPASS_INVALID",
+        "WP6_ASSESSMENT_ISSUEMUSTREMAINOPEN_INVALID",
       ]),
     );
   });

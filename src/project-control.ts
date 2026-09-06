@@ -21,6 +21,7 @@ export type ProjectAction =
   | "RUNTIME_REMEDIATION_WP3"
   | "BENCHMARK_COMPLETION_WP4"
   | "LOCAL_CLOSURE_REMEDIATION_WP5"
+  | "TEST_READINESS_ASSESSMENT_WP6"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -82,23 +83,32 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "CHANGE_WEBHOOK",
   "CHANGE_RICH_MENU",
   "CHANGE_REWARD_CARD",
+  "CREATE_OR_CHANGE_REMOTE_TEST_RESOURCE",
+  "ADD_CHANGE_OR_DELETE_SECRET",
+  "READ_SECRET_VALUES",
+  "QUERY_OR_OPEN_PRODUCTION_REMOTE_STATE",
+  "CHANGE_WORKER_OR_WRANGLER_DEPLOYMENT_CONFIGURATION",
+  "CLOSE_MP_06_ISSUE",
   "OPEN_OR_CHANGE_PRODUCTION",
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP5_SCOPE = [
-  "MP_06_WP5_PIN_NODE_JS_24_19_0",
-  "MP_06_WP5_PIN_PNPM_11_19_0",
-  "MP_06_WP5_TOOLCHAIN_DECLARATIONS",
-  "MP_06_WP5_TOOLCHAIN_FAIL_FAST_VALIDATOR",
-  "MP_06_WP5_TOOLCHAIN_REGRESSION_TESTS",
-  "MP_06_WP5_DEVELOPER_DOCUMENTATION",
-  "MP_06_WP5_ALIGN_EXISTING_CI_IF_PRESENT",
-  "MP_06_WP5_CLEAN_CHECKOUT_REPRODUCIBILITY",
-  "MP_06_WP5_READ_ONLY_BENCHMARK_VERIFICATION",
-  "MP_06_WP5_GITHUB_RECONCILIATION",
-  "MP_06_WP5_PREPARE_PR_REVIEW_EVIDENCE",
-  "MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY",
+const REQUIRED_WP6_SCOPE = [
+  "MP_06_WP6_REPOSITORY_DEPLOYMENT_CONFIG_READ_ONLY",
+  "MP_06_WP6_TEST_METADATA_READ_ONLY",
+  "MP_06_WP6_TEST_SECRET_NAMES_AND_PRESENCE_ONLY",
+  "MP_06_WP6_TEST_WORKER_RESOURCES_BINDINGS_READ_ONLY",
+  "MP_06_WP6_TEST_PRODUCTION_ISOLATION_ASSESSMENT",
+  "MP_06_WP6_DRY_RUN_VERIFICATION",
+  "MP_06_WP6_DEPLOYMENT_TARGET_ASSESSMENT",
+  "MP_06_WP6_WEBHOOK_BOUNDARY_ASSESSMENT",
+  "MP_06_WP6_LOGGING_REDACTION_OBSERVABILITY_ASSESSMENT",
+  "MP_06_WP6_ROLLBACK_KILL_SWITCH_RUNBOOK_ASSESSMENT",
+  "MP_06_WP6_UAT_SMOKE_MONITORING_PLAN",
+  "MP_06_WP6_RATE_COST_ABUSE_ASSESSMENT",
+  "MP_06_WP6_PR_DEFAULT_BRANCH_READINESS_ASSESSMENT",
+  "MP_06_WP6_ASSESSMENT_DOCUMENTATION",
+  "MP_06_WP6_ASSESSMENT_VALIDATOR_TESTS_IF_NECESSARY",
   "RUNTIME_READ_ONLY",
   "POLICY_SNAPSHOT_READ_ONLY",
   "DATASET_EXPECTED_CASES_READ_ONLY",
@@ -107,6 +117,8 @@ const REQUIRED_WP5_SCOPE = [
   "ACCEPTANCE_THRESHOLDS_READ_ONLY",
   "APPROVED_KNOWLEDGE_BASE_READ_ONLY",
   "APPROVED_PRODUCT_CATALOG_READ_ONLY",
+  "TOOLCHAIN_READ_ONLY",
+  "DEPENDENCY_GRAPH_READ_ONLY",
   "COMMIT_MP_06_BRANCH",
   "PUSH_MP_06_BRANCH",
   "UPDATE_GITHUB_ROADMAP_AND_MP_06",
@@ -124,13 +136,15 @@ const EXPECTED_WP2_BASE_COMMIT = "8117f7c0b7cb190af81ea8f9481bd257db8a5a51";
 const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
   "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
-const EXPECTED_WP5_CONTROL_BASE_COMMIT =
-  "9b39f22a79e1e8112abb731daf441a6feb09f8d8";
+const EXPECTED_WP6_CONTROL_BASE_COMMIT =
+  "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331";
+const EXPECTED_WP5_TIMEOUT_COMMIT = "98f6bc0843e376de9932acad767fb463932514cc";
+const EXPECTED_WP5_TOOLCHAIN_COMMIT =
+  "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331";
 const EXPECTED_NODE_VERSION = "24.19.0";
 const EXPECTED_PNPM_VERSION = "11.19.0";
 const EXPECTED_WP5_IMPLEMENTATION_FILES = [
   "package.json",
-  ".npmrc",
   ".node-version",
   "scripts/validate-toolchain.mjs",
   "tests/toolchain-contract.test.ts",
@@ -139,6 +153,34 @@ const EXPECTED_WP5_IMPLEMENTATION_FILES = [
 ] as const;
 const EXPECTED_WP5_TIMEOUT_REMEDIATION_FILES = [
   "tests/mp-06-wp2-benchmark.test.ts",
+] as const;
+const EXPECTED_WP6_ASSESSMENT_AREAS = [
+  "TEST_ENVIRONMENT_INVENTORY",
+  "TEST_PRODUCTION_ISOLATION_MATRIX",
+  "WORKER_ROUTE_DOMAIN_SEPARATION",
+  "BINDINGS_RESOURCES_SEPARATION",
+  "SECRET_NAMES_PRESENCE_MATRIX",
+  "WEBHOOK_TEST_CHANNEL_ISOLATION",
+  "LOGGING_PII_REDACTION",
+  "AUTHENTICATION_AUTHORIZATION_BOUNDARY",
+  "IDEMPOTENCY_RETRY_READINESS",
+  "ROLLBACK_PLAN",
+  "KILL_SWITCH",
+  "SMOKE_TEST_PLAN",
+  "OWNER_UAT_PLAN",
+  "MONITORING_ALERT_PLAN",
+  "RATE_COST_ABUSE_LIMITS",
+  "FAILURE_SCENARIOS",
+  "PR_DEFAULT_BRANCH_CONSIDERATIONS",
+  "BLOCKERS",
+  "VERDICT",
+  "EXACT_NEXT_TRANSITION_PROPOSAL",
+  "NOT_DEPLOYED",
+] as const;
+const EXPECTED_WP6_VERDICTS = [
+  "TEST_READINESS_ASSESSMENT_PASS",
+  "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS",
+  "TEST_READINESS_BLOCKED",
 ] as const;
 const EXPECTED_WP2_ARTIFACT_FILES = [
   "package.json",
@@ -196,7 +238,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.06-v2",
+    "2026.09.06-v3",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -207,7 +249,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-06-V2",
+      "MP-OD-2026-09-06-V3",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -219,7 +261,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.06-v1",
+      "2026.09.06-v2",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -236,7 +278,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      EXPECTED_WP5_CONTROL_BASE_COMMIT,
+      EXPECTED_WP6_CONTROL_BASE_COMMIT,
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -408,13 +450,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP5_LOCAL_CLOSURE_REMEDIATION",
+    "WP6_TEST_READINESS_ASSESSMENT",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY",
+    "AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -426,8 +468,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP5",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP5",
+    "WP6",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP6",
   );
   expectEqual(
     errors,
@@ -499,8 +541,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.localClosureRemediationWp5,
+      false,
+      "WP5_LOCAL_CLOSURE_REMEDIATION_MUST_BE_READ_ONLY",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.testReadinessAssessmentWp6,
       true,
-      "WP5_LOCAL_CLOSURE_REMEDIATION_NOT_AUTHORIZED",
+      "WP6_TEST_READINESS_ASSESSMENT_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -550,10 +598,10 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP5_SCOPE.length ||
-    REQUIRED_WP5_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP6_SCOPE.length ||
+    REQUIRED_WP6_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP5_SCOPE_INVALID");
+    errors.push("WP6_SCOPE_INVALID");
   }
 
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
@@ -561,6 +609,14 @@ export function validateProjectControl(
   validateLocalClosureRemediationPlan(
     errors,
     currentWork.localClosureRemediationPlan,
+  );
+  validateLocalDeterministicAcceptance(
+    errors,
+    currentWork.localDeterministicAcceptance,
+  );
+  validateTestReadinessAssessmentPlan(
+    errors,
+    currentWork.testReadinessAssessmentPlan,
   );
 
   if (!isRecord(currentWork.policySnapshotReference)) {
@@ -673,7 +729,7 @@ export function evaluateProjectAction(
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
       allowed: false,
-      reason: "USE_SCOPED_LOCAL_CLOSURE_REMEDIATION_WP5_ACTION",
+      reason: "USE_SCOPED_TEST_READINESS_ASSESSMENT_WP6_ACTION",
     };
   }
   const keyByAction: Record<ProjectAction, string> = {
@@ -683,6 +739,7 @@ export function evaluateProjectAction(
     RUNTIME_REMEDIATION_WP3: "runtimeRemediationWp3",
     BENCHMARK_COMPLETION_WP4: "benchmarkCompletionWp4",
     LOCAL_CLOSURE_REMEDIATION_WP5: "localClosureRemediationWp5",
+    TEST_READINESS_ASSESSMENT_WP6: "testReadinessAssessmentWp6",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -1003,12 +1060,23 @@ function validateLocalClosureRemediationPlan(
   }
 
   for (const [field, expected, code] of [
-    ["blocker", "BENCHMARK_TEST_TIMEOUT_HEADROOM", "WP5_BLOCKER_INVALID"],
+    ["blocker", "RESOLVED", "WP5_BLOCKER_INVALID"],
     [
       "implementationStatus",
-      "PREPARED_UNCOMMITTED_AWAITING_TIMEOUT_REMEDIATION",
+      "COMPLETED_AT_TOOLCHAIN_COMMIT",
       "WP5_IMPLEMENTATION_STATUS_INVALID",
     ],
+    [
+      "timeoutCommit",
+      EXPECTED_WP5_TIMEOUT_COMMIT,
+      "WP5_TIMEOUT_COMMIT_INVALID",
+    ],
+    [
+      "toolchainCommit",
+      EXPECTED_WP5_TOOLCHAIN_COMMIT,
+      "WP5_TOOLCHAIN_COMMIT_INVALID",
+    ],
+    ["localVerdict", "PASS_WITH_LIMITATIONS", "WP5_LOCAL_VERDICT_INVALID"],
     [
       "authoritativeToolchainSource",
       "PACKAGE_JSON",
@@ -1139,14 +1207,14 @@ function validateLocalClosureRemediationPlan(
     expectEqual(
       errors,
       plan.postWp5Decision.ownerDecisionRequired,
-      true,
-      "WP5_POST_DECISION_OWNER_APPROVAL_REQUIRED",
+      false,
+      "WP5_POST_DECISION_MUST_BE_RECORDED",
     );
     expectEqual(
       errors,
       plan.postWp5Decision.authorizedPath,
-      null,
-      "WP5_POST_DECISION_PATH_MUST_REMAIN_UNSELECTED",
+      "TEST_READINESS_ASSESSMENT",
+      "WP5_POST_DECISION_PATH_INVALID",
     );
     const options = Array.isArray(plan.postWp5Decision.options)
       ? plan.postWp5Decision.options
@@ -1158,6 +1226,141 @@ function validateLocalClosureRemediationPlan(
     ) {
       errors.push("WP5_POST_DECISION_OPTIONS_INVALID");
     }
+  }
+}
+
+function validateLocalDeterministicAcceptance(
+  errors: string[],
+  acceptance: unknown,
+): void {
+  if (!isRecord(acceptance)) {
+    errors.push("LOCAL_DETERMINISTIC_ACCEPTANCE_MISSING");
+    return;
+  }
+
+  for (const [field, expected, code] of [
+    ["verdict", "PASS_WITH_LIMITATIONS", "LOCAL_ACCEPTANCE_VERDICT_INVALID"],
+    ["recordedAt", "2026-09-06", "LOCAL_ACCEPTANCE_DATE_INVALID"],
+    [
+      "timeoutCommit",
+      EXPECTED_WP5_TIMEOUT_COMMIT,
+      "LOCAL_ACCEPTANCE_TIMEOUT_COMMIT_INVALID",
+    ],
+    [
+      "toolchainCommit",
+      EXPECTED_WP5_TOOLCHAIN_COMMIT,
+      "LOCAL_ACCEPTANCE_TOOLCHAIN_COMMIT_INVALID",
+    ],
+    ["nodeVersion", EXPECTED_NODE_VERSION, "LOCAL_ACCEPTANCE_NODE_INVALID"],
+    ["pnpmVersion", EXPECTED_PNPM_VERSION, "LOCAL_ACCEPTANCE_PNPM_INVALID"],
+    ["benchmarkCases", 5000, "LOCAL_ACCEPTANCE_CASE_COUNT_INVALID"],
+    [
+      "policyChecksum",
+      EXPECTED_POLICY_SNAPSHOT_CHECKSUM,
+      "LOCAL_ACCEPTANCE_POLICY_CHECKSUM_INVALID",
+    ],
+    [
+      "datasetChecksum",
+      EXPECTED_WP2_DATASET_CHECKSUM,
+      "LOCAL_ACCEPTANCE_DATASET_CHECKSUM_INVALID",
+    ],
+    [
+      "semanticResultChecksum",
+      EXPECTED_WP2_PASS_RESULT_CHECKSUM,
+      "LOCAL_ACCEPTANCE_RESULT_CHECKSUM_INVALID",
+    ],
+    ["productionStatus", "NO_GO", "LOCAL_ACCEPTANCE_PRODUCTION_INVALID"],
+  ] as const) {
+    expectEqual(errors, acceptance[field], expected, code);
+  }
+
+  requireBooleanFields(errors, acceptance, "LOCAL_ACCEPTANCE", [
+    ["cleanCheckoutReproducible", true],
+    ["aiNluImplemented", false],
+    ["testEnvironmentAssessed", false],
+    ["testDeployment", false],
+    ["ownerTestUatComplete", false],
+  ]);
+
+  const limitations = Array.isArray(acceptance.limitations)
+    ? acceptance.limitations
+    : [];
+  const expected = [
+    "AI_NLU_NOT_IMPLEMENTED",
+    "TEST_READINESS_NOT_ASSESSED",
+    "TEST_NOT_DEPLOYED",
+    "OWNER_TEST_UAT_NOT_COMPLETED",
+    "PRODUCTION_NO_GO",
+  ];
+  if (
+    limitations.length !== expected.length ||
+    expected.some((limitation) => !limitations.includes(limitation))
+  ) {
+    errors.push("LOCAL_ACCEPTANCE_LIMITATIONS_INVALID");
+  }
+}
+
+function validateTestReadinessAssessmentPlan(
+  errors: string[],
+  plan: unknown,
+): void {
+  if (!isRecord(plan)) {
+    errors.push("WP6_TEST_READINESS_ASSESSMENT_PLAN_MISSING");
+    return;
+  }
+
+  for (const [field, expected, code] of [
+    ["implementationStatus", "NOT_STARTED", "WP6_ASSESSMENT_ALREADY_STARTED"],
+    [
+      "deliverable",
+      "docs/line-oa/mp-06/MP_06_WP6_TEST_READINESS_ASSESSMENT_TH.md",
+      "WP6_ASSESSMENT_DELIVERABLE_INVALID",
+    ],
+    [
+      "remoteInspectionMode",
+      "TEST_METADATA_READ_ONLY",
+      "WP6_REMOTE_INSPECTION_MODE_INVALID",
+    ],
+    [
+      "secretInspectionMode",
+      "NAMES_AND_PRESENCE_ONLY",
+      "WP6_SECRET_INSPECTION_MODE_INVALID",
+    ],
+    [
+      "productionRemoteInspection",
+      "FORBIDDEN",
+      "WP6_PRODUCTION_REMOTE_INSPECTION_MUST_BE_FORBIDDEN",
+    ],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
+
+  requireBooleanFields(errors, plan, "WP6_ASSESSMENT", [
+    ["deploymentAuthorization", false],
+    ["aiNluImplementation", false],
+    ["unknownMustNotBeAssumedPass", true],
+    ["notApplicableRequiresReason", true],
+    ["issueMustRemainOpen", true],
+  ]);
+
+  const areas = Array.isArray(plan.requiredAssessmentAreas)
+    ? plan.requiredAssessmentAreas
+    : [];
+  if (
+    areas.length !== EXPECTED_WP6_ASSESSMENT_AREAS.length ||
+    EXPECTED_WP6_ASSESSMENT_AREAS.some((area) => !areas.includes(area))
+  ) {
+    errors.push("WP6_REQUIRED_ASSESSMENT_AREAS_INVALID");
+  }
+
+  const verdicts = Array.isArray(plan.verdictOptions)
+    ? plan.verdictOptions
+    : [];
+  if (
+    verdicts.length !== EXPECTED_WP6_VERDICTS.length ||
+    EXPECTED_WP6_VERDICTS.some((verdict) => !verdicts.includes(verdict))
+  ) {
+    errors.push("WP6_VERDICT_OPTIONS_INVALID");
   }
 }
 
@@ -1176,7 +1379,16 @@ function validateWp5BenchmarkTimeoutContract(
       "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM",
       "WP5_TIMEOUT_ROOT_CAUSE_INVALID",
     ],
-    ["implementationStatus", "NOT_STARTED", "WP5_TIMEOUT_ALREADY_CHANGED"],
+    [
+      "implementationStatus",
+      "COMPLETED_AT_TIMEOUT_COMMIT",
+      "WP5_TIMEOUT_IMPLEMENTATION_STATUS_INVALID",
+    ],
+    [
+      "implementationCommit",
+      EXPECTED_WP5_TIMEOUT_COMMIT,
+      "WP5_TIMEOUT_IMPLEMENTATION_COMMIT_INVALID",
+    ],
     [
       "targetFile",
       "tests/mp-06-wp2-benchmark.test.ts",
@@ -1187,7 +1399,8 @@ function validateWp5BenchmarkTimeoutContract(
       "runMp06Benchmark beforeAll",
       "WP5_TIMEOUT_TARGET_HOOK_INVALID",
     ],
-    ["currentTimeoutMs", 60_000, "WP5_CURRENT_TIMEOUT_INVALID"],
+    ["previousTimeoutMs", 60_000, "WP5_PREVIOUS_TIMEOUT_INVALID"],
+    ["currentTimeoutMs", 120_000, "WP5_CURRENT_TIMEOUT_INVALID"],
     ["authorizedTimeoutMs", 120_000, "WP5_AUTHORIZED_TIMEOUT_INVALID"],
     ["maximumTimeoutMs", 120_000, "WP5_MAXIMUM_TIMEOUT_INVALID"],
     ["sequentialRunsRequired", 5, "WP5_TIMEOUT_RUN_COUNT_INVALID"],
