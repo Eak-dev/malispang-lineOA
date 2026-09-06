@@ -68,7 +68,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.06-v1, MP-06 (GitHub #12), WP5 local closure remediation authorized for a subsequent round, Node 24.19.0 and pnpm 11.19.0 contract pinned in control, runtime/policy/dataset/oracle/KB/catalog read-only, deployment blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.06-v2, MP-06 (GitHub #12), prepared WP5 toolchain work remains uncommitted and timeout-only remediation is authorized for a subsequent round, 60_000 to 120_000 ms is the sole benchmark-test change allowed, runtime/policy/dataset/oracle/benchmark semantics/KB/catalog read-only, deployment blocked, ${warningSuffix}`,
   );
 }
 

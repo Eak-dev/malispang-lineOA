@@ -1,6 +1,18 @@
 # Roadmap Changelog
 
-## 2026.09.06-v1 — current
+## 2026.09.06-v2 — current
+
+- supersedes `2026.09.06-v1` while retaining MP-06 (GitHub #12), phase `WP5_LOCAL_CLOSURE_REMEDIATION`, status `AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY` and action `LOCAL_CLOSURE_REMEDIATION_WP5`
+- sets verified baseline to control commit `9b39f22a79e1e8112abb731daf441a6feb09f8d8`
+- records the six prepared, uncommitted WP5 toolchain files and the sole remaining validation blocker: the benchmark `beforeAll` hard timeout is `60_000` ms while repeated runtime is approximately 61–63 seconds
+- records that the 9 skipped/cancelled tests are downstream effects of the timed-out parent hook, not explicit `.skip`, `.only`, `.todo` or conditional bypass; benchmark generation and semantic evidence remain valid
+- adds only `MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY`, restricted to a later change of `60_000` to `120_000` ms in `tests/mp-06-wp2-benchmark.test.ts`
+- defines `120_000` ms as a finite hard ceiling, not a performance threshold; forbids assertion, dataset, oracle, semantic, threshold, report, case-count, skip, retry, ignore or failure-exit changes
+- requires 5 consecutive targeted runs below the ceiling with 0 skipped/cancelled tests and identical case counts, checksums and metrics; tracked benchmark reports must not change
+- preserves policy, dataset and semantic result checksums, leaves runtime/policy/KB/catalog/deployment read-only, keeps TEST deployment false and Production `NO_GO`
+- this transition changes only control/schema/validator/tests/governance documents; it does not modify the timeout or commit the prepared WP5 implementation
+
+## 2026.09.06-v1 — superseded
 
 - supersedes `2026.09.05-v5`
 - retains MP-06 (GitHub #12) as the only current Roadmap item and sets phase `WP5_LOCAL_CLOSURE_REMEDIATION`
@@ -102,6 +114,6 @@ At MP-05 preflight on 4 September 2026:
 - MP-06 (GitHub #12) declared itself next/blocked with the same benchmark
 - all three declared TEST deployment unauthorized and Production `NO-GO`
 
-On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized `2026.09.05-v2` and WP1 runtime commit `2a2571369f7e845c5d72883d816556ce24be18c0`. Roadmap `2026.09.05-v3` authorized WP2, whose unchanged 5,000-case benchmark exposed the three recorded gaps. Roadmap `2026.09.05-v4` authorized the WP3 remediation recorded at `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`; the unchanged benchmark reproduced PASS with result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`. Roadmap `2026.09.05-v5` authorized WP4 completion, and the 18 benchmark artifacts were committed at `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`. Roadmap `2026.09.06-v1` now authorizes only a later WP5 toolchain-pinning round and the current control transition's GitHub #9/#12 reconciliation; this transition must not modify toolchain implementation files.
+On 4 September 2026, Owner/PO approved MP-05 commit `d036063a562a4fa780f162c69f7824ebcb9a250b`, then authorized transition to `2026.09.04-v1`, with MP-06 current but implementation and deployment explicitly unauthorized. On 5 September 2026, Owner authorized the policy-snapshot-only transition and snapshot, then authorized `2026.09.05-v2` and WP1 runtime commit `2a2571369f7e845c5d72883d816556ce24be18c0`. Roadmap `2026.09.05-v3` authorized WP2, whose unchanged 5,000-case benchmark exposed the three recorded gaps. Roadmap `2026.09.05-v4` authorized the WP3 remediation recorded at `d4dc0f24a64f29ea6d238ececfca6e57ed9433b5`; the unchanged benchmark reproduced PASS with result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`. Roadmap `2026.09.05-v5` authorized WP4 completion, and the 18 benchmark artifacts were committed at `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`. Roadmap `2026.09.06-v1` authorized WP5 toolchain pinning. Roadmap `2026.09.06-v2` now narrowly adds the benchmark-test timeout remediation scope while preserving the prepared toolchain files and benchmark semantics; this transition itself modifies neither implementation set.
 
 Any later GitHub edit that changes those control fields requires a new Owner decision and Roadmap version before implementation. The validator cannot treat `CURRENT`, chat history or an unversioned Issue edit as implementation authorization.

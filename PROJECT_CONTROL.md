@@ -1,18 +1,18 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยเตรียมอนุญาตเฉพาะ WP5 local closure remediation ในรอบถัดไปหลัง Owner/PO review
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยอนุญาตเฉพาะ WP5 local closure remediation และ timeout remediation แบบแคบตาม Owner decision
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.06-v1`                                        |
+| Version               | `2026.09.06-v2`                                        |
 | Current               | `MP-06 (GitHub #12)`                                   |
 | Current phase         | `WP5_LOCAL_CLOSURE_REMEDIATION`                        |
 | Current authorization | `AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY`        |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
-| Verified baseline     | `12e0d27dc06052f5f9a2075aff8f12c90bf5852e`             |
+| Verified baseline     | `9b39f22a79e1e8112abb731daf441a6feb09f8d8`             |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                           |
 | Target                | `LOCAL_ONLY`                                           |
 | TEST deployment       | Not authorized                                         |
@@ -22,9 +22,13 @@
 
 WP1–WP4 ผ่าน local deterministic validation แล้ว และ WP2 artifacts ถูก commit ที่ `12e0d27dc06052f5f9a2075aff8f12c90bf5852e` Dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, failed-result checksum `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` และ remediated PASS result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6` ถูกตรึงไว้ รายงาน clean-checkout functional audit ผ่าน แต่ local acceptance ยัง block เฉพาะ repository ไม่ได้ประกาศและบังคับ Node.js `24.19.0` กับ pnpm `11.19.0`
 
-WP5 รอบถัดไปต้องใช้ `package.json` เป็น authoritative toolchain source, pin exact versions, มี Node version file และ machine-readable validator ที่ตรวจ declaration drift และ fail fast เมื่อ Node/pnpm ไม่ตรง Existing CI ต้องใช้ค่าเดียวกันหากพบ; ณ transition นี้ไม่มี CI workflow และไม่อนุญาตสร้างใหม่ การดาวน์โหลด dependencies ที่ประกาศและมี lockfile integrity ด้วย `--frozen-lockfile` อนุญาต โดยไม่ขยายเป็น offline build, vendoring หรือ supply-chain redesign
+WP5 ต้องใช้ `package.json` เป็น authoritative toolchain source, pin exact versions, มี Node version file และ machine-readable validator ที่ตรวจ declaration drift และ fail fast เมื่อ Node/pnpm ไม่ตรง Existing CI ต้องใช้ค่าเดียวกันหากพบ; ณ transition นี้ไม่มี CI workflow และไม่อนุญาตสร้างใหม่ การดาวน์โหลด dependencies ที่ประกาศและมี lockfile integrity ด้วย `--frozen-lockfile` อนุญาต โดยไม่ขยายเป็น offline build, vendoring หรือ supply-chain redesign
 
-WP5 implementation ยังไม่เริ่ม และ Issue #12 ยังเปิดเพราะ AI/NLU semantic interpretation, TEST readiness/deployment, Owner TEST UAT และ Production readiness decision ยังไม่เสร็จ การ transition นี้ไม่เลือก AI/NLU หรือ TEST-readiness path
+Toolchain implementation 6 ไฟล์ถูกเตรียมไว้แบบ uncommitted และต้องคง byte-identical ระหว่าง control transition นี้ Full Node suite พบว่า `runMp06Benchmark` ใน `beforeAll` ใช้เวลาจริงประมาณ 61–63 วินาที แต่ hard timeout เดิมคือ 60 วินาที ทำให้ tests ที่พึ่ง hook อีก 9 รายการถูก cancel/skip ต่อเนื่อง ทั้งที่ benchmark generation, artifacts, metrics และ checksums ผ่าน ไม่มี explicit `.skip`, `.only`, `.todo` หรือ conditional bypass
+
+Allowed scope ใหม่ `MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY` อนุญาตเฉพาะ implementation รอบถัดไปให้เปลี่ยน timeout ของ hook ดังกล่าวใน `tests/mp-06-wp2-benchmark.test.ts` จาก `60_000` เป็น `120_000` มิลลิวินาที โดย `120_000` เป็น hard safety ceiling ไม่ใช่ performance acceptance threshold ห้ามเปลี่ยน assertion, dataset, oracle, semantics, thresholds, reports, case count, exit behavior หรือเพิ่ม skip/retry/ignore ต้องรัน targeted suite 5 รอบต่อเนื่อง ทุกครั้งต่ำกว่า ceiling มี 0 skipped/cancelled และ checksums/metrics ตรงกัน
+
+Timeout implementation ยังไม่เริ่ม และ toolchain implementation ยังไม่ถูก commit Issue #12 ยังเปิดเพราะ AI/NLU semantic interpretation, TEST readiness/deployment, Owner TEST UAT และ Production readiness decision ยังไม่เสร็จ การ transition นี้ไม่เลือก AI/NLU หรือ TEST-readiness path
 
 GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
@@ -58,7 +62,7 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
 
-Control transition `2026.09.06-v1` ไม่ได้แก้ toolchain declarations, package manifest, lockfile, runtime, benchmark, policy, KB หรือ catalog การเริ่ม WP5 toolchain implementation ต้องเกิดในรอบถัดไปหลัง Owner/PO review transition commit นี้
+Control transition `2026.09.06-v2` ไม่ได้แก้ toolchain implementation 6 ไฟล์หรือ benchmark timeout และไม่ได้แก้ runtime, benchmark artifacts/semantics, policy, KB หรือ catalog การกลับไปทำ WP5 implementation และเปลี่ยน timeout ต้องเกิดในรอบถัดไปหลัง Owner/PO review transition commit นี้
 
 ## Safe commands
 

@@ -292,6 +292,8 @@
         "implementationStatus",
         "authoritativeToolchainSource",
         "implementationFileAllowlist",
+        "timeoutRemediationFileAllowlist",
+        "benchmarkTestTimeoutContract",
         "requiredVersions",
         "requiredContract",
         "registryPolicy",
@@ -300,8 +302,10 @@
         "postWp5Decision"
       ],
       "properties": {
-        "blocker": { "const": "UNPINNED_NODE_AND_PNPM_TOOLCHAIN" },
-        "implementationStatus": { "const": "NOT_STARTED" },
+        "blocker": { "const": "BENCHMARK_TEST_TIMEOUT_HEADROOM" },
+        "implementationStatus": {
+          "const": "PREPARED_UNCOMMITTED_AWAITING_TIMEOUT_REMEDIATION"
+        },
         "authoritativeToolchainSource": { "const": "PACKAGE_JSON" },
         "implementationFileAllowlist": {
           "type": "array",
@@ -309,6 +313,76 @@
           "maxItems": 7,
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 }
+        },
+        "timeoutRemediationFileAllowlist": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "prefixItems": [{ "const": "tests/mp-06-wp2-benchmark.test.ts" }],
+          "items": false
+        },
+        "benchmarkTestTimeoutContract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rootCause",
+            "implementationStatus",
+            "targetFile",
+            "targetHook",
+            "currentTimeoutMs",
+            "authorizedTimeoutMs",
+            "maximumTimeoutMs",
+            "hardCeilingNotPerformanceThreshold",
+            "unlimitedTimeoutForbidden",
+            "timeoutRemovalForbidden",
+            "assertionChangesForbidden",
+            "datasetChangesForbidden",
+            "oracleChangesForbidden",
+            "benchmarkSemanticChangesForbidden",
+            "acceptanceThresholdChangesForbidden",
+            "skipOrTodoForbidden",
+            "splitToAvoidAssertionsForbidden",
+            "catchOrIgnoreTimeoutForbidden",
+            "retryToHideFailureForbidden",
+            "benchmarkFailureMustRemainNonZeroExit",
+            "sequentialRunsRequired",
+            "allRunsMustCompleteBelowMs",
+            "skippedOrCancelledAllowed",
+            "checksumsAndMetricsMustMatchAcrossRuns",
+            "trackedBenchmarkReportsMustRemainUnchanged"
+          ],
+          "properties": {
+            "rootCause": {
+              "const": "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM"
+            },
+            "implementationStatus": { "const": "NOT_STARTED" },
+            "targetFile": {
+              "const": "tests/mp-06-wp2-benchmark.test.ts"
+            },
+            "targetHook": { "const": "runMp06Benchmark beforeAll" },
+            "currentTimeoutMs": { "const": 60000 },
+            "authorizedTimeoutMs": { "const": 120000 },
+            "maximumTimeoutMs": { "const": 120000 },
+            "hardCeilingNotPerformanceThreshold": { "const": true },
+            "unlimitedTimeoutForbidden": { "const": true },
+            "timeoutRemovalForbidden": { "const": true },
+            "assertionChangesForbidden": { "const": true },
+            "datasetChangesForbidden": { "const": true },
+            "oracleChangesForbidden": { "const": true },
+            "benchmarkSemanticChangesForbidden": { "const": true },
+            "acceptanceThresholdChangesForbidden": { "const": true },
+            "skipOrTodoForbidden": { "const": true },
+            "splitToAvoidAssertionsForbidden": { "const": true },
+            "catchOrIgnoreTimeoutForbidden": { "const": true },
+            "retryToHideFailureForbidden": { "const": true },
+            "benchmarkFailureMustRemainNonZeroExit": { "const": true },
+            "sequentialRunsRequired": { "const": 5 },
+            "allRunsMustCompleteBelowMs": { "const": 120000 },
+            "skippedOrCancelledAllowed": { "const": 0 },
+            "checksumsAndMetricsMustMatchAcrossRuns": { "const": true },
+            "trackedBenchmarkReportsMustRemainUnchanged": { "const": true }
+          }
         },
         "requiredVersions": {
           "type": "object",

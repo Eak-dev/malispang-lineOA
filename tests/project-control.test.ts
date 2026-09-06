@@ -25,7 +25,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP5-only local closure remediation control", () => {
-  it("accepts the 2026.09.06-v1 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.06-v2 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -80,6 +80,10 @@ describe("MP-06 WP5-only local closure remediation control", () => {
   });
 
   it("authorizes only scoped WP5 local closure remediation work", () => {
+    const record = currentWork as { allowedScope: string[] };
+    expect(record.allowedScope).toContain(
+      "MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY",
+    );
     expect(
       evaluateProjectAction(
         roadmap,
@@ -313,7 +317,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP5 scope expansion", () => {
+  it("rejects policy checksum drift or WP5 timeout-scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -327,6 +331,16 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
       "WP5_SCOPE_INVALID",
     );
+
+    const missingTimeoutScope = clone(currentWork) as {
+      allowedScope: string[];
+    };
+    missingTimeoutScope.allowedScope = missingTimeoutScope.allowedScope.filter(
+      (scope) => scope !== "MP_06_WP5_BENCHMARK_TEST_TIMEOUT_ONLY",
+    );
+    expect(
+      validateProjectControl(roadmap, missingTimeoutScope).errors,
+    ).toContain("WP5_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {
@@ -416,12 +430,35 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     );
   });
 
-  it("encodes the exact future Node/pnpm contract without starting WP5 implementation", () => {
+  it("records the prepared toolchain work and exact timeout-only contract", () => {
     const record = currentWork as {
       localClosureRemediationPlan: {
+        blocker: string;
         implementationStatus: string;
         authoritativeToolchainSource: string;
         implementationFileAllowlist: string[];
+        timeoutRemediationFileAllowlist: string[];
+        benchmarkTestTimeoutContract: {
+          rootCause: string;
+          implementationStatus: string;
+          targetFile: string;
+          targetHook: string;
+          currentTimeoutMs: number;
+          authorizedTimeoutMs: number;
+          maximumTimeoutMs: number;
+          hardCeilingNotPerformanceThreshold: boolean;
+          assertionChangesForbidden: boolean;
+          datasetChangesForbidden: boolean;
+          oracleChangesForbidden: boolean;
+          benchmarkSemanticChangesForbidden: boolean;
+          acceptanceThresholdChangesForbidden: boolean;
+          skipOrTodoForbidden: boolean;
+          sequentialRunsRequired: number;
+          allRunsMustCompleteBelowMs: number;
+          skippedOrCancelledAllowed: number;
+          checksumsAndMetricsMustMatchAcrossRuns: boolean;
+          trackedBenchmarkReportsMustRemainUnchanged: boolean;
+        };
         requiredVersions: {
           node: string;
           pnpm: string;
@@ -442,7 +479,10 @@ describe("MP-06 WP5-only local closure remediation control", () => {
       };
     };
     const plan = record.localClosureRemediationPlan;
-    expect(plan.implementationStatus).toBe("NOT_STARTED");
+    expect(plan.blocker).toBe("BENCHMARK_TEST_TIMEOUT_HEADROOM");
+    expect(plan.implementationStatus).toBe(
+      "PREPARED_UNCOMMITTED_AWAITING_TIMEOUT_REMEDIATION",
+    );
     expect(plan.authoritativeToolchainSource).toBe("PACKAGE_JSON");
     expect(plan.requiredVersions).toEqual({
       node: "24.19.0",
@@ -458,6 +498,30 @@ describe("MP-06 WP5-only local closure remediation control", () => {
       "README.md",
       "docs/line-oa/mp-06/MP_06_WP5_TOOLCHAIN_REMEDIATION_TH.md",
     ]);
+    expect(plan.timeoutRemediationFileAllowlist).toEqual([
+      "tests/mp-06-wp2-benchmark.test.ts",
+    ]);
+    expect(plan.benchmarkTestTimeoutContract).toMatchObject({
+      rootCause: "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM",
+      implementationStatus: "NOT_STARTED",
+      targetFile: "tests/mp-06-wp2-benchmark.test.ts",
+      targetHook: "runMp06Benchmark beforeAll",
+      currentTimeoutMs: 60_000,
+      authorizedTimeoutMs: 120_000,
+      maximumTimeoutMs: 120_000,
+      hardCeilingNotPerformanceThreshold: true,
+      assertionChangesForbidden: true,
+      datasetChangesForbidden: true,
+      oracleChangesForbidden: true,
+      benchmarkSemanticChangesForbidden: true,
+      acceptanceThresholdChangesForbidden: true,
+      skipOrTodoForbidden: true,
+      sequentialRunsRequired: 5,
+      allRunsMustCompleteBelowMs: 120_000,
+      skippedOrCancelledAllowed: 0,
+      checksumsAndMetricsMustMatchAcrossRuns: true,
+      trackedBenchmarkReportsMustRemainUnchanged: true,
+    });
     expect(plan.requiredContract).toMatchObject({
       machineReadableConsistencyValidator: true,
       nodeMismatchFailsFast: true,
@@ -472,7 +536,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     });
   });
 
-  it("fails closed on toolchain drift, premature implementation, or registry scope expansion", () => {
+  it("fails closed on toolchain drift, invalid preparation status, or registry scope expansion", () => {
     const changed = clone(currentWork) as {
       localClosureRemediationPlan: {
         implementationStatus: string;
@@ -503,7 +567,7 @@ describe("MP-06 WP5-only local closure remediation control", () => {
     plan.postWp5Decision.options.reverse();
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
-        "WP5_IMPLEMENTATION_ALREADY_STARTED",
+        "WP5_IMPLEMENTATION_STATUS_INVALID",
         "WP5_IMPLEMENTATION_FILE_ALLOWLIST_INVALID",
         "WP5_NODE_VERSION_INVALID",
         "WP5_PNPM_VERSION_INVALID",
@@ -513,6 +577,48 @@ describe("MP-06 WP5-only local closure remediation control", () => {
         "WP5_POST_DECISION_OWNER_APPROVAL_REQUIRED",
         "WP5_POST_DECISION_PATH_MUST_REMAIN_UNSELECTED",
         "WP5_POST_DECISION_OPTIONS_INVALID",
+      ]),
+    );
+  });
+
+  it("fails closed on timeout target, ceiling, semantic, or run-contract drift", () => {
+    const changed = clone(currentWork) as {
+      localClosureRemediationPlan: {
+        timeoutRemediationFileAllowlist: string[];
+        benchmarkTestTimeoutContract: {
+          implementationStatus: string;
+          targetFile: string;
+          authorizedTimeoutMs: number;
+          maximumTimeoutMs: number;
+          assertionChangesForbidden: boolean;
+          benchmarkSemanticChangesForbidden: boolean;
+          sequentialRunsRequired: number;
+          skippedOrCancelledAllowed: number;
+        };
+      };
+    };
+    const plan = changed.localClosureRemediationPlan;
+    plan.timeoutRemediationFileAllowlist = ["benchmark/mp-06/runner.ts"];
+    plan.benchmarkTestTimeoutContract.implementationStatus = "COMPLETED";
+    plan.benchmarkTestTimeoutContract.targetFile = "benchmark/mp-06/runner.ts";
+    plan.benchmarkTestTimeoutContract.authorizedTimeoutMs = 0;
+    plan.benchmarkTestTimeoutContract.maximumTimeoutMs = 180_000;
+    plan.benchmarkTestTimeoutContract.assertionChangesForbidden = false;
+    plan.benchmarkTestTimeoutContract.benchmarkSemanticChangesForbidden = false;
+    plan.benchmarkTestTimeoutContract.sequentialRunsRequired = 1;
+    plan.benchmarkTestTimeoutContract.skippedOrCancelledAllowed = 9;
+
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP5_TIMEOUT_FILE_ALLOWLIST_INVALID",
+        "WP5_TIMEOUT_ALREADY_CHANGED",
+        "WP5_TIMEOUT_TARGET_FILE_INVALID",
+        "WP5_AUTHORIZED_TIMEOUT_INVALID",
+        "WP5_MAXIMUM_TIMEOUT_INVALID",
+        "WP5_TIMEOUT_CONTRACT_ASSERTIONCHANGESFORBIDDEN_INVALID",
+        "WP5_TIMEOUT_CONTRACT_BENCHMARKSEMANTICCHANGESFORBIDDEN_INVALID",
+        "WP5_TIMEOUT_RUN_COUNT_INVALID",
+        "WP5_TIMEOUT_SKIP_BUDGET_INVALID",
       ]),
     );
   });
