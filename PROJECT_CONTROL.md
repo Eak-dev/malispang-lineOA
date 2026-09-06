@@ -1,34 +1,34 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยบันทึกว่า WP5 local deterministic acceptance ผ่านแบบมีข้อจำกัด และอนุญาตเฉพาะ WP6 TEST-readiness assessment แบบไม่ deploy ในรอบถัดไป
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยบันทึกว่า WP5 local deterministic acceptance ผ่านแบบมีข้อจำกัด, WP6 assessment ผ่านแบบมี conditions และอนุญาตเฉพาะการปิดสี่ conditions แบบไม่ deploy
 
 ## Current control snapshot
 
 | Field                 | Value                                                  |
 | --------------------- | ------------------------------------------------------ |
 | Roadmap               | `MP-ROADMAP` / GitHub #9                               |
-| Version               | `2026.09.06-v3`                                        |
+| Version               | `2026.09.06-v4`                                        |
 | Current               | `MP-06 (GitHub #12)`                                   |
-| Current phase         | `WP6_TEST_READINESS_ASSESSMENT`                        |
-| Current authorization | `AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY`        |
+| Current phase         | `WP6_TEST_READINESS_CONDITION_CLOSURE`                 |
+| Current authorization | `AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY` |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 completion |
-| Verified baseline     | `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`             |
+| Verified baseline     | `0ad0ee261eb1f270f8a81c5874d0118768244d53`             |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                           |
 | Target                | `LOCAL_ONLY`                                           |
 | TEST deployment       | Not authorized                                         |
 | Production            | `NO_GO`                                                |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะนี้อนุญาตเฉพาะ action `TEST_READINESS_ASSESSMENT_WP6` และ allowed scopes ที่ระบุ Generic local implementation กับ actions ของ WP1–WP5 ถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0`, runtime, dataset, independent oracle, benchmark semantics, acceptance thresholds, toolchain, dependency graph, KB และ catalog เป็น read-only
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น สถานะนี้อนุญาตเฉพาะ action `TEST_READINESS_CONDITION_CLOSURE_WP6` และ allowed scopes ที่ระบุ Generic local implementation กับ actions เดิมของ WP1–WP6 ถูกปฏิเสธ Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0`, runtime, dataset, independent oracle, benchmark semantics, acceptance thresholds, dependency graph, KB และ catalog เป็น read-only
 
 WP1–WP4 ผ่าน local deterministic validation แล้ว และ WP2 artifacts ถูก commit ที่ `12e0d27dc06052f5f9a2075aff8f12c90bf5852e` Dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, failed-result checksum `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` และ remediated PASS result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6` ถูกตรึงไว้ WP5 แก้ timeout แบบ non-semantic ที่ `98f6bc0843e376de9932acad767fb463932514cc` และ pin/enforce Node.js `24.19.0` กับ pnpm `11.19.0` ที่ `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`; clean-checkout reproducibility ผ่าน จึงบันทึก local verdict เป็น `PASS_WITH_LIMITATIONS`
 
-ข้อจำกัดที่ยังเหลือคือ AI/NLU ยังไม่ implement, TEST readiness ยังไม่ประเมิน, TEST ยังไม่ deploy, Owner TEST UAT ยังไม่ทำ และ Production ยังเป็น `NO_GO` Issue #12 จึงต้องเปิดอยู่
+WP6 assessment ที่ commit `76d1e1302c31a35ab49e565b231cf63100e27fb6` ให้ verdict `TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS`; commit `0ad0ee261eb1f270f8a81c5874d0118768244d53` ตรึงรายการ condition ที่ต้องปิด สถานะนี้อนุญาตเฉพาะ timeout metadata, TEST-only non-secret alert/rate/stop controls, rollback/runbook, synthetic fixtures, validation-chain idempotence และเอกสาร/validator/tests ที่เกี่ยวข้อง
 
-WP6 เป็น assessment เท่านั้นและยังไม่เริ่ม รอบ implementation ถัดไปตรวจได้เฉพาะ repository deployment configuration แบบ read-only และ TEST metadata ที่ระบุ เช่น Worker/resource/binding names, route/domain, deployment history และชื่อ/presence ของ TEST secrets ห้ามอ่าน secret values และห้าม query/open Production remote state ค่าที่พิสูจน์ไม่ได้ต้องเป็น `UNKNOWN`; component ที่ไม่ใช้ต้องเป็น `NOT_APPLICABLE` พร้อมเหตุผล ห้ามถือว่า PASS อัตโนมัติ
+Active benchmark contract คือ dedicated process, hook watchdog `300_000` ms และ test-specific watchdog `15_000` ms สองจุด โดยเป็น execution safety limits ไม่ใช่ product performance guarantee ค่าสูงสุดที่สังเกตได้ระหว่าง remediation คือ 260.20 วินาที เทียบ acceptance ceiling 270 วินาที จึงเหลือ margin 9.80 วินาทีและห้ามนำผลจากเครื่องนี้ไปใช้เป็น CI performance guarantee
 
-Assessment ต้องตรวจ TEST/Production isolation, deployment target ที่ fail closed, TEST channel/webhook boundary, logs/PII redaction, authentication/authorization, idempotency/retry, rollback, kill switch, smoke/UAT/monitoring plans, rate/cost/abuse limits และ PR/default-branch readiness โดยยังไม่มีสิทธิ์แก้ Worker/Wrangler configuration, remote resource, secret, LINE OA/Webhook/Rich Menu/Reward Card, runtime หรือ AI/NLU และไม่มีสิทธิ์ deploy
+Issue #12 ยังเปิด: AI/NLU ยังไม่ implement, TEST ยังไม่ deploy, rollback rehearsal กับ Owner TEST UAT ยังไม่เกิด, PR/default-branch integration ยังไม่เกิด และ Production ยังเป็น `NO_GO`
 
-WP6 verdict ที่อนุญาตมีเพียง `TEST_READINESS_ASSESSMENT_PASS`, `TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS` และ `TEST_READINESS_BLOCKED` ห้ามใช้คำว่า TEST deployed, Production ready หรือ go-live และ control transition นี้ยังไม่สร้าง assessment document
+Condition-closure verdict ที่อนุญาตมีเพียง `WP6_TEST_READINESS_CONDITIONS_CLOSED`, `WP6_TEST_READINESS_CONDITIONS_PARTIALLY_CLOSED` และ `WP6_TEST_READINESS_CONDITION_CLOSURE_FAILED` ห้ามใช้คำว่า TEST deployed, Production ready หรือ go-live
 
 GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
@@ -62,7 +62,7 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
 
-Control transition `2026.09.06-v3` ไม่ได้เริ่ม WP6 assessment และไม่ได้แก้ runtime, Worker/Wrangler deployment configuration, benchmark artifacts/semantics, toolchain, dependency graph, policy, KB หรือ catalog การเริ่ม assessment ต้องเกิดในรอบถัดไปหลัง Owner/PO review transition commit นี้
+Control transition `2026.09.06-v4` อนุญาตเฉพาะ condition closure ตาม allowed scope และยังไม่แก้ implementation ใน transition commit นี้ คำสั่ง Owner เดียวกันอนุญาตให้เริ่ม implementation หลัง transition commit ผ่าน โดยห้ามแก้ runtime, Worker/Wrangler deployment configuration, benchmark artifacts/semantics, dependency graph, policy, KB หรือ catalog
 
 ## Safe commands
 

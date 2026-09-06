@@ -26,6 +26,7 @@
     "localClosureRemediationPlan",
     "localDeterministicAcceptance",
     "testReadinessAssessmentPlan",
+    "testReadinessConditionClosurePlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -42,8 +43,10 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP6_TEST_READINESS_ASSESSMENT" },
-    "status": { "const": "AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY" },
+    "currentPhase": { "const": "WP6_TEST_READINESS_CONDITION_CLOSURE" },
+    "status": {
+      "const": "AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY"
+    },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -79,6 +82,7 @@
         "benchmarkCompletionWp4",
         "localClosureRemediationWp5",
         "testReadinessAssessmentWp6",
+        "testReadinessConditionClosureWp6",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -94,7 +98,8 @@
         "runtimeRemediationWp3": { "const": false },
         "benchmarkCompletionWp4": { "const": false },
         "localClosureRemediationWp5": { "const": false },
-        "testReadinessAssessmentWp6": { "const": true },
+        "testReadinessAssessmentWp6": { "const": false },
+        "testReadinessConditionClosureWp6": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -343,13 +348,22 @@
             "rootCause",
             "implementationStatus",
             "implementationCommit",
+            "supersedesCommit",
             "targetFile",
             "targetHook",
             "previousTimeoutMs",
             "currentTimeoutMs",
             "authorizedTimeoutMs",
             "maximumTimeoutMs",
+            "testSpecificTimeoutMs",
+            "testSpecificTimeoutCount",
+            "dedicatedProcess",
+            "observedMaximumMs",
+            "acceptanceCeilingMs",
+            "remainingMarginMs",
             "hardCeilingNotPerformanceThreshold",
+            "productPerformanceGuarantee",
+            "globalTimeoutChanged",
             "unlimitedTimeoutForbidden",
             "timeoutRemovalForbidden",
             "assertionChangesForbidden",
@@ -370,23 +384,34 @@
           ],
           "properties": {
             "rootCause": {
-              "const": "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM"
+              "const": "CPU_BOUND_BENCHMARK_REQUIRES_DEDICATED_LANE"
             },
             "implementationStatus": {
-              "const": "COMPLETED_AT_TIMEOUT_COMMIT"
+              "const": "SUPERSEDED_BY_DEDICATED_BENCHMARK_EXECUTION"
             },
             "implementationCommit": {
+              "const": "b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a"
+            },
+            "supersedesCommit": {
               "const": "98f6bc0843e376de9932acad767fb463932514cc"
             },
             "targetFile": {
               "const": "tests/mp-06-wp2-benchmark.test.ts"
             },
             "targetHook": { "const": "runMp06Benchmark beforeAll" },
-            "previousTimeoutMs": { "const": 60000 },
-            "currentTimeoutMs": { "const": 120000 },
-            "authorizedTimeoutMs": { "const": 120000 },
-            "maximumTimeoutMs": { "const": 120000 },
+            "previousTimeoutMs": { "const": 120000 },
+            "currentTimeoutMs": { "const": 300000 },
+            "authorizedTimeoutMs": { "const": 300000 },
+            "maximumTimeoutMs": { "const": 300000 },
+            "testSpecificTimeoutMs": { "const": 15000 },
+            "testSpecificTimeoutCount": { "const": 2 },
+            "dedicatedProcess": { "const": true },
+            "observedMaximumMs": { "const": 260200 },
+            "acceptanceCeilingMs": { "const": 270000 },
+            "remainingMarginMs": { "const": 9800 },
             "hardCeilingNotPerformanceThreshold": { "const": true },
+            "productPerformanceGuarantee": { "const": false },
+            "globalTimeoutChanged": { "const": false },
             "unlimitedTimeoutForbidden": { "const": true },
             "timeoutRemovalForbidden": { "const": true },
             "assertionChangesForbidden": { "const": true },
@@ -400,7 +425,7 @@
             "retryToHideFailureForbidden": { "const": true },
             "benchmarkFailureMustRemainNonZeroExit": { "const": true },
             "sequentialRunsRequired": { "const": 5 },
-            "allRunsMustCompleteBelowMs": { "const": 120000 },
+            "allRunsMustCompleteBelowMs": { "const": 270000 },
             "skippedOrCancelledAllowed": { "const": 0 },
             "checksumsAndMetricsMustMatchAcrossRuns": { "const": true },
             "trackedBenchmarkReportsMustRemainUnchanged": { "const": true }
@@ -599,7 +624,7 @@
           "const": "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6"
         },
         "aiNluImplemented": { "const": false },
-        "testEnvironmentAssessed": { "const": false },
+        "testEnvironmentAssessed": { "const": true },
         "testDeployment": { "const": false },
         "ownerTestUatComplete": { "const": false },
         "productionStatus": { "const": "NO_GO" },
@@ -610,7 +635,7 @@
           "uniqueItems": true,
           "prefixItems": [
             { "const": "AI_NLU_NOT_IMPLEMENTED" },
-            { "const": "TEST_READINESS_NOT_ASSESSED" },
+            { "const": "TEST_READINESS_CONDITIONS_OPEN" },
             { "const": "TEST_NOT_DEPLOYED" },
             { "const": "OWNER_TEST_UAT_NOT_COMPLETED" },
             { "const": "PRODUCTION_NO_GO" }
@@ -624,6 +649,9 @@
       "additionalProperties": false,
       "required": [
         "implementationStatus",
+        "assessmentCommit",
+        "conditionsCommit",
+        "verdict",
         "deliverable",
         "remoteInspectionMode",
         "secretInspectionMode",
@@ -637,7 +665,16 @@
         "issueMustRemainOpen"
       ],
       "properties": {
-        "implementationStatus": { "const": "NOT_STARTED" },
+        "implementationStatus": { "const": "COMPLETED_WITH_CONDITIONS" },
+        "assessmentCommit": {
+          "const": "76d1e1302c31a35ab49e565b231cf63100e27fb6"
+        },
+        "conditionsCommit": {
+          "const": "0ad0ee261eb1f270f8a81c5874d0118768244d53"
+        },
+        "verdict": {
+          "const": "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS"
+        },
         "deliverable": {
           "const": "docs/line-oa/mp-06/MP_06_WP6_TEST_READINESS_ASSESSMENT_TH.md"
         },
@@ -668,6 +705,80 @@
         "unknownMustNotBeAssumedPass": { "const": true },
         "notApplicableRequiresReason": { "const": true },
         "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "testReadinessConditionClosurePlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationStatus",
+        "authorizedConditions",
+        "timeoutContract",
+        "runtimeMode",
+        "policyMode",
+        "datasetOracleBenchmarkSemanticsMode",
+        "knowledgeBaseCatalogMode",
+        "deploymentAuthorization",
+        "aiNluImplementation",
+        "issueMustRemainOpen",
+        "verdictOptions"
+      ],
+      "properties": {
+        "implementationStatus": { "const": "NOT_STARTED" },
+        "authorizedConditions": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "prefixItems": [
+            { "const": "ACTIVE_BENCHMARK_TIMEOUT_METADATA_DRIFT" },
+            { "const": "TEST_ALERT_RATE_STOP_CONTROLS_NOT_FROZEN" },
+            { "const": "ROLLBACK_AND_SYNTHETIC_FIXTURES_NOT_FROZEN" },
+            { "const": "VALIDATION_CHAIN_RICH_MENU_FORMATTING_DRIFT" }
+          ],
+          "items": false
+        },
+        "timeoutContract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hookWatchdogMs",
+            "testSpecificWatchdogMs",
+            "testSpecificWatchdogCount",
+            "observedMaximumMs",
+            "acceptanceCeilingMs",
+            "performanceGuarantee"
+          ],
+          "properties": {
+            "hookWatchdogMs": { "const": 300000 },
+            "testSpecificWatchdogMs": { "const": 15000 },
+            "testSpecificWatchdogCount": { "const": 2 },
+            "observedMaximumMs": { "const": 260200 },
+            "acceptanceCeilingMs": { "const": 270000 },
+            "performanceGuarantee": { "const": false }
+          }
+        },
+        "runtimeMode": { "const": "READ_ONLY" },
+        "policyMode": { "const": "READ_ONLY" },
+        "datasetOracleBenchmarkSemanticsMode": { "const": "READ_ONLY" },
+        "knowledgeBaseCatalogMode": { "const": "READ_ONLY" },
+        "deploymentAuthorization": { "const": false },
+        "aiNluImplementation": { "const": false },
+        "issueMustRemainOpen": { "const": true },
+        "verdictOptions": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "prefixItems": [
+            { "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED" },
+            {
+              "const": "WP6_TEST_READINESS_CONDITIONS_PARTIALLY_CLOSED"
+            },
+            { "const": "WP6_TEST_READINESS_CONDITION_CLOSURE_FAILED" }
+          ],
+          "items": false
+        }
       }
     },
     "benchmarkAcceptanceCriteria": {

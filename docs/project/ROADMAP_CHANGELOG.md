@@ -1,6 +1,18 @@
 # Roadmap Changelog
 
-## 2026.09.06-v3 — current
+## 2026.09.06-v4 — current
+
+- supersedes `2026.09.06-v3` while retaining MP-06 (GitHub #12) as the only current work
+- records assessment verdict `TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS` from commit `76d1e1302c31a35ab49e565b231cf63100e27fb6` and conditions baseline `0ad0ee261eb1f270f8a81c5874d0118768244d53`
+- sets phase/status/action to `WP6_TEST_READINESS_CONDITION_CLOSURE` / `AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY` / `TEST_READINESS_CONDITION_CLOSURE_WP6`
+- authorizes exactly four conditions: active benchmark timeout metadata, TEST-only alert/rate/stop controls, rollback/runbook and synthetic fixtures, and byte-stable validation-chain preview generation
+- normalizes the active benchmark contract to the dedicated `300_000` ms hook watchdog and two `15_000` ms test-specific watchdogs from commit `b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a`; historical 60/120/180-second evidence remains history and is not rewritten
+- records observed five-run maximum 260.20s, 270s remediation ceiling and 9.80s margin as local execution evidence, not a product or CI performance guarantee
+- preserves policy/dataset/result checksums and keeps runtime, benchmark semantics/reports, policy, KB/catalog, dependencies/lockfile and deployment configuration read-only
+- keeps AI/NLU false, TEST deployment false, Production `NO_GO`, Issue #12 open and MP-07 blocked
+- this transition commit changes only control/schema/validator/tests/governance documents; implementation follows only because the same Owner instruction separately authorizes it
+
+## 2026.09.06-v3 — superseded
 
 - supersedes `2026.09.06-v2` while retaining MP-06 (GitHub #12) as the only current work
 - sets phase/status/action to `WP6_TEST_READINESS_ASSESSMENT` / `AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY` / `TEST_READINESS_ASSESSMENT_WP6` and verified baseline to toolchain commit `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`

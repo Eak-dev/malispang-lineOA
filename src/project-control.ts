@@ -22,6 +22,7 @@ export type ProjectAction =
   | "BENCHMARK_COMPLETION_WP4"
   | "LOCAL_CLOSURE_REMEDIATION_WP5"
   | "TEST_READINESS_ASSESSMENT_WP6"
+  | "TEST_READINESS_CONDITION_CLOSURE_WP6"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -94,21 +95,15 @@ const REQUIRED_FORBIDDEN_SCOPE = [
 ] as const;
 
 const REQUIRED_WP6_SCOPE = [
-  "MP_06_WP6_REPOSITORY_DEPLOYMENT_CONFIG_READ_ONLY",
-  "MP_06_WP6_TEST_METADATA_READ_ONLY",
-  "MP_06_WP6_TEST_SECRET_NAMES_AND_PRESENCE_ONLY",
-  "MP_06_WP6_TEST_WORKER_RESOURCES_BINDINGS_READ_ONLY",
-  "MP_06_WP6_TEST_PRODUCTION_ISOLATION_ASSESSMENT",
-  "MP_06_WP6_DRY_RUN_VERIFICATION",
-  "MP_06_WP6_DEPLOYMENT_TARGET_ASSESSMENT",
-  "MP_06_WP6_WEBHOOK_BOUNDARY_ASSESSMENT",
-  "MP_06_WP6_LOGGING_REDACTION_OBSERVABILITY_ASSESSMENT",
-  "MP_06_WP6_ROLLBACK_KILL_SWITCH_RUNBOOK_ASSESSMENT",
-  "MP_06_WP6_UAT_SMOKE_MONITORING_PLAN",
-  "MP_06_WP6_RATE_COST_ABUSE_ASSESSMENT",
-  "MP_06_WP6_PR_DEFAULT_BRANCH_READINESS_ASSESSMENT",
-  "MP_06_WP6_ASSESSMENT_DOCUMENTATION",
-  "MP_06_WP6_ASSESSMENT_VALIDATOR_TESTS_IF_NECESSARY",
+  "PROJECT_CONTROL_TRANSITION",
+  "MP_06_WP6_TIMEOUT_METADATA_NORMALIZATION",
+  "MP_06_WP6_TEST_READINESS_CONTROLS",
+  "MP_06_WP6_SYNTHETIC_SMOKE_UAT_FIXTURES",
+  "MP_06_WP6_ROLLBACK_RUNBOOK",
+  "MP_06_WP6_VALIDATION_CHAIN_IDEMPOTENCE",
+  "MP_06_WP6_BENCHMARK_DOCUMENTATION_NORMALIZATION",
+  "MP_06_WP6_CONDITION_CLOSURE_TESTS",
+  "MP_06_WP6_CONDITION_CLOSURE_DOCUMENTATION",
   "RUNTIME_READ_ONLY",
   "POLICY_SNAPSHOT_READ_ONLY",
   "DATASET_EXPECTED_CASES_READ_ONLY",
@@ -137,7 +132,13 @@ const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
   "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
 const EXPECTED_WP6_CONTROL_BASE_COMMIT =
-  "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331";
+  "0ad0ee261eb1f270f8a81c5874d0118768244d53";
+const EXPECTED_WP6_BENCHMARK_EXECUTION_COMMIT =
+  "b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a";
+const EXPECTED_WP6_ASSESSMENT_COMMIT =
+  "76d1e1302c31a35ab49e565b231cf63100e27fb6";
+const EXPECTED_WP6_CONDITIONS_COMMIT =
+  "0ad0ee261eb1f270f8a81c5874d0118768244d53";
 const EXPECTED_WP5_TIMEOUT_COMMIT = "98f6bc0843e376de9932acad767fb463932514cc";
 const EXPECTED_WP5_TOOLCHAIN_COMMIT =
   "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331";
@@ -181,6 +182,17 @@ const EXPECTED_WP6_VERDICTS = [
   "TEST_READINESS_ASSESSMENT_PASS",
   "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS",
   "TEST_READINESS_BLOCKED",
+] as const;
+const EXPECTED_WP6_CONDITIONS = [
+  "ACTIVE_BENCHMARK_TIMEOUT_METADATA_DRIFT",
+  "TEST_ALERT_RATE_STOP_CONTROLS_NOT_FROZEN",
+  "ROLLBACK_AND_SYNTHETIC_FIXTURES_NOT_FROZEN",
+  "VALIDATION_CHAIN_RICH_MENU_FORMATTING_DRIFT",
+] as const;
+const EXPECTED_WP6_CONDITION_VERDICTS = [
+  "WP6_TEST_READINESS_CONDITIONS_CLOSED",
+  "WP6_TEST_READINESS_CONDITIONS_PARTIALLY_CLOSED",
+  "WP6_TEST_READINESS_CONDITION_CLOSURE_FAILED",
 ] as const;
 const EXPECTED_WP2_ARTIFACT_FILES = [
   "package.json",
@@ -238,7 +250,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.06-v3",
+    "2026.09.06-v4",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -249,7 +261,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-06-V3",
+      "MP-OD-2026-09-06-V4",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -261,7 +273,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.06-v2",
+      "2026.09.06-v3",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -450,13 +462,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP6_TEST_READINESS_ASSESSMENT",
+    "WP6_TEST_READINESS_CONDITION_CLOSURE",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY",
+    "AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -547,8 +559,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testReadinessAssessmentWp6,
+      false,
+      "WP6_TEST_READINESS_ASSESSMENT_MUST_BE_READ_ONLY",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.testReadinessConditionClosureWp6,
       true,
-      "WP6_TEST_READINESS_ASSESSMENT_NOT_AUTHORIZED",
+      "WP6_TEST_READINESS_CONDITION_CLOSURE_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -617,6 +635,10 @@ export function validateProjectControl(
   validateTestReadinessAssessmentPlan(
     errors,
     currentWork.testReadinessAssessmentPlan,
+  );
+  validateTestReadinessConditionClosurePlan(
+    errors,
+    currentWork.testReadinessConditionClosurePlan,
   );
 
   if (!isRecord(currentWork.policySnapshotReference)) {
@@ -729,7 +751,7 @@ export function evaluateProjectAction(
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
       allowed: false,
-      reason: "USE_SCOPED_TEST_READINESS_ASSESSMENT_WP6_ACTION",
+      reason: "USE_SCOPED_TEST_READINESS_CONDITION_CLOSURE_WP6_ACTION",
     };
   }
   const keyByAction: Record<ProjectAction, string> = {
@@ -740,6 +762,7 @@ export function evaluateProjectAction(
     BENCHMARK_COMPLETION_WP4: "benchmarkCompletionWp4",
     LOCAL_CLOSURE_REMEDIATION_WP5: "localClosureRemediationWp5",
     TEST_READINESS_ASSESSMENT_WP6: "testReadinessAssessmentWp6",
+    TEST_READINESS_CONDITION_CLOSURE_WP6: "testReadinessConditionClosureWp6",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -1277,7 +1300,7 @@ function validateLocalDeterministicAcceptance(
   requireBooleanFields(errors, acceptance, "LOCAL_ACCEPTANCE", [
     ["cleanCheckoutReproducible", true],
     ["aiNluImplemented", false],
-    ["testEnvironmentAssessed", false],
+    ["testEnvironmentAssessed", true],
     ["testDeployment", false],
     ["ownerTestUatComplete", false],
   ]);
@@ -1287,7 +1310,7 @@ function validateLocalDeterministicAcceptance(
     : [];
   const expected = [
     "AI_NLU_NOT_IMPLEMENTED",
-    "TEST_READINESS_NOT_ASSESSED",
+    "TEST_READINESS_CONDITIONS_OPEN",
     "TEST_NOT_DEPLOYED",
     "OWNER_TEST_UAT_NOT_COMPLETED",
     "PRODUCTION_NO_GO",
@@ -1310,7 +1333,26 @@ function validateTestReadinessAssessmentPlan(
   }
 
   for (const [field, expected, code] of [
-    ["implementationStatus", "NOT_STARTED", "WP6_ASSESSMENT_ALREADY_STARTED"],
+    [
+      "implementationStatus",
+      "COMPLETED_WITH_CONDITIONS",
+      "WP6_ASSESSMENT_STATUS_INVALID",
+    ],
+    [
+      "assessmentCommit",
+      EXPECTED_WP6_ASSESSMENT_COMMIT,
+      "WP6_ASSESSMENT_COMMIT_INVALID",
+    ],
+    [
+      "conditionsCommit",
+      EXPECTED_WP6_CONDITIONS_COMMIT,
+      "WP6_ASSESSMENT_CONDITIONS_COMMIT_INVALID",
+    ],
+    [
+      "verdict",
+      "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS",
+      "WP6_ASSESSMENT_VERDICT_INVALID",
+    ],
     [
       "deliverable",
       "docs/line-oa/mp-06/MP_06_WP6_TEST_READINESS_ASSESSMENT_TH.md",
@@ -1364,6 +1406,82 @@ function validateTestReadinessAssessmentPlan(
   }
 }
 
+function validateTestReadinessConditionClosurePlan(
+  errors: string[],
+  plan: unknown,
+): void {
+  if (!isRecord(plan)) {
+    errors.push("WP6_TEST_READINESS_CONDITION_CLOSURE_PLAN_MISSING");
+    return;
+  }
+
+  expectEqual(
+    errors,
+    plan.implementationStatus,
+    "NOT_STARTED",
+    "WP6_CONDITION_CLOSURE_ALREADY_STARTED",
+  );
+
+  const conditions = Array.isArray(plan.authorizedConditions)
+    ? plan.authorizedConditions
+    : [];
+  if (
+    conditions.length !== EXPECTED_WP6_CONDITIONS.length ||
+    EXPECTED_WP6_CONDITIONS.some((condition) => !conditions.includes(condition))
+  ) {
+    errors.push("WP6_AUTHORIZED_CONDITIONS_INVALID");
+  }
+
+  if (!isRecord(plan.timeoutContract)) {
+    errors.push("WP6_TIMEOUT_CONTRACT_MISSING");
+  } else {
+    for (const [field, expected, code] of [
+      ["hookWatchdogMs", 300_000, "WP6_HOOK_WATCHDOG_INVALID"],
+      ["testSpecificWatchdogMs", 15_000, "WP6_TEST_WATCHDOG_INVALID"],
+      ["testSpecificWatchdogCount", 2, "WP6_TEST_WATCHDOG_COUNT_INVALID"],
+      ["observedMaximumMs", 260_200, "WP6_OBSERVED_MAXIMUM_INVALID"],
+      ["acceptanceCeilingMs", 270_000, "WP6_ACCEPTANCE_CEILING_INVALID"],
+      ["performanceGuarantee", false, "WP6_PERFORMANCE_GUARANTEE_INVALID"],
+    ] as const) {
+      expectEqual(errors, plan.timeoutContract[field], expected, code);
+    }
+  }
+
+  for (const [field, expected, code] of [
+    ["runtimeMode", "READ_ONLY", "WP6_CONDITION_RUNTIME_MODE_INVALID"],
+    ["policyMode", "READ_ONLY", "WP6_CONDITION_POLICY_MODE_INVALID"],
+    [
+      "datasetOracleBenchmarkSemanticsMode",
+      "READ_ONLY",
+      "WP6_CONDITION_BENCHMARK_MODE_INVALID",
+    ],
+    [
+      "knowledgeBaseCatalogMode",
+      "READ_ONLY",
+      "WP6_CONDITION_KB_CATALOG_MODE_INVALID",
+    ],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
+  requireBooleanFields(errors, plan, "WP6_CONDITION_CLOSURE", [
+    ["deploymentAuthorization", false],
+    ["aiNluImplementation", false],
+    ["issueMustRemainOpen", true],
+  ]);
+
+  const verdicts = Array.isArray(plan.verdictOptions)
+    ? plan.verdictOptions
+    : [];
+  if (
+    verdicts.length !== EXPECTED_WP6_CONDITION_VERDICTS.length ||
+    EXPECTED_WP6_CONDITION_VERDICTS.some(
+      (verdict) => !verdicts.includes(verdict),
+    )
+  ) {
+    errors.push("WP6_CONDITION_VERDICT_OPTIONS_INVALID");
+  }
+}
+
 function validateWp5BenchmarkTimeoutContract(
   errors: string[],
   contract: unknown,
@@ -1376,18 +1494,23 @@ function validateWp5BenchmarkTimeoutContract(
   for (const [field, expected, code] of [
     [
       "rootCause",
-      "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM",
+      "CPU_BOUND_BENCHMARK_REQUIRES_DEDICATED_LANE",
       "WP5_TIMEOUT_ROOT_CAUSE_INVALID",
     ],
     [
       "implementationStatus",
-      "COMPLETED_AT_TIMEOUT_COMMIT",
+      "SUPERSEDED_BY_DEDICATED_BENCHMARK_EXECUTION",
       "WP5_TIMEOUT_IMPLEMENTATION_STATUS_INVALID",
     ],
     [
       "implementationCommit",
-      EXPECTED_WP5_TIMEOUT_COMMIT,
+      EXPECTED_WP6_BENCHMARK_EXECUTION_COMMIT,
       "WP5_TIMEOUT_IMPLEMENTATION_COMMIT_INVALID",
+    ],
+    [
+      "supersedesCommit",
+      EXPECTED_WP5_TIMEOUT_COMMIT,
+      "WP5_TIMEOUT_SUPERSEDES_COMMIT_INVALID",
     ],
     [
       "targetFile",
@@ -1399,12 +1522,17 @@ function validateWp5BenchmarkTimeoutContract(
       "runMp06Benchmark beforeAll",
       "WP5_TIMEOUT_TARGET_HOOK_INVALID",
     ],
-    ["previousTimeoutMs", 60_000, "WP5_PREVIOUS_TIMEOUT_INVALID"],
-    ["currentTimeoutMs", 120_000, "WP5_CURRENT_TIMEOUT_INVALID"],
-    ["authorizedTimeoutMs", 120_000, "WP5_AUTHORIZED_TIMEOUT_INVALID"],
-    ["maximumTimeoutMs", 120_000, "WP5_MAXIMUM_TIMEOUT_INVALID"],
+    ["previousTimeoutMs", 120_000, "WP5_PREVIOUS_TIMEOUT_INVALID"],
+    ["currentTimeoutMs", 300_000, "WP5_CURRENT_TIMEOUT_INVALID"],
+    ["authorizedTimeoutMs", 300_000, "WP5_AUTHORIZED_TIMEOUT_INVALID"],
+    ["maximumTimeoutMs", 300_000, "WP5_MAXIMUM_TIMEOUT_INVALID"],
+    ["testSpecificTimeoutMs", 15_000, "WP5_TEST_TIMEOUT_INVALID"],
+    ["testSpecificTimeoutCount", 2, "WP5_TEST_TIMEOUT_COUNT_INVALID"],
+    ["observedMaximumMs", 260_200, "WP5_OBSERVED_MAXIMUM_INVALID"],
+    ["acceptanceCeilingMs", 270_000, "WP5_ACCEPTANCE_CEILING_INVALID"],
+    ["remainingMarginMs", 9_800, "WP5_REMAINING_MARGIN_INVALID"],
     ["sequentialRunsRequired", 5, "WP5_TIMEOUT_RUN_COUNT_INVALID"],
-    ["allRunsMustCompleteBelowMs", 120_000, "WP5_TIMEOUT_RUN_CEILING_INVALID"],
+    ["allRunsMustCompleteBelowMs", 270_000, "WP5_TIMEOUT_RUN_CEILING_INVALID"],
     ["skippedOrCancelledAllowed", 0, "WP5_TIMEOUT_SKIP_BUDGET_INVALID"],
   ] as const) {
     expectEqual(errors, contract[field], expected, code);
@@ -1412,6 +1540,9 @@ function validateWp5BenchmarkTimeoutContract(
 
   requireBooleanFields(errors, contract, "WP5_TIMEOUT_CONTRACT", [
     ["hardCeilingNotPerformanceThreshold", true],
+    ["productPerformanceGuarantee", false],
+    ["globalTimeoutChanged", false],
+    ["dedicatedProcess", true],
     ["unlimitedTimeoutForbidden", true],
     ["timeoutRemovalForbidden", true],
     ["assertionChangesForbidden", true],

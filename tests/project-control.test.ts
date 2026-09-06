@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP6-only TEST-readiness assessment control", () => {
-  it("accepts the 2026.09.06-v3 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP6-only TEST-readiness condition-closure control", () => {
+  it("accepts the 2026.09.06-v4 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -44,15 +44,16 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
             benchmarkCompletionWp4: { const: boolean };
             localClosureRemediationWp5: { const: boolean };
             testReadinessAssessmentWp6: { const: boolean };
+            testReadinessConditionClosureWp6: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP6_TEST_READINESS_ASSESSMENT",
+      "WP6_TEST_READINESS_CONDITION_CLOSURE",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY",
+      "AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -70,6 +71,10 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     expect(
       schema.properties.authorization.properties.testReadinessAssessmentWp6
         .const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties
+        .testReadinessConditionClosureWp6.const,
     ).toBe(true);
   });
 
@@ -84,16 +89,14 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only scoped WP6 TEST-readiness assessment work", () => {
+  it("authorizes only scoped WP6 TEST-readiness condition closure", () => {
     const record = currentWork as { allowedScope: string[] };
-    expect(record.allowedScope).toContain(
-      "MP_06_WP6_TEST_SECRET_NAMES_AND_PRESENCE_ONLY",
-    );
+    expect(record.allowedScope).toContain("MP_06_WP6_TEST_READINESS_CONTROLS");
     expect(
       evaluateProjectAction(
         roadmap,
         currentWork,
-        "TEST_READINESS_ASSESSMENT_WP6",
+        "TEST_READINESS_CONDITION_CLOSURE_WP6",
       ),
     ).toEqual({
       allowed: true,
@@ -132,6 +135,16 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       reason: "LOCAL_CLOSURE_REMEDIATION_WP5_NOT_AUTHORIZED",
     });
     expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "TEST_READINESS_ASSESSMENT_WP6",
+      ),
+    ).toEqual({
+      allowed: false,
+      reason: "TEST_READINESS_ASSESSMENT_WP6_NOT_AUTHORIZED",
+    });
+    expect(
       evaluateProjectAction(roadmap, currentWork, "POLICY_SNAPSHOT"),
     ).toEqual({
       allowed: false,
@@ -141,7 +154,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       evaluateProjectAction(roadmap, currentWork, "LOCAL_IMPLEMENTATION"),
     ).toEqual({
       allowed: false,
-      reason: "USE_SCOPED_TEST_READINESS_ASSESSMENT_WP6_ACTION",
+      reason: "USE_SCOPED_TEST_READINESS_CONDITION_CLOSURE_WP6_ACTION",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -169,7 +182,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
     const changed = clone(currentWork) as { roadmapVersion: string };
-    changed.roadmapVersion = "2026.09.06-v2";
+    changed.roadmapVersion = "2026.09.06-v3";
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "CURRENT_WORK_ROADMAP_VERSION_MISMATCH",
     );
@@ -314,24 +327,31 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
         benchmarkCompletionWp4: boolean;
         localClosureRemediationWp5: boolean;
         testReadinessAssessmentWp6: boolean;
+        testReadinessConditionClosureWp6: boolean;
       };
     };
     changed.authorization.benchmarkWp2 = true;
     changed.authorization.runtimeRemediationWp3 = true;
     changed.authorization.benchmarkCompletionWp4 = true;
     changed.authorization.localClosureRemediationWp5 = true;
-    changed.authorization.testReadinessAssessmentWp6 = false;
+    changed.authorization.testReadinessAssessmentWp6 = true;
+    changed.authorization.testReadinessConditionClosureWp6 = false;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
         "WP2_BENCHMARK_MUST_BE_READ_ONLY",
         "WP3_RUNTIME_REMEDIATION_MUST_BE_READ_ONLY",
         "WP4_BENCHMARK_COMPLETION_MUST_BE_READ_ONLY",
         "WP5_LOCAL_CLOSURE_REMEDIATION_MUST_BE_READ_ONLY",
-        "WP6_TEST_READINESS_ASSESSMENT_NOT_AUTHORIZED",
+        "WP6_TEST_READINESS_ASSESSMENT_MUST_BE_READ_ONLY",
+        "WP6_TEST_READINESS_CONDITION_CLOSURE_NOT_AUTHORIZED",
       ]),
     );
     expect(
-      evaluateProjectAction(roadmap, changed, "TEST_READINESS_ASSESSMENT_WP6"),
+      evaluateProjectAction(
+        roadmap,
+        changed,
+        "TEST_READINESS_CONDITION_CLOSURE_WP6",
+      ),
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
@@ -355,7 +375,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     };
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
-        (scope) => scope !== "MP_06_WP6_TEST_METADATA_READ_ONLY",
+        (scope) => scope !== "MP_06_WP6_TEST_READINESS_CONTROLS",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
@@ -464,13 +484,22 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
           rootCause: string;
           implementationStatus: string;
           implementationCommit: string;
+          supersedesCommit: string;
           targetFile: string;
           targetHook: string;
           previousTimeoutMs: number;
           currentTimeoutMs: number;
           authorizedTimeoutMs: number;
           maximumTimeoutMs: number;
+          testSpecificTimeoutMs: number;
+          testSpecificTimeoutCount: number;
+          dedicatedProcess: boolean;
+          observedMaximumMs: number;
+          acceptanceCeilingMs: number;
+          remainingMarginMs: number;
           hardCeilingNotPerformanceThreshold: boolean;
+          productPerformanceGuarantee: boolean;
+          globalTimeoutChanged: boolean;
           assertionChangesForbidden: boolean;
           datasetChangesForbidden: boolean;
           oracleChangesForbidden: boolean;
@@ -528,16 +557,25 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       "tests/mp-06-wp2-benchmark.test.ts",
     ]);
     expect(plan.benchmarkTestTimeoutContract).toMatchObject({
-      rootCause: "BENCHMARK_BEFORE_ALL_TIMEOUT_HEADROOM",
-      implementationStatus: "COMPLETED_AT_TIMEOUT_COMMIT",
-      implementationCommit: "98f6bc0843e376de9932acad767fb463932514cc",
+      rootCause: "CPU_BOUND_BENCHMARK_REQUIRES_DEDICATED_LANE",
+      implementationStatus: "SUPERSEDED_BY_DEDICATED_BENCHMARK_EXECUTION",
+      implementationCommit: "b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a",
+      supersedesCommit: "98f6bc0843e376de9932acad767fb463932514cc",
       targetFile: "tests/mp-06-wp2-benchmark.test.ts",
       targetHook: "runMp06Benchmark beforeAll",
-      previousTimeoutMs: 60_000,
-      currentTimeoutMs: 120_000,
-      authorizedTimeoutMs: 120_000,
-      maximumTimeoutMs: 120_000,
+      previousTimeoutMs: 120_000,
+      currentTimeoutMs: 300_000,
+      authorizedTimeoutMs: 300_000,
+      maximumTimeoutMs: 300_000,
+      testSpecificTimeoutMs: 15_000,
+      testSpecificTimeoutCount: 2,
+      dedicatedProcess: true,
+      observedMaximumMs: 260_200,
+      acceptanceCeilingMs: 270_000,
+      remainingMarginMs: 9_800,
       hardCeilingNotPerformanceThreshold: true,
+      productPerformanceGuarantee: false,
+      globalTimeoutChanged: false,
       assertionChangesForbidden: true,
       datasetChangesForbidden: true,
       oracleChangesForbidden: true,
@@ -545,7 +583,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       acceptanceThresholdChangesForbidden: true,
       skipOrTodoForbidden: true,
       sequentialRunsRequired: 5,
-      allRunsMustCompleteBelowMs: 120_000,
+      allRunsMustCompleteBelowMs: 270_000,
       skippedOrCancelledAllowed: 0,
       checksumsAndMetricsMustMatchAcrossRuns: true,
       trackedBenchmarkReportsMustRemainUnchanged: true,
@@ -670,14 +708,14 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       cleanCheckoutReproducible: true,
       benchmarkCases: 5000,
       aiNluImplemented: false,
-      testEnvironmentAssessed: false,
+      testEnvironmentAssessed: true,
       testDeployment: false,
       ownerTestUatComplete: false,
       productionStatus: "NO_GO",
     });
     expect(record.localDeterministicAcceptance.limitations).toEqual([
       "AI_NLU_NOT_IMPLEMENTED",
-      "TEST_READINESS_NOT_ASSESSED",
+      "TEST_READINESS_CONDITIONS_OPEN",
       "TEST_NOT_DEPLOYED",
       "OWNER_TEST_UAT_NOT_COMPLETED",
       "PRODUCTION_NO_GO",
@@ -697,7 +735,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     const acceptance = changed.localDeterministicAcceptance;
     acceptance.verdict = "PASS";
     acceptance.aiNluImplemented = true;
-    acceptance.testEnvironmentAssessed = true;
+    acceptance.testEnvironmentAssessed = false;
     acceptance.testDeployment = true;
     acceptance.productionStatus = "GO";
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
@@ -711,10 +749,13 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     );
   });
 
-  it("authorizes a not-started, read-only WP6 assessment without deployment", () => {
+  it("records the completed WP6 assessment without deployment", () => {
     const record = currentWork as {
       testReadinessAssessmentPlan: {
         implementationStatus: string;
+        assessmentCommit: string;
+        conditionsCommit: string;
+        verdict: string;
         remoteInspectionMode: string;
         secretInspectionMode: string;
         productionRemoteInspection: string;
@@ -727,7 +768,10 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       };
     };
     expect(record.testReadinessAssessmentPlan).toMatchObject({
-      implementationStatus: "NOT_STARTED",
+      implementationStatus: "COMPLETED_WITH_CONDITIONS",
+      assessmentCommit: "76d1e1302c31a35ab49e565b231cf63100e27fb6",
+      conditionsCommit: "0ad0ee261eb1f270f8a81c5874d0118768244d53",
+      verdict: "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS",
       remoteInspectionMode: "TEST_METADATA_READ_ONLY",
       secretInspectionMode: "NAMES_AND_PRESENCE_ONLY",
       productionRemoteInspection: "FORBIDDEN",
@@ -744,7 +788,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     ]);
   });
 
-  it("rejects starting WP6 early, reading Production, or granting deployment", () => {
+  it("rejects assessment evidence drift, Production reads, or deployment", () => {
     const changed = clone(currentWork) as {
       testReadinessAssessmentPlan: {
         implementationStatus: string;
@@ -756,7 +800,7 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
       };
     };
     const plan = changed.testReadinessAssessmentPlan;
-    plan.implementationStatus = "IN_PROGRESS";
+    plan.implementationStatus = "NOT_STARTED";
     plan.secretInspectionMode = "VALUES_ALLOWED";
     plan.productionRemoteInspection = "READ_ONLY";
     plan.deploymentAuthorization = true;
@@ -764,12 +808,96 @@ describe("MP-06 WP6-only TEST-readiness assessment control", () => {
     plan.issueMustRemainOpen = false;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
-        "WP6_ASSESSMENT_ALREADY_STARTED",
+        "WP6_ASSESSMENT_STATUS_INVALID",
         "WP6_SECRET_INSPECTION_MODE_INVALID",
         "WP6_PRODUCTION_REMOTE_INSPECTION_MUST_BE_FORBIDDEN",
         "WP6_ASSESSMENT_DEPLOYMENTAUTHORIZATION_INVALID",
         "WP6_ASSESSMENT_UNKNOWNMUSTNOTBEASSUMEDPASS_INVALID",
         "WP6_ASSESSMENT_ISSUEMUSTREMAINOPEN_INVALID",
+      ]),
+    );
+  });
+
+  it("authorizes exactly the four WP6 readiness conditions and no deployment", () => {
+    const record = currentWork as {
+      testReadinessConditionClosurePlan: {
+        implementationStatus: string;
+        authorizedConditions: string[];
+        timeoutContract: {
+          hookWatchdogMs: number;
+          testSpecificWatchdogMs: number;
+          testSpecificWatchdogCount: number;
+          observedMaximumMs: number;
+          acceptanceCeilingMs: number;
+          performanceGuarantee: boolean;
+        };
+        runtimeMode: string;
+        policyMode: string;
+        datasetOracleBenchmarkSemanticsMode: string;
+        knowledgeBaseCatalogMode: string;
+        deploymentAuthorization: boolean;
+        aiNluImplementation: boolean;
+        issueMustRemainOpen: boolean;
+        verdictOptions: string[];
+      };
+    };
+    const plan = record.testReadinessConditionClosurePlan;
+    expect(plan).toMatchObject({
+      implementationStatus: "NOT_STARTED",
+      runtimeMode: "READ_ONLY",
+      policyMode: "READ_ONLY",
+      datasetOracleBenchmarkSemanticsMode: "READ_ONLY",
+      knowledgeBaseCatalogMode: "READ_ONLY",
+      deploymentAuthorization: false,
+      aiNluImplementation: false,
+      issueMustRemainOpen: true,
+    });
+    expect(plan.authorizedConditions).toEqual([
+      "ACTIVE_BENCHMARK_TIMEOUT_METADATA_DRIFT",
+      "TEST_ALERT_RATE_STOP_CONTROLS_NOT_FROZEN",
+      "ROLLBACK_AND_SYNTHETIC_FIXTURES_NOT_FROZEN",
+      "VALIDATION_CHAIN_RICH_MENU_FORMATTING_DRIFT",
+    ]);
+    expect(plan.timeoutContract).toEqual({
+      hookWatchdogMs: 300_000,
+      testSpecificWatchdogMs: 15_000,
+      testSpecificWatchdogCount: 2,
+      observedMaximumMs: 260_200,
+      acceptanceCeilingMs: 270_000,
+      performanceGuarantee: false,
+    });
+    expect(plan.verdictOptions).toEqual([
+      "WP6_TEST_READINESS_CONDITIONS_CLOSED",
+      "WP6_TEST_READINESS_CONDITIONS_PARTIALLY_CLOSED",
+      "WP6_TEST_READINESS_CONDITION_CLOSURE_FAILED",
+    ]);
+  });
+
+  it("fails closed when WP6 condition scope, watchdog, or deployment contract drifts", () => {
+    const changed = clone(currentWork) as {
+      testReadinessConditionClosurePlan: {
+        implementationStatus: string;
+        authorizedConditions: string[];
+        timeoutContract: {
+          hookWatchdogMs: number;
+          performanceGuarantee: boolean;
+        };
+        deploymentAuthorization: boolean;
+      };
+    };
+    const plan = changed.testReadinessConditionClosurePlan;
+    plan.implementationStatus = "IN_PROGRESS";
+    plan.authorizedConditions.pop();
+    plan.timeoutContract.hookWatchdogMs = 600_000;
+    plan.timeoutContract.performanceGuarantee = true;
+    plan.deploymentAuthorization = true;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP6_CONDITION_CLOSURE_ALREADY_STARTED",
+        "WP6_AUTHORIZED_CONDITIONS_INVALID",
+        "WP6_HOOK_WATCHDOG_INVALID",
+        "WP6_PERFORMANCE_GUARANTEE_INVALID",
+        "WP6_CONDITION_CLOSURE_DEPLOYMENTAUTHORIZATION_INVALID",
       ]),
     );
   });
