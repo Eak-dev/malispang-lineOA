@@ -138,6 +138,10 @@ const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
 const EXPECTED_WP8A_CONTROL_BASE_COMMIT =
   "464a9250e1b50cb912d2854683e942f87a1db3f7";
+const EXPECTED_WP8A_CONTROL_AUTHORIZATION_COMMIT =
+  "4da15774c7d19027f48a443488f3db8a0c248f23";
+const EXPECTED_WP8A_RUNTIME_IMPLEMENTATION_COMMIT =
+  "d48c5066a4b92d4035bcf41076734199cc0fea4a";
 const EXPECTED_WP7_CONTROL_AUTHORIZATION_COMMIT =
   "3722dcce68ca48412b0fc6e4a41e8fcaa1b77b70";
 const EXPECTED_WP7_IMPLEMENTATION_COMMIT =
@@ -1693,7 +1697,22 @@ function validateWp8aRuntimePilotControlPlan(
     return;
   }
   for (const [field, expected, code] of [
-    ["implementationStatus", "AUTHORIZED_NOT_STARTED", "WP8A_STATUS_INVALID"],
+    [
+      "implementationStatus",
+      "COMPLETED_AT_RUNTIME_COMMIT",
+      "WP8A_STATUS_INVALID",
+    ],
+    [
+      "controlAuthorizationCommit",
+      EXPECTED_WP8A_CONTROL_AUTHORIZATION_COMMIT,
+      "WP8A_CONTROL_COMMIT_INVALID",
+    ],
+    [
+      "runtimeImplementationCommit",
+      EXPECTED_WP8A_RUNTIME_IMPLEMENTATION_COMMIT,
+      "WP8A_RUNTIME_COMMIT_INVALID",
+    ],
+    ["remediationVerdict", "PASS", "WP8A_VERDICT_INVALID"],
     [
       "blocker",
       "WP8_GATE_B_RUNTIME_ENFORCEMENT_MISSING",

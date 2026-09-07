@@ -371,7 +371,7 @@ describe("MP-06 WP8A runtime pilot-control remediation", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("freezes WP8A shared atomic limits and no-remote-mutation posture", () => {
+  it("records completed WP8A enforcement while preserving no-remote-mutation posture", () => {
     const record = currentWork as {
       wp8aRuntimePilotControlPlan: Record<string, unknown> & {
         coordinator: Record<string, unknown>;
@@ -379,7 +379,10 @@ describe("MP-06 WP8A runtime pilot-control remediation", () => {
       };
     };
     expect(record.wp8aRuntimePilotControlPlan).toMatchObject({
-      implementationStatus: "AUTHORIZED_NOT_STARTED",
+      implementationStatus: "COMPLETED_AT_RUNTIME_COMMIT",
+      controlAuthorizationCommit: "4da15774c7d19027f48a443488f3db8a0c248f23",
+      runtimeImplementationCommit: "d48c5066a4b92d4035bcf41076734199cc0fea4a",
+      remediationVerdict: "PASS",
       blocker: "WP8_GATE_B_RUNTIME_ENFORCEMENT_MISSING",
       readinessCorrection:
         "WP6_OPERATOR_CONDITIONS_CLOSED_RUNTIME_ENFORCEMENT_NOT_VERIFIED",

@@ -1040,6 +1040,9 @@
       "additionalProperties": false,
       "required": [
         "implementationStatus",
+        "controlAuthorizationCommit",
+        "runtimeImplementationCommit",
+        "remediationVerdict",
         "blocker",
         "readinessCorrection",
         "coordinator",
@@ -1053,7 +1056,14 @@
         "issueMustRemainOpen"
       ],
       "properties": {
-        "implementationStatus": { "const": "AUTHORIZED_NOT_STARTED" },
+        "implementationStatus": { "const": "COMPLETED_AT_RUNTIME_COMMIT" },
+        "controlAuthorizationCommit": {
+          "const": "4da15774c7d19027f48a443488f3db8a0c248f23"
+        },
+        "runtimeImplementationCommit": {
+          "const": "d48c5066a4b92d4035bcf41076734199cc0fea4a"
+        },
+        "remediationVerdict": { "const": "PASS" },
         "blocker": { "const": "WP8_GATE_B_RUNTIME_ENFORCEMENT_MISSING" },
         "readinessCorrection": {
           "const": "WP6_OPERATOR_CONDITIONS_CLOSED_RUNTIME_ENFORCEMENT_NOT_VERIFIED"
