@@ -1,6 +1,16 @@
+import {
+  createExecutionContext,
+  evictDurableObject,
+  waitOnExecutionContext,
+} from "cloudflare:test";
 import { env, exports } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import worker from "../worker/index.js";
+import {
+  MP06_AI_NLU_MODEL,
+  MP06_AI_NLU_SCHEMA_VERSION,
+} from "../worker/mp-06-ai-nlu.js";
 import {
   MP06_PILOT_ATTEMPT_LEASE_MS,
   MP06_PILOT_BUDGET_MICRO_USD,
@@ -9,6 +19,7 @@ import {
   MP06_PILOT_EVENTS_PER_SESSION,
   MP06_PILOT_MAX_CONCURRENCY,
   MP06_PILOT_MAX_TESTERS,
+  MP06_PILOT_CONTROL_OBJECT_NAME,
   MP06_PILOT_PROVIDER_ATTEMPTS_PER_SESSION,
   MP06_PILOT_SESSION_DURATION_MS,
   type Mp06PilotLimits,
@@ -157,6 +168,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
           sessionRef,
           eventRef,
           attemptRef,
+          clientRequestId: `client-loop-${attempt}`,
           now: baseNow + attempt,
         }),
       ).toMatchObject({ accepted: true });
@@ -199,6 +211,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef: firstAttempt,
+      clientRequestId: "client-first-attempt",
       now: baseNow + 1,
     });
     await stub.settleMp06PilotAttempt({
@@ -228,6 +241,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-known-settlement",
       now: baseNow + 1,
     });
     expect(
@@ -264,6 +278,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-idempotent-settlement",
       now: baseNow + 1,
     });
     const settlement = {
@@ -297,6 +312,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-stale-attempt",
       now: baseNow + 1,
     });
     expect(
@@ -326,6 +342,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-attempt-diagnostics",
       now: baseNow + 1,
     });
     const diagnostics = await stub.mp06PilotAttemptDiagnostics(
@@ -357,6 +374,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-safe-1",
       now: baseNow + 1,
     });
     expect(
@@ -408,6 +426,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-manual-reconcile",
       now: baseNow + 1,
     });
     const staleNow = baseNow + MP06_PILOT_ATTEMPT_LEASE_MS + 2;
@@ -464,6 +483,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
         sessionRef,
         eventRef,
         attemptRef,
+        clientRequestId: "client-inactive-dispatch",
         now: staleNow + 4,
       }),
     ).toMatchObject({ accepted: false, code: "PILOT_INACTIVE" });
@@ -504,6 +524,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-reconciled-restart",
       now: baseNow + 1,
     });
     const staleNow = baseNow + MP06_PILOT_ATTEMPT_LEASE_MS + 2;
@@ -532,6 +553,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-reconcile-guard",
       now: baseNow + 1,
     });
     expect(
@@ -582,6 +604,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
         sessionRef,
         eventRef,
         attemptRef,
+        clientRequestId: "client-stopped-dispatch",
         now: baseNow + 3,
       }),
     ).toMatchObject({ accepted: false, code: "PILOT_INACTIVE" });
@@ -617,6 +640,7 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       sessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-stop-during-flight",
       now: baseNow + 1,
     });
     await stub.stopMp06Pilot(baseNow + 2, "OPERATOR_STOP");
@@ -718,6 +742,7 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       sessionRef: oldSessionRef,
       eventRef,
       attemptRef,
+      clientRequestId: "client-admin-reconcile",
       now,
     });
     await stub.mp06PilotStatus(Date.now());
@@ -854,6 +879,369 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(await stopped.json()).toMatchObject({ outcome: "STOPPED" });
   });
 
+  it("persists acknowledged lifecycle checkpoints across eviction and settles idempotently", async () => {
+    const stub = await activePilot("lifecycle-persistence", [testerA]);
+    const eventRef = hexRef(880);
+    const attemptRef = hexRef(881);
+    const clientRequestId = "client-lifecycle-persistence";
+    await admit(stub, eventRef, baseNow);
+    await reserve(stub, eventRef, attemptRef, baseNow + 1, 12_932);
+    expect(
+      await stub.authorizeMp06PilotDispatch({
+        sessionRef,
+        eventRef,
+        attemptRef,
+        clientRequestId,
+        now: baseNow + 2,
+      }),
+    ).toMatchObject({ accepted: true, code: "DISPATCH_AUTHORIZED" });
+    for (const [index, phase] of (
+      ["OUTBOUND_FETCH_STARTING", "FETCH_PROMISE_CREATED"] as const
+    ).entries()) {
+      expect(
+        await stub.recordMp06PilotLifecycleCheckpoint({
+          sessionRef,
+          eventRef,
+          attemptRef,
+          clientRequestId,
+          phase,
+          now: baseNow + index + 3,
+          elapsedMs: 1,
+        }),
+      ).toMatchObject({ accepted: true, code: "CHECKPOINT_RECORDED" });
+    }
+    expect(
+      (await stub.mp06PilotLifecycleCheckpointSnapshot()).checkpoints.map(
+        (checkpoint) => checkpoint.phase,
+      ),
+    ).toEqual([
+      "DISPATCH_AUTHORIZED",
+      "OUTBOUND_FETCH_STARTING",
+      "FETCH_PROMISE_CREATED",
+    ]);
+
+    await evictDurableObject(stub);
+    const revived = pilot("lifecycle-persistence");
+    for (const [index, phase] of (
+      [
+        "RESPONSE_HEADERS_RECEIVED",
+        "RESPONSE_BODY_READ",
+        "RESPONSE_PARSED",
+      ] as const
+    ).entries()) {
+      expect(
+        await revived.recordMp06PilotLifecycleCheckpoint({
+          sessionRef,
+          eventRef,
+          attemptRef,
+          clientRequestId,
+          phase,
+          now: baseNow + index + 5,
+          ...(phase === "RESPONSE_HEADERS_RECEIVED"
+            ? { httpStatus: 200, providerRequestId: "req_safe_restart" }
+            : {}),
+          elapsedMs: 1,
+        }),
+      ).toMatchObject({ accepted: true, code: "CHECKPOINT_RECORDED" });
+    }
+    const settlement = {
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: baseNow + 9,
+      outcome: "KNOWN" as const,
+      actualCostMicroUsd: 800,
+      diagnostics: {
+        clientRequestId,
+        providerRequestId: "req_safe_restart",
+        httpStatus: 200,
+        dispatchMs: 1,
+        headersWaitMs: 1,
+        bodyReadMs: 1,
+        parsingMs: 1,
+        settlementMs: 1,
+        outcomeCode: "PROVIDER_RESPONSE",
+      },
+    };
+    expect(await revived.settleMp06PilotAttempt(settlement)).toMatchObject({
+      accepted: true,
+      code: "SETTLED",
+    });
+    expect(await revived.settleMp06PilotAttempt(settlement)).toMatchObject({
+      accepted: true,
+      code: "SETTLED_IDEMPOTENT",
+    });
+    expect(
+      await revived.recordMp06PilotLifecycleCheckpoint({
+        sessionRef,
+        eventRef,
+        attemptRef,
+        clientRequestId,
+        phase: "OUTBOUND_FETCH_STARTING",
+        now: baseNow + 10,
+      }),
+    ).toMatchObject({ accepted: true, code: "CHECKPOINT_IDEMPOTENT" });
+    const snapshot = await revived.mp06PilotLifecycleCheckpointSnapshot();
+    expect(snapshot.checkpointCount).toBe(8);
+    expect(snapshot.checkpoints.map((checkpoint) => checkpoint.phase)).toEqual([
+      "DISPATCH_AUTHORIZED",
+      "OUTBOUND_FETCH_STARTING",
+      "FETCH_PROMISE_CREATED",
+      "RESPONSE_HEADERS_RECEIVED",
+      "RESPONSE_BODY_READ",
+      "RESPONSE_PARSED",
+      "SETTLEMENT_STARTED",
+      "SETTLEMENT_SUCCEEDED",
+    ]);
+    expect(JSON.stringify(snapshot)).not.toMatch(
+      new RegExp(`${eventRef}|${attemptRef}|${testerA}`, "u"),
+    );
+  });
+
+  it("runs the authenticated isolated lifecycle self-test without provider or LINE I/O", async () => {
+    const network = vi.fn<typeof fetch>(() =>
+      Promise.reject(new Error("network must not be called")),
+    );
+    vi.stubGlobal("fetch", network);
+    try {
+      const runRef = hexRef(882);
+      const call = () =>
+        exports.default.fetch(
+          new Request(
+            "https://test.invalid/admin/mp06-pilot/lifecycle-self-test",
+            {
+              method: "POST",
+              headers: {
+                authorization: "Bearer unit-test-admin-key",
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ runRef }),
+            },
+          ),
+        );
+      const response = await call();
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body).toEqual({
+        mode: "NO_PROVIDER_NO_LINE_SIMULATION",
+        outcome: "SELF_TEST_PASSED",
+        checkpointCount: 8,
+        phases: [
+          "DISPATCH_AUTHORIZED",
+          "OUTBOUND_FETCH_STARTING",
+          "FETCH_PROMISE_CREATED",
+          "RESPONSE_HEADERS_RECEIVED",
+          "RESPONSE_BODY_READ",
+          "RESPONSE_PARSED",
+          "SETTLEMENT_STARTED",
+          "SETTLEMENT_SUCCEEDED",
+        ],
+      });
+      expect(JSON.stringify(body)).not.toContain(runRef);
+      const repeated = await call();
+      expect(await repeated.json()).toMatchObject({
+        outcome: "SELF_TEST_IDEMPOTENT",
+        checkpointCount: 8,
+      });
+      expect(network).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("returns webhook acknowledgement before provider completion and suppresses a late reply after stop", async () => {
+    const senderId = "U_SYNTHETIC_WP8D_TESTER";
+    const testerRef = await hashReference(senderId);
+    const coordinator = env.CONVERSATION_STATE.getByName(
+      MP06_PILOT_CONTROL_OBJECT_NAME,
+    );
+    const initialCheckpointCount = (
+      await coordinator.mp06PilotLifecycleCheckpointSnapshot()
+    ).checkpointCount;
+    expect(
+      await coordinator.activateMp06Pilot({
+        sessionRef: hexRef(883),
+        testerRefs: [testerRef],
+        now: Date.now(),
+        limits,
+      }),
+    ).toMatchObject({ activated: true });
+
+    let resolveProvider: ((response: Response) => void) | undefined;
+    const provider = new Promise<Response>((resolve) => {
+      resolveProvider = resolve;
+    });
+    const lineReplies: RequestInfo[] = [];
+    const network = vi.fn<typeof fetch>((input) => {
+      const url = requestUrl(input);
+      if (url.startsWith("https://api.openai.com/")) return provider;
+      if (url.startsWith("https://api.line.me/")) {
+        lineReplies.push(input);
+        return Promise.resolve(new Response(null, { status: 200 }));
+      }
+      return Promise.reject(new Error("unexpected test destination"));
+    });
+    vi.stubGlobal("fetch", network);
+    try {
+      const payload = JSON.stringify({
+        destination: env.LINE_BOT_USER_ID,
+        events: [
+          {
+            type: "message",
+            webhookEventId: "evt-wp8d-late-provider",
+            replyToken: "reply-wp8d-late-provider",
+            source: { type: "user", userId: senderId },
+            message: { type: "text", text: "เมนู" },
+          },
+        ],
+      });
+      const ctx = createExecutionContext();
+      const response = await worker.fetch(
+        new Request("https://test.invalid/webhook", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-line-signature": await lineSignature(
+              payload,
+              env.LINE_CHANNEL_SECRET,
+            ),
+          },
+          body: payload,
+        }),
+        env,
+        ctx,
+      );
+      expect(response.status).toBe(200);
+      await vi.waitFor(() => expect(network).toHaveBeenCalledTimes(1));
+      const beforeStop =
+        await coordinator.mp06PilotLifecycleCheckpointSnapshot();
+      expect(
+        beforeStop.checkpoints
+          .slice(initialCheckpointCount)
+          .map((checkpoint) => checkpoint.phase),
+      ).toEqual([
+        "DISPATCH_AUTHORIZED",
+        "OUTBOUND_FETCH_STARTING",
+        "FETCH_PROMISE_CREATED",
+      ]);
+      await coordinator.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
+      resolveProvider?.(validProviderResponse());
+      await waitOnExecutionContext(ctx);
+
+      expect(lineReplies).toHaveLength(0);
+      expect(await coordinator.mp06PilotStatus(Date.now())).toMatchObject({
+        state: "STOPPED",
+        inFlight: 0,
+      });
+      expect(
+        (await coordinator.mp06PilotLifecycleCheckpointSnapshot()).checkpoints
+          .slice(initialCheckpointCount)
+          .map((checkpoint) => checkpoint.phase),
+      ).toEqual([
+        "DISPATCH_AUTHORIZED",
+        "OUTBOUND_FETCH_STARTING",
+        "FETCH_PROMISE_CREATED",
+        "RESPONSE_HEADERS_RECEIVED",
+        "RESPONSE_BODY_READ",
+        "RESPONSE_PARSED",
+        "SETTLEMENT_STARTED",
+        "SETTLEMENT_SUCCEEDED",
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("reproduces a provider hang through the webhook and leaves durable fail-closed checkpoints", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-08T00:00:00.000Z"));
+    const senderId = "U_SYNTHETIC_WP8D_TIMEOUT_TESTER";
+    const coordinator = env.CONVERSATION_STATE.getByName(
+      MP06_PILOT_CONTROL_OBJECT_NAME,
+    );
+    const initialCheckpointCount = (
+      await coordinator.mp06PilotLifecycleCheckpointSnapshot()
+    ).checkpointCount;
+    expect(
+      await coordinator.activateMp06Pilot({
+        sessionRef: hexRef(884),
+        testerRefs: [await hashReference(senderId)],
+        now: Date.now(),
+        limits,
+      }),
+    ).toMatchObject({ activated: true });
+    const network = vi.fn<typeof fetch>((input) => {
+      if (requestUrl(input).startsWith("https://api.openai.com/")) {
+        return new Promise<Response>(() => undefined);
+      }
+      return Promise.reject(new Error("LINE must not be called after timeout"));
+    });
+    vi.stubGlobal("fetch", network);
+    try {
+      const payload = JSON.stringify({
+        destination: env.LINE_BOT_USER_ID,
+        events: [
+          {
+            type: "message",
+            webhookEventId: "evt-wp8d-provider-hang",
+            replyToken: "reply-wp8d-provider-hang",
+            source: { type: "user", userId: senderId },
+            message: { type: "text", text: "เมนู" },
+          },
+        ],
+      });
+      const ctx = createExecutionContext();
+      const response = await worker.fetch(
+        new Request("https://test.invalid/webhook", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-line-signature": await lineSignature(
+              payload,
+              env.LINE_CHANNEL_SECRET,
+            ),
+          },
+          body: payload,
+        }),
+        env,
+        ctx,
+      );
+      expect(response.status).toBe(200);
+      await vi.waitFor(() => expect(network).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(8_000);
+      await waitOnExecutionContext(ctx);
+
+      expect(network).toHaveBeenCalledTimes(1);
+      expect(await coordinator.mp06PilotStatus(Date.now())).toMatchObject({
+        state: "STOPPED",
+        stopReason: "PROVIDER_USAGE_UNKNOWN",
+        budgetReservedMicroUsd: 0,
+        inFlight: 0,
+      });
+      const snapshot = await coordinator.mp06PilotLifecycleCheckpointSnapshot();
+      expect(
+        snapshot.checkpoints
+          .slice(initialCheckpointCount)
+          .map((checkpoint) => checkpoint.phase),
+      ).toEqual([
+        "DISPATCH_AUTHORIZED",
+        "OUTBOUND_FETCH_STARTING",
+        "FETCH_PROMISE_CREATED",
+        "SETTLEMENT_STARTED",
+        "SETTLEMENT_SUCCEEDED",
+      ]);
+      expect(
+        await coordinator.mp06PilotAttemptDiagnostics(Date.now()),
+      ).toMatchObject({
+        sessionState: "STOPPED",
+        latestLifecycle: { outcomeCode: "PROVIDER_DEADLINE" },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("rejects a signed webhook with the wrong destination before pilot admission", async () => {
     const payload = JSON.stringify({
       destination: "U_NOT_THE_TEST_DESTINATION",
@@ -967,4 +1355,47 @@ async function lineSignature(payload: string, secret: string): Promise<string> {
     new TextEncoder().encode(payload),
   );
   return btoa(String.fromCharCode(...new Uint8Array(signature)));
+}
+
+async function hashReference(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`malispang-test:${value}`),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+function validProviderResponse(): Response {
+  return Response.json({
+    model: MP06_AI_NLU_MODEL,
+    usage: { input_tokens: 100, output_tokens: 50 },
+    output: [
+      {
+        type: "message",
+        content: [
+          {
+            type: "output_text",
+            text: JSON.stringify({
+              schemaVersion: MP06_AI_NLU_SCHEMA_VERSION,
+              candidateIntents: ["MENU"],
+              extractedFields: { productName: null, size: "UNKNOWN" },
+              missingRequiredFields: [],
+              ambiguity: false,
+              riskSignals: [],
+              confidenceBand: "HIGH",
+              reasonCodes: ["DIRECT_MATCH"],
+            }),
+          },
+        ],
+      },
+    ],
+  });
+}
+
+function requestUrl(input: RequestInfo | URL): string {
+  if (input instanceof Request) return input.url;
+  if (input instanceof URL) return input.href;
+  return input;
 }

@@ -130,6 +130,28 @@ describe("MP-06 WP8A runtime pilot contract", () => {
     }
   });
 
+  it("denies native fetch when the durable pre-fetch checkpoint is not acknowledged", async () => {
+    const calls: string[] = [];
+    const base = recordingController(calls);
+    const fetcher = vi.fn<typeof fetch>();
+    const result = await requestOpenAiMp06Nlu("ขอเมนู", {
+      env: aiEnvironment,
+      fetcher,
+      attemptController: {
+        ...base,
+        checkpoint: ({ phase }) =>
+          Promise.resolve(phase !== "OUTBOUND_FETCH_STARTING"),
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(calls).toEqual([
+      "reserve:1",
+      "dispatch:1",
+      "settle:1:USAGE_UNKNOWN:unknown",
+    ]);
+  });
+
   it("requires a fresh reservation for a single safe transient retry", async () => {
     const calls: string[] = [];
     const fetcher = vi
@@ -219,7 +241,9 @@ describe("MP-06 WP8A runtime pilot contract", () => {
       const calls: string[] = [];
       const fetcher = vi.fn<typeof fetch>().mockResolvedValue({
         ok: true,
-        json: () => new Promise<never>(() => undefined),
+        status: 200,
+        headers: new Headers(),
+        text: () => new Promise<never>(() => undefined),
       } as unknown as Response);
       const resultPromise = requestOpenAiMp06Nlu("ขอเมนู", {
         env: aiEnvironment,
@@ -436,13 +460,18 @@ function recordingController(
       calls.push(`reserve:${attempt}`);
       return Promise.resolve(rejectedAt !== "reserve");
     },
-    authorizeDispatch(attempt) {
+    authorizeDispatch({ attempt, clientRequestId }) {
+      expect(clientRequestId.length).toBeGreaterThan(0);
       calls.push(`dispatch:${attempt}`);
       return Promise.resolve(rejectedAt !== "dispatch");
     },
     cancelBeforeDispatch(attempt) {
       calls.push(`cancel:${attempt}`);
       return Promise.resolve();
+    },
+    checkpoint({ clientRequestId }) {
+      expect(clientRequestId.length).toBeGreaterThan(0);
+      return Promise.resolve(true);
     },
     settle({ attempt, outcome, actualCostMicroUsd }) {
       calls.push(

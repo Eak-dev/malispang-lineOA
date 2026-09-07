@@ -9,6 +9,7 @@ import {
 import {
   estimateMp06AttemptUpperBoundMicroUsd,
   mp06UsageCostMicroUsd,
+  type Mp06PilotLifecyclePhase,
   type Mp06ProviderLifecycleDiagnostics,
 } from "./mp-06-pilot-control.js";
 
@@ -168,8 +169,23 @@ export interface Mp06AiNluAttemptController {
     readonly attempt: number;
     readonly upperBoundCostMicroUsd: number;
   }) => Promise<boolean>;
-  readonly authorizeDispatch: (attempt: number) => Promise<boolean>;
+  readonly authorizeDispatch: (input: {
+    readonly attempt: number;
+    readonly clientRequestId: string;
+  }) => Promise<boolean>;
   readonly cancelBeforeDispatch: (attempt: number) => Promise<void>;
+  readonly checkpoint: (input: {
+    readonly attempt: number;
+    readonly clientRequestId: string;
+    readonly phase: Exclude<Mp06PilotLifecyclePhase, "DISPATCH_AUTHORIZED">;
+    readonly providerRequestId?: string;
+    readonly httpStatus?: number;
+    readonly providerErrorType?: string;
+    readonly providerErrorCode?: string;
+    readonly retryAfterMs?: number;
+    readonly rateLimitRemainingRequests?: number;
+    readonly elapsedMs?: number;
+  }) => Promise<boolean>;
   readonly settle: (input: {
     readonly attempt: number;
     readonly outcome: "KNOWN" | "USAGE_UNKNOWN";
@@ -454,6 +470,18 @@ export async function requestOpenAiMp06Nlu(
       );
     }
     guard.remainingRequests -= 1;
+    const clock = options.now ?? Date.now;
+    const clientRequestId = safeProviderMetadata(
+      (options.clientRequestId ?? (() => crypto.randomUUID()))(),
+    );
+    if (!clientRequestId) {
+      return failure(
+        "PILOT_CONTROL_REJECTED",
+        { ...baseMetadata, attempts: attempt - 1 },
+        options,
+        startedAt,
+      );
+    }
     if (options.attemptController) {
       let reserved = false;
       try {
@@ -469,7 +497,12 @@ export async function requestOpenAiMp06Nlu(
             startedAt,
           );
         }
-        if (!(await options.attemptController.authorizeDispatch(attempt))) {
+        if (
+          !(await options.attemptController.authorizeDispatch({
+            attempt,
+            clientRequestId,
+          }))
+        ) {
           await options.attemptController.cancelBeforeDispatch(attempt);
           return failure(
             "PILOT_CONTROL_REJECTED",
@@ -493,18 +526,6 @@ export async function requestOpenAiMp06Nlu(
           startedAt,
         );
       }
-    }
-    const clock = options.now ?? Date.now;
-    const clientRequestId = safeProviderMetadata(
-      (options.clientRequestId ?? (() => crypto.randomUUID()))(),
-    );
-    if (!clientRequestId) {
-      return failure(
-        "PILOT_CONTROL_REJECTED",
-        { ...baseMetadata, attempts: attempt },
-        options,
-        startedAt,
-      );
     }
     const dispatchStartedAt = clock();
     let dispatchCompletedAt = dispatchStartedAt;
@@ -552,7 +573,13 @@ export async function requestOpenAiMp06Nlu(
     const controller = new AbortController();
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const providerOperation = fetcher(MP06_AI_NLU_BASE_URL, {
+      await requireLifecycleCheckpoint(options, {
+        attempt,
+        clientRequestId,
+        phase: "OUTBOUND_FETCH_STARTING",
+        elapsedMs: Math.max(0, clock() - dispatchStartedAt),
+      });
+      const providerFetch = fetcher(MP06_AI_NLU_BASE_URL, {
         method: "POST",
         headers: {
           authorization: `Bearer ${options.env.OPENAI_API_KEY}`,
@@ -561,7 +588,15 @@ export async function requestOpenAiMp06Nlu(
         },
         body: requestBody,
         signal: controller.signal,
-      }).then(
+      });
+      dispatchCompletedAt = clock();
+      await requireLifecycleCheckpoint(options, {
+        attempt,
+        clientRequestId,
+        phase: "FETCH_PROMISE_CREATED",
+        elapsedMs: Math.max(0, dispatchCompletedAt - dispatchStartedAt),
+      });
+      const providerOperation = providerFetch.then(
         async (response) => {
           headersReceivedAt = clock();
           providerHeaders = safeProviderHeaders(
@@ -569,26 +604,73 @@ export async function requestOpenAiMp06Nlu(
               ? response.headers
               : new Headers(),
           );
+          await requireLifecycleCheckpoint(options, {
+            attempt,
+            clientRequestId,
+            phase: "RESPONSE_HEADERS_RECEIVED",
+            httpStatus: response.status,
+            ...providerHeaders,
+            elapsedMs: Math.max(0, headersReceivedAt - dispatchCompletedAt),
+          });
+          let rawBody: string;
+          try {
+            rawBody = await response.text();
+          } catch (error) {
+            if (response.ok) throw error;
+            return {
+              type: "HTTP_ERROR_RESPONSE" as const,
+              response,
+              safeProviderError: {},
+              responseParsingMs: 0,
+            };
+          }
+          bodyCompletedAt = clock();
+          await requireLifecycleCheckpoint(options, {
+            attempt,
+            clientRequestId,
+            phase: "RESPONSE_BODY_READ",
+            httpStatus: response.status,
+            ...providerHeaders,
+            elapsedMs: Math.max(0, bodyCompletedAt - headersReceivedAt),
+          });
+          const parsingStartedAt = clock();
+          let body: unknown;
+          let parsedBody = false;
+          try {
+            body = JSON.parse(rawBody) as unknown;
+            parsedBody = true;
+          } catch {
+            body = undefined;
+          }
+          const responseParsingMs = Math.max(0, clock() - parsingStartedAt);
+          if (parsedBody) {
+            await requireLifecycleCheckpoint(options, {
+              attempt,
+              clientRequestId,
+              phase: "RESPONSE_PARSED",
+              httpStatus: response.status,
+              ...providerHeaders,
+              elapsedMs: responseParsingMs,
+            });
+          }
           if (response.ok) {
-            const body = await response.json();
-            bodyCompletedAt = clock();
             return {
               type: "SUCCESS_RESPONSE" as const,
               response,
               body,
+              responseParsingMs,
             };
           }
-          const safeProviderError = await parseSafeProviderError(response);
-          bodyCompletedAt = clock();
+          const safeProviderError = parseSafeProviderError(body);
           return {
             type: "HTTP_ERROR_RESPONSE" as const,
             response,
             safeProviderError,
+            responseParsingMs,
           };
         },
         (error: unknown) => ({ type: "ERROR" as const, error }),
       );
-      dispatchCompletedAt = clock();
       const fetchOutcome = await Promise.race([
         providerOperation,
         new Promise<{ readonly type: "DEADLINE" }>((resolve) => {
@@ -736,9 +818,8 @@ export async function requestOpenAiMp06Nlu(
           startedAt,
         );
       }
-      const parsingStartedAt = clock();
       const parsed = parseOpenAiResponse(fetchOutcome.body);
-      const parsingMs = Math.max(0, clock() - parsingStartedAt);
+      const parsingMs = fetchOutcome.responseParsingMs;
       const lifecycle = lifecycleDiagnostics("PROVIDER_RESPONSE", {
         httpStatus: fetchOutcome.response.status,
         parsingMs,
@@ -940,6 +1021,16 @@ async function settleUnknownAttempt(
 interface Mp06SettlementOutcome {
   readonly accepted: boolean;
   readonly durationMs: number;
+}
+
+async function requireLifecycleCheckpoint(
+  options: Mp06AiNluRuntimeOptions,
+  input: Parameters<Mp06AiNluAttemptController["checkpoint"]>[0],
+): Promise<void> {
+  if (!options.attemptController) return;
+  if (!(await options.attemptController.checkpoint(input))) {
+    throw new Error("PILOT_LIFECYCLE_CHECKPOINT_REJECTED");
+  }
 }
 
 async function settleAttemptWithDeadline(
@@ -1152,25 +1243,20 @@ function parseUsage(value: unknown): Mp06AiNluUsage | undefined {
   };
 }
 
-async function parseSafeProviderError(response: Response): Promise<{
+function parseSafeProviderError(value: unknown): {
   readonly providerErrorCode?: string;
   readonly providerErrorType?: string;
   readonly providerErrorParam?: string;
-}> {
-  try {
-    const value: unknown = await response.json();
-    if (!isRecord(value) || !isRecord(value.error)) return {};
-    const code = safeProviderMetadata(value.error.code);
-    const type = safeProviderMetadata(value.error.type);
-    const param = safeProviderMetadata(value.error.param);
-    return {
-      ...(code ? { providerErrorCode: code } : {}),
-      ...(type ? { providerErrorType: type } : {}),
-      ...(param ? { providerErrorParam: param } : {}),
-    };
-  } catch {
-    return {};
-  }
+} {
+  if (!isRecord(value) || !isRecord(value.error)) return {};
+  const code = safeProviderMetadata(value.error.code);
+  const type = safeProviderMetadata(value.error.type);
+  const param = safeProviderMetadata(value.error.param);
+  return {
+    ...(code ? { providerErrorCode: code } : {}),
+    ...(type ? { providerErrorType: type } : {}),
+    ...(param ? { providerErrorParam: param } : {}),
+  };
 }
 
 function safeProviderHeaders(headers: Headers): {

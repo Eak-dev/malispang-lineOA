@@ -53,7 +53,7 @@ export {
 const decoder = new TextDecoder();
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
     try {
       assertTestEnvironment(env);
@@ -66,7 +66,9 @@ export default {
         });
       }
       assertRequiredSecrets(env);
-      if (url.pathname === "/webhook") return await handleWebhook(request, env);
+      if (url.pathname === "/webhook") {
+        return await handleWebhook(request, env, ctx);
+      }
       if (url.pathname.startsWith("/admin/")) {
         return await handleAdmin(request, env, url);
       }
@@ -88,7 +90,11 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-async function handleWebhook(request: Request, env: Env): Promise<Response> {
+async function handleWebhook(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   if (request.method !== "POST") {
     return Response.json({ error: "METHOD_NOT_ALLOWED" }, { status: 405 });
   }
@@ -117,8 +123,24 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     return Response.json({ error: "WRONG_TEST_DESTINATION" }, { status: 403 });
   }
 
-  for (const event of webhook.events) await processLineEvent(event, env);
+  const processing = processWebhookEvents(webhook.events, env).catch(() => {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        outcome: "WEBHOOK_BACKGROUND_PROCESSING_FAILED",
+        code: "FAIL_CLOSED",
+      }),
+    );
+  });
+  ctx.waitUntil(processing);
   return Response.json({ ok: true });
+}
+
+async function processWebhookEvents(
+  events: readonly ParsedLineEvent[],
+  env: Env,
+): Promise<void> {
+  for (const event of events) await processLineEvent(event, env);
 }
 
 async function processLineEvent(
@@ -236,7 +258,7 @@ async function processLineEvent(
           }),
         });
         if (
-          attemptController.providerWasDispatched() &&
+          attemptController.dispatchWasAuthorized() &&
           !(await pilot.context.coordinator.authorizeMp06PilotResult({
             sessionRef: pilot.context.sessionRef,
             eventRef,
@@ -389,6 +411,174 @@ async function handleAdmin(
     return Response.json({
       diagnostics: await pilot.mp06PilotAttemptDiagnostics(Date.now()),
     });
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/admin/mp06-pilot/lifecycle-checkpoints"
+  ) {
+    if (
+      !(await secureTextEqual(bearerToken(request), env.TEST_ADMIN_KEY)) ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true"
+    ) {
+      return Response.json({ error: "TEST_ADMIN_REQUIRED" }, { status: 403 });
+    }
+    return Response.json({
+      lifecycle: await pilot.mp06PilotLifecycleCheckpointSnapshot(),
+    });
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/lifecycle-self-test"
+  ) {
+    if (
+      !(await secureTextEqual(bearerToken(request), env.TEST_ADMIN_KEY)) ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true"
+    ) {
+      return Response.json({ error: "TEST_ADMIN_REQUIRED" }, { status: 403 });
+    }
+    const limits = mp06PilotLimitsFromEnvironment(env);
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    const input = parsePilotLifecycleSelfTestInput(decoder.decode(body));
+    if (!limits || !input) {
+      return Response.json(
+        { error: "INVALID_LIFECYCLE_SELF_TEST" },
+        { status: 400 },
+      );
+    }
+    const diagnostic = env.CONVERSATION_STATE.getByName(
+      `mp06-pilot-lifecycle-self-test-v1:${input.runRef}`,
+    );
+    const existing = await diagnostic.mp06PilotLifecycleCheckpointSnapshot();
+    if (existing.checkpointCount > 0) {
+      const expectedPhases = [
+        "DISPATCH_AUTHORIZED",
+        "OUTBOUND_FETCH_STARTING",
+        "FETCH_PROMISE_CREATED",
+        "RESPONSE_HEADERS_RECEIVED",
+        "RESPONSE_BODY_READ",
+        "RESPONSE_PARSED",
+        "SETTLEMENT_STARTED",
+        "SETTLEMENT_SUCCEEDED",
+      ];
+      const existingPhases = existing.checkpoints.map(
+        (checkpoint) => checkpoint.phase,
+      );
+      const complete =
+        existingPhases.length === expectedPhases.length &&
+        expectedPhases.every((phase, index) => existingPhases[index] === phase);
+      return Response.json(
+        {
+          mode: "NO_PROVIDER_NO_LINE_SIMULATION",
+          outcome: complete ? "SELF_TEST_IDEMPOTENT" : "SELF_TEST_INCOMPLETE",
+          checkpointCount: existing.checkpointCount,
+          phases: existingPhases,
+        },
+        { status: complete ? 200 : 409 },
+      );
+    }
+    const now = Date.now();
+    const [sessionRef, testerRef, eventRef, attemptRef] = await Promise.all([
+      sha256Reference(`mp06-lifecycle-self-test:session:${input.runRef}`),
+      sha256Reference(`mp06-lifecycle-self-test:tester:${input.runRef}`),
+      sha256Reference(`mp06-lifecycle-self-test:event:${input.runRef}`),
+      sha256Reference(`mp06-lifecycle-self-test:attempt:${input.runRef}`),
+    ]);
+    const clientRequestId = `self-test-${input.runRef.slice(0, 32)}`;
+    const activated = await diagnostic.activateMp06Pilot({
+      sessionRef,
+      testerRefs: [testerRef],
+      now,
+      limits,
+    });
+    const admitted = await diagnostic.admitMp06PilotEvent({
+      sessionRef,
+      eventRef,
+      testerRef,
+      now,
+    });
+    const reserved = await diagnostic.reserveMp06PilotAttempt({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      upperBoundCostMicroUsd: 1,
+      now,
+    });
+    const authorized = await diagnostic.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      clientRequestId,
+      now,
+    });
+    const phases = [
+      "OUTBOUND_FETCH_STARTING",
+      "FETCH_PROMISE_CREATED",
+      "RESPONSE_HEADERS_RECEIVED",
+      "RESPONSE_BODY_READ",
+      "RESPONSE_PARSED",
+      "SETTLEMENT_STARTED",
+    ] as const;
+    const checkpoints = [];
+    if (
+      activated.activated &&
+      admitted.admitted &&
+      reserved.accepted &&
+      authorized.accepted
+    ) {
+      for (const phase of phases) {
+        checkpoints.push(
+          await diagnostic.recordMp06PilotLifecycleCheckpoint({
+            sessionRef,
+            eventRef,
+            attemptRef,
+            clientRequestId,
+            phase,
+            now,
+            ...(phase === "RESPONSE_HEADERS_RECEIVED"
+              ? { httpStatus: 200 }
+              : {}),
+            elapsedMs: 0,
+          }),
+        );
+      }
+    }
+    const settled = await diagnostic.settleMp06PilotAttempt({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now,
+      outcome: "KNOWN",
+      actualCostMicroUsd: 0,
+      diagnostics: {
+        clientRequestId,
+        httpStatus: 200,
+        dispatchMs: 0,
+        headersWaitMs: 0,
+        bodyReadMs: 0,
+        parsingMs: 0,
+        settlementMs: 0,
+        outcomeCode: "DIAGNOSTIC_SIMULATION",
+      },
+    });
+    await diagnostic.stopMp06Pilot(now, "DIAGNOSTIC_COMPLETE");
+    const snapshot = await diagnostic.mp06PilotLifecycleCheckpointSnapshot();
+    const passed =
+      checkpoints.every((checkpoint) => checkpoint.accepted) &&
+      settled.accepted &&
+      snapshot.checkpointCount === 8;
+    return Response.json(
+      {
+        mode: "NO_PROVIDER_NO_LINE_SIMULATION",
+        outcome: passed ? "SELF_TEST_PASSED" : "SELF_TEST_FAILED",
+        checkpointCount: snapshot.checkpointCount,
+        phases: snapshot.checkpoints.map((checkpoint) => checkpoint.phase),
+      },
+      { status: passed ? 200 : 409 },
+    );
   }
   if (
     request.method === "POST" &&
@@ -697,6 +887,27 @@ function parsePilotActivationInput(
   }
 }
 
+function parsePilotLifecycleSelfTestInput(
+  raw: string,
+): { readonly runRef: string } | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== 1 ||
+      !("runRef" in value) ||
+      !isMp06PilotReference(value.runRef)
+    ) {
+      return undefined;
+    }
+    return { runRef: value.runRef };
+  } catch {
+    return undefined;
+  }
+}
+
 interface Mp06PilotReconciliationRequest {
   readonly expectedState: "STOPPED";
   readonly expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN";
@@ -806,9 +1017,9 @@ async function admitMp06PilotAiEvent(
 
 function createMp06PilotAttemptController(
   context: Mp06PilotRuntimeContext,
-): Mp06AiNluAttemptController & { providerWasDispatched: () => boolean } {
+): Mp06AiNluAttemptController & { dispatchWasAuthorized: () => boolean } {
   const attemptRefs = new Map<number, string>();
-  let dispatched = false;
+  let dispatchAuthorized = false;
   const attemptRef = async (attempt: number): Promise<string> => {
     const existing = attemptRefs.get(attempt);
     if (existing) return existing;
@@ -827,14 +1038,15 @@ function createMp06PilotAttemptController(
       });
       return result.accepted;
     },
-    async authorizeDispatch(attempt) {
+    async authorizeDispatch(input) {
       const result = await context.coordinator.authorizeMp06PilotDispatch({
         sessionRef: context.sessionRef,
         eventRef: context.eventRef,
-        attemptRef: await attemptRef(attempt),
+        attemptRef: await attemptRef(input.attempt),
+        clientRequestId: input.clientRequestId,
         now: Date.now(),
       });
-      if (result.accepted) dispatched = true;
+      if (result.accepted) dispatchAuthorized = true;
       return result.accepted;
     },
     async cancelBeforeDispatch(attempt) {
@@ -844,6 +1056,41 @@ function createMp06PilotAttemptController(
         attemptRef: await attemptRef(attempt),
         now: Date.now(),
       });
+    },
+    async checkpoint(input) {
+      const result =
+        await context.coordinator.recordMp06PilotLifecycleCheckpoint({
+          sessionRef: context.sessionRef,
+          eventRef: context.eventRef,
+          attemptRef: await attemptRef(input.attempt),
+          clientRequestId: input.clientRequestId,
+          phase: input.phase,
+          now: Date.now(),
+          ...(input.providerRequestId
+            ? { providerRequestId: input.providerRequestId }
+            : {}),
+          ...(input.httpStatus === undefined
+            ? {}
+            : { httpStatus: input.httpStatus }),
+          ...(input.providerErrorType
+            ? { providerErrorType: input.providerErrorType }
+            : {}),
+          ...(input.providerErrorCode
+            ? { providerErrorCode: input.providerErrorCode }
+            : {}),
+          ...(input.retryAfterMs === undefined
+            ? {}
+            : { retryAfterMs: input.retryAfterMs }),
+          ...(input.rateLimitRemainingRequests === undefined
+            ? {}
+            : {
+                rateLimitRemainingRequests: input.rateLimitRemainingRequests,
+              }),
+          ...(input.elapsedMs === undefined
+            ? {}
+            : { elapsedMs: input.elapsedMs }),
+        });
+      return result.accepted;
     },
     async settle(input) {
       const result = await context.coordinator.settleMp06PilotAttempt({
@@ -859,7 +1106,7 @@ function createMp06PilotAttemptController(
       });
       return result.accepted;
     },
-    providerWasDispatched: () => dispatched,
+    dispatchWasAuthorized: () => dispatchAuthorized,
   };
 }
 

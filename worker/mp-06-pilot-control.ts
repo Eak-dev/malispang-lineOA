@@ -70,6 +70,55 @@ export interface Mp06PilotAttemptInput {
   readonly now: number;
 }
 
+export const MP06_PILOT_LIFECYCLE_PHASES = [
+  "DISPATCH_AUTHORIZED",
+  "OUTBOUND_FETCH_STARTING",
+  "FETCH_PROMISE_CREATED",
+  "RESPONSE_HEADERS_RECEIVED",
+  "RESPONSE_BODY_READ",
+  "RESPONSE_PARSED",
+  "SETTLEMENT_STARTED",
+  "SETTLEMENT_SUCCEEDED",
+] as const;
+
+export type Mp06PilotLifecyclePhase =
+  (typeof MP06_PILOT_LIFECYCLE_PHASES)[number];
+
+export interface AuthorizeMp06PilotDispatchInput extends Mp06PilotAttemptInput {
+  readonly clientRequestId: string;
+}
+
+export interface RecordMp06PilotLifecycleCheckpointInput extends Mp06PilotAttemptInput {
+  readonly clientRequestId: string;
+  readonly phase: Exclude<Mp06PilotLifecyclePhase, "DISPATCH_AUTHORIZED">;
+  readonly providerRequestId?: string;
+  readonly httpStatus?: number;
+  readonly providerErrorType?: string;
+  readonly providerErrorCode?: string;
+  readonly retryAfterMs?: number;
+  readonly rateLimitRemainingRequests?: number;
+  readonly elapsedMs?: number;
+}
+
+export interface Mp06PilotLifecycleCheckpoint {
+  readonly sequence: number;
+  readonly phase: Mp06PilotLifecyclePhase;
+  readonly clientRequestId: string;
+  readonly providerRequestId?: string;
+  readonly httpStatus?: number;
+  readonly providerErrorType?: string;
+  readonly providerErrorCode?: string;
+  readonly retryAfterMs?: number;
+  readonly rateLimitRemainingRequests?: number;
+  readonly elapsedMs?: number;
+  readonly recordedAt: number;
+}
+
+export interface Mp06PilotLifecycleCheckpointSnapshot {
+  readonly checkpointCount: number;
+  readonly checkpoints: readonly Mp06PilotLifecycleCheckpoint[];
+}
+
 export interface SettleMp06PilotAttemptInput extends Mp06PilotAttemptInput {
   readonly outcome: "KNOWN" | "USAGE_UNKNOWN";
   readonly actualCostMicroUsd?: number;
@@ -138,6 +187,8 @@ export interface Mp06PilotStopResult {
 export type Mp06PilotAttemptCode =
   | "RESERVED"
   | "DISPATCH_AUTHORIZED"
+  | "CHECKPOINT_RECORDED"
+  | "CHECKPOINT_IDEMPOTENT"
   | "CANCELLED_BEFORE_DISPATCH"
   | "SETTLED"
   | "SETTLED_IDEMPOTENT"
@@ -171,6 +222,8 @@ export interface Mp06PilotAttemptDiagnostics {
   readonly budgetReservedMicroUsd: number;
   readonly inFlight: number;
   readonly latestLifecycle?: Mp06ProviderLifecycleDiagnostics;
+  readonly checkpointCount: number;
+  readonly latestCheckpoint?: Mp06PilotLifecycleCheckpoint;
 }
 
 export interface Mp06PilotStatus {

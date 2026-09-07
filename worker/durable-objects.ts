@@ -16,16 +16,21 @@ import {
   MP06_PILOT_SESSION_DURATION_MS,
   type ActivateMp06PilotInput,
   type AdmitMp06PilotEventInput,
+  type AuthorizeMp06PilotDispatchInput,
   type Mp06PilotActivationResult,
   type Mp06PilotAdmissionResult,
   type Mp06PilotAttemptInput,
   type Mp06PilotAttemptDiagnostics,
   type Mp06PilotAttemptResult,
+  type Mp06PilotLifecycleCheckpoint,
+  type Mp06PilotLifecycleCheckpointSnapshot,
+  type Mp06PilotLifecyclePhase,
   type Mp06PilotStatus,
   type Mp06PilotStopResult,
   type Mp06ProviderLifecycleDiagnostics,
   type ReactivateReconciledMp06PilotInput,
   type ReconcileMp06PilotUnknownUsageInput,
+  type RecordMp06PilotLifecycleCheckpointInput,
   type ReserveMp06PilotAttemptInput,
   type SettleMp06PilotAttemptInput,
 } from "./mp-06-pilot-control.js";
@@ -101,6 +106,23 @@ interface Mp06PilotLifecycleRow extends Record<string, SqlStorageValue> {
   parsing_ms: number | null;
   settlement_ms: number | null;
   outcome_code: string;
+}
+
+interface Mp06PilotLifecycleCheckpointRow extends Record<
+  string,
+  SqlStorageValue
+> {
+  sequence: number;
+  phase: Mp06PilotLifecyclePhase;
+  client_request_id: string;
+  provider_request_id: string | null;
+  http_status: number | null;
+  provider_error_type: string | null;
+  provider_error_code: string | null;
+  retry_after_ms: number | null;
+  rate_limit_remaining_requests: number | null;
+  elapsed_ms: number | null;
+  recorded_at: number;
 }
 
 export class ConversationStateDO extends DurableObject<Env> {
@@ -206,6 +228,23 @@ export class ConversationStateDO extends DurableObject<Env> {
           outcome_code TEXT NOT NULL,
           recorded_at INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS mp06_pilot_lifecycle_checkpoints (
+          attempt_ref TEXT NOT NULL,
+          sequence INTEGER NOT NULL,
+          phase TEXT NOT NULL,
+          client_request_id TEXT NOT NULL,
+          provider_request_id TEXT,
+          http_status INTEGER,
+          provider_error_type TEXT,
+          provider_error_code TEXT,
+          retry_after_ms INTEGER,
+          rate_limit_remaining_requests INTEGER,
+          elapsed_ms INTEGER,
+          recorded_at INTEGER NOT NULL,
+          PRIMARY KEY (attempt_ref, phase)
+        );
+        CREATE INDEX IF NOT EXISTS idx_mp06_pilot_checkpoint_recorded
+          ON mp06_pilot_lifecycle_checkpoints(recorded_at, sequence);
       `);
       return Promise.resolve();
     });
@@ -720,9 +759,13 @@ export class ConversationStateDO extends DurableObject<Env> {
   }
 
   authorizeMp06PilotDispatch(
-    input: Mp06PilotAttemptInput,
+    input: AuthorizeMp06PilotDispatchInput,
   ): Mp06PilotAttemptResult {
-    if (!validMp06PilotAttemptInput(input)) {
+    if (
+      !validMp06PilotAttemptInput(input) ||
+      typeof input.clientRequestId !== "string" ||
+      !safeMp06PilotMetadata(input.clientRequestId)
+    ) {
       return { accepted: false, code: "CONTROL_UNAVAILABLE" };
     }
     return this.ctx.storage.transactionSync(() => {
@@ -742,9 +785,82 @@ export class ConversationStateDO extends DurableObject<Env> {
         input.eventRef,
         input.attemptRef,
       ).rowsWritten;
-      return changed === 1
-        ? { accepted: true, code: "DISPATCH_AUTHORIZED" }
-        : { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+      if (changed !== 1) {
+        return { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+      }
+      this.insertMp06PilotLifecycleCheckpoint({
+        attemptRef: input.attemptRef,
+        sequence: 1,
+        phase: "DISPATCH_AUTHORIZED",
+        clientRequestId: input.clientRequestId,
+        recordedAt: input.now,
+      });
+      return { accepted: true, code: "DISPATCH_AUTHORIZED" };
+    });
+  }
+
+  recordMp06PilotLifecycleCheckpoint(
+    input: RecordMp06PilotLifecycleCheckpointInput,
+  ): Mp06PilotAttemptResult {
+    if (!validMp06PilotLifecycleCheckpointInput(input)) {
+      return { accepted: false, code: "CONTROL_UNAVAILABLE" };
+    }
+    return this.ctx.storage.transactionSync(() => {
+      const attempt = this.mp06PilotAttempt(input.attemptRef);
+      if (
+        !attempt ||
+        attempt.session_ref !== input.sessionRef ||
+        attempt.event_ref !== input.eventRef ||
+        (attempt.state !== "DISPATCHED" &&
+          attempt.state !== "SETTLED" &&
+          attempt.state !== "USAGE_UNKNOWN")
+      ) {
+        return { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+      }
+      const first = this.mp06PilotInitialCheckpoint(input.attemptRef);
+      if (!first || first.client_request_id !== input.clientRequestId) {
+        return { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+      }
+      const sequence = mp06PilotLifecycleSequence(input.phase);
+      const existing = this.mp06PilotCheckpoint(input.attemptRef, input.phase);
+      if (existing) {
+        return { accepted: true, code: "CHECKPOINT_IDEMPOTENT" };
+      }
+      const latestSequence = this.mp06PilotLatestCheckpointSequence(
+        input.attemptRef,
+      );
+      if (sequence < latestSequence) {
+        return { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+      }
+      this.insertMp06PilotLifecycleCheckpoint({
+        attemptRef: input.attemptRef,
+        sequence,
+        phase: input.phase,
+        clientRequestId: input.clientRequestId,
+        ...(input.providerRequestId === undefined
+          ? {}
+          : { providerRequestId: input.providerRequestId }),
+        ...(input.httpStatus === undefined
+          ? {}
+          : { httpStatus: input.httpStatus }),
+        ...(input.providerErrorType === undefined
+          ? {}
+          : { providerErrorType: input.providerErrorType }),
+        ...(input.providerErrorCode === undefined
+          ? {}
+          : { providerErrorCode: input.providerErrorCode }),
+        ...(input.retryAfterMs === undefined
+          ? {}
+          : { retryAfterMs: input.retryAfterMs }),
+        ...(input.rateLimitRemainingRequests === undefined
+          ? {}
+          : { rateLimitRemainingRequests: input.rateLimitRemainingRequests }),
+        ...(input.elapsedMs === undefined
+          ? {}
+          : { elapsedMs: input.elapsedMs }),
+        recordedAt: input.now,
+      });
+      return { accepted: true, code: "CHECKPOINT_RECORDED" };
     });
   }
 
@@ -790,6 +906,15 @@ export class ConversationStateDO extends DurableObject<Env> {
     ) {
       return { accepted: false, code: "CONTROL_UNAVAILABLE" };
     }
+    if (
+      input.diagnostics &&
+      !this.recordMp06PilotSettlementStartedCheckpoint(
+        input,
+        input.diagnostics.clientRequestId,
+      )
+    ) {
+      return { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+    }
     return this.ctx.storage.transactionSync(() => {
       const attempt = this.mp06PilotAttempt(input.attemptRef);
       if (
@@ -807,6 +932,11 @@ export class ConversationStateDO extends DurableObject<Env> {
         );
       }
       if (attempt.state === "SETTLED" || attempt.state === "USAGE_UNKNOWN") {
+        this.recordMp06PilotSettlementSucceededCheckpoint(
+          input.attemptRef,
+          input.now,
+          input.diagnostics?.settlementMs,
+        );
         return { accepted: true, code: "SETTLED_IDEMPOTENT" };
       }
       if (attempt.state !== "DISPATCHED") {
@@ -845,6 +975,11 @@ export class ConversationStateDO extends DurableObject<Env> {
           input.sessionRef,
         );
       }
+      this.recordMp06PilotSettlementSucceededCheckpoint(
+        input.attemptRef,
+        input.now,
+        input.diagnostics?.settlementMs,
+      );
       return { accepted: true, code: "SETTLED" };
     });
   }
@@ -884,6 +1019,23 @@ export class ConversationStateDO extends DurableObject<Env> {
           ORDER BY recorded_at DESC, rowid DESC LIMIT 1`,
         )
         .toArray()[0];
+      const checkpointCount = Number(
+        this.ctx.storage.sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM mp06_pilot_lifecycle_checkpoints",
+          )
+          .one().count,
+      );
+      const latestCheckpoint = this.ctx.storage.sql
+        .exec<Mp06PilotLifecycleCheckpointRow>(
+          `SELECT sequence, phase, client_request_id, provider_request_id,
+            http_status, provider_error_type, provider_error_code,
+            retry_after_ms, rate_limit_remaining_requests, elapsed_ms,
+            recorded_at
+          FROM mp06_pilot_lifecycle_checkpoints
+          ORDER BY recorded_at DESC, sequence DESC LIMIT 1`,
+        )
+        .toArray()[0];
       return {
         sessionState: pilotStatus(session, now).state,
         ...(session.stop_reason ? { stopReason: session.stop_reason } : {}),
@@ -897,8 +1049,27 @@ export class ConversationStateDO extends DurableObject<Env> {
         budgetReservedMicroUsd: session.budget_reserved_micro_usd,
         inFlight: session.in_flight,
         ...(latest ? { latestLifecycle: lifecycleDiagnostics(latest) } : {}),
+        checkpointCount,
+        ...(latestCheckpoint
+          ? { latestCheckpoint: lifecycleCheckpoint(latestCheckpoint) }
+          : {}),
       };
     });
+  }
+
+  mp06PilotLifecycleCheckpointSnapshot(): Mp06PilotLifecycleCheckpointSnapshot {
+    const checkpoints = this.ctx.storage.sql
+      .exec<Mp06PilotLifecycleCheckpointRow>(
+        `SELECT sequence, phase, client_request_id, provider_request_id,
+          http_status, provider_error_type, provider_error_code,
+          retry_after_ms, rate_limit_remaining_requests, elapsed_ms,
+          recorded_at
+        FROM mp06_pilot_lifecycle_checkpoints
+        ORDER BY recorded_at ASC, sequence ASC`,
+      )
+      .toArray()
+      .map(lifecycleCheckpoint);
+    return { checkpointCount: checkpoints.length, checkpoints };
   }
 
   reconcileMp06PilotUnknownUsage(
@@ -1070,6 +1241,133 @@ export class ConversationStateDO extends DurableObject<Env> {
       .toArray()[0];
   }
 
+  private mp06PilotInitialCheckpoint(
+    attemptRef: string,
+  ): Mp06PilotLifecycleCheckpointRow | undefined {
+    return this.ctx.storage.sql
+      .exec<Mp06PilotLifecycleCheckpointRow>(
+        `SELECT sequence, phase, client_request_id, provider_request_id,
+          http_status, provider_error_type, provider_error_code,
+          retry_after_ms, rate_limit_remaining_requests, elapsed_ms,
+          recorded_at
+        FROM mp06_pilot_lifecycle_checkpoints
+        WHERE attempt_ref = ? AND phase = 'DISPATCH_AUTHORIZED'`,
+        attemptRef,
+      )
+      .toArray()[0];
+  }
+
+  private mp06PilotCheckpoint(
+    attemptRef: string,
+    phase: Mp06PilotLifecyclePhase,
+  ): Mp06PilotLifecycleCheckpointRow | undefined {
+    return this.ctx.storage.sql
+      .exec<Mp06PilotLifecycleCheckpointRow>(
+        `SELECT sequence, phase, client_request_id, provider_request_id,
+          http_status, provider_error_type, provider_error_code,
+          retry_after_ms, rate_limit_remaining_requests, elapsed_ms,
+          recorded_at
+        FROM mp06_pilot_lifecycle_checkpoints
+        WHERE attempt_ref = ? AND phase = ?`,
+        attemptRef,
+        phase,
+      )
+      .toArray()[0];
+  }
+
+  private mp06PilotLatestCheckpointSequence(attemptRef: string): number {
+    return Number(
+      this.ctx.storage.sql
+        .exec<{ sequence: number | null }>(
+          "SELECT MAX(sequence) AS sequence FROM mp06_pilot_lifecycle_checkpoints WHERE attempt_ref = ?",
+          attemptRef,
+        )
+        .one().sequence ?? 0,
+    );
+  }
+
+  private insertMp06PilotLifecycleCheckpoint(input: {
+    readonly attemptRef: string;
+    readonly sequence: number;
+    readonly phase: Mp06PilotLifecyclePhase;
+    readonly clientRequestId: string;
+    readonly providerRequestId?: string;
+    readonly httpStatus?: number;
+    readonly providerErrorType?: string;
+    readonly providerErrorCode?: string;
+    readonly retryAfterMs?: number;
+    readonly rateLimitRemainingRequests?: number;
+    readonly elapsedMs?: number;
+    readonly recordedAt: number;
+  }): void {
+    this.ctx.storage.sql.exec(
+      `INSERT OR IGNORE INTO mp06_pilot_lifecycle_checkpoints (
+        attempt_ref, sequence, phase, client_request_id, provider_request_id,
+        http_status, provider_error_type, provider_error_code, retry_after_ms,
+        rate_limit_remaining_requests, elapsed_ms, recorded_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      input.attemptRef,
+      input.sequence,
+      input.phase,
+      input.clientRequestId,
+      input.providerRequestId ?? null,
+      input.httpStatus ?? null,
+      input.providerErrorType ?? null,
+      input.providerErrorCode ?? null,
+      input.retryAfterMs ?? null,
+      input.rateLimitRemainingRequests ?? null,
+      input.elapsedMs ?? null,
+      input.recordedAt,
+    );
+  }
+
+  private recordMp06PilotSettlementSucceededCheckpoint(
+    attemptRef: string,
+    now: number,
+    elapsedMs?: number,
+  ): void {
+    const initial = this.mp06PilotInitialCheckpoint(attemptRef);
+    if (!initial) return;
+    this.insertMp06PilotLifecycleCheckpoint({
+      attemptRef,
+      sequence: mp06PilotLifecycleSequence("SETTLEMENT_SUCCEEDED"),
+      phase: "SETTLEMENT_SUCCEEDED",
+      clientRequestId: initial.client_request_id,
+      ...(elapsedMs === undefined ? {} : { elapsedMs }),
+      recordedAt: now,
+    });
+  }
+
+  private recordMp06PilotSettlementStartedCheckpoint(
+    input: SettleMp06PilotAttemptInput,
+    clientRequestId: string,
+  ): boolean {
+    return this.ctx.storage.transactionSync(() => {
+      const attempt = this.mp06PilotAttempt(input.attemptRef);
+      const initial = this.mp06PilotInitialCheckpoint(input.attemptRef);
+      if (
+        !attempt ||
+        attempt.session_ref !== input.sessionRef ||
+        attempt.event_ref !== input.eventRef ||
+        (attempt.state !== "DISPATCHED" &&
+          attempt.state !== "SETTLED" &&
+          attempt.state !== "USAGE_UNKNOWN") ||
+        !initial ||
+        initial.client_request_id !== clientRequestId
+      ) {
+        return false;
+      }
+      this.insertMp06PilotLifecycleCheckpoint({
+        attemptRef: input.attemptRef,
+        sequence: mp06PilotLifecycleSequence("SETTLEMENT_STARTED"),
+        phase: "SETTLEMENT_STARTED",
+        clientRequestId,
+        recordedAt: input.now,
+      });
+      return true;
+    });
+  }
+
   private recordMp06ProviderLifecycleDiagnostics(
     attemptRef: string,
     diagnostics: Mp06ProviderLifecycleDiagnostics,
@@ -1184,17 +1482,15 @@ export class ConversationStateDO extends DurableObject<Env> {
 function validMp06ProviderLifecycleDiagnostics(
   value: Mp06ProviderLifecycleDiagnostics,
 ): boolean {
-  const safeMetadata = (input: string | undefined): boolean =>
-    input === undefined || /^[A-Za-z0-9_.:-]{1,128}$/u.test(input);
   const safeOptionalInteger = (input: number | undefined): boolean =>
     input === undefined || (Number.isSafeInteger(input) && input >= 0);
   return (
-    safeMetadata(value.clientRequestId) &&
+    safeMp06PilotMetadata(value.clientRequestId) &&
     value.clientRequestId.length > 0 &&
-    safeMetadata(value.providerRequestId) &&
-    safeMetadata(value.providerErrorType) &&
-    safeMetadata(value.providerErrorCode) &&
-    safeMetadata(value.outcomeCode) &&
+    safeMp06PilotMetadata(value.providerRequestId) &&
+    safeMp06PilotMetadata(value.providerErrorType) &&
+    safeMp06PilotMetadata(value.providerErrorCode) &&
+    safeMp06PilotMetadata(value.outcomeCode) &&
     value.outcomeCode.length > 0 &&
     safeOptionalInteger(value.httpStatus) &&
     safeOptionalInteger(value.retryAfterMs) &&
@@ -1205,6 +1501,82 @@ function validMp06ProviderLifecycleDiagnostics(
     safeOptionalInteger(value.parsingMs) &&
     safeOptionalInteger(value.settlementMs)
   );
+}
+
+function safeMp06PilotMetadata(input: string | undefined): boolean {
+  return input === undefined || /^[A-Za-z0-9_.:-]{1,128}$/u.test(input);
+}
+
+function validMp06PilotLifecycleCheckpointInput(
+  input: RecordMp06PilotLifecycleCheckpointInput,
+): boolean {
+  const safeOptionalInteger = (value: number | undefined): boolean =>
+    value === undefined || (Number.isSafeInteger(value) && value >= 0);
+  return (
+    validMp06PilotAttemptInput(input) &&
+    typeof input.clientRequestId === "string" &&
+    safeMp06PilotMetadata(input.clientRequestId) &&
+    mp06PilotLifecycleSequence(input.phase) > 1 &&
+    (input.providerRequestId === undefined ||
+      safeMp06PilotMetadata(input.providerRequestId)) &&
+    (input.providerErrorType === undefined ||
+      safeMp06PilotMetadata(input.providerErrorType)) &&
+    (input.providerErrorCode === undefined ||
+      safeMp06PilotMetadata(input.providerErrorCode)) &&
+    safeOptionalInteger(input.httpStatus) &&
+    safeOptionalInteger(input.retryAfterMs) &&
+    safeOptionalInteger(input.rateLimitRemainingRequests) &&
+    safeOptionalInteger(input.elapsedMs)
+  );
+}
+
+function mp06PilotLifecycleSequence(phase: Mp06PilotLifecyclePhase): number {
+  switch (phase) {
+    case "DISPATCH_AUTHORIZED":
+      return 1;
+    case "OUTBOUND_FETCH_STARTING":
+      return 2;
+    case "FETCH_PROMISE_CREATED":
+      return 3;
+    case "RESPONSE_HEADERS_RECEIVED":
+      return 4;
+    case "RESPONSE_BODY_READ":
+      return 5;
+    case "RESPONSE_PARSED":
+      return 6;
+    case "SETTLEMENT_STARTED":
+      return 7;
+    case "SETTLEMENT_SUCCEEDED":
+      return 8;
+  }
+}
+
+function lifecycleCheckpoint(
+  row: Mp06PilotLifecycleCheckpointRow,
+): Mp06PilotLifecycleCheckpoint {
+  return {
+    sequence: row.sequence,
+    phase: row.phase,
+    clientRequestId: row.client_request_id,
+    ...(row.provider_request_id
+      ? { providerRequestId: row.provider_request_id }
+      : {}),
+    ...(row.http_status === null ? {} : { httpStatus: row.http_status }),
+    ...(row.provider_error_type
+      ? { providerErrorType: row.provider_error_type }
+      : {}),
+    ...(row.provider_error_code
+      ? { providerErrorCode: row.provider_error_code }
+      : {}),
+    ...(row.retry_after_ms === null
+      ? {}
+      : { retryAfterMs: row.retry_after_ms }),
+    ...(row.rate_limit_remaining_requests === null
+      ? {}
+      : { rateLimitRemainingRequests: row.rate_limit_remaining_requests }),
+    ...(row.elapsed_ms === null ? {} : { elapsedMs: row.elapsed_ms }),
+    recordedAt: row.recorded_at,
+  };
 }
 
 function validMp06ReconciliationInput(
@@ -1320,6 +1692,7 @@ function inactiveAttemptDiagnostics(): Mp06PilotAttemptDiagnostics {
     budgetConsumedMicroUsd: 0,
     budgetReservedMicroUsd: 0,
     inFlight: 0,
+    checkpointCount: 0,
   };
 }
 

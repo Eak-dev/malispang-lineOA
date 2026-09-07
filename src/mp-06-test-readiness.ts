@@ -426,7 +426,7 @@ export function validateMp06PilotRuntimeSources(
         "/admin/mp06-pilot/activate",
         "/admin/mp06-pilot/stop",
         "admitMp06PilotAiEvent",
-        "providerWasDispatched",
+        "dispatchWasAuthorized",
       ],
       "WP8A_WEBHOOK_ADMISSION_CONTRACT_DRIFT",
     ],
