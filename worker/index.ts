@@ -6,6 +6,13 @@ import {
   enforceApprovedKnowledge,
 } from "./knowledge.js";
 import { sendLineReply } from "./line-api.js";
+import {
+  createOpenAiMp06NluProvider,
+  isMp06AiNluEnabled,
+  planMp06WithAdvisoryNlu,
+  type Mp06AiNluEnvironment,
+  type Mp06AiNluSafeMetadata,
+} from "./mp-06-ai-nlu.js";
 import { planMp06Wp1Text, type Mp06Wp1Plan } from "./mp-06-wp1.js";
 import {
   classifyPostback,
@@ -182,12 +189,29 @@ async function processLineEvent(
   }
   if (event.kind === "text") {
     const mp06Context = await conversation.mp06Context();
-    const plan = await planMp06Wp1Text(
+    let plan = await planMp06Wp1Text(
       event.text,
       env.PUBLIC_ASSET_BASE_URL,
       now,
       mp06Context,
     );
+    const aiEnv = env as Env & Mp06AiNluEnvironment;
+    if (
+      isMp06AiNluEnabled(aiEnv) &&
+      (!plan || plan.classification !== "STAFF_ONLY")
+    ) {
+      plan = await planMp06WithAdvisoryNlu({
+        text: event.text,
+        publicAssetBaseUrl: env.PUBLIC_ASSET_BASE_URL,
+        now,
+        context: mp06Context,
+        ...(plan ? { baselinePlan: plan } : {}),
+        provider: createOpenAiMp06NluProvider({
+          env: aiEnv,
+          logger: logAiNluMetadata,
+        }),
+      });
+    }
     if (plan) {
       await processMp06Plan(
         plan,
@@ -515,6 +539,12 @@ function logOutcome(
   reasonCode: string,
 ): void {
   console.log(JSON.stringify({ level: "info", eventRef, outcome, reasonCode }));
+}
+
+function logAiNluMetadata(metadata: Mp06AiNluSafeMetadata): void {
+  console.log(
+    JSON.stringify({ level: "info", component: "MP06_AI_NLU", ...metadata }),
+  );
 }
 
 function safeErrorCode(value: string): string {

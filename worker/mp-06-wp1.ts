@@ -655,7 +655,7 @@ async function clarificationPlan(
   };
 }
 
-function staffOnlyPlan(reasonCode: string): Mp06Wp1Plan {
+export function failClosedMp06Plan(reasonCode: string): Mp06Wp1Plan {
   return {
     classification: "STAFF_ONLY",
     decision: {
@@ -668,6 +668,8 @@ function staffOnlyPlan(reasonCode: string): Mp06Wp1Plan {
     messages: [],
   };
 }
+
+const staffOnlyPlan = failClosedMp06Plan;
 
 function replyKindFor(intent: Mp06AutoIntent | undefined): ReplyKind {
   const mapping: Readonly<Record<Mp06AutoIntent, ReplyKind>> = {
