@@ -148,7 +148,13 @@ if (mode === "check") {
   process.exit(0);
 }
 
-const key = await readIgnoredKey();
+let key: string;
+try {
+  key = await readIgnoredKey();
+} catch {
+  console.error("OPENAI_CREDENTIAL_OR_ACCESS_BLOCKED");
+  process.exit(1);
+}
 if (mode === "diagnose") {
   const requestedIds = new Set(process.argv.slice(3));
   const selected = dataset.filter((entry) => requestedIds.has(entry.caseId));
@@ -483,7 +489,12 @@ function riskSignalsMatch(
 }
 
 async function readIgnoredKey(): Promise<string> {
-  const document = await readFile(resolve(".dev.vars"), "utf8");
+  let document: string;
+  try {
+    document = await readFile(resolve(".dev.vars"), "utf8");
+  } catch {
+    throw new Error("OPENAI_CREDENTIAL_OR_ACCESS_BLOCKED");
+  }
   const line = document
     .split(/\r?\n/u)
     .find((entry) => entry.startsWith("OPENAI_API_KEY="));
