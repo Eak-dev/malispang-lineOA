@@ -8,11 +8,20 @@ import {
 import { sendLineReply } from "./line-api.js";
 import {
   createOpenAiMp06NluProvider,
-  isMp06AiNluEnabled,
+  MP06_AI_NLU_MODEL,
   planMp06WithAdvisoryNlu,
+  type Mp06AiNluAttemptController,
   type Mp06AiNluEnvironment,
   type Mp06AiNluSafeMetadata,
 } from "./mp-06-ai-nlu.js";
+import {
+  admitMp06PilotEventThroughCoordinator,
+  isMp06PilotReference,
+  mp06PilotLimitsFromEnvironment,
+  MP06_PILOT_CONTROL_OBJECT_NAME,
+  verifiedMp06PilotSender,
+  type Mp06PilotAdmissionCode,
+} from "./mp-06-pilot-control.js";
 import { planMp06Wp1Text, type Mp06Wp1Plan } from "./mp-06-wp1.js";
 import {
   classifyPostback,
@@ -196,21 +205,50 @@ async function processLineEvent(
       mp06Context,
     );
     const aiEnv = env as Env & Mp06AiNluEnvironment;
-    if (
-      isMp06AiNluEnabled(aiEnv) &&
-      (!plan || plan.classification !== "STAFF_ONLY")
-    ) {
-      plan = await planMp06WithAdvisoryNlu({
-        text: event.text,
-        publicAssetBaseUrl: env.PUBLIC_ASSET_BASE_URL,
-        now,
-        context: mp06Context,
-        ...(plan ? { baselinePlan: plan } : {}),
-        provider: createOpenAiMp06NluProvider({
-          env: aiEnv,
-          logger: logAiNluMetadata,
-        }),
-      });
+    if (!plan || plan.classification !== "STAFF_ONLY") {
+      const pilot = await admitMp06PilotAiEvent(event, eventRef, env, now);
+      if (pilot.code === "DUPLICATE") {
+        logOutcome(eventRef, "DUPLICATE", "MP06_PILOT_EVENT_ALREADY_ADMITTED");
+        return;
+      }
+      if (pilot.context) {
+        const attemptController = createMp06PilotAttemptController(
+          pilot.context,
+        );
+        plan = await planMp06WithAdvisoryNlu({
+          text: event.text,
+          publicAssetBaseUrl: env.PUBLIC_ASSET_BASE_URL,
+          now,
+          context: mp06Context,
+          ...(plan ? { baselinePlan: plan } : {}),
+          provider: createOpenAiMp06NluProvider({
+            env: {
+              MP06_AI_NLU_ENABLED: "true",
+              ...(aiEnv.MP06_AI_NLU_MODEL
+                ? { MP06_AI_NLU_MODEL: aiEnv.MP06_AI_NLU_MODEL }
+                : {}),
+              ...(aiEnv.OPENAI_API_KEY
+                ? { OPENAI_API_KEY: aiEnv.OPENAI_API_KEY }
+                : {}),
+            },
+            logger: logAiNluMetadata,
+            attemptController,
+          }),
+        });
+        if (
+          attemptController.providerWasDispatched() &&
+          !(await pilot.context.coordinator.authorizeMp06PilotResult({
+            sessionRef: pilot.context.sessionRef,
+            eventRef,
+            now: Date.now(),
+          }))
+        ) {
+          logOutcome(eventRef, "SILENT", "MP06_PILOT_RESULT_NOT_AUTHORIZED");
+          return;
+        }
+      } else {
+        logOutcome(eventRef, "AI_BYPASSED", `MP06_PILOT_${pilot.code}`);
+      }
     }
     if (plan) {
       await processMp06Plan(
@@ -338,6 +376,55 @@ async function handleAdmin(
   }
   const registry = env.HANDOFF_REGISTRY.getByName("test-active-handoffs");
   const promotion = env.PROMOTION_CONTROL.getByName("test-draft-promotion");
+  const pilot = env.CONVERSATION_STATE.getByName(
+    MP06_PILOT_CONTROL_OBJECT_NAME,
+  );
+  if (request.method === "GET" && url.pathname === "/admin/mp06-pilot/status") {
+    return Response.json({ pilot: await pilot.mp06PilotStatus(Date.now()) });
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/activate"
+  ) {
+    const limits = mp06PilotLimitsFromEnvironment(env);
+    const aiEnv = env as Env & Mp06AiNluEnvironment;
+    if (
+      !limits ||
+      aiEnv.MP06_AI_NLU_MODEL !== MP06_AI_NLU_MODEL ||
+      typeof aiEnv.OPENAI_API_KEY !== "string" ||
+      aiEnv.OPENAI_API_KEY.length < 20
+    ) {
+      return Response.json(
+        { error: "PILOT_CONFIGURATION_INVALID" },
+        { status: 503 },
+      );
+    }
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    const input = parsePilotActivationInput(decoder.decode(body));
+    if (!input) {
+      return Response.json(
+        { error: "INVALID_PILOT_ACTIVATION" },
+        { status: 400 },
+      );
+    }
+    const sessionRef = await sha256Reference(
+      `mp06-pilot:${crypto.randomUUID()}`,
+    );
+    const result = await pilot.activateMp06Pilot({
+      sessionRef,
+      testerRefs: input.testerRefs,
+      now: Date.now(),
+      limits,
+    });
+    return Response.json(
+      { pilot: result.status, outcome: result.code },
+      { status: result.activated ? 201 : 409 },
+    );
+  }
+  if (request.method === "POST" && url.pathname === "/admin/mp06-pilot/stop") {
+    const result = await pilot.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
+    return Response.json({ pilot: result.status, outcome: result.code });
+  }
   if (request.method === "GET" && url.pathname === "/admin/handoffs") {
     return Response.json({ active: await registry.listActive() });
   }
@@ -501,6 +588,134 @@ function parsePromotionInput(raw: string):
     return undefined;
   }
   return undefined;
+}
+
+function parsePilotActivationInput(
+  raw: string,
+): { readonly testerRefs: readonly string[] } | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== 1 ||
+      !("testerRefs" in value) ||
+      !Array.isArray(value.testerRefs) ||
+      value.testerRefs.length < 1 ||
+      value.testerRefs.length > 5 ||
+      new Set(value.testerRefs).size !== value.testerRefs.length ||
+      !value.testerRefs.every(isMp06PilotReference)
+    ) {
+      return undefined;
+    }
+    return { testerRefs: value.testerRefs };
+  } catch {
+    return undefined;
+  }
+}
+
+interface Mp06PilotRuntimeContext {
+  readonly coordinator: DurableObjectStub<ConversationStateDO>;
+  readonly sessionRef: string;
+  readonly eventRef: string;
+}
+
+async function admitMp06PilotAiEvent(
+  event: ParsedLineEvent,
+  eventRef: string,
+  env: Env,
+  now: number,
+): Promise<{
+  readonly code: Mp06PilotAdmissionCode;
+  readonly context?: Mp06PilotRuntimeContext;
+}> {
+  const limits = mp06PilotLimitsFromEnvironment(env);
+  const senderId = verifiedMp06PilotSender(event);
+  if (!limits || !senderId) {
+    return { code: limits ? "TESTER_NOT_ALLOWED" : "CONTROL_UNAVAILABLE" };
+  }
+  const coordinator = env.CONVERSATION_STATE.getByName(
+    MP06_PILOT_CONTROL_OBJECT_NAME,
+  );
+  try {
+    const testerRef = await sha256Reference(senderId);
+    const admission = await admitMp06PilotEventThroughCoordinator(coordinator, {
+      eventRef,
+      testerRef,
+      now,
+    });
+    return admission.sessionRef
+      ? {
+          code: admission.code,
+          context: {
+            coordinator,
+            sessionRef: admission.sessionRef,
+            eventRef,
+          },
+        }
+      : { code: admission.code };
+  } catch {
+    return { code: "CONTROL_UNAVAILABLE" };
+  }
+}
+
+function createMp06PilotAttemptController(
+  context: Mp06PilotRuntimeContext,
+): Mp06AiNluAttemptController & { providerWasDispatched: () => boolean } {
+  const attemptRefs = new Map<number, string>();
+  let dispatched = false;
+  const attemptRef = async (attempt: number): Promise<string> => {
+    const existing = attemptRefs.get(attempt);
+    if (existing) return existing;
+    const created = await sha256Reference(`${context.eventRef}:${attempt}`);
+    attemptRefs.set(attempt, created);
+    return created;
+  };
+  return {
+    async reserve(input) {
+      const result = await context.coordinator.reserveMp06PilotAttempt({
+        sessionRef: context.sessionRef,
+        eventRef: context.eventRef,
+        attemptRef: await attemptRef(input.attempt),
+        upperBoundCostMicroUsd: input.upperBoundCostMicroUsd,
+        now: Date.now(),
+      });
+      return result.accepted;
+    },
+    async authorizeDispatch(attempt) {
+      const result = await context.coordinator.authorizeMp06PilotDispatch({
+        sessionRef: context.sessionRef,
+        eventRef: context.eventRef,
+        attemptRef: await attemptRef(attempt),
+        now: Date.now(),
+      });
+      if (result.accepted) dispatched = true;
+      return result.accepted;
+    },
+    async cancelBeforeDispatch(attempt) {
+      await context.coordinator.cancelMp06PilotAttemptBeforeDispatch({
+        sessionRef: context.sessionRef,
+        eventRef: context.eventRef,
+        attemptRef: await attemptRef(attempt),
+        now: Date.now(),
+      });
+    },
+    async settle(input) {
+      const result = await context.coordinator.settleMp06PilotAttempt({
+        sessionRef: context.sessionRef,
+        eventRef: context.eventRef,
+        attemptRef: await attemptRef(input.attempt),
+        now: Date.now(),
+        outcome: input.outcome,
+        ...(input.actualCostMicroUsd === undefined
+          ? {}
+          : { actualCostMicroUsd: input.actualCostMicroUsd }),
+      });
+      return result.accepted;
+    },
+    providerWasDispatched: () => dispatched,
+  };
 }
 
 function parseCloseInput(

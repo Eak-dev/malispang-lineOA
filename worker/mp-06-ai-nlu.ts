@@ -6,6 +6,10 @@ import {
   type Mp06Wp1Context,
   type Mp06Wp1Plan,
 } from "./mp-06-wp1.js";
+import {
+  estimateMp06AttemptUpperBoundMicroUsd,
+  mp06UsageCostMicroUsd,
+} from "./mp-06-pilot-control.js";
 
 export const MP06_AI_NLU_SCHEMA_VERSION = "2026.09.07-v1";
 export const MP06_AI_NLU_PROMPT_VERSION = "2026.09.07-v1";
@@ -75,7 +79,8 @@ export type Mp06AiNluOutcomeCode =
   | "MODEL_MISMATCH"
   | "PERMANENT_HTTP_ERROR"
   | "TRANSIENT_HTTP_ERROR"
-  | "COST_GUARD_REJECTED";
+  | "COST_GUARD_REJECTED"
+  | "PILOT_CONTROL_REJECTED";
 
 export interface Mp06AiNluStructuredOutput {
   readonly schemaVersion: typeof MP06_AI_NLU_SCHEMA_VERSION;
@@ -138,6 +143,21 @@ export interface Mp06AiNluRuntimeOptions {
   readonly now?: () => number;
   readonly logger?: (metadata: Mp06AiNluSafeMetadata) => void;
   readonly guard?: Mp06AiNluExecutionGuard;
+  readonly attemptController?: Mp06AiNluAttemptController;
+}
+
+export interface Mp06AiNluAttemptController {
+  readonly reserve: (input: {
+    readonly attempt: number;
+    readonly upperBoundCostMicroUsd: number;
+  }) => Promise<boolean>;
+  readonly authorizeDispatch: (attempt: number) => Promise<boolean>;
+  readonly cancelBeforeDispatch: (attempt: number) => Promise<void>;
+  readonly settle: (input: {
+    readonly attempt: number;
+    readonly outcome: "KNOWN" | "USAGE_UNKNOWN";
+    readonly actualCostMicroUsd?: number;
+  }) => Promise<boolean>;
 }
 
 export interface Mp06AiNluExecutionGuard {
@@ -382,6 +402,30 @@ export async function requestOpenAiMp06Nlu(
 
   const fetcher = options.fetcher ?? fetch;
   const guard = options.guard ?? createMp06AiNluExecutionGuard();
+  const requestBody = JSON.stringify({
+    model: configuredModel,
+    store: false,
+    stream: false,
+    max_output_tokens: MP06_AI_NLU_MAX_OUTPUT_TOKENS,
+    instructions: MP06_AI_NLU_SYSTEM_INSTRUCTIONS,
+    input: [
+      {
+        role: "user",
+        content: [{ type: "input_text", text: redacted.text }],
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "mp06_guardrailed_nlu",
+        strict: true,
+        schema: MP06_AI_NLU_JSON_SCHEMA,
+      },
+    },
+    tools: [],
+  });
+  const upperBoundCostMicroUsd =
+    estimateMp06AttemptUpperBoundMicroUsd(requestBody);
   for (let attempt = 1; attempt <= MP06_AI_NLU_MAX_RETRIES + 1; attempt += 1) {
     if (guard.open || guard.remainingRequests <= 0) {
       return failure(
@@ -392,6 +436,46 @@ export async function requestOpenAiMp06Nlu(
       );
     }
     guard.remainingRequests -= 1;
+    if (options.attemptController) {
+      let reserved = false;
+      try {
+        reserved = await options.attemptController.reserve({
+          attempt,
+          upperBoundCostMicroUsd,
+        });
+        if (!reserved) {
+          return failure(
+            "PILOT_CONTROL_REJECTED",
+            { ...baseMetadata, attempts: attempt - 1 },
+            options,
+            startedAt,
+          );
+        }
+        if (!(await options.attemptController.authorizeDispatch(attempt))) {
+          await options.attemptController.cancelBeforeDispatch(attempt);
+          return failure(
+            "PILOT_CONTROL_REJECTED",
+            { ...baseMetadata, attempts: attempt - 1 },
+            options,
+            startedAt,
+          );
+        }
+      } catch {
+        if (reserved) {
+          try {
+            await options.attemptController.cancelBeforeDispatch(attempt);
+          } catch {
+            // Control failure remains fail closed; no provider dispatch occurs.
+          }
+        }
+        return failure(
+          "PILOT_CONTROL_REJECTED",
+          { ...baseMetadata, attempts: attempt - 1 },
+          options,
+          startedAt,
+        );
+      }
+    }
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
@@ -404,28 +488,7 @@ export async function requestOpenAiMp06Nlu(
           authorization: `Bearer ${options.env.OPENAI_API_KEY}`,
           "content-type": "application/json",
         },
-        body: JSON.stringify({
-          model: configuredModel,
-          store: false,
-          stream: false,
-          max_output_tokens: MP06_AI_NLU_MAX_OUTPUT_TOKENS,
-          instructions: MP06_AI_NLU_SYSTEM_INSTRUCTIONS,
-          input: [
-            {
-              role: "user",
-              content: [{ type: "input_text", text: redacted.text }],
-            },
-          ],
-          text: {
-            format: {
-              type: "json_schema",
-              name: "mp06_guardrailed_nlu",
-              strict: true,
-              schema: MP06_AI_NLU_JSON_SCHEMA,
-            },
-          },
-          tools: [],
-        }),
+        body: requestBody,
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -435,6 +498,39 @@ export async function requestOpenAiMp06Nlu(
           guard.consecutiveTransientFailures += 1;
           guard.open =
             guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
+        }
+        if (
+          response.status >= 500 &&
+          options.attemptController &&
+          !(await settleUnknownAttempt(options, attempt))
+        ) {
+          return failure(
+            "PILOT_CONTROL_REJECTED",
+            { ...baseMetadata, attempts: attempt },
+            options,
+            startedAt,
+          );
+        }
+        if (response.status >= 500 && options.attemptController) {
+          return failure(
+            "TRANSIENT_HTTP_ERROR",
+            {
+              ...baseMetadata,
+              attempts: attempt,
+              httpStatus: response.status,
+              ...safeProviderError,
+            },
+            options,
+            startedAt,
+          );
+        }
+        if (!(await settleKnownAttempt(options, attempt, 0))) {
+          return failure(
+            "PILOT_CONTROL_REJECTED",
+            { ...baseMetadata, attempts: attempt },
+            options,
+            startedAt,
+          );
         }
         if (transient && attempt <= MP06_AI_NLU_MAX_RETRIES) continue;
         return failure(
@@ -451,6 +547,30 @@ export async function requestOpenAiMp06Nlu(
       }
       const body: unknown = await response.json();
       const parsed = parseOpenAiResponse(body);
+      if (options.attemptController && !parsed.usageKnown) {
+        await settleUnknownAttempt(options, attempt);
+        return failure(
+          "PILOT_CONTROL_REJECTED",
+          { ...baseMetadata, attempts: attempt },
+          options,
+          startedAt,
+        );
+      }
+      const actualCostMicroUsd = mp06UsageCostMicroUsd(
+        parsed.usage.inputTokens,
+        parsed.usage.outputTokens,
+      );
+      if (
+        actualCostMicroUsd === undefined ||
+        !(await settleKnownAttempt(options, attempt, actualCostMicroUsd))
+      ) {
+        return failure(
+          "PILOT_CONTROL_REJECTED",
+          { ...baseMetadata, attempts: attempt },
+          options,
+          startedAt,
+        );
+      }
       if (parsed.refused) {
         return failure(
           "REFUSAL",
@@ -505,6 +625,24 @@ export async function requestOpenAiMp06Nlu(
         error instanceof DOMException && error.name === "AbortError";
       guard.consecutiveTransientFailures += 1;
       guard.open = guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
+      if (options.attemptController) {
+        try {
+          await options.attemptController.settle({
+            attempt,
+            outcome: "USAGE_UNKNOWN",
+          });
+        } catch {
+          // Unknown provider usage remains charged and the session fails closed.
+        }
+      }
+      if (options.attemptController) {
+        return failure(
+          timedOut ? "TIMEOUT" : "NETWORK_ERROR",
+          { ...baseMetadata, attempts: attempt },
+          options,
+          startedAt,
+        );
+      }
       if (!timedOut && attempt <= MP06_AI_NLU_MAX_RETRIES) continue;
       return failure(
         timedOut ? "TIMEOUT" : "NETWORK_ERROR",
@@ -522,6 +660,38 @@ export async function requestOpenAiMp06Nlu(
     options,
     startedAt,
   );
+}
+
+async function settleKnownAttempt(
+  options: Mp06AiNluRuntimeOptions,
+  attempt: number,
+  actualCostMicroUsd: number,
+): Promise<boolean> {
+  if (!options.attemptController) return true;
+  try {
+    return await options.attemptController.settle({
+      attempt,
+      outcome: "KNOWN",
+      actualCostMicroUsd,
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function settleUnknownAttempt(
+  options: Mp06AiNluRuntimeOptions,
+  attempt: number,
+): Promise<boolean> {
+  if (!options.attemptController) return true;
+  try {
+    return await options.attemptController.settle({
+      attempt,
+      outcome: "USAGE_UNKNOWN",
+    });
+  } catch {
+    return false;
+  }
 }
 
 export async function planMp06WithAdvisoryNlu(
@@ -635,6 +805,7 @@ function parseOpenAiResponse(value: unknown): {
   readonly refused: boolean;
   readonly model: string | undefined;
   readonly usage: Mp06AiNluUsage;
+  readonly usageKnown: boolean;
 } {
   if (!isRecord(value)) {
     return {
@@ -642,12 +813,15 @@ function parseOpenAiResponse(value: unknown): {
       refused: false,
       model: undefined,
       usage: emptyUsage(),
+      usageKnown: false,
     };
   }
   const model = typeof value.model === "string" ? value.model : undefined;
-  const usage = parseUsage(value.usage);
+  const parsedUsage = parseUsage(value.usage);
+  const usage = parsedUsage ?? emptyUsage();
+  const usageKnown = parsedUsage !== undefined;
   if (!Array.isArray(value.output)) {
-    return { output: undefined, refused: false, model, usage };
+    return { output: undefined, refused: false, model, usage, usageKnown };
   }
   let outputText: string | undefined;
   let refused = false;
@@ -661,28 +835,34 @@ function parseOpenAiResponse(value: unknown): {
       }
     }
   }
-  if (!outputText) return { output: undefined, refused, model, usage };
+  if (!outputText) {
+    return { output: undefined, refused, model, usage, usageKnown };
+  }
   try {
     return {
       output: validateMp06AiNluOutput(JSON.parse(outputText)),
       refused,
       model,
       usage,
+      usageKnown,
     };
   } catch {
-    return { output: undefined, refused, model, usage };
+    return { output: undefined, refused, model, usage, usageKnown };
   }
 }
 
-function parseUsage(value: unknown): Mp06AiNluUsage {
-  const inputTokens =
-    isRecord(value) && Number.isSafeInteger(value.input_tokens)
-      ? Number(value.input_tokens)
-      : 0;
-  const outputTokens =
-    isRecord(value) && Number.isSafeInteger(value.output_tokens)
-      ? Number(value.output_tokens)
-      : 0;
+function parseUsage(value: unknown): Mp06AiNluUsage | undefined {
+  if (
+    !isRecord(value) ||
+    !Number.isSafeInteger(value.input_tokens) ||
+    Number(value.input_tokens) < 0 ||
+    !Number.isSafeInteger(value.output_tokens) ||
+    Number(value.output_tokens) < 0
+  ) {
+    return undefined;
+  }
+  const inputTokens = Number(value.input_tokens);
+  const outputTokens = Number(value.output_tokens);
   return {
     inputTokens,
     outputTokens,

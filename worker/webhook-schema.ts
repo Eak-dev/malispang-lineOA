@@ -4,6 +4,8 @@ export type ParsedLineEvent =
       readonly eventId: string;
       readonly replyToken: string;
       readonly conversationId: string;
+      readonly sourceType: "USER" | "GROUP" | "ROOM";
+      readonly senderId?: string;
       readonly text: string;
     }
   | {
@@ -11,12 +13,16 @@ export type ParsedLineEvent =
       readonly eventId: string;
       readonly replyToken: string;
       readonly conversationId: string;
+      readonly sourceType: "USER" | "GROUP" | "ROOM";
+      readonly senderId?: string;
     }
   | {
       readonly kind: "postback";
       readonly eventId: string;
       readonly replyToken: string;
       readonly conversationId: string;
+      readonly sourceType: "USER" | "GROUP" | "ROOM";
+      readonly senderId?: string;
       readonly data: string;
     };
 
@@ -61,8 +67,8 @@ function parseEvent(value: unknown): ParsedLineEvent | undefined {
   ) {
     return undefined;
   }
-  const conversationId = sourceId(value.source);
-  if (!conversationId) return undefined;
+  const source = sourceIdentity(value.source);
+  if (!source) return undefined;
 
   if (value.type === "message" && isRecord(value.message)) {
     if (
@@ -74,7 +80,7 @@ function parseEvent(value: unknown): ParsedLineEvent | undefined {
         kind: "text",
         eventId: value.webhookEventId,
         replyToken: value.replyToken,
-        conversationId,
+        ...source,
         text: value.message.text,
       };
     }
@@ -83,7 +89,7 @@ function parseEvent(value: unknown): ParsedLineEvent | undefined {
         kind: "image",
         eventId: value.webhookEventId,
         replyToken: value.replyToken,
-        conversationId,
+        ...source,
       };
     }
   }
@@ -98,20 +104,47 @@ function parseEvent(value: unknown): ParsedLineEvent | undefined {
       kind: "postback",
       eventId: value.webhookEventId,
       replyToken: value.replyToken,
-      conversationId,
+      ...source,
       data: value.postback.data,
     };
   }
   return undefined;
 }
 
-function sourceId(source: Record<string, unknown>): string | undefined {
-  for (const key of ["userId", "groupId", "roomId"] as const) {
-    const value = source[key];
-    if (typeof value === "string" && value.length >= 1 && value.length <= 128)
-      return value;
+function sourceIdentity(source: Record<string, unknown>):
+  | {
+      readonly conversationId: string;
+      readonly sourceType: "USER" | "GROUP" | "ROOM";
+      readonly senderId?: string;
+    }
+  | undefined {
+  const senderId = boundedId(source.userId);
+  if (source.type === "user" && senderId) {
+    return { conversationId: senderId, sourceType: "USER", senderId };
+  }
+  const groupId = boundedId(source.groupId);
+  if (source.type === "group" && groupId) {
+    return {
+      conversationId: groupId,
+      sourceType: "GROUP",
+      ...(senderId ? { senderId } : {}),
+    };
+  }
+  const roomId = boundedId(source.roomId);
+  if (source.type === "room" && roomId) {
+    return {
+      conversationId: roomId,
+      sourceType: "ROOM",
+      ...(senderId ? { senderId } : {}),
+    };
   }
   return undefined;
+}
+
+function boundedId(value: unknown): string | undefined {
+  return typeof value === "string" && value.length >= 1 && value.length <= 128
+    ? value
+    : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

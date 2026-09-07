@@ -2,20 +2,34 @@ import { readFile } from "node:fs/promises";
 
 import {
   validateActiveBenchmarkTimeoutContract,
+  validateMp06PilotRuntimeSources,
   validateSyntheticReadinessFixtures,
   validateTestReadinessControls,
   validateValidationChainScripts,
 } from "../src/mp-06-test-readiness.js";
 
 const root = new URL("../", import.meta.url);
-const [controls, fixtures, currentWork, benchmarkSource, packageManifest] =
-  await Promise.all([
-    readJson("config/mp-06/test-readiness-controls.json"),
-    readJson("config/mp-06/test-readiness-fixtures.json"),
-    readJson("config/project/current-work.json"),
-    readFile(new URL("tests/mp-06-wp2-benchmark.test.ts", root), "utf8"),
-    readJson("package.json"),
-  ]);
+const [
+  controls,
+  fixtures,
+  currentWork,
+  benchmarkSource,
+  packageManifest,
+  wranglerSource,
+  pilotSource,
+  durableSource,
+  workerSource,
+] = await Promise.all([
+  readJson("config/mp-06/test-readiness-controls.json"),
+  readJson("config/mp-06/test-readiness-fixtures.json"),
+  readJson("config/project/current-work.json"),
+  readFile(new URL("tests/mp-06-wp2-benchmark.test.ts", root), "utf8"),
+  readJson("package.json"),
+  readFile(new URL("wrangler.jsonc", root), "utf8"),
+  readFile(new URL("worker/mp-06-pilot-control.ts", root), "utf8"),
+  readFile(new URL("worker/durable-objects.ts", root), "utf8"),
+  readFile(new URL("worker/index.ts", root), "utf8"),
+]);
 
 const packageScripts =
   isRecord(packageManifest) && isRecord(packageManifest.scripts)
@@ -26,6 +40,12 @@ const errors = [
   ...validateSyntheticReadinessFixtures(fixtures),
   ...validateActiveBenchmarkTimeoutContract(currentWork, benchmarkSource),
   ...validateValidationChainScripts(packageScripts),
+  ...validateMp06PilotRuntimeSources(
+    wranglerSource,
+    pilotSource,
+    durableSource,
+    workerSource,
+  ),
 ];
 
 if (errors.length > 0) {

@@ -15,6 +15,7 @@ export default defineConfig({
           TEST_ADMIN_KEY: fixtureValue("admin-key"),
           TEST_OWNER_ALLOWLIST: "OWNER_TEST",
           TEST_REWARD_CARD_URL: "https://u.lin.ee/test-reward-card",
+          OPENAI_API_KEY: fixtureValue("openai-key-long-enough"),
           PUBLIC_ASSET_BASE_URL:
             "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
         },

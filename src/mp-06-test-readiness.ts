@@ -110,7 +110,7 @@ export function validateTestReadinessControls(input: unknown): string[] {
   const errors: string[] = [];
   if (!isRecord(input)) return ["TEST_CONTROLS_INVALID"];
 
-  expect(errors, input.schemaVersion, 1, "TEST_CONTROLS_SCHEMA_INVALID");
+  expect(errors, input.schemaVersion, 2, "TEST_CONTROLS_SCHEMA_INVALID");
   expect(errors, input.environment, "TEST", "TEST_ENVIRONMENT_INVALID");
   expect(
     errors,
@@ -145,7 +145,7 @@ export function validateTestReadinessControls(input: unknown): string[] {
   expect(
     errors,
     input.controlEnforcement,
-    "PRE_DEPLOYMENT_GATE_AND_TEST_OPERATOR_RUNBOOK",
+    "RUNTIME_DURABLE_OBJECT_ATOMIC_AND_OPERATOR_RUNBOOK",
     "TEST_CONTROL_ENFORCEMENT_INVALID",
   );
   expect(
@@ -162,6 +162,7 @@ export function validateTestReadinessControls(input: unknown): string[] {
   );
 
   validatePilotBudget(errors, input.pilotBudget);
+  validateRuntimeContract(errors, input.runtimeContract);
   validateAlerts(errors, input.alerts);
   validateStopControl(errors, input.stopControl);
   validateRollback(errors, input.rollback);
@@ -371,6 +372,70 @@ export function validateValidationChainScripts(
   return unique(errors);
 }
 
+export function validateMp06PilotRuntimeSources(
+  wranglerSource: string,
+  pilotSource: string,
+  durableSource: string,
+  workerSource: string,
+): string[] {
+  const errors: string[] = [];
+  const requiredWranglerValues = [
+    '"MP06_AI_NLU_MODEL": "gpt-5.6-terra"',
+    '"MP06_PILOT_CONTROL_ENABLED": "true"',
+    '"MP06_PILOT_MAX_TESTERS": "5"',
+    '"MP06_PILOT_EVENTS_PER_MINUTE": "20"',
+    '"MP06_PILOT_EVENTS_PER_HOUR": "200"',
+    '"MP06_PILOT_EVENTS_PER_SESSION": "200"',
+    '"MP06_PILOT_PROVIDER_ATTEMPTS_PER_SESSION": "200"',
+    '"MP06_PILOT_SESSION_MINUTES": "60"',
+    '"MP06_PILOT_BUDGET_MICRO_USD": "5000000"',
+    '"MP06_PILOT_MAX_CONCURRENCY": "1"',
+  ];
+  if (requiredWranglerValues.some((value) => !wranglerSource.includes(value))) {
+    errors.push("WP8A_WRANGLER_PILOT_CONTRACT_DRIFT");
+  }
+  if (wranglerSource.includes('"MP06_AI_NLU_ENABLED": "true"')) {
+    errors.push("WP8A_STATIC_AI_ENABLE_FORBIDDEN");
+  }
+  for (const [source, markers, code] of [
+    [
+      pilotSource,
+      [
+        'MP06_PILOT_CONTROL_OBJECT_NAME = "mp06-pilot-control-v1"',
+        "MP06_PILOT_BUDGET_MICRO_USD = 5_000_000",
+        "MP06_PILOT_MAX_CONCURRENCY = 1",
+        "estimateMp06AttemptUpperBoundMicroUsd",
+      ],
+      "WP8A_PILOT_MODULE_CONTRACT_DRIFT",
+    ],
+    [
+      durableSource,
+      [
+        "transactionSync",
+        "mp06_pilot_session",
+        "reserveMp06PilotAttempt",
+        "authorizeMp06PilotDispatch",
+        "settleMp06PilotAttempt",
+        "authorizeMp06PilotResult",
+      ],
+      "WP8A_DURABLE_COORDINATOR_CONTRACT_DRIFT",
+    ],
+    [
+      workerSource,
+      [
+        "/admin/mp06-pilot/activate",
+        "/admin/mp06-pilot/stop",
+        "admitMp06PilotAiEvent",
+        "providerWasDispatched",
+      ],
+      "WP8A_WEBHOOK_ADMISSION_CONTRACT_DRIFT",
+    ],
+  ] as const) {
+    if (markers.some((marker) => !source.includes(marker))) errors.push(code);
+  }
+  return unique(errors);
+}
+
 function validatePilotBudget(errors: string[], value: unknown): void {
   if (!isRecord(value)) {
     errors.push("TEST_PILOT_BUDGET_MISSING");
@@ -385,10 +450,22 @@ function validatePilotBudget(errors: string[], value: unknown): void {
     ["maximumTesters", 5, "TEST_MAXIMUM_TESTERS_INVALID"],
     ["maximumAcceptedWebhookEventsPerMinute", 20, "TEST_MINUTE_RATE_INVALID"],
     ["maximumAcceptedWebhookEventsPerHour", 200, "TEST_HOURLY_RATE_INVALID"],
+    [
+      "maximumAcceptedWebhookEventsPerSession",
+      200,
+      "TEST_SESSION_EVENT_LIMIT_INVALID",
+    ],
+    [
+      "maximumProviderAttemptsPerSession",
+      200,
+      "TEST_PROVIDER_ATTEMPT_LIMIT_INVALID",
+    ],
     ["maximumPilotSessionMinutes", 60, "TEST_SESSION_LIMIT_INVALID"],
+    ["maximumBudgetMicroUsd", 5_000_000, "TEST_BUDGET_LIMIT_INVALID"],
+    ["maximumConcurrentProviderRequests", 1, "TEST_CONCURRENCY_LIMIT_INVALID"],
     [
       "runtimeRateLimiterPresent",
-      false,
+      true,
       "TEST_RUNTIME_LIMITER_EVIDENCE_INVALID",
     ],
     [
@@ -401,6 +478,66 @@ function validatePilotBudget(errors: string[], value: unknown): void {
   }
   if (!isNonEmptyString(value.rationale))
     errors.push("TEST_RATE_RATIONALE_MISSING");
+}
+
+function validateRuntimeContract(errors: string[], value: unknown): void {
+  if (!isRecord(value)) {
+    errors.push("TEST_RUNTIME_CONTRACT_MISSING");
+    return;
+  }
+  for (const [field, expected, code] of [
+    [
+      "coordinatorBinding",
+      "CONVERSATION_STATE",
+      "TEST_COORDINATOR_BINDING_INVALID",
+    ],
+    [
+      "coordinatorObjectName",
+      "mp06-pilot-control-v1",
+      "TEST_COORDINATOR_NAME_INVALID",
+    ],
+    ["storage", "SQLITE_DURABLE_OBJECT", "TEST_COORDINATOR_STORAGE_INVALID"],
+    [
+      "atomicBoundary",
+      "TRANSACTION_SYNC",
+      "TEST_COORDINATOR_ATOMICITY_INVALID",
+    ],
+    [
+      "featureDefault",
+      "OFF_WITHOUT_ACTIVE_AUTHENTICATED_SESSION",
+      "TEST_FEATURE_DEFAULT_INVALID",
+    ],
+    [
+      "identitySource",
+      "VERIFIED_LINE_USER_SOURCE",
+      "TEST_IDENTITY_SOURCE_INVALID",
+    ],
+    [
+      "testerReferencesCommitted",
+      false,
+      "TESTER_REFERENCES_MUST_NOT_BE_COMMITTED",
+    ],
+    [
+      "providerDispatchRequiresReservation",
+      true,
+      "TEST_DISPATCH_RESERVATION_INVALID",
+    ],
+    ["resultRequiresActiveSessionRecheck", true, "TEST_RESULT_RECHECK_INVALID"],
+    [
+      "unknownUsageAction",
+      "CONSUME_RESERVATION_AND_STOP_SESSION",
+      "TEST_UNKNOWN_USAGE_ACTION_INVALID",
+    ],
+  ] as const) {
+    expect(errors, value[field], expected, code);
+  }
+  if (
+    !Array.isArray(value.allowedConversationTypes) ||
+    value.allowedConversationTypes.length !== 1 ||
+    value.allowedConversationTypes[0] !== "USER"
+  ) {
+    errors.push("TEST_ALLOWED_CONVERSATION_TYPES_INVALID");
+  }
 }
 
 function validateAlerts(errors: string[], input: unknown): void {
@@ -452,7 +589,7 @@ function validateStopControl(errors: string[], value: unknown): void {
     ["maximumDecisionMinutes", 5, "TEST_STOP_DECISION_TARGET_INVALID"],
     [
       "killSwitchProcedure",
-      "DISABLE_USE_WEBHOOK_ON_TEST_CHANNEL",
+      "AUTHENTICATED_TEST_ADMIN_STOP_THEN_DISABLE_TEST_WEBHOOK_IF_REQUIRED",
       "TEST_KILL_SWITCH_INVALID",
     ],
     ["testNamespaceOnly", true, "TEST_STOP_NAMESPACE_INVALID"],

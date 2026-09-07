@@ -1,19 +1,36 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "environment": "TEST",
   "accountName": "มะลิปัง TEST",
   "workerName": "malispang-lineoa-test",
   "workerDomain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
   "productionFallbackAllowed": false,
   "secretValuesStoredInRepository": false,
-  "controlEnforcement": "PRE_DEPLOYMENT_GATE_AND_TEST_OPERATOR_RUNBOOK",
+  "controlEnforcement": "RUNTIME_DURABLE_OBJECT_ATOMIC_AND_OPERATOR_RUNBOOK",
+  "runtimeContract": {
+    "coordinatorBinding": "CONVERSATION_STATE",
+    "coordinatorObjectName": "mp06-pilot-control-v1",
+    "storage": "SQLITE_DURABLE_OBJECT",
+    "atomicBoundary": "TRANSACTION_SYNC",
+    "featureDefault": "OFF_WITHOUT_ACTIVE_AUTHENTICATED_SESSION",
+    "identitySource": "VERIFIED_LINE_USER_SOURCE",
+    "allowedConversationTypes": ["USER"],
+    "testerReferencesCommitted": false,
+    "providerDispatchRequiresReservation": true,
+    "resultRequiresActiveSessionRecheck": true,
+    "unknownUsageAction": "CONSUME_RESERVATION_AND_STOP_SESSION"
+  },
   "pilotBudget": {
     "audience": "OWNER_APPROVED_INTERNAL_TESTERS_ONLY",
     "maximumTesters": 5,
     "maximumAcceptedWebhookEventsPerMinute": 20,
     "maximumAcceptedWebhookEventsPerHour": 200,
+    "maximumAcceptedWebhookEventsPerSession": 200,
+    "maximumProviderAttemptsPerSession": 200,
     "maximumPilotSessionMinutes": 60,
-    "runtimeRateLimiterPresent": false,
+    "maximumBudgetMicroUsd": 5000000,
+    "maximumConcurrentProviderRequests": 1,
+    "runtimeRateLimiterPresent": true,
     "exceededAction": "STOP_TEST_PILOT_AND_DISABLE_TEST_WEBHOOK",
     "rationale": "Conservative synthetic Owner UAT ceiling; it is not derived from or applicable to Production traffic."
   },
@@ -86,7 +103,7 @@
       "UNEXPECTED_CUSTOMER_FACING_OUTPUT",
       "ROLLBACK_DECISION"
     ],
-    "killSwitchProcedure": "DISABLE_USE_WEBHOOK_ON_TEST_CHANNEL",
+    "killSwitchProcedure": "AUTHENTICATED_TEST_ADMIN_STOP_THEN_DISABLE_TEST_WEBHOOK_IF_REQUIRED",
     "testNamespaceOnly": true,
     "productionImpact": "NONE",
     "missingOrMalformedControl": "BLOCK_SEPARATE_TEST_DEPLOYMENT_AUTHORIZATION"

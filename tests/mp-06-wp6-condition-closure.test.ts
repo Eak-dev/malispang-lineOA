@@ -8,6 +8,7 @@ import {
 } from "../scripts/generate-rich-menu-preview.js";
 import {
   validateActiveBenchmarkTimeoutContract,
+  validateMp06PilotRuntimeSources,
   validateSyntheticReadinessFixtures,
   validateTestReadinessControls,
   validateValidationChainScripts,
@@ -21,6 +22,10 @@ let benchmarkSource: string;
 let packageManifest: { scripts: Record<string, string> };
 let previewMap: PreviewMap;
 let committedPreview: string;
+let wranglerSource: string;
+let pilotSource: string;
+let durableSource: string;
+let workerSource: string;
 
 beforeAll(async () => {
   [
@@ -31,6 +36,10 @@ beforeAll(async () => {
     packageManifest,
     previewMap,
     committedPreview,
+    wranglerSource,
+    pilotSource,
+    durableSource,
+    workerSource,
   ] = await Promise.all([
     readJson("config/mp-06/test-readiness-controls.json"),
     readJson("config/mp-06/test-readiness-fixtures.json"),
@@ -41,6 +50,10 @@ beforeAll(async () => {
       "docs/line-oa/production-mirror/test-rich-menu-action-map.json",
     ) as Promise<PreviewMap>,
     readFile(new URL("artifacts/rich-menu-preview.html", root), "utf8"),
+    readFile(new URL("wrangler.jsonc", root), "utf8"),
+    readFile(new URL("worker/mp-06-pilot-control.ts", root), "utf8"),
+    readFile(new URL("worker/durable-objects.ts", root), "utf8"),
+    readFile(new URL("worker/index.ts", root), "utf8"),
   ]);
 });
 
@@ -111,10 +124,51 @@ describe("MP-06 WP6 TEST-readiness controls", () => {
       productionImpact: "NONE",
     });
     expect(record.stopControl).toMatchObject({
-      killSwitchProcedure: "DISABLE_USE_WEBHOOK_ON_TEST_CHANNEL",
+      killSwitchProcedure:
+        "AUTHENTICATED_TEST_ADMIN_STOP_THEN_DISABLE_TEST_WEBHOOK_IF_REQUIRED",
       testNamespaceOnly: true,
       productionImpact: "NONE",
     });
+  });
+
+  it("requires persistent atomic runtime enforcement rather than metadata alone", () => {
+    const record = controls as {
+      pilotBudget: Record<string, unknown>;
+      runtimeContract: Record<string, unknown>;
+    };
+    expect(record.pilotBudget).toMatchObject({
+      maximumAcceptedWebhookEventsPerSession: 200,
+      maximumProviderAttemptsPerSession: 200,
+      maximumBudgetMicroUsd: 5_000_000,
+      maximumConcurrentProviderRequests: 1,
+      runtimeRateLimiterPresent: true,
+    });
+    expect(record.runtimeContract).toMatchObject({
+      coordinatorBinding: "CONVERSATION_STATE",
+      storage: "SQLITE_DURABLE_OBJECT",
+      atomicBoundary: "TRANSACTION_SYNC",
+      featureDefault: "OFF_WITHOUT_ACTIVE_AUTHENTICATED_SESSION",
+      testerReferencesCommitted: false,
+    });
+  });
+
+  it("detects runtime/config drift and forbids static AI enablement", () => {
+    expect(
+      validateMp06PilotRuntimeSources(
+        wranglerSource,
+        pilotSource,
+        durableSource,
+        workerSource,
+      ),
+    ).toEqual([]);
+    expect(
+      validateMp06PilotRuntimeSources(
+        `${wranglerSource}\n"MP06_AI_NLU_ENABLED": "true"`,
+        pilotSource,
+        durableSource,
+        workerSource,
+      ),
+    ).toContain("WP8A_STATIC_AI_ENABLE_FORBIDDEN");
   });
 });
 
