@@ -114,6 +114,8 @@ export interface Mp06AiNluSafeMetadata {
   readonly latencyMs: number;
   readonly usage?: Mp06AiNluUsage;
   readonly redactionCount: number;
+  readonly settlementCode?:
+    "KNOWN_SETTLED" | "USAGE_UNKNOWN_SETTLED" | "SETTLEMENT_UNAVAILABLE";
 }
 
 export type Mp06AiNluProviderResult =
@@ -477,23 +479,62 @@ export async function requestOpenAiMp06Nlu(
       }
     }
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      MP06_AI_NLU_DEADLINE_MS,
-    );
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const response = await fetcher(MP06_AI_NLU_BASE_URL, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${options.env.OPENAI_API_KEY}`,
-          "content-type": "application/json",
-        },
-        body: requestBody,
-        signal: controller.signal,
-      });
-      if (!response.ok) {
+      const fetchOutcome = await Promise.race([
+        fetcher(MP06_AI_NLU_BASE_URL, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${options.env.OPENAI_API_KEY}`,
+            "content-type": "application/json",
+          },
+          body: requestBody,
+          signal: controller.signal,
+        }).then(
+          async (response) =>
+            response.ok
+              ? {
+                  type: "SUCCESS_RESPONSE" as const,
+                  response,
+                  body: await response.json(),
+                }
+              : {
+                  type: "HTTP_ERROR_RESPONSE" as const,
+                  response,
+                  safeProviderError: await parseSafeProviderError(response),
+                },
+          (error: unknown) => ({ type: "ERROR" as const, error }),
+        ),
+        new Promise<{ readonly type: "DEADLINE" }>((resolve) => {
+          timeout = setTimeout(() => {
+            controller.abort();
+            resolve({ type: "DEADLINE" });
+          }, MP06_AI_NLU_DEADLINE_MS);
+        }),
+      ]);
+      if (fetchOutcome.type === "DEADLINE") {
+        guard.consecutiveTransientFailures += 1;
+        guard.open =
+          guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
+        const settled = await settleUnknownAttempt(options, attempt);
+        return failure(
+          "TIMEOUT",
+          {
+            ...baseMetadata,
+            attempts: attempt,
+            settlementCode: settled
+              ? "USAGE_UNKNOWN_SETTLED"
+              : "SETTLEMENT_UNAVAILABLE",
+          },
+          options,
+          startedAt,
+        );
+      }
+      if (fetchOutcome.type === "ERROR") throw fetchOutcome.error;
+      if (fetchOutcome.type === "HTTP_ERROR_RESPONSE") {
+        const response = fetchOutcome.response;
         const transient = response.status === 429 || response.status >= 500;
-        const safeProviderError = await parseSafeProviderError(response);
+        const safeProviderError = fetchOutcome.safeProviderError;
         if (transient) {
           guard.consecutiveTransientFailures += 1;
           guard.open =
@@ -506,7 +547,11 @@ export async function requestOpenAiMp06Nlu(
         ) {
           return failure(
             "PILOT_CONTROL_REJECTED",
-            { ...baseMetadata, attempts: attempt },
+            {
+              ...baseMetadata,
+              attempts: attempt,
+              settlementCode: "SETTLEMENT_UNAVAILABLE",
+            },
             options,
             startedAt,
           );
@@ -518,6 +563,7 @@ export async function requestOpenAiMp06Nlu(
               ...baseMetadata,
               attempts: attempt,
               httpStatus: response.status,
+              settlementCode: "USAGE_UNKNOWN_SETTLED",
               ...safeProviderError,
             },
             options,
@@ -545,13 +591,18 @@ export async function requestOpenAiMp06Nlu(
           startedAt,
         );
       }
-      const body: unknown = await response.json();
-      const parsed = parseOpenAiResponse(body);
+      const parsed = parseOpenAiResponse(fetchOutcome.body);
       if (options.attemptController && !parsed.usageKnown) {
-        await settleUnknownAttempt(options, attempt);
+        const settled = await settleUnknownAttempt(options, attempt);
         return failure(
           "PILOT_CONTROL_REJECTED",
-          { ...baseMetadata, attempts: attempt },
+          {
+            ...baseMetadata,
+            attempts: attempt,
+            settlementCode: settled
+              ? "USAGE_UNKNOWN_SETTLED"
+              : "SETTLEMENT_UNAVAILABLE",
+          },
           options,
           startedAt,
         );
@@ -614,6 +665,9 @@ export async function requestOpenAiMp06Nlu(
           attempts: attempt,
           responseModel: parsed.model,
           usage,
+          ...(options.attemptController
+            ? { settlementCode: "KNOWN_SETTLED" as const }
+            : {}),
         },
         options,
         startedAt,
@@ -625,20 +679,17 @@ export async function requestOpenAiMp06Nlu(
         error instanceof DOMException && error.name === "AbortError";
       guard.consecutiveTransientFailures += 1;
       guard.open = guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
-      if (options.attemptController) {
-        try {
-          await options.attemptController.settle({
-            attempt,
-            outcome: "USAGE_UNKNOWN",
-          });
-        } catch {
-          // Unknown provider usage remains charged and the session fails closed.
-        }
-      }
+      const settled = await settleUnknownAttempt(options, attempt);
       if (options.attemptController) {
         return failure(
           timedOut ? "TIMEOUT" : "NETWORK_ERROR",
-          { ...baseMetadata, attempts: attempt },
+          {
+            ...baseMetadata,
+            attempts: attempt,
+            settlementCode: settled
+              ? "USAGE_UNKNOWN_SETTLED"
+              : "SETTLEMENT_UNAVAILABLE",
+          },
           options,
           startedAt,
         );
@@ -651,7 +702,7 @@ export async function requestOpenAiMp06Nlu(
         startedAt,
       );
     } finally {
-      clearTimeout(timeout);
+      if (timeout !== undefined) clearTimeout(timeout);
     }
   }
   return failure(

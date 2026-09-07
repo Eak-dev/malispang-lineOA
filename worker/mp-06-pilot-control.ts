@@ -106,6 +106,9 @@ export type Mp06PilotAttemptCode =
   | "CANCELLED_BEFORE_DISPATCH"
   | "SETTLED"
   | "SETTLED_IDEMPOTENT"
+  | "RECONCILED_USAGE_UNKNOWN"
+  | "RECONCILED_IDEMPOTENT"
+  | "RECONCILIATION_NOT_ALLOWED"
   | "PILOT_INACTIVE"
   | "SESSION_EXPIRED"
   | "EVENT_NOT_ADMITTED"
@@ -118,6 +121,20 @@ export type Mp06PilotAttemptCode =
 export interface Mp06PilotAttemptResult {
   readonly accepted: boolean;
   readonly code: Mp06PilotAttemptCode;
+}
+
+export interface Mp06PilotAttemptDiagnostics {
+  readonly sessionState: "INACTIVE" | "ACTIVE" | "STOPPED" | "EXPIRED";
+  readonly stopReason?: string;
+  readonly totalAttempts: number;
+  readonly reservedAttempts: number;
+  readonly dispatchedAttempts: number;
+  readonly settledAttempts: number;
+  readonly usageUnknownAttempts: number;
+  readonly staleDispatchedAttempts: number;
+  readonly budgetConsumedMicroUsd: number;
+  readonly budgetReservedMicroUsd: number;
+  readonly inFlight: number;
 }
 
 export interface Mp06PilotStatus {

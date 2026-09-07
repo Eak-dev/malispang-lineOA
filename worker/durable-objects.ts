@@ -19,6 +19,7 @@ import {
   type Mp06PilotActivationResult,
   type Mp06PilotAdmissionResult,
   type Mp06PilotAttemptInput,
+  type Mp06PilotAttemptDiagnostics,
   type Mp06PilotAttemptResult,
   type Mp06PilotStatus,
   type Mp06PilotStopResult,
@@ -745,6 +746,106 @@ export class ConversationStateDO extends DurableObject<Env> {
     });
   }
 
+  mp06PilotAttemptDiagnostics(now: number): Mp06PilotAttemptDiagnostics {
+    if (!isMp06PilotTimestamp(now)) return inactiveAttemptDiagnostics();
+    return this.ctx.storage.transactionSync(() => {
+      const session = this.expireOrStopUncertainMp06Pilot(now);
+      if (!session) return inactiveAttemptDiagnostics();
+      const counts = this.ctx.storage.sql
+        .exec<{
+          total_attempts: number;
+          reserved_attempts: number;
+          dispatched_attempts: number;
+          settled_attempts: number;
+          usage_unknown_attempts: number;
+          stale_dispatched_attempts: number;
+        }>(
+          `SELECT
+            COUNT(*) AS total_attempts,
+            SUM(CASE WHEN state = 'RESERVED' THEN 1 ELSE 0 END) AS reserved_attempts,
+            SUM(CASE WHEN state = 'DISPATCHED' THEN 1 ELSE 0 END) AS dispatched_attempts,
+            SUM(CASE WHEN state = 'SETTLED' THEN 1 ELSE 0 END) AS settled_attempts,
+            SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN 1 ELSE 0 END) AS usage_unknown_attempts,
+            SUM(CASE WHEN state = 'DISPATCHED' AND lease_expires_at <= ? THEN 1 ELSE 0 END) AS stale_dispatched_attempts
+          FROM mp06_pilot_attempts`,
+          now,
+        )
+        .one();
+      return {
+        sessionState: pilotStatus(session, now).state,
+        ...(session.stop_reason ? { stopReason: session.stop_reason } : {}),
+        totalAttempts: Number(counts.total_attempts),
+        reservedAttempts: Number(counts.reserved_attempts),
+        dispatchedAttempts: Number(counts.dispatched_attempts),
+        settledAttempts: Number(counts.settled_attempts),
+        usageUnknownAttempts: Number(counts.usage_unknown_attempts),
+        staleDispatchedAttempts: Number(counts.stale_dispatched_attempts),
+        budgetConsumedMicroUsd: session.budget_consumed_micro_usd,
+        budgetReservedMicroUsd: session.budget_reserved_micro_usd,
+        inFlight: session.in_flight,
+      };
+    });
+  }
+
+  reconcileMp06PilotUnknownUsage(now: number): Mp06PilotAttemptResult {
+    if (!isMp06PilotTimestamp(now)) {
+      return { accepted: false, code: "CONTROL_UNAVAILABLE" };
+    }
+    return this.ctx.storage.transactionSync(() => {
+      const session = this.mp06PilotSession();
+      if (!session) {
+        return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+      }
+      const alreadyReconciled = this.ctx.storage.sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM mp06_pilot_attempts WHERE state = 'USAGE_UNKNOWN'",
+        )
+        .one().count;
+      if (
+        session.state === "STOPPED" &&
+        session.stop_reason === "PROVIDER_USAGE_UNKNOWN_RECONCILED" &&
+        session.in_flight === 0 &&
+        Number(alreadyReconciled) === 1
+      ) {
+        return { accepted: true, code: "RECONCILED_IDEMPOTENT" };
+      }
+      if (
+        session.state !== "STOPPED" ||
+        session.stop_reason !== "IN_FLIGHT_USAGE_UNKNOWN" ||
+        session.in_flight !== 1
+      ) {
+        return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+      }
+      const attempts = this.ctx.storage.sql
+        .exec<{
+          attempt_ref: string;
+          reserved_cost_micro_usd: number;
+        }>(
+          "SELECT attempt_ref, reserved_cost_micro_usd FROM mp06_pilot_attempts WHERE state = 'DISPATCHED' AND lease_expires_at <= ?",
+          now,
+        )
+        .toArray();
+      if (attempts.length !== 1) {
+        return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+      }
+      const attempt = attempts[0]!;
+      const changed = this.ctx.storage.sql.exec(
+        "UPDATE mp06_pilot_attempts SET state = 'USAGE_UNKNOWN', actual_cost_micro_usd = reserved_cost_micro_usd, settled_at = ? WHERE attempt_ref = ? AND state = 'DISPATCHED'",
+        now,
+        attempt.attempt_ref,
+      ).rowsWritten;
+      if (changed !== 1) {
+        return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+      }
+      this.ctx.storage.sql.exec(
+        "UPDATE mp06_pilot_session SET budget_reserved_micro_usd = budget_reserved_micro_usd - ?, budget_consumed_micro_usd = budget_consumed_micro_usd + ?, in_flight = in_flight - 1, stop_reason = 'PROVIDER_USAGE_UNKNOWN_RECONCILED' WHERE id = 1 AND state = 'STOPPED' AND in_flight = 1",
+        attempt.reserved_cost_micro_usd,
+        attempt.reserved_cost_micro_usd,
+      );
+      return { accepted: true, code: "RECONCILED_USAGE_UNKNOWN" };
+    });
+  }
+
   authorizeMp06PilotResult(input: {
     readonly sessionRef: string;
     readonly eventRef: string;
@@ -968,6 +1069,21 @@ function inactivePilotStatus(): Mp06PilotStatus {
     state: "INACTIVE",
     admittedEvents: 0,
     providerAttempts: 0,
+    budgetConsumedMicroUsd: 0,
+    budgetReservedMicroUsd: 0,
+    inFlight: 0,
+  };
+}
+
+function inactiveAttemptDiagnostics(): Mp06PilotAttemptDiagnostics {
+  return {
+    sessionState: "INACTIVE",
+    totalAttempts: 0,
+    reservedAttempts: 0,
+    dispatchedAttempts: 0,
+    settledAttempts: 0,
+    usageUnknownAttempts: 0,
+    staleDispatchedAttempts: 0,
     budgetConsumedMicroUsd: 0,
     budgetReservedMicroUsd: 0,
     inFlight: 0,

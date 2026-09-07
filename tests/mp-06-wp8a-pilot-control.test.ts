@@ -173,6 +173,96 @@ describe("MP-06 WP8A runtime pilot contract", () => {
     ]);
   });
 
+  it("settles at the application deadline even when fetch ignores abort and ignores a late response", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-07T00:00:00.000Z"));
+    try {
+      const calls: string[] = [];
+      let resolveFetch: ((response: Response) => void) | undefined;
+      const fetcher = vi.fn<typeof fetch>(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFetch = resolve;
+          }),
+      );
+      const resultPromise = requestOpenAiMp06Nlu("ขอเมนู", {
+        env: aiEnvironment,
+        fetcher,
+        attemptController: recordingController(calls),
+      });
+      await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(8_000);
+      const result = await resultPromise;
+      expect(result.ok).toBe(false);
+      expect(result.metadata).toMatchObject({
+        outcomeCode: "TIMEOUT",
+        settlementCode: "USAGE_UNKNOWN_SETTLED",
+      });
+      expect(calls).toEqual([
+        "reserve:1",
+        "dispatch:1",
+        "settle:1:USAGE_UNKNOWN:unknown",
+      ]);
+
+      resolveFetch?.(validResponse());
+      await vi.advanceTimersByTimeAsync(0);
+      expect(calls).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("applies the same deadline while a received response body never finishes parsing", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-07T00:00:00.000Z"));
+    try {
+      const calls: string[] = [];
+      const fetcher = vi.fn<typeof fetch>().mockResolvedValue({
+        ok: true,
+        json: () => new Promise<never>(() => undefined),
+      } as unknown as Response);
+      const resultPromise = requestOpenAiMp06Nlu("ขอเมนู", {
+        env: aiEnvironment,
+        fetcher,
+        attemptController: recordingController(calls),
+      });
+      await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(8_000);
+      const result = await resultPromise;
+      expect(result.ok).toBe(false);
+      expect(result.metadata).toMatchObject({
+        outcomeCode: "TIMEOUT",
+        settlementCode: "USAGE_UNKNOWN_SETTLED",
+      });
+      expect(calls).toEqual([
+        "reserve:1",
+        "dispatch:1",
+        "settle:1:USAGE_UNKNOWN:unknown",
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports settlement unavailability without exposing the control error", async () => {
+    const marker = "PRIVATE_SETTLEMENT_FAILURE";
+    const controller = recordingController([]);
+    const result = await requestOpenAiMp06Nlu("ขอเมนู", {
+      env: aiEnvironment,
+      fetcher: vi.fn<typeof fetch>().mockRejectedValue(new Error("offline")),
+      attemptController: {
+        ...controller,
+        settle: () => Promise.reject(new Error(marker)),
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.metadata).toMatchObject({
+      outcomeCode: "NETWORK_ERROR",
+      settlementCode: "SETTLEMENT_UNAVAILABLE",
+    });
+    expect(JSON.stringify(result)).not.toContain(marker);
+  });
+
   it("treats 5xx and missing usage as uncertain instead of reclaiming budget", async () => {
     for (const response of [
       Response.json({}, { status: 500 }),

@@ -383,6 +383,14 @@ async function handleAdmin(
     return Response.json({ pilot: await pilot.mp06PilotStatus(Date.now()) });
   }
   if (
+    request.method === "GET" &&
+    url.pathname === "/admin/mp06-pilot/attempt-diagnostics"
+  ) {
+    return Response.json({
+      diagnostics: await pilot.mp06PilotAttemptDiagnostics(Date.now()),
+    });
+  }
+  if (
     request.method === "POST" &&
     url.pathname === "/admin/mp06-pilot/activate"
   ) {

@@ -316,6 +316,102 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
     ).toMatchObject({ activated: false, code: "UNRESOLVED_IN_FLIGHT" });
   });
 
+  it("reports sanitized lifecycle counts without exposing attempt, event or tester references", async () => {
+    const stub = await activePilot("attempt-diagnostics", [testerA]);
+    const eventRef = hexRef(582);
+    const attemptRef = hexRef(583);
+    await admit(stub, eventRef, baseNow);
+    await reserve(stub, eventRef, attemptRef, baseNow + 1, 12_932);
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: baseNow + 1,
+    });
+    const diagnostics = await stub.mp06PilotAttemptDiagnostics(
+      baseNow + MP06_PILOT_ATTEMPT_LEASE_MS + 2,
+    );
+    expect(diagnostics).toMatchObject({
+      sessionState: "STOPPED",
+      stopReason: "IN_FLIGHT_USAGE_UNKNOWN",
+      totalAttempts: 1,
+      dispatchedAttempts: 1,
+      staleDispatchedAttempts: 1,
+      budgetConsumedMicroUsd: 0,
+      budgetReservedMicroUsd: 12_932,
+      inFlight: 1,
+    });
+    const serialized = JSON.stringify(diagnostics);
+    expect(serialized).not.toContain(eventRef);
+    expect(serialized).not.toContain(attemptRef);
+    expect(serialized).not.toContain(testerA);
+  });
+
+  it("reconciles one stale unknown attempt conservatively and idempotently without authorizing its result", async () => {
+    const stub = await activePilot("manual-unknown-reconcile", [testerA]);
+    const eventRef = hexRef(584);
+    const attemptRef = hexRef(585);
+    await admit(stub, eventRef, baseNow);
+    await reserve(stub, eventRef, attemptRef, baseNow + 1, 12_932);
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: baseNow + 1,
+    });
+    const staleNow = baseNow + MP06_PILOT_ATTEMPT_LEASE_MS + 2;
+    await stub.mp06PilotStatus(staleNow);
+    expect(await stub.reconcileMp06PilotUnknownUsage(staleNow)).toMatchObject({
+      accepted: true,
+      code: "RECONCILED_USAGE_UNKNOWN",
+    });
+    expect(
+      await stub.reconcileMp06PilotUnknownUsage(staleNow + 1),
+    ).toMatchObject({
+      accepted: true,
+      code: "RECONCILED_IDEMPOTENT",
+    });
+    expect(await stub.mp06PilotStatus(staleNow + 1)).toMatchObject({
+      state: "STOPPED",
+      stopReason: "PROVIDER_USAGE_UNKNOWN_RECONCILED",
+      budgetConsumedMicroUsd: 12_932,
+      budgetReservedMicroUsd: 0,
+      inFlight: 0,
+    });
+    expect(
+      await stub.authorizeMp06PilotResult({
+        sessionRef,
+        eventRef,
+        now: staleNow + 2,
+      }),
+    ).toBe(false);
+  });
+
+  it("refuses conservative reconciliation before a dispatched attempt is stale", async () => {
+    const stub = await activePilot("premature-reconcile", [testerA]);
+    const eventRef = hexRef(586);
+    const attemptRef = hexRef(587);
+    await admit(stub, eventRef, baseNow);
+    await reserve(stub, eventRef, attemptRef, baseNow + 1, 12_932);
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: baseNow + 1,
+    });
+    expect(
+      await stub.reconcileMp06PilotUnknownUsage(baseNow + 2),
+    ).toMatchObject({
+      accepted: false,
+      code: "RECONCILIATION_NOT_ALLOWED",
+    });
+    expect(await stub.mp06PilotStatus(baseNow + 2)).toMatchObject({
+      state: "ACTIVE",
+      budgetReservedMicroUsd: 12_932,
+      inFlight: 1,
+    });
+  });
+
   it("reclaims only a pre-dispatch reservation that can be proven unsent", async () => {
     const stub = await activePilot("pre-dispatch-restart", [testerA]);
     const eventRef = hexRef(590);
@@ -431,6 +527,23 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
 });
 
 describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
+  it("keeps attempt diagnostics authenticated and identifier-free", async () => {
+    const endpoint =
+      "https://test.invalid/admin/mp06-pilot/attempt-diagnostics";
+    const unauthorized = await exports.default.fetch(new Request(endpoint));
+    expect(unauthorized.status).toBe(401);
+
+    const response = await exports.default.fetch(
+      new Request(endpoint, {
+        headers: { authorization: "Bearer unit-test-admin-key" },
+      }),
+    );
+    expect(response.status).toBe(200);
+    const body = JSON.stringify(await response.json());
+    expect(body).toContain("totalAttempts");
+    expect(body).not.toMatch(/sessionRef|eventRef|attemptRef|testerRef/u);
+  });
+
   it("fails activation closed when the provider credential is unavailable", async () => {
     const mutableEnv = env as Env & { OPENAI_API_KEY: string };
     const original = mutableEnv.OPENAI_API_KEY;
