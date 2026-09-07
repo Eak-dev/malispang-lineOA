@@ -24,6 +24,7 @@ import {
   type Mp06PilotStatus,
   type Mp06PilotStopResult,
   type Mp06ProviderLifecycleDiagnostics,
+  type ReactivateReconciledMp06PilotInput,
   type ReconcileMp06PilotUnknownUsageInput,
   type ReserveMp06PilotAttemptInput,
   type SettleMp06PilotAttemptInput,
@@ -506,6 +507,59 @@ export class ConversationStateDO extends DurableObject<Env> {
         status: pilotStatus(this.mp06PilotSession()!, input.now),
       };
     });
+  }
+
+  reactivateReconciledMp06Pilot(
+    input: ReactivateReconciledMp06PilotInput,
+  ): Mp06PilotActivationResult {
+    if (
+      !isMp06PilotReference(input.sessionRef) ||
+      !isMp06PilotTimestamp(input.now) ||
+      !validMp06PilotLimits(input.limits)
+    ) {
+      return {
+        activated: false,
+        code: "INVALID_ACTIVATION",
+        status: this.mp06PilotStatus(input.now),
+      };
+    }
+    const current = this.mp06PilotSession();
+    if (
+      !current ||
+      current.state !== "STOPPED" ||
+      current.stop_reason !== "PROVIDER_USAGE_UNKNOWN_RECONCILED" ||
+      current.admitted_events !== 1 ||
+      current.provider_attempts !== 1 ||
+      current.budget_consumed_micro_usd !== 12_932 ||
+      current.budget_reserved_micro_usd !== 0 ||
+      current.in_flight !== 0
+    ) {
+      return {
+        activated: false,
+        code: "INVALID_ACTIVATION",
+        status: this.mp06PilotStatus(input.now),
+      };
+    }
+    const testerRefs = this.ctx.storage.sql
+      .exec<{ tester_ref: string }>(
+        "SELECT tester_ref FROM mp06_pilot_testers WHERE session_ref = ? ORDER BY tester_ref",
+        current.session_ref,
+      )
+      .toArray()
+      .map((row) => row.tester_ref);
+    if (
+      testerRefs.length < 1 ||
+      testerRefs.length > MP06_PILOT_MAX_TESTERS ||
+      new Set(testerRefs).size !== testerRefs.length ||
+      !testerRefs.every(isMp06PilotReference)
+    ) {
+      return {
+        activated: false,
+        code: "INVALID_ACTIVATION",
+        status: this.mp06PilotStatus(input.now),
+      };
+    }
+    return this.activateMp06Pilot({ ...input, testerRefs });
   }
 
   admitMp06PilotEvent(

@@ -37,6 +37,8 @@ Route `POST /admin/mp06-pilot/reconcile-unknown-usage` อยู่หลัง 
 
 Activation หลัง reconcile อนุญาตได้เฉพาะเมื่อ `inFlight=0` และ reserved budget เป็นศูนย์ Counters เดิมต้อง carry forward ไป session ใหม่: 1 event, 1 provider attempt และ 12,932 consumed micro-USD ตาราง event/attempt เดิมไม่ถูกลบ ดังนั้น limit สะสม WP8 ยังคง 200 events, 200 provider attempts และ 5,000,000 micro-USD Session ใหม่มีอายุสูงสุด 60 นาทีและ WP8C รับข้อความ LINE ใหม่เพียงหนึ่งข้อความ; timeout ห้าม retry
 
+หาก local Keychain ไม่มี raw LINE tester identifier ห้ามค้นจาก log หรือช่องทางอื่น Route `POST /admin/mp06-pilot/reactivate-reconciled-allowlist` สามารถ reuse เฉพาะ tester-reference hash ของ reconciled session เดิมโดยไม่เปิดเผยค่าได้ Body ต้องเป็น `{"reuseReconciledTesterAllowlist":true}` เพียง field เดียว และ runtime ต้องยืนยัน exact state `STOPPED` / `PROVIDER_USAGE_UNKNOWN_RECONCILED`, counters `1/1/12,932`, reserved/in-flight เป็นศูนย์ และ tester set เดิมมี 1–5 ค่า valid ก่อนสร้าง session ใหม่
+
 Attempt เดิมไม่สามารถ dispatch ซ้ำได้เพราะ session reference ไม่ตรง active session, state เป็น `USAGE_UNKNOWN` และ result ของ old event ไม่เคยได้รับ authorization Late settlement ทำได้เพียง idempotent no-op
 
 ## Controlled execution order

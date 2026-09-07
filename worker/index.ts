@@ -463,6 +463,46 @@ async function handleAdmin(
       { status: result.activated ? 201 : 409 },
     );
   }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/reactivate-reconciled-allowlist"
+  ) {
+    const limits = mp06PilotLimitsFromEnvironment(env);
+    const aiEnv = env as Env & Mp06AiNluEnvironment;
+    if (
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      !limits ||
+      aiEnv.MP06_AI_NLU_MODEL !== MP06_AI_NLU_MODEL ||
+      typeof aiEnv.OPENAI_API_KEY !== "string" ||
+      aiEnv.OPENAI_API_KEY.length < 20
+    ) {
+      return Response.json(
+        { error: "PILOT_CONFIGURATION_INVALID" },
+        { status: 503 },
+      );
+    }
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    if (!parseReconciledPilotReactivation(decoder.decode(body))) {
+      return Response.json(
+        { error: "RECONCILED_PILOT_REACTIVATION_INVALID" },
+        { status: 400 },
+      );
+    }
+    const sessionRef = await sha256Reference(
+      `mp06-pilot:${crypto.randomUUID()}`,
+    );
+    const result = await pilot.reactivateReconciledMp06Pilot({
+      sessionRef,
+      now: Date.now(),
+      limits,
+    });
+    return Response.json(
+      { pilot: result.status, outcome: result.code },
+      { status: result.activated ? 201 : 409 },
+    );
+  }
   if (request.method === "POST" && url.pathname === "/admin/mp06-pilot/stop") {
     const result = await pilot.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
     return Response.json({ pilot: result.status, outcome: result.code });
@@ -700,6 +740,22 @@ function parsePilotReconciliationInput(
     return value as Mp06PilotReconciliationRequest;
   } catch {
     return undefined;
+  }
+}
+
+function parseReconciledPilotReactivation(raw: string): boolean {
+  try {
+    const value: unknown = JSON.parse(raw);
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value) &&
+      Object.keys(value).length === 1 &&
+      "reuseReconciledTesterAllowlist" in value &&
+      value.reuseReconciledTesterAllowlist === true
+    );
+  } catch {
+    return false;
   }
 }
 

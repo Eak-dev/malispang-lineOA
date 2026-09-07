@@ -443,9 +443,8 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
 
     const nextSessionRef = hexRef(588);
     expect(
-      await stub.activateMp06Pilot({
+      await stub.reactivateReconciledMp06Pilot({
         sessionRef: nextSessionRef,
-        testerRefs: [testerA],
         now: staleNow + 3,
         limits,
       }),
@@ -761,6 +760,42 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(JSON.stringify(repeatedBody)).not.toMatch(
       new RegExp(`${eventRef}|${attemptRef}|${testerA}`, "u"),
     );
+
+    const reactivated = await exports.default.fetch(
+      new Request(
+        "https://test.invalid/admin/mp06-pilot/reactivate-reconciled-allowlist",
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ reuseReconciledTesterAllowlist: true }),
+        },
+      ),
+    );
+    expect(reactivated.status).toBe(201);
+    expect(await reactivated.json()).toMatchObject({
+      outcome: "ACTIVATED",
+      pilot: {
+        state: "ACTIVE",
+        admittedEvents: 1,
+        providerAttempts: 1,
+        budgetConsumedMicroUsd: 12_932,
+        budgetReservedMicroUsd: 0,
+        inFlight: 0,
+      },
+    });
+    const stopped = await exports.default.fetch(
+      new Request("https://test.invalid/admin/mp06-pilot/stop", {
+        method: "POST",
+        headers: { authorization: "Bearer unit-test-admin-key" },
+      }),
+    );
+    expect(stopped.status).toBe(200);
+    expect(await stopped.json()).toMatchObject({
+      pilot: { state: "STOPPED", inFlight: 0 },
+    });
   });
 
   it("fails activation closed when the provider credential is unavailable", async () => {

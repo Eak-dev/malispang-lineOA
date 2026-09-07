@@ -42,6 +42,12 @@ export interface ActivateMp06PilotInput {
   readonly limits: Mp06PilotLimits;
 }
 
+export interface ReactivateReconciledMp06PilotInput {
+  readonly sessionRef: string;
+  readonly now: number;
+  readonly limits: Mp06PilotLimits;
+}
+
 export interface AdmitMp06PilotEventInput {
   readonly sessionRef: string;
   readonly eventRef: string;
