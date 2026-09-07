@@ -451,12 +451,12 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
     );
   });
 
-  it("freezes the exact WP8 candidate, TEST target, rollback target and budgets", () => {
+  it("records the deployed TEST candidate, rollback rehearsal and LINE smoke blocker", () => {
     const record = currentWork as {
       wp8TestPilotPlan: Record<string, unknown>;
     };
     expect(record.wp8TestPilotPlan).toMatchObject({
-      authorizationStatus: "AUTHORIZED_NOT_ATTEMPTED",
+      authorizationStatus: "DEPLOYED_PARTIAL_AWAITING_LINE_TEST",
       executionControlBaseCommit: "ae4ec0c312a40c577e5e4e27ac07273f5f3849f4",
       candidateRuntimeCommit: "d48c5066a4b92d4035bcf41076734199cc0fea4a",
       candidateArtifactSha256:
@@ -464,13 +464,23 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
       workerName: "malispang-lineoa-test",
       rollbackTargetVersionId: "3e02e79b-29c9-46cf-9218-ed2d0b7d7655",
       credentialSlot: "OPENAI_API_KEY",
-      deploymentOccurred: false,
-      currentDeployedRevision: null,
+      deploymentOccurred: true,
+      currentDeployedRevision: "509c3587-7ae9-41a8-8ba2-1082d03e138d",
       pilotAiEnabled: false,
+      pilotClosed: true,
       ownerUatStatus: "PENDING",
       gateA: "PASS_SAFE_OVER_HANDOFF_ONLY",
       gateB: "PASS_RUNTIME_ENFORCED",
       gateC: "PASS_RETAINED_TEST_V21_NO_AI",
+      rollbackRehearsal: "PASS",
+      rollbackCommandSeconds: 3,
+      candidateRecoverySeconds: 7,
+      lineSmokeStatus: "BLOCKED_TESTER_IDENTITY_NOT_PROVISIONED",
+      finalTestState: "CANDIDATE_DEPLOYED_AI_OFF_PILOT_STOPPED",
+      testEventsUsed: 0,
+      providerAttemptsUsed: 0,
+      costConsumedMicroUsd: 0,
+      verdict: "WP8_TEST_PILOT_PARTIAL_AWAITING_LINE_TEST",
       maximumTestEvents: 200,
       maximumProviderAttempts: 200,
       maximumSessionMinutes: 60,
@@ -492,13 +502,13 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
     changed.wp8TestPilotPlan.workerName = "production-worker";
     changed.wp8TestPilotPlan.gateB = "UNKNOWN";
     changed.wp8TestPilotPlan.maximumProviderAttempts = 201;
-    changed.wp8TestPilotPlan.deploymentOccurred = true;
+    changed.wp8TestPilotPlan.deploymentOccurred = false;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
         "WP8_WORKER_INVALID",
         "WP8_GATE_B_INVALID",
         "WP8_ATTEMPT_BUDGET_INVALID",
-        "WP8_DEPLOYMENT_OCCURRED_PREMATURELY",
+        "WP8_DEPLOYMENT_EVIDENCE_MISSING",
       ]),
     );
   });
@@ -663,25 +673,25 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
       };
     };
     changedRoadmap.authorization.testDeploymentAuthorization = false;
-    changedRoadmap.authorization.testDeploymentOccurred = true;
-    changedRoadmap.authorization.testDeployment = true;
+    changedRoadmap.authorization.testDeploymentOccurred = false;
+    changedRoadmap.authorization.testDeployment = false;
     changedRoadmap.authorization.productionStatus = "GO";
     changedRoadmap.authorization.productionAuthorizationReference =
       "unapproved";
     changedWork.authorization.testDeploymentAuthorization = false;
-    changedWork.authorization.testDeploymentOccurred = true;
-    changedWork.authorization.testDeployment = true;
+    changedWork.authorization.testDeploymentOccurred = false;
+    changedWork.authorization.testDeployment = false;
     changedWork.authorization.production = true;
     expect(validateProjectControl(changedRoadmap, changedWork).errors).toEqual(
       expect.arrayContaining([
         "TEST_DEPLOYMENT_AUTHORIZATION_MISSING",
-        "TEST_DEPLOYMENT_OCCURRED_PREMATURELY",
-        "TEST_DEPLOYMENT_OCCURRED_MUST_REMAIN_FALSE_BEFORE_EXECUTION",
+        "TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
+        "TEST_DEPLOYMENT_LEGACY_EVIDENCE_MISSING",
         "PRODUCTION_MUST_REMAIN_NO_GO",
         "PRODUCTION_AUTHORIZATION_MUST_BE_ABSENT",
         "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MISSING",
-        "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRED_PREMATURELY",
-        "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRED_MUST_BE_FALSE",
+        "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
+        "CURRENT_WORK_TEST_DEPLOYMENT_LEGACY_EVIDENCE_MISSING",
         "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
       ]),
     );

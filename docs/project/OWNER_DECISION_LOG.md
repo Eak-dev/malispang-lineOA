@@ -302,3 +302,14 @@ The machine-readable snapshot contains no raw chat, PII, token, secret or custom
 | Authorization posture | `testDeploymentAuthorization=true` and `testDeploymentOccurred=false`; only exact TEST Worker/config/domain, approved `OPENAI_API_KEY` slot, authenticated private allowlist, synthetic/LINE smoke, kill, rollback and one candidate redeploy are allowed                     |
 | Budget/session        | 200 TEST events, 200 provider attempts including retries, USD 5 integer-micro-USD budget and 60 minutes; tighter runtime limits prevail                                                                                                                                       |
 | Boundaries            | No new/deleted remote resource, no other secret, no LINE configuration change, no model/prompt/policy/KB/catalog/benchmark change, no PR/merge/Issue closure, and Production remains `NO_GO — NOT TOUCHED`                                                                    |
+
+## MP-OD-2026-09-07-V7-EXECUTION-EVIDENCE
+
+| Field               | Evidence                                                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TEST deployment     | Candidate source/control `98a3f46226acaaeeaffe5954e4f9d22fca05a622` deployed; final TEST version `509c3587-7ae9-41a8-8ba2-1082d03e138d`                                 |
+| Kill/containment    | Authenticated synthetic control session stopped; final pilot `STOPPED`, AI off, events/attempts/cost/in-flight all zero                                                 |
+| Rollback/redeploy   | Exact v21 rollback completed in 3 seconds; v21 health passed and authenticated pilot endpoint returned 404; candidate redeployed once in 7 seconds                      |
+| Smoke separation    | Health, unauthenticated-admin and unsigned-webhook negatives passed; signed webhook, live provider call and actual LINE test-channel smoke remain `NOT_PERFORMED`       |
+| Verdict             | `WP8_TEST_PILOT_PARTIAL_AWAITING_LINE_TEST`; secure tester identity is not provisioned locally, Owner UAT pending, Issue #12 OPEN                                       |
+| Production boundary | Production remote state was not queried or touched; no LINE configuration, remote resource, other secret, PR or merge changed; Production remains `NO_GO — NOT TOUCHED` |

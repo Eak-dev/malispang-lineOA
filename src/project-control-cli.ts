@@ -84,7 +84,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.07-v7, MP-06 (GitHub #12), exact WP8 TEST deploy/smoke/rollback is authorized but not yet attempted; Production remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.07-v7, MP-06 (GitHub #12), TEST candidate is deployed with AI off after rollback rehearsal; actual LINE smoke remains blocked on secure tester identity, Production remains blocked, ${warningSuffix}`,
   );
 }
 

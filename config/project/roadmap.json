@@ -27,8 +27,8 @@
   },
   "authorization": {
     "testDeploymentAuthorization": true,
-    "testDeploymentOccurred": false,
-    "testDeployment": false,
+    "testDeploymentOccurred": true,
+    "testDeployment": true,
     "productionStatus": "NO_GO",
     "productionAuthorizationReference": null
   },

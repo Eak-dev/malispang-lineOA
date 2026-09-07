@@ -123,8 +123,8 @@
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
         "testDeploymentAuthorization": { "const": true },
-        "testDeploymentOccurred": { "const": false },
-        "testDeployment": { "const": false },
+        "testDeploymentOccurred": { "const": true },
+        "testDeployment": { "const": true },
         "production": { "type": "boolean" }
       }
     },
@@ -1213,10 +1213,20 @@
         "deploymentOccurred",
         "currentDeployedRevision",
         "pilotAiEnabled",
+        "pilotClosed",
         "ownerUatStatus",
         "gateA",
         "gateB",
         "gateC",
+        "rollbackRehearsal",
+        "rollbackCommandSeconds",
+        "candidateRecoverySeconds",
+        "lineSmokeStatus",
+        "finalTestState",
+        "testEventsUsed",
+        "providerAttemptsUsed",
+        "costConsumedMicroUsd",
+        "verdict",
         "maximumTestEvents",
         "maximumProviderAttempts",
         "maximumSessionMinutes",
@@ -1225,7 +1235,9 @@
         "issueMustRemainOpen"
       ],
       "properties": {
-        "authorizationStatus": { "const": "AUTHORIZED_NOT_ATTEMPTED" },
+        "authorizationStatus": {
+          "const": "DEPLOYED_PARTIAL_AWAITING_LINE_TEST"
+        },
         "executionControlBaseCommit": {
           "const": "ae4ec0c312a40c577e5e4e27ac07273f5f3849f4"
         },
@@ -1244,13 +1256,31 @@
           "const": "3e02e79b-29c9-46cf-9218-ed2d0b7d7655"
         },
         "credentialSlot": { "const": "OPENAI_API_KEY" },
-        "deploymentOccurred": { "const": false },
-        "currentDeployedRevision": { "const": null },
+        "deploymentOccurred": { "const": true },
+        "currentDeployedRevision": {
+          "const": "509c3587-7ae9-41a8-8ba2-1082d03e138d"
+        },
         "pilotAiEnabled": { "const": false },
+        "pilotClosed": { "const": true },
         "ownerUatStatus": { "const": "PENDING" },
         "gateA": { "const": "PASS_SAFE_OVER_HANDOFF_ONLY" },
         "gateB": { "const": "PASS_RUNTIME_ENFORCED" },
         "gateC": { "const": "PASS_RETAINED_TEST_V21_NO_AI" },
+        "rollbackRehearsal": { "const": "PASS" },
+        "rollbackCommandSeconds": { "const": 3 },
+        "candidateRecoverySeconds": { "const": 7 },
+        "lineSmokeStatus": {
+          "const": "BLOCKED_TESTER_IDENTITY_NOT_PROVISIONED"
+        },
+        "finalTestState": {
+          "const": "CANDIDATE_DEPLOYED_AI_OFF_PILOT_STOPPED"
+        },
+        "testEventsUsed": { "const": 0 },
+        "providerAttemptsUsed": { "const": 0 },
+        "costConsumedMicroUsd": { "const": 0 },
+        "verdict": {
+          "const": "WP8_TEST_PILOT_PARTIAL_AWAITING_LINE_TEST"
+        },
         "maximumTestEvents": { "const": 200 },
         "maximumProviderAttempts": { "const": 200 },
         "maximumSessionMinutes": { "const": 60 },

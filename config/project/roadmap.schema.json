@@ -73,8 +73,8 @@
       ],
       "properties": {
         "testDeploymentAuthorization": { "type": "boolean" },
-        "testDeploymentOccurred": { "type": "boolean" },
-        "testDeployment": { "type": "boolean" },
+        "testDeploymentOccurred": { "const": true },
+        "testDeployment": { "const": true },
         "productionStatus": { "enum": ["NO_GO", "GO"] },
         "productionAuthorizationReference": { "type": ["string", "null"] }
       }

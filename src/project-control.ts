@@ -339,14 +339,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.authorization.testDeploymentOccurred,
-      false,
-      "TEST_DEPLOYMENT_OCCURRED_PREMATURELY",
+      true,
+      "TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
     );
     expectEqual(
       errors,
       roadmap.authorization.testDeployment,
-      false,
-      "TEST_DEPLOYMENT_OCCURRED_MUST_REMAIN_FALSE_BEFORE_EXECUTION",
+      true,
+      "TEST_DEPLOYMENT_LEGACY_EVIDENCE_MISSING",
     );
     expectEqual(
       errors,
@@ -675,14 +675,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testDeploymentOccurred,
-      false,
-      "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRED_PREMATURELY",
+      true,
+      "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
     );
     expectEqual(
       errors,
       currentWork.authorization.testDeployment,
-      false,
-      "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRED_MUST_BE_FALSE",
+      true,
+      "CURRENT_WORK_TEST_DEPLOYMENT_LEGACY_EVIDENCE_MISSING",
     );
     expectEqual(
       errors,
@@ -1901,7 +1901,7 @@ function validateWp8TestPilotPlan(errors: string[], plan: unknown): void {
   for (const [field, expected, code] of [
     [
       "authorizationStatus",
-      "AUTHORIZED_NOT_ATTEMPTED",
+      "DEPLOYED_PARTIAL_AWAITING_LINE_TEST",
       "WP8_AUTHORIZATION_STATUS_INVALID",
     ],
     [
@@ -1932,13 +1932,39 @@ function validateWp8TestPilotPlan(errors: string[], plan: unknown): void {
       "WP8_ROLLBACK_TARGET_INVALID",
     ],
     ["credentialSlot", "OPENAI_API_KEY", "WP8_CREDENTIAL_SLOT_INVALID"],
-    ["deploymentOccurred", false, "WP8_DEPLOYMENT_OCCURRED_PREMATURELY"],
-    ["currentDeployedRevision", null, "WP8_CURRENT_REVISION_PREMATURE"],
+    ["deploymentOccurred", true, "WP8_DEPLOYMENT_EVIDENCE_MISSING"],
+    [
+      "currentDeployedRevision",
+      "509c3587-7ae9-41a8-8ba2-1082d03e138d",
+      "WP8_CURRENT_REVISION_INVALID",
+    ],
     ["pilotAiEnabled", false, "WP8_PILOT_MUST_START_OFF"],
+    ["pilotClosed", true, "WP8_PILOT_CLOSED_EVIDENCE_MISSING"],
     ["ownerUatStatus", "PENDING", "WP8_OWNER_UAT_STATUS_INVALID"],
     ["gateA", "PASS_SAFE_OVER_HANDOFF_ONLY", "WP8_GATE_A_INVALID"],
     ["gateB", "PASS_RUNTIME_ENFORCED", "WP8_GATE_B_INVALID"],
     ["gateC", "PASS_RETAINED_TEST_V21_NO_AI", "WP8_GATE_C_INVALID"],
+    ["rollbackRehearsal", "PASS", "WP8_ROLLBACK_REHEARSAL_INVALID"],
+    ["rollbackCommandSeconds", 3, "WP8_ROLLBACK_TIMING_INVALID"],
+    ["candidateRecoverySeconds", 7, "WP8_RECOVERY_TIMING_INVALID"],
+    [
+      "lineSmokeStatus",
+      "BLOCKED_TESTER_IDENTITY_NOT_PROVISIONED",
+      "WP8_LINE_SMOKE_STATUS_INVALID",
+    ],
+    [
+      "finalTestState",
+      "CANDIDATE_DEPLOYED_AI_OFF_PILOT_STOPPED",
+      "WP8_FINAL_TEST_STATE_INVALID",
+    ],
+    ["testEventsUsed", 0, "WP8_TEST_EVENT_USAGE_INVALID"],
+    ["providerAttemptsUsed", 0, "WP8_PROVIDER_ATTEMPT_USAGE_INVALID"],
+    ["costConsumedMicroUsd", 0, "WP8_COST_USAGE_INVALID"],
+    [
+      "verdict",
+      "WP8_TEST_PILOT_PARTIAL_AWAITING_LINE_TEST",
+      "WP8_VERDICT_INVALID",
+    ],
     ["maximumTestEvents", 200, "WP8_EVENT_BUDGET_INVALID"],
     ["maximumProviderAttempts", 200, "WP8_ATTEMPT_BUDGET_INVALID"],
     ["maximumSessionMinutes", 60, "WP8_SESSION_LIMIT_INVALID"],

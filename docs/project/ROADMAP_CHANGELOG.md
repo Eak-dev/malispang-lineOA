@@ -8,6 +8,7 @@
 - freezes exact Worker `malispang-lineoa-test`, TEST workers.dev domain, `wrangler.jsonc`, approved credential slot `OPENAI_API_KEY`, runtime commit, dry-run bundle SHA-256 and retained rollback v21 in current-work
 - records gate A as safe over-handoff only, gate B as runtime-enforced, and gate C as retained exact TEST v21 with matching Durable Object namespaces/classes and no AI integration
 - authorizes only approved-key installation, candidate deploy, authenticated allowlisted smoke, kill switch, exact rollback and one candidate redeploy; Production, other secrets/resources, LINE configuration, PR/merge and Issue closure remain blocked
+- execution evidence records TEST deployment occurred, rollback/redeploy passed, final version `509c3587-7ae9-41a8-8ba2-1082d03e138d` is AI-off/pilot-stopped, and verdict is `WP8_TEST_PILOT_PARTIAL_AWAITING_LINE_TEST` because a private tester identity is not yet provisioned for actual LINE smoke
 
 ## 2026.09.07-v6 — superseded
 

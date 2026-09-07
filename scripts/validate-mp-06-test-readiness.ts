@@ -55,7 +55,7 @@ if (errors.length > 0) {
 }
 
 console.log(
-  "MP-06 WP6 TEST-readiness controls passed: TEST-only limits/alerts/stop/rollback and 8 synthetic fixtures are frozen; deployment remains false and Production remains NO_GO",
+  "MP-06 WP6 readiness controls passed: the historical WP6 plan freezes TEST-only limits/alerts/stop/rollback and 8 synthetic fixtures; current WP8 deployment evidence is governed by project control, and Production remains NO_GO",
 );
 
 async function readJson(path: string): Promise<unknown> {
