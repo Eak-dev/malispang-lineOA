@@ -45,8 +45,9 @@
 - `AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY` permits only the four recorded readiness-condition fixes through `TEST_READINESS_CONDITION_CLOSURE_WP6`: active benchmark timeout metadata, TEST-only non-secret alert/rate/stop controls, rollback/runbook plus synthetic fixtures, and byte-stable validation-chain generation. Runtime, policy, KB/catalog, dataset/oracle/benchmark semantics, reports, dependencies, Worker/Wrangler deployment configuration, AI/NLU, PR creation and deployment remain blocked
 - `AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION` permits no implementation or deployment action; WP6 closure evidence may be verified/reconciled, but AI/NLU and TEST deployment each require a separate Owner/PO transition
 - `AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY` permits only advisory OpenAI Responses API NLU, strict structured outputs, PII redaction, mock/failure coverage and capped synthetic PII-free live evaluation through `AI_NLU_IMPLEMENTATION_WP7`; deterministic policy retains final routing authority, the feature defaults off, and PR/merge/deployment remain blocked
+- `AWAITING_TEST_DEPLOYMENT_AUTHORIZATION` records WP7 local acceptance evidence and freezes the advisory implementation; action is `NONE`, TEST deployment still requires a separate Owner/PO transition, and Production remains blocked
 - no validator output may contain PII, raw chat, tokens or secrets
 
 ## Review handoff
 
-Roadmap `2026.09.06-v5` records Owner authorization for WP7 guarded AI/NLU implementation. The model is an advisory parser/classifier only; deterministic policy retains final authority and the runtime feature defaults off. Issue #12 remains open, and PR, TEST deployment and all Production access/action remain unauthorized.
+Roadmap `2026.09.06-v5` records WP7 guarded AI/NLU local acceptance as `PASS_WITH_LIMITATIONS`. The model is an advisory parser/classifier only; deterministic policy retains final authority and the runtime feature defaults off. Issue #12 remains open, and PR, TEST deployment and all Production access/action remain unauthorized.

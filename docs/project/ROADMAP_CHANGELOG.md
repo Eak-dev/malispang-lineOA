@@ -3,8 +3,9 @@
 ## 2026.09.06-v5 — current
 
 - supersedes `2026.09.06-v4` while retaining MP-06 (GitHub #12) as the only current work
-- sets phase/status/action to `WP7_AI_NLU_IMPLEMENTATION` / `AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY` / `AI_NLU_IMPLEMENTATION_WP7` and verified baseline to `237c754389fd95f433d4e9ff419afaec21d081a2`
-- authorizes only advisory OpenAI Responses API NLU with strict structured outputs, PII redaction, mock/provider-failure tests, capped synthetic PII-free live evaluation and default-off runtime integration
+- initially authorized advisory implementation at control commit `3722dcce68ca48412b0fc6e4a41e8fcaa1b77b70`; implementation commit `d14aa95d8ed95bcc967233d6cda252a2f61f1cd6` and safe credential-error follow-up `796b1c2775ede01e98f5eb34314e8719b815e868` complete WP7 local evidence
+- records final phase/status/action as `WP7_AI_NLU_LOCAL_ACCEPTANCE_COMPLETE` / `AWAITING_TEST_DEPLOYMENT_AUTHORIZATION` / `NONE`; implementation is frozen and a separate Owner/PO transition is required before TEST deployment
+- records synthetic evaluation 60 cases / 100 requests with schema and risky/authority fail-closed 100%, final routing 98%, extraction 100% and zero STAFF_ONLY downgrade, false final-AUTO, unsupported claim, PII leakage or prompt-injection override
 - requires deterministic evaluator/policy to retain final routing authority; AI may not send customer responses, downgrade `STAFF_ONLY`, invent business claims, call tools or silently fall back to another model/provider
 - records candidate model `gpt-5.6-terra`, official Responses API endpoint, `store:false`, no streaming/tool calling, one safe transient retry, request/cost guards and credential handling without exposing or committing values
 - preserves policy/dataset/result checksums and keeps deterministic benchmark reports, KB/catalog, deployment configuration and Production read-only

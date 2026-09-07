@@ -44,8 +44,8 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP7_AI_NLU_IMPLEMENTATION" },
-    "status": { "const": "AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY" },
+    "currentPhase": { "const": "WP7_AI_NLU_LOCAL_ACCEPTANCE_COMPLETE" },
+    "status": { "const": "AWAITING_TEST_DEPLOYMENT_AUTHORIZATION" },
     "base": {
       "type": "object",
       "additionalProperties": false,
@@ -103,8 +103,8 @@
         "testReadinessAssessmentWp6": { "const": false },
         "testReadinessConditionClosureWp6": { "const": false },
         "testReadinessConditionsClosedWp6": { "const": true },
-        "aiNluImplementationWp7": { "const": true },
-        "aiNluLocalAcceptanceCompleteWp7": { "const": false },
+        "aiNluImplementationWp7": { "const": false },
+        "aiNluLocalAcceptanceCompleteWp7": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -628,7 +628,7 @@
         "semanticResultChecksum": {
           "const": "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6"
         },
-        "aiNluImplemented": { "const": false },
+        "aiNluImplemented": { "const": true },
         "testEnvironmentAssessed": { "const": true },
         "testDeployment": { "const": false },
         "ownerTestUatComplete": { "const": false },
@@ -639,7 +639,7 @@
           "maxItems": 7,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "AI_NLU_NOT_IMPLEMENTED" },
+            { "const": "AI_NLU_SYNTHETIC_ONLY" },
             { "const": "TEST_NOT_DEPLOYED" },
             { "const": "TEST_SMOKE_NOT_COMPLETED" },
             { "const": "OWNER_TEST_UAT_NOT_COMPLETED" },
@@ -656,6 +656,9 @@
       "additionalProperties": false,
       "required": [
         "implementationStatus",
+        "controlAuthorizationCommit",
+        "implementationCommit",
+        "credentialErrorFollowupCommit",
         "assessmentCommit",
         "conditionsCommit",
         "verdict",
@@ -832,12 +835,24 @@
         "syntheticEvaluation",
         "acceptanceCriteria",
         "readOnlyBoundaries",
+        "localAcceptanceEvidence",
         "deploymentAuthorization",
         "productionStatus",
         "issueMustRemainOpen"
       ],
       "properties": {
-        "implementationStatus": { "const": "IN_PROGRESS" },
+        "implementationStatus": {
+          "const": "LOCAL_ACCEPTANCE_PASS_WITH_LIMITATIONS"
+        },
+        "controlAuthorizationCommit": {
+          "const": "3722dcce68ca48412b0fc6e4a41e8fcaa1b77b70"
+        },
+        "implementationCommit": {
+          "const": "d14aa95d8ed95bcc967233d6cda252a2f61f1cd6"
+        },
+        "credentialErrorFollowupCommit": {
+          "const": "796b1c2775ede01e98f5eb34314e8719b815e868"
+        },
         "authorityMode": {
           "const": "ADVISORY_ONLY_DETERMINISTIC_POLICY_FINAL"
         },
@@ -932,6 +947,82 @@
             "deterministicBenchmarkSemantics": { "const": true },
             "deterministicBenchmarkReports": { "const": true },
             "deploymentConfiguration": { "const": true }
+          }
+        },
+        "localAcceptanceEvidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "promptVersion",
+            "promptChecksum",
+            "schemaVersion",
+            "schemaChecksum",
+            "datasetVersion",
+            "datasetChecksum",
+            "semanticResultChecksum",
+            "uniqueCases",
+            "apiRequests",
+            "structuredSchemaSuccessPercent",
+            "riskyAuthorityFailClosedPercent",
+            "riskSignalRecallPercent",
+            "finalRoutingAccuracyPercent",
+            "requiredFieldExtractionAccuracyPercent",
+            "staffOnlyDowngrades",
+            "falseFinalAuto",
+            "unsupportedClaims",
+            "piiLeakage",
+            "promptInjectionOverrides",
+            "inputTokens",
+            "outputTokens",
+            "estimatedCostUsd",
+            "latencyMs",
+            "cleanCheckoutReproducible",
+            "normalSuitesRequireCredential"
+          ],
+          "properties": {
+            "promptVersion": { "const": "v1" },
+            "promptChecksum": {
+              "const": "bb32a123d6671ac2167887ea8ba476bdebe28bc4b1cca23d53b9b6879cc8eeb6"
+            },
+            "schemaVersion": { "const": "v1" },
+            "schemaChecksum": {
+              "const": "811436149e813ce6ece4baade44640c56b48edf5198433822e688c9994319793"
+            },
+            "datasetVersion": { "const": "v1" },
+            "datasetChecksum": {
+              "const": "cbfb9d6030ded2ab3cb8237233313940f2df206efdd7ac91cc05c948fdcae11b"
+            },
+            "semanticResultChecksum": {
+              "const": "7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55"
+            },
+            "uniqueCases": { "const": 60 },
+            "apiRequests": { "const": 100 },
+            "structuredSchemaSuccessPercent": { "const": 100 },
+            "riskyAuthorityFailClosedPercent": { "const": 100 },
+            "riskSignalRecallPercent": { "const": 95 },
+            "finalRoutingAccuracyPercent": { "const": 98 },
+            "requiredFieldExtractionAccuracyPercent": { "const": 100 },
+            "staffOnlyDowngrades": { "const": 0 },
+            "falseFinalAuto": { "const": 0 },
+            "unsupportedClaims": { "const": 0 },
+            "piiLeakage": { "const": 0 },
+            "promptInjectionOverrides": { "const": 0 },
+            "inputTokens": { "const": 54639 },
+            "outputTokens": { "const": 9327 },
+            "estimatedCostUsd": { "const": 0.221202 },
+            "latencyMs": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["minimum", "median", "p95", "maximum"],
+              "properties": {
+                "minimum": { "const": 1157 },
+                "median": { "const": 1516 },
+                "p95": { "const": 2908 },
+                "maximum": { "const": 3456 }
+              }
+            },
+            "cleanCheckoutReproducible": { "const": true },
+            "normalSuitesRequireCredential": { "const": false }
           }
         },
         "deploymentAuthorization": { "const": false },

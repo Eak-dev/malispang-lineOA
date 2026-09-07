@@ -101,14 +101,8 @@ const REQUIRED_FORBIDDEN_SCOPE = [
 ] as const;
 
 const REQUIRED_WP7_SCOPE = [
-  "MP_06_WP7_GUARDRAILED_AI_NLU_ADVISORY_ADAPTER",
-  "MP_06_WP7_STRICT_STRUCTURED_OUTPUT_SCHEMA",
-  "MP_06_WP7_PII_REDACTION_AND_SAFE_METADATA",
-  "MP_06_WP7_MOCK_PROVIDER_AND_FAILURE_TESTS",
-  "MP_06_WP7_SYNTHETIC_PII_FREE_LIVE_EVALUATION",
-  "MP_06_WP7_RUNTIME_INTEGRATION_BEHIND_DEFAULT_OFF_FLAG",
-  "OPENAI_RESPONSES_API_TEST_PROJECT_ONLY",
-  "OPENAI_API_KEY_PRESENCE_ONLY_AND_RUNTIME_USE",
+  "MP_06_WP7_LOCAL_ACCEPTANCE_EVIDENCE_READ_ONLY",
+  "MP_06_WP7_IMPLEMENTATION_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
   "POLICY_SNAPSHOT_READ_ONLY",
   "DATASET_EXPECTED_CASES_READ_ONLY",
@@ -138,6 +132,12 @@ const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
 const EXPECTED_WP7_CONTROL_BASE_COMMIT =
   "237c754389fd95f433d4e9ff419afaec21d081a2";
+const EXPECTED_WP7_CONTROL_AUTHORIZATION_COMMIT =
+  "3722dcce68ca48412b0fc6e4a41e8fcaa1b77b70";
+const EXPECTED_WP7_IMPLEMENTATION_COMMIT =
+  "d14aa95d8ed95bcc967233d6cda252a2f61f1cd6";
+const EXPECTED_WP7_CREDENTIAL_ERROR_FOLLOWUP_COMMIT =
+  "796b1c2775ede01e98f5eb34314e8719b815e868";
 const EXPECTED_WP6_BENCHMARK_EXECUTION_COMMIT =
   "b6bc93db284ad5f43a60f7f3eb31f9b12319fa9a";
 const EXPECTED_WP6_ASSESSMENT_COMMIT =
@@ -467,13 +467,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP7_AI_NLU_IMPLEMENTATION",
+    "WP7_AI_NLU_LOCAL_ACCEPTANCE_COMPLETE",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY",
+    "AWAITING_TEST_DEPLOYMENT_AUTHORIZATION",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -582,14 +582,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.aiNluImplementationWp7,
-      true,
-      "WP7_AI_NLU_IMPLEMENTATION_NOT_AUTHORIZED",
+      false,
+      "WP7_AI_NLU_IMPLEMENTATION_MUST_BE_BLOCKED_AFTER_LOCAL_ACCEPTANCE",
     );
     expectEqual(
       errors,
       currentWork.authorization.aiNluLocalAcceptanceCompleteWp7,
-      false,
-      "WP7_AI_NLU_LOCAL_ACCEPTANCE_MUST_NOT_BE_PREDECLARED",
+      true,
+      "WP7_AI_NLU_LOCAL_ACCEPTANCE_EVIDENCE_MISSING",
     );
     expectEqual(
       errors,
@@ -1324,7 +1324,7 @@ function validateLocalDeterministicAcceptance(
 
   requireBooleanFields(errors, acceptance, "LOCAL_ACCEPTANCE", [
     ["cleanCheckoutReproducible", true],
-    ["aiNluImplemented", false],
+    ["aiNluImplemented", true],
     ["testEnvironmentAssessed", true],
     ["testDeployment", false],
     ["ownerTestUatComplete", false],
@@ -1334,7 +1334,7 @@ function validateLocalDeterministicAcceptance(
     ? acceptance.limitations
     : [];
   const expected = [
-    "AI_NLU_NOT_IMPLEMENTED",
+    "AI_NLU_SYNTHETIC_ONLY",
     "TEST_NOT_DEPLOYED",
     "TEST_SMOKE_NOT_COMPLETED",
     "OWNER_TEST_UAT_NOT_COMPLETED",
@@ -1545,7 +1545,7 @@ function validateWp7AiNluPlan(errors: string[], plan: unknown): void {
   for (const [field, expected, code] of [
     [
       "implementationStatus",
-      "IN_PROGRESS",
+      "LOCAL_ACCEPTANCE_PASS_WITH_LIMITATIONS",
       "WP7_IMPLEMENTATION_STATUS_INVALID",
     ],
     [
@@ -1572,6 +1572,25 @@ function validateWp7AiNluPlan(errors: string[], plan: unknown): void {
     ["requestDeadlineMs", 8_000, "WP7_REQUEST_DEADLINE_INVALID"],
     ["maximumOutputTokens", 600, "WP7_OUTPUT_TOKEN_LIMIT_INVALID"],
     ["productionStatus", "NO_GO", "WP7_PRODUCTION_STATUS_INVALID"],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
+  for (const [field, expected, code] of [
+    [
+      "controlAuthorizationCommit",
+      EXPECTED_WP7_CONTROL_AUTHORIZATION_COMMIT,
+      "WP7_CONTROL_AUTHORIZATION_COMMIT_INVALID",
+    ],
+    [
+      "implementationCommit",
+      EXPECTED_WP7_IMPLEMENTATION_COMMIT,
+      "WP7_IMPLEMENTATION_COMMIT_INVALID",
+    ],
+    [
+      "credentialErrorFollowupCommit",
+      EXPECTED_WP7_CREDENTIAL_ERROR_FOLLOWUP_COMMIT,
+      "WP7_CREDENTIAL_ERROR_FOLLOWUP_COMMIT_INVALID",
+    ],
   ] as const) {
     expectEqual(errors, plan[field], expected, code);
   }
@@ -1642,6 +1661,76 @@ function validateWp7AiNluPlan(errors: string[], plan: unknown): void {
     ["deterministicBenchmarkSemantics", true],
     ["deterministicBenchmarkReports", true],
     ["deploymentConfiguration", true],
+  ]);
+
+  validateWp7LocalAcceptanceEvidence(errors, plan.localAcceptanceEvidence);
+}
+
+function validateWp7LocalAcceptanceEvidence(
+  errors: string[],
+  evidence: unknown,
+): void {
+  if (!isRecord(evidence) || !isRecord(evidence.latencyMs)) {
+    errors.push("WP7_LOCAL_ACCEPTANCE_EVIDENCE_MISSING");
+    return;
+  }
+  for (const [field, expected, code] of [
+    ["promptVersion", "v1", "WP7_PROMPT_VERSION_INVALID"],
+    [
+      "promptChecksum",
+      "bb32a123d6671ac2167887ea8ba476bdebe28bc4b1cca23d53b9b6879cc8eeb6",
+      "WP7_PROMPT_CHECKSUM_INVALID",
+    ],
+    ["schemaVersion", "v1", "WP7_SCHEMA_VERSION_INVALID"],
+    [
+      "schemaChecksum",
+      "811436149e813ce6ece4baade44640c56b48edf5198433822e688c9994319793",
+      "WP7_SCHEMA_CHECKSUM_INVALID",
+    ],
+    ["datasetVersion", "v1", "WP7_DATASET_VERSION_INVALID"],
+    [
+      "datasetChecksum",
+      "cbfb9d6030ded2ab3cb8237233313940f2df206efdd7ac91cc05c948fdcae11b",
+      "WP7_DATASET_CHECKSUM_INVALID",
+    ],
+    [
+      "semanticResultChecksum",
+      "7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55",
+      "WP7_RESULT_CHECKSUM_INVALID",
+    ],
+    ["uniqueCases", 60, "WP7_CASE_COUNT_INVALID"],
+    ["apiRequests", 100, "WP7_API_REQUEST_COUNT_INVALID"],
+    ["structuredSchemaSuccessPercent", 100, "WP7_SCHEMA_SUCCESS_INVALID"],
+    ["riskyAuthorityFailClosedPercent", 100, "WP7_RISKY_FAIL_CLOSED_INVALID"],
+    ["riskSignalRecallPercent", 95, "WP7_RISK_SIGNAL_RECALL_INVALID"],
+    ["finalRoutingAccuracyPercent", 98, "WP7_ROUTING_ACCURACY_INVALID"],
+    [
+      "requiredFieldExtractionAccuracyPercent",
+      100,
+      "WP7_EXTRACTION_ACCURACY_INVALID",
+    ],
+    ["staffOnlyDowngrades", 0, "WP7_STAFF_DOWNGRADE_INVALID"],
+    ["falseFinalAuto", 0, "WP7_FALSE_FINAL_AUTO_INVALID"],
+    ["unsupportedClaims", 0, "WP7_UNSUPPORTED_CLAIMS_INVALID"],
+    ["piiLeakage", 0, "WP7_PII_LEAKAGE_INVALID"],
+    ["promptInjectionOverrides", 0, "WP7_INJECTION_OVERRIDE_INVALID"],
+    ["inputTokens", 54_639, "WP7_INPUT_TOKENS_INVALID"],
+    ["outputTokens", 9_327, "WP7_OUTPUT_TOKENS_INVALID"],
+    ["estimatedCostUsd", 0.221202, "WP7_ESTIMATED_COST_INVALID"],
+  ] as const) {
+    expectEqual(errors, evidence[field], expected, code);
+  }
+  for (const [field, expected, code] of [
+    ["minimum", 1_157, "WP7_LATENCY_MINIMUM_INVALID"],
+    ["median", 1_516, "WP7_LATENCY_MEDIAN_INVALID"],
+    ["p95", 2_908, "WP7_LATENCY_P95_INVALID"],
+    ["maximum", 3_456, "WP7_LATENCY_MAXIMUM_INVALID"],
+  ] as const) {
+    expectEqual(errors, evidence.latencyMs[field], expected, code);
+  }
+  requireBooleanFields(errors, evidence, "WP7_LOCAL_ACCEPTANCE", [
+    ["cleanCheckoutReproducible", true],
+    ["normalSuitesRequireCredential", false],
   ]);
 }
 

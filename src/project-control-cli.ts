@@ -37,17 +37,6 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const wp7Implementation = evaluateProjectAction(
-    roadmap,
-    currentWork,
-    "AI_NLU_IMPLEMENTATION_WP7",
-  );
-  if (!wp7Implementation.allowed) {
-    throw new Error(
-      "ROADMAP_UNVERIFIED: WP7 AI/NLU implementation must be authorized",
-    );
-  }
-
   for (const action of [
     "POLICY_SNAPSHOT",
     "RUNTIME_WP1",
@@ -57,6 +46,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "LOCAL_CLOSURE_REMEDIATION_WP5",
     "TEST_READINESS_ASSESSMENT_WP6",
     "TEST_READINESS_CONDITION_CLOSURE_WP6",
+    "AI_NLU_IMPLEMENTATION_WP7",
     "LOCAL_IMPLEMENTATION",
     "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
@@ -72,7 +62,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.06-v5, MP-06 (GitHub #12), WP7 guarded AI/NLU implementation is authorized as an advisory default-off path, deterministic policy remains final authority and TEST/Production deployment remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.06-v5, MP-06 (GitHub #12), WP7 AI/NLU local acceptance is complete with limitations, implementation is frozen and separate TEST deployment authorization remains required; Production remains blocked, ${warningSuffix}`,
   );
 }
 

@@ -24,7 +24,7 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP7 guarded AI/NLU control", () => {
+describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
   it("accepts the 2026.09.06-v5 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
@@ -53,10 +53,10 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP7_AI_NLU_IMPLEMENTATION",
+      "WP7_AI_NLU_LOCAL_ACCEPTANCE_COMPLETE",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY",
+      "AWAITING_TEST_DEPLOYMENT_AUTHORIZATION",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -85,11 +85,11 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     ).toBe(true);
     expect(
       schema.properties.authorization.properties.aiNluImplementationWp7.const,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       schema.properties.authorization.properties.aiNluLocalAcceptanceCompleteWp7
         .const,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("keeps canonical work IDs mapped to immutable GitHub issues", () => {
@@ -103,10 +103,10 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only WP7 AI/NLU implementation while retaining prior evidence", () => {
+  it("freezes WP7 evidence and waits for a separate TEST deployment authorization", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP7_GUARDRAILED_AI_NLU_ADVISORY_ADAPTER",
+      "MP_06_WP7_LOCAL_ACCEPTANCE_EVIDENCE_READ_ONLY",
     );
     expect(
       evaluateProjectAction(
@@ -175,8 +175,8 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     expect(
       evaluateProjectAction(roadmap, currentWork, "AI_NLU_IMPLEMENTATION_WP7"),
     ).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "AI_NLU_IMPLEMENTATION_WP7_NOT_AUTHORIZED",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "COMMIT").allowed).toBe(
       true,
@@ -206,6 +206,7 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     const record = currentWork as {
       wp7AiNluPlan: {
         implementationStatus: string;
+        implementationCommit: string;
         authorityMode: string;
         provider: string;
         api: string;
@@ -232,13 +233,29 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
           minimumFinalRoutingAccuracyPercent: number;
           minimumRequiredFieldExtractionAccuracyPercent: number;
         };
+        localAcceptanceEvidence: {
+          promptChecksum: string;
+          schemaChecksum: string;
+          datasetChecksum: string;
+          semanticResultChecksum: string;
+          uniqueCases: number;
+          apiRequests: number;
+          finalRoutingAccuracyPercent: number;
+          requiredFieldExtractionAccuracyPercent: number;
+          riskyAuthorityFailClosedPercent: number;
+          staffOnlyDowngrades: number;
+          falseFinalAuto: number;
+          cleanCheckoutReproducible: boolean;
+          normalSuitesRequireCredential: boolean;
+        };
         deploymentAuthorization: boolean;
         productionStatus: string;
         issueMustRemainOpen: boolean;
       };
     };
     expect(record.wp7AiNluPlan).toMatchObject({
-      implementationStatus: "IN_PROGRESS",
+      implementationStatus: "LOCAL_ACCEPTANCE_PASS_WITH_LIMITATIONS",
+      implementationCommit: "d14aa95d8ed95bcc967233d6cda252a2f61f1cd6",
       authorityMode: "ADVISORY_ONLY_DETERMINISTIC_POLICY_FINAL",
       provider: "OPENAI",
       api: "RESPONSES_API",
@@ -265,6 +282,25 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
         minimumFinalRoutingAccuracyPercent: 95,
         minimumRequiredFieldExtractionAccuracyPercent: 95,
       },
+      localAcceptanceEvidence: {
+        promptChecksum:
+          "bb32a123d6671ac2167887ea8ba476bdebe28bc4b1cca23d53b9b6879cc8eeb6",
+        schemaChecksum:
+          "811436149e813ce6ece4baade44640c56b48edf5198433822e688c9994319793",
+        datasetChecksum:
+          "cbfb9d6030ded2ab3cb8237233313940f2df206efdd7ac91cc05c948fdcae11b",
+        semanticResultChecksum:
+          "7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55",
+        uniqueCases: 60,
+        apiRequests: 100,
+        finalRoutingAccuracyPercent: 98,
+        requiredFieldExtractionAccuracyPercent: 100,
+        riskyAuthorityFailClosedPercent: 100,
+        staffOnlyDowngrades: 0,
+        falseFinalAuto: 0,
+        cleanCheckoutReproducible: true,
+        normalSuitesRequireCredential: false,
+      },
       deploymentAuthorization: false,
       productionStatus: "NO_GO",
       issueMustRemainOpen: true,
@@ -289,7 +325,7 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
         deploymentAuthorization: boolean;
       };
     };
-    changed.authorization.aiNluImplementationWp7 = false;
+    changed.authorization.aiNluImplementationWp7 = true;
     changed.wp7AiNluPlan.authorityMode = "MODEL_FINAL";
     changed.wp7AiNluPlan.model = "fallback-model";
     changed.wp7AiNluPlan.featureFlagDefaultEnabled = true;
@@ -300,7 +336,7 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     changed.wp7AiNluPlan.deploymentAuthorization = true;
     expect(validateProjectControl(roadmap, changed).errors).toEqual(
       expect.arrayContaining([
-        "WP7_AI_NLU_IMPLEMENTATION_NOT_AUTHORIZED",
+        "WP7_AI_NLU_IMPLEMENTATION_MUST_BE_BLOCKED_AFTER_LOCAL_ACCEPTANCE",
         "WP7_AUTHORITY_MODE_INVALID",
         "WP7_MODEL_INVALID",
         "WP7_AI_NLU_FEATUREFLAGDEFAULTENABLED_INVALID",
@@ -314,6 +350,36 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     expect(
       evaluateProjectAction(roadmap, changed, "AI_NLU_IMPLEMENTATION_WP7"),
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
+  });
+
+  it("fails closed when WP7 local acceptance evidence drifts", () => {
+    const changed = clone(currentWork) as {
+      wp7AiNluPlan: {
+        implementationCommit: string;
+        localAcceptanceEvidence: {
+          promptChecksum: string;
+          finalRoutingAccuracyPercent: number;
+          falseFinalAuto: number;
+          cleanCheckoutReproducible: boolean;
+        };
+      };
+    };
+    changed.wp7AiNluPlan.implementationCommit = "0".repeat(40);
+    changed.wp7AiNluPlan.localAcceptanceEvidence.promptChecksum = "0".repeat(
+      64,
+    );
+    changed.wp7AiNluPlan.localAcceptanceEvidence.finalRoutingAccuracyPercent = 94;
+    changed.wp7AiNluPlan.localAcceptanceEvidence.falseFinalAuto = 1;
+    changed.wp7AiNluPlan.localAcceptanceEvidence.cleanCheckoutReproducible = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP7_IMPLEMENTATION_COMMIT_INVALID",
+        "WP7_PROMPT_CHECKSUM_INVALID",
+        "WP7_ROUTING_ACCURACY_INVALID",
+        "WP7_FALSE_FINAL_AUTO_INVALID",
+        "WP7_LOCAL_ACCEPTANCE_CLEANCHECKOUTREPRODUCIBLE_INVALID",
+      ]),
+    );
   });
 
   it("fails closed when Roadmap and current-work versions conflict", () => {
@@ -514,7 +580,7 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     };
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
-        (scope) => scope !== "MP_06_WP7_STRICT_STRUCTURED_OUTPUT_SCHEMA",
+        (scope) => scope !== "MP_06_WP7_LOCAL_ACCEPTANCE_EVIDENCE_READ_ONLY",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
@@ -847,14 +913,14 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
       verdict: "PASS_WITH_LIMITATIONS",
       cleanCheckoutReproducible: true,
       benchmarkCases: 5000,
-      aiNluImplemented: false,
+      aiNluImplemented: true,
       testEnvironmentAssessed: true,
       testDeployment: false,
       ownerTestUatComplete: false,
       productionStatus: "NO_GO",
     });
     expect(record.localDeterministicAcceptance.limitations).toEqual([
-      "AI_NLU_NOT_IMPLEMENTED",
+      "AI_NLU_SYNTHETIC_ONLY",
       "TEST_NOT_DEPLOYED",
       "TEST_SMOKE_NOT_COMPLETED",
       "OWNER_TEST_UAT_NOT_COMPLETED",
@@ -876,7 +942,7 @@ describe("MP-06 WP7 guarded AI/NLU control", () => {
     };
     const acceptance = changed.localDeterministicAcceptance;
     acceptance.verdict = "PASS";
-    acceptance.aiNluImplemented = true;
+    acceptance.aiNluImplemented = false;
     acceptance.testEnvironmentAssessed = false;
     acceptance.testDeployment = true;
     acceptance.productionStatus = "GO";
