@@ -347,6 +347,57 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
     expect(serialized).not.toContain(testerA);
   });
 
+  it("persists only content-free provider lifecycle diagnostics with settlement", async () => {
+    const stub = await activePilot("provider-lifecycle-diagnostics", [testerA]);
+    const eventRef = hexRef(580);
+    const attemptRef = hexRef(581);
+    await admit(stub, eventRef, baseNow);
+    await reserve(stub, eventRef, attemptRef, baseNow + 1, 12_932);
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: baseNow + 1,
+    });
+    expect(
+      await stub.settleMp06PilotAttempt({
+        sessionRef,
+        eventRef,
+        attemptRef,
+        now: baseNow + 2,
+        outcome: "KNOWN",
+        actualCostMicroUsd: 800,
+        diagnostics: {
+          clientRequestId: "client-safe-1",
+          providerRequestId: "req_safe_1",
+          httpStatus: 200,
+          rateLimitRemainingRequests: 17,
+          dispatchMs: 1,
+          headersWaitMs: 2,
+          bodyReadMs: 3,
+          parsingMs: 1,
+          outcomeCode: "PROVIDER_RESPONSE",
+        },
+      }),
+    ).toMatchObject({ accepted: true, code: "SETTLED" });
+    const diagnostics = await stub.mp06PilotAttemptDiagnostics(baseNow + 3);
+    expect(diagnostics.latestLifecycle).toEqual({
+      clientRequestId: "client-safe-1",
+      providerRequestId: "req_safe_1",
+      httpStatus: 200,
+      rateLimitRemainingRequests: 17,
+      dispatchMs: 1,
+      headersWaitMs: 2,
+      bodyReadMs: 3,
+      parsingMs: 1,
+      outcomeCode: "PROVIDER_RESPONSE",
+    });
+    const serialized = JSON.stringify(diagnostics);
+    expect(serialized).not.toContain(eventRef);
+    expect(serialized).not.toContain(attemptRef);
+    expect(serialized).not.toContain(testerA);
+  });
+
   it("reconciles one stale unknown attempt conservatively and idempotently without authorizing its result", async () => {
     const stub = await activePilot("manual-unknown-reconcile", [testerA]);
     const eventRef = hexRef(584);
@@ -361,12 +412,16 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
     });
     const staleNow = baseNow + MP06_PILOT_ATTEMPT_LEASE_MS + 2;
     await stub.mp06PilotStatus(staleNow);
-    expect(await stub.reconcileMp06PilotUnknownUsage(staleNow)).toMatchObject({
+    expect(
+      await stub.reconcileMp06PilotUnknownUsage(reconciliationInput(staleNow)),
+    ).toMatchObject({
       accepted: true,
       code: "RECONCILED_USAGE_UNKNOWN",
     });
     expect(
-      await stub.reconcileMp06PilotUnknownUsage(staleNow + 1),
+      await stub.reconcileMp06PilotUnknownUsage(
+        reconciliationInput(staleNow + 1),
+      ),
     ).toMatchObject({
       accepted: true,
       code: "RECONCILED_IDEMPOTENT",
@@ -385,6 +440,87 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
         now: staleNow + 2,
       }),
     ).toBe(false);
+
+    const nextSessionRef = hexRef(588);
+    expect(
+      await stub.activateMp06Pilot({
+        sessionRef: nextSessionRef,
+        testerRefs: [testerA],
+        now: staleNow + 3,
+        limits,
+      }),
+    ).toMatchObject({
+      activated: true,
+      code: "ACTIVATED",
+      status: {
+        admittedEvents: 1,
+        providerAttempts: 1,
+        budgetConsumedMicroUsd: 12_932,
+        budgetReservedMicroUsd: 0,
+        inFlight: 0,
+      },
+    });
+    expect(
+      await stub.authorizeMp06PilotDispatch({
+        sessionRef,
+        eventRef,
+        attemptRef,
+        now: staleNow + 4,
+      }),
+    ).toMatchObject({ accepted: false, code: "PILOT_INACTIVE" });
+    expect(
+      await stub.settleMp06PilotAttempt({
+        sessionRef,
+        eventRef,
+        attemptRef,
+        now: staleNow + 4,
+        outcome: "KNOWN",
+        actualCostMicroUsd: 0,
+      }),
+    ).toMatchObject({ accepted: true, code: "SETTLED_IDEMPOTENT" });
+    expect(
+      await stub.authorizeMp06PilotResult({
+        sessionRef,
+        eventRef,
+        now: staleNow + 5,
+      }),
+    ).toBe(false);
+    expect(await stub.mp06PilotStatus(staleNow + 5)).toMatchObject({
+      state: "ACTIVE",
+      sessionRef: nextSessionRef,
+      admittedEvents: 1,
+      providerAttempts: 1,
+      budgetConsumedMicroUsd: 12_932,
+      inFlight: 0,
+    });
+  });
+
+  it("rejects conservative reconciliation when any exact old-attempt precondition drifts", async () => {
+    const stub = await activePilot("reconcile-precondition-drift", [testerA]);
+    const eventRef = hexRef(589);
+    const attemptRef = hexRef(590);
+    await admit(stub, eventRef, baseNow);
+    await reserve(stub, eventRef, attemptRef, baseNow + 1, 12_932);
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: baseNow + 1,
+    });
+    const staleNow = baseNow + MP06_PILOT_ATTEMPT_LEASE_MS + 2;
+    await stub.mp06PilotStatus(staleNow);
+    expect(
+      await stub.reconcileMp06PilotUnknownUsage({
+        ...reconciliationInput(staleNow),
+        expectedBudgetReservedMicroUsd: 12_931 as 12932,
+      }),
+    ).toMatchObject({ accepted: false, code: "CONTROL_UNAVAILABLE" });
+    expect(await stub.mp06PilotStatus(staleNow)).toMatchObject({
+      state: "STOPPED",
+      budgetConsumedMicroUsd: 0,
+      budgetReservedMicroUsd: 12_932,
+      inFlight: 1,
+    });
   });
 
   it("refuses conservative reconciliation before a dispatched attempt is stale", async () => {
@@ -400,7 +536,9 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
       now: baseNow + 1,
     });
     expect(
-      await stub.reconcileMp06PilotUnknownUsage(baseNow + 2),
+      await stub.reconcileMp06PilotUnknownUsage(
+        reconciliationInput(baseNow + 2),
+      ),
     ).toMatchObject({
       accepted: false,
       code: "RECONCILIATION_NOT_ALLOWED",
@@ -544,6 +682,87 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(body).not.toMatch(/sessionRef|eventRef|attemptRef|testerRef/u);
   });
 
+  it("requires authenticated exact preconditions and reconciles once idempotently", async () => {
+    const endpoint =
+      "https://test.invalid/admin/mp06-pilot/reconcile-unknown-usage";
+    const requestBody = reconciliationRequestBody();
+    const unauthorized = await exports.default.fetch(
+      new Request(endpoint, { method: "POST", body: requestBody }),
+    );
+    expect(unauthorized.status).toBe(401);
+
+    const stub = env.CONVERSATION_STATE.getByName("mp06-pilot-control-v1");
+    const now = Date.now() - MP06_PILOT_ATTEMPT_LEASE_MS - 1_000;
+    const oldSessionRef = hexRef(701);
+    const eventRef = hexRef(702);
+    const attemptRef = hexRef(703);
+    await stub.activateMp06Pilot({
+      sessionRef: oldSessionRef,
+      testerRefs: [testerA],
+      now,
+      limits,
+    });
+    await stub.admitMp06PilotEvent({
+      sessionRef: oldSessionRef,
+      eventRef,
+      testerRef: testerA,
+      now,
+    });
+    await stub.reserveMp06PilotAttempt({
+      sessionRef: oldSessionRef,
+      eventRef,
+      attemptRef,
+      upperBoundCostMicroUsd: 12_932,
+      now,
+    });
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef: oldSessionRef,
+      eventRef,
+      attemptRef,
+      now,
+    });
+    await stub.mp06PilotStatus(Date.now());
+
+    const authorized = () =>
+      exports.default.fetch(
+        new Request(endpoint, {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: requestBody,
+        }),
+      );
+    const first = await authorized();
+    expect(first.status).toBe(200);
+    expect(await first.json()).toMatchObject({
+      outcome: "RECONCILED_USAGE_UNKNOWN",
+      pilot: {
+        state: "STOPPED",
+        stopReason: "PROVIDER_USAGE_UNKNOWN_RECONCILED",
+        budgetConsumedMicroUsd: 12_932,
+        budgetReservedMicroUsd: 0,
+        inFlight: 0,
+      },
+    });
+    const repeated = await authorized();
+    expect(repeated.status).toBe(200);
+    const repeatedBody = await repeated.json();
+    expect(repeatedBody).toMatchObject({
+      outcome: "RECONCILED_IDEMPOTENT",
+      pilot: {
+        state: "STOPPED",
+        budgetConsumedMicroUsd: 12_932,
+        budgetReservedMicroUsd: 0,
+        inFlight: 0,
+      },
+    });
+    expect(JSON.stringify(repeatedBody)).not.toMatch(
+      new RegExp(`${eventRef}|${attemptRef}|${testerA}`, "u"),
+    );
+  });
+
   it("fails activation closed when the provider credential is unavailable", async () => {
     const mutableEnv = env as Env & { OPENAI_API_KEY: string };
     const original = mutableEnv.OPENAI_API_KEY;
@@ -670,6 +889,33 @@ async function reserve(
 
 function hexRef(value: number): string {
   return value.toString(16).padStart(64, "0");
+}
+
+function reconciliationInput(now: number) {
+  return {
+    now,
+    expectedState: "STOPPED" as const,
+    expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN" as const,
+    expectedAdmittedEvents: 1 as const,
+    expectedProviderAttempts: 1 as const,
+    expectedBudgetConsumedMicroUsd: 0 as const,
+    expectedBudgetReservedMicroUsd: 12_932 as const,
+    expectedInFlight: 1 as const,
+    disposition: "CONSUME_FULL_RESERVATION_NO_REFUND" as const,
+  };
+}
+
+function reconciliationRequestBody(): string {
+  return JSON.stringify({
+    expectedState: "STOPPED",
+    expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN",
+    expectedAdmittedEvents: 1,
+    expectedProviderAttempts: 1,
+    expectedBudgetConsumedMicroUsd: 0,
+    expectedBudgetReservedMicroUsd: 12_932,
+    expectedInFlight: 1,
+    disposition: "CONSUME_FULL_RESERVATION_NO_REFUND",
+  });
 }
 
 async function lineSignature(payload: string, secret: string): Promise<string> {

@@ -392,6 +392,40 @@ async function handleAdmin(
   }
   if (
     request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/reconcile-unknown-usage"
+  ) {
+    // Defense in depth: handleAdmin already authenticated this same TEST secret.
+    if (
+      !(await secureTextEqual(bearerToken(request), env.TEST_ADMIN_KEY)) ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true"
+    ) {
+      return Response.json({ error: "TEST_ADMIN_REQUIRED" }, { status: 403 });
+    }
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    const input = parsePilotReconciliationInput(decoder.decode(body));
+    if (!input) {
+      return Response.json(
+        { error: "INVALID_RECONCILIATION_PRECONDITIONS" },
+        { status: 400 },
+      );
+    }
+    const result = await pilot.reconcileMp06PilotUnknownUsage({
+      ...input,
+      now: Date.now(),
+    });
+    return Response.json(
+      {
+        outcome: result.code,
+        pilot: await pilot.mp06PilotStatus(Date.now()),
+        diagnostics: await pilot.mp06PilotAttemptDiagnostics(Date.now()),
+      },
+      { status: result.accepted ? 200 : 409 },
+    );
+  }
+  if (
+    request.method === "POST" &&
     url.pathname === "/admin/mp06-pilot/activate"
   ) {
     const limits = mp06PilotLimitsFromEnvironment(env);
@@ -623,6 +657,52 @@ function parsePilotActivationInput(
   }
 }
 
+interface Mp06PilotReconciliationRequest {
+  readonly expectedState: "STOPPED";
+  readonly expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN";
+  readonly expectedAdmittedEvents: 1;
+  readonly expectedProviderAttempts: 1;
+  readonly expectedBudgetConsumedMicroUsd: 0;
+  readonly expectedBudgetReservedMicroUsd: 12932;
+  readonly expectedInFlight: 1;
+  readonly disposition: "CONSUME_FULL_RESERVATION_NO_REFUND";
+}
+
+function parsePilotReconciliationInput(
+  raw: string,
+): Mp06PilotReconciliationRequest | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== 8 ||
+      !("expectedState" in value) ||
+      value.expectedState !== "STOPPED" ||
+      !("expectedStopReason" in value) ||
+      value.expectedStopReason !== "IN_FLIGHT_USAGE_UNKNOWN" ||
+      !("expectedAdmittedEvents" in value) ||
+      value.expectedAdmittedEvents !== 1 ||
+      !("expectedProviderAttempts" in value) ||
+      value.expectedProviderAttempts !== 1 ||
+      !("expectedBudgetConsumedMicroUsd" in value) ||
+      value.expectedBudgetConsumedMicroUsd !== 0 ||
+      !("expectedBudgetReservedMicroUsd" in value) ||
+      value.expectedBudgetReservedMicroUsd !== 12_932 ||
+      !("expectedInFlight" in value) ||
+      value.expectedInFlight !== 1 ||
+      !("disposition" in value) ||
+      value.disposition !== "CONSUME_FULL_RESERVATION_NO_REFUND"
+    ) {
+      return undefined;
+    }
+    return value as Mp06PilotReconciliationRequest;
+  } catch {
+    return undefined;
+  }
+}
+
 interface Mp06PilotRuntimeContext {
   readonly coordinator: DurableObjectStub<ConversationStateDO>;
   readonly sessionRef: string;
@@ -716,6 +796,7 @@ function createMp06PilotAttemptController(
         attemptRef: await attemptRef(input.attempt),
         now: Date.now(),
         outcome: input.outcome,
+        diagnostics: input.diagnostics,
         ...(input.actualCostMicroUsd === undefined
           ? {}
           : { actualCostMicroUsd: input.actualCostMicroUsd }),

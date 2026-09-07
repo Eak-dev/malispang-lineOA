@@ -9,6 +9,7 @@ import {
 import {
   estimateMp06AttemptUpperBoundMicroUsd,
   mp06UsageCostMicroUsd,
+  type Mp06ProviderLifecycleDiagnostics,
 } from "./mp-06-pilot-control.js";
 
 export const MP06_AI_NLU_SCHEMA_VERSION = "2026.09.07-v1";
@@ -17,6 +18,7 @@ export const MP06_AI_NLU_MODEL = "gpt-5.6-terra";
 export const MP06_AI_NLU_BASE_URL = "https://api.openai.com/v1/responses";
 export const MP06_AI_NLU_MAX_OUTPUT_TOKENS = 600;
 export const MP06_AI_NLU_DEADLINE_MS = 8_000;
+export const MP06_AI_NLU_SETTLEMENT_DEADLINE_MS = 2_000;
 export const MP06_AI_NLU_MAX_INPUT_CHARACTERS = 1_200;
 export const MP06_AI_NLU_MAX_RETRIES = 1;
 
@@ -109,7 +111,19 @@ export interface Mp06AiNluSafeMetadata {
   readonly responseModel?: string;
   readonly httpStatus?: number;
   readonly providerErrorCode?: string;
+  readonly providerErrorType?: string;
   readonly providerErrorParam?: string;
+  readonly providerRequestId?: string;
+  readonly clientRequestId?: string;
+  readonly retryAfterMs?: number;
+  readonly rateLimitRemainingRequests?: number;
+  readonly phaseDurationsMs?: {
+    readonly dispatch: number;
+    readonly headersWait?: number;
+    readonly bodyRead?: number;
+    readonly parsing?: number;
+    readonly settlement?: number;
+  };
   readonly attempts: number;
   readonly latencyMs: number;
   readonly usage?: Mp06AiNluUsage;
@@ -146,6 +160,7 @@ export interface Mp06AiNluRuntimeOptions {
   readonly logger?: (metadata: Mp06AiNluSafeMetadata) => void;
   readonly guard?: Mp06AiNluExecutionGuard;
   readonly attemptController?: Mp06AiNluAttemptController;
+  readonly clientRequestId?: () => string;
 }
 
 export interface Mp06AiNluAttemptController {
@@ -159,6 +174,7 @@ export interface Mp06AiNluAttemptController {
     readonly attempt: number;
     readonly outcome: "KNOWN" | "USAGE_UNKNOWN";
     readonly actualCostMicroUsd?: number;
+    readonly diagnostics: Mp06ProviderLifecycleDiagnostics;
   }) => Promise<boolean>;
 }
 
@@ -478,33 +494,103 @@ export async function requestOpenAiMp06Nlu(
         );
       }
     }
+    const clock = options.now ?? Date.now;
+    const clientRequestId = safeProviderMetadata(
+      (options.clientRequestId ?? (() => crypto.randomUUID()))(),
+    );
+    if (!clientRequestId) {
+      return failure(
+        "PILOT_CONTROL_REJECTED",
+        { ...baseMetadata, attempts: attempt },
+        options,
+        startedAt,
+      );
+    }
+    const dispatchStartedAt = clock();
+    let dispatchCompletedAt = dispatchStartedAt;
+    let headersReceivedAt: number | undefined;
+    let bodyCompletedAt: number | undefined;
+    let providerHeaders: ReturnType<typeof safeProviderHeaders> = {};
+    const lifecycleDiagnostics = (
+      outcomeCode: string,
+      details: {
+        readonly httpStatus?: number;
+        readonly providerErrorType?: string;
+        readonly providerErrorCode?: string;
+        readonly parsingMs?: number;
+        readonly settlementMs?: number;
+      } = {},
+    ): Mp06ProviderLifecycleDiagnostics => ({
+      clientRequestId,
+      ...providerHeaders,
+      ...(details.httpStatus === undefined
+        ? {}
+        : { httpStatus: details.httpStatus }),
+      ...(details.providerErrorType
+        ? { providerErrorType: details.providerErrorType }
+        : {}),
+      ...(details.providerErrorCode
+        ? { providerErrorCode: details.providerErrorCode }
+        : {}),
+      dispatchMs: Math.max(0, dispatchCompletedAt - dispatchStartedAt),
+      ...(headersReceivedAt === undefined
+        ? {}
+        : {
+            headersWaitMs: Math.max(0, headersReceivedAt - dispatchCompletedAt),
+          }),
+      ...(headersReceivedAt === undefined || bodyCompletedAt === undefined
+        ? {}
+        : { bodyReadMs: Math.max(0, bodyCompletedAt - headersReceivedAt) }),
+      ...(details.parsingMs === undefined
+        ? {}
+        : { parsingMs: details.parsingMs }),
+      ...(details.settlementMs === undefined
+        ? {}
+        : { settlementMs: details.settlementMs }),
+      outcomeCode,
+    });
     const controller = new AbortController();
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
+      const providerOperation = fetcher(MP06_AI_NLU_BASE_URL, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${options.env.OPENAI_API_KEY}`,
+          "content-type": "application/json",
+          "x-client-request-id": clientRequestId,
+        },
+        body: requestBody,
+        signal: controller.signal,
+      }).then(
+        async (response) => {
+          headersReceivedAt = clock();
+          providerHeaders = safeProviderHeaders(
+            response.headers instanceof Headers
+              ? response.headers
+              : new Headers(),
+          );
+          if (response.ok) {
+            const body = await response.json();
+            bodyCompletedAt = clock();
+            return {
+              type: "SUCCESS_RESPONSE" as const,
+              response,
+              body,
+            };
+          }
+          const safeProviderError = await parseSafeProviderError(response);
+          bodyCompletedAt = clock();
+          return {
+            type: "HTTP_ERROR_RESPONSE" as const,
+            response,
+            safeProviderError,
+          };
+        },
+        (error: unknown) => ({ type: "ERROR" as const, error }),
+      );
+      dispatchCompletedAt = clock();
       const fetchOutcome = await Promise.race([
-        fetcher(MP06_AI_NLU_BASE_URL, {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${options.env.OPENAI_API_KEY}`,
-            "content-type": "application/json",
-          },
-          body: requestBody,
-          signal: controller.signal,
-        }).then(
-          async (response) =>
-            response.ok
-              ? {
-                  type: "SUCCESS_RESPONSE" as const,
-                  response,
-                  body: await response.json(),
-                }
-              : {
-                  type: "HTTP_ERROR_RESPONSE" as const,
-                  response,
-                  safeProviderError: await parseSafeProviderError(response),
-                },
-          (error: unknown) => ({ type: "ERROR" as const, error }),
-        ),
+        providerOperation,
         new Promise<{ readonly type: "DEADLINE" }>((resolve) => {
           timeout = setTimeout(() => {
             controller.abort();
@@ -516,13 +602,22 @@ export async function requestOpenAiMp06Nlu(
         guard.consecutiveTransientFailures += 1;
         guard.open =
           guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
-        const settled = await settleUnknownAttempt(options, attempt);
+        const lifecycle = lifecycleDiagnostics("PROVIDER_DEADLINE");
+        const settlement = await settleUnknownAttempt(
+          options,
+          attempt,
+          lifecycle,
+        );
+        const completedLifecycle = lifecycleDiagnostics("PROVIDER_DEADLINE", {
+          settlementMs: settlement.durationMs,
+        });
         return failure(
           "TIMEOUT",
           {
             ...baseMetadata,
             attempts: attempt,
-            settlementCode: settled
+            ...metadataFromLifecycle(completedLifecycle),
+            settlementCode: settlement.accepted
               ? "USAGE_UNKNOWN_SETTLED"
               : "SETTLEMENT_UNAVAILABLE",
           },
@@ -535,45 +630,83 @@ export async function requestOpenAiMp06Nlu(
         const response = fetchOutcome.response;
         const transient = response.status === 429 || response.status >= 500;
         const safeProviderError = fetchOutcome.safeProviderError;
+        const lifecycle = lifecycleDiagnostics("PROVIDER_HTTP_ERROR", {
+          httpStatus: response.status,
+          ...(safeProviderError.providerErrorType
+            ? { providerErrorType: safeProviderError.providerErrorType }
+            : {}),
+          ...(safeProviderError.providerErrorCode
+            ? { providerErrorCode: safeProviderError.providerErrorCode }
+            : {}),
+        });
         if (transient) {
           guard.consecutiveTransientFailures += 1;
           guard.open =
             guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
         }
-        if (
-          response.status >= 500 &&
-          options.attemptController &&
-          !(await settleUnknownAttempt(options, attempt))
-        ) {
-          return failure(
-            "PILOT_CONTROL_REJECTED",
-            {
-              ...baseMetadata,
-              attempts: attempt,
-              settlementCode: "SETTLEMENT_UNAVAILABLE",
-            },
-            options,
-            startedAt,
-          );
-        }
         if (response.status >= 500 && options.attemptController) {
+          const settlement = await settleUnknownAttempt(
+            options,
+            attempt,
+            lifecycle,
+          );
+          const completedLifecycle = lifecycleDiagnostics(
+            "PROVIDER_HTTP_ERROR",
+            {
+              httpStatus: response.status,
+              ...(safeProviderError.providerErrorType
+                ? { providerErrorType: safeProviderError.providerErrorType }
+                : {}),
+              ...(safeProviderError.providerErrorCode
+                ? { providerErrorCode: safeProviderError.providerErrorCode }
+                : {}),
+              settlementMs: settlement.durationMs,
+            },
+          );
           return failure(
-            "TRANSIENT_HTTP_ERROR",
+            settlement.accepted
+              ? "TRANSIENT_HTTP_ERROR"
+              : "PILOT_CONTROL_REJECTED",
             {
               ...baseMetadata,
               attempts: attempt,
               httpStatus: response.status,
-              settlementCode: "USAGE_UNKNOWN_SETTLED",
+              ...metadataFromLifecycle(completedLifecycle),
+              settlementCode: settlement.accepted
+                ? "USAGE_UNKNOWN_SETTLED"
+                : "SETTLEMENT_UNAVAILABLE",
               ...safeProviderError,
             },
             options,
             startedAt,
           );
         }
-        if (!(await settleKnownAttempt(options, attempt, 0))) {
+        const settlement = await settleKnownAttempt(
+          options,
+          attempt,
+          0,
+          lifecycle,
+        );
+        if (!settlement.accepted) {
           return failure(
             "PILOT_CONTROL_REJECTED",
-            { ...baseMetadata, attempts: attempt },
+            {
+              ...baseMetadata,
+              attempts: attempt,
+              ...metadataFromLifecycle(
+                lifecycleDiagnostics("PROVIDER_HTTP_ERROR", {
+                  httpStatus: response.status,
+                  ...(safeProviderError.providerErrorType
+                    ? { providerErrorType: safeProviderError.providerErrorType }
+                    : {}),
+                  ...(safeProviderError.providerErrorCode
+                    ? { providerErrorCode: safeProviderError.providerErrorCode }
+                    : {}),
+                  settlementMs: settlement.durationMs,
+                }),
+              ),
+              settlementCode: "SETTLEMENT_UNAVAILABLE",
+            },
             options,
             startedAt,
           );
@@ -585,21 +718,50 @@ export async function requestOpenAiMp06Nlu(
             ...baseMetadata,
             attempts: attempt,
             httpStatus: response.status,
+            ...metadataFromLifecycle(
+              lifecycleDiagnostics("PROVIDER_HTTP_ERROR", {
+                httpStatus: response.status,
+                ...(safeProviderError.providerErrorType
+                  ? { providerErrorType: safeProviderError.providerErrorType }
+                  : {}),
+                ...(safeProviderError.providerErrorCode
+                  ? { providerErrorCode: safeProviderError.providerErrorCode }
+                  : {}),
+                settlementMs: settlement.durationMs,
+              }),
+            ),
             ...safeProviderError,
           },
           options,
           startedAt,
         );
       }
+      const parsingStartedAt = clock();
       const parsed = parseOpenAiResponse(fetchOutcome.body);
+      const parsingMs = Math.max(0, clock() - parsingStartedAt);
+      const lifecycle = lifecycleDiagnostics("PROVIDER_RESPONSE", {
+        httpStatus: fetchOutcome.response.status,
+        parsingMs,
+      });
       if (options.attemptController && !parsed.usageKnown) {
-        const settled = await settleUnknownAttempt(options, attempt);
+        const settlement = await settleUnknownAttempt(
+          options,
+          attempt,
+          lifecycle,
+        );
         return failure(
           "PILOT_CONTROL_REJECTED",
           {
             ...baseMetadata,
             attempts: attempt,
-            settlementCode: settled
+            ...metadataFromLifecycle(
+              lifecycleDiagnostics("PROVIDER_RESPONSE", {
+                httpStatus: fetchOutcome.response.status,
+                parsingMs,
+                settlementMs: settlement.durationMs,
+              }),
+            ),
+            settlementCode: settlement.accepted
               ? "USAGE_UNKNOWN_SETTLED"
               : "SETTLEMENT_UNAVAILABLE",
           },
@@ -611,13 +773,29 @@ export async function requestOpenAiMp06Nlu(
         parsed.usage.inputTokens,
         parsed.usage.outputTokens,
       );
-      if (
-        actualCostMicroUsd === undefined ||
-        !(await settleKnownAttempt(options, attempt, actualCostMicroUsd))
-      ) {
+      const settlement =
+        actualCostMicroUsd === undefined
+          ? { accepted: false, durationMs: 0 }
+          : await settleKnownAttempt(
+              options,
+              attempt,
+              actualCostMicroUsd,
+              lifecycle,
+            );
+      const completedLifecycle = lifecycleDiagnostics("PROVIDER_RESPONSE", {
+        httpStatus: fetchOutcome.response.status,
+        parsingMs,
+        settlementMs: settlement.durationMs,
+      });
+      if (actualCostMicroUsd === undefined || !settlement.accepted) {
         return failure(
           "PILOT_CONTROL_REJECTED",
-          { ...baseMetadata, attempts: attempt },
+          {
+            ...baseMetadata,
+            attempts: attempt,
+            ...metadataFromLifecycle(completedLifecycle),
+            settlementCode: "SETTLEMENT_UNAVAILABLE",
+          },
           options,
           startedAt,
         );
@@ -625,7 +803,11 @@ export async function requestOpenAiMp06Nlu(
       if (parsed.refused) {
         return failure(
           "REFUSAL",
-          { ...baseMetadata, attempts: attempt },
+          {
+            ...baseMetadata,
+            attempts: attempt,
+            ...metadataFromLifecycle(completedLifecycle),
+          },
           options,
           startedAt,
         );
@@ -638,6 +820,7 @@ export async function requestOpenAiMp06Nlu(
           {
             ...baseMetadata,
             attempts: attempt,
+            ...metadataFromLifecycle(completedLifecycle),
             ...(parsed.model ? { responseModel: parsed.model } : {}),
           },
           options,
@@ -651,6 +834,7 @@ export async function requestOpenAiMp06Nlu(
           {
             ...baseMetadata,
             attempts: attempt,
+            ...metadataFromLifecycle(completedLifecycle),
             responseModel: parsed.model,
             usage,
           },
@@ -663,6 +847,7 @@ export async function requestOpenAiMp06Nlu(
         {
           ...baseMetadata,
           attempts: attempt,
+          ...metadataFromLifecycle(completedLifecycle),
           responseModel: parsed.model,
           usage,
           ...(options.attemptController
@@ -679,14 +864,27 @@ export async function requestOpenAiMp06Nlu(
         error instanceof DOMException && error.name === "AbortError";
       guard.consecutiveTransientFailures += 1;
       guard.open = guard.consecutiveTransientFailures > MP06_AI_NLU_MAX_RETRIES;
-      const settled = await settleUnknownAttempt(options, attempt);
+      const lifecycle = lifecycleDiagnostics(
+        timedOut ? "PROVIDER_ABORT_ERROR" : "PROVIDER_NETWORK_ERROR",
+      );
+      const settlement = await settleUnknownAttempt(
+        options,
+        attempt,
+        lifecycle,
+      );
       if (options.attemptController) {
         return failure(
           timedOut ? "TIMEOUT" : "NETWORK_ERROR",
           {
             ...baseMetadata,
             attempts: attempt,
-            settlementCode: settled
+            ...metadataFromLifecycle(
+              lifecycleDiagnostics(
+                timedOut ? "PROVIDER_ABORT_ERROR" : "PROVIDER_NETWORK_ERROR",
+                { settlementMs: settlement.durationMs },
+              ),
+            ),
+            settlementCode: settlement.accepted
               ? "USAGE_UNKNOWN_SETTLED"
               : "SETTLEMENT_UNAVAILABLE",
           },
@@ -717,32 +915,63 @@ async function settleKnownAttempt(
   options: Mp06AiNluRuntimeOptions,
   attempt: number,
   actualCostMicroUsd: number,
-): Promise<boolean> {
-  if (!options.attemptController) return true;
-  try {
-    return await options.attemptController.settle({
-      attempt,
-      outcome: "KNOWN",
-      actualCostMicroUsd,
-    });
-  } catch {
-    return false;
-  }
+  diagnostics: Mp06ProviderLifecycleDiagnostics,
+): Promise<Mp06SettlementOutcome> {
+  return settleAttemptWithDeadline(options, {
+    attempt,
+    outcome: "KNOWN",
+    actualCostMicroUsd,
+    diagnostics,
+  });
 }
 
 async function settleUnknownAttempt(
   options: Mp06AiNluRuntimeOptions,
   attempt: number,
-): Promise<boolean> {
-  if (!options.attemptController) return true;
-  try {
-    return await options.attemptController.settle({
-      attempt,
-      outcome: "USAGE_UNKNOWN",
-    });
-  } catch {
-    return false;
-  }
+  diagnostics: Mp06ProviderLifecycleDiagnostics,
+): Promise<Mp06SettlementOutcome> {
+  return settleAttemptWithDeadline(options, {
+    attempt,
+    outcome: "USAGE_UNKNOWN",
+    diagnostics,
+  });
+}
+
+interface Mp06SettlementOutcome {
+  readonly accepted: boolean;
+  readonly durationMs: number;
+}
+
+async function settleAttemptWithDeadline(
+  options: Mp06AiNluRuntimeOptions,
+  input: Parameters<Mp06AiNluAttemptController["settle"]>[0],
+): Promise<Mp06SettlementOutcome> {
+  if (!options.attemptController) return { accepted: true, durationMs: 0 };
+  const clock = options.now ?? Date.now;
+  const startedAt = clock();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const operation = Promise.resolve()
+    .then(() => options.attemptController!.settle(input))
+    .then(
+      (accepted) => ({ type: "SETTLED" as const, accepted }),
+      () => ({ type: "FAILED" as const, accepted: false }),
+    );
+  const outcome = await Promise.race([
+    operation,
+    new Promise<{ readonly type: "DEADLINE"; readonly accepted: false }>(
+      (resolve) => {
+        timeout = setTimeout(
+          () => resolve({ type: "DEADLINE", accepted: false }),
+          MP06_AI_NLU_SETTLEMENT_DEADLINE_MS,
+        );
+      },
+    ),
+  ]);
+  if (timeout !== undefined) clearTimeout(timeout);
+  return {
+    accepted: outcome.accepted,
+    durationMs: Math.max(0, clock() - startedAt),
+  };
 }
 
 export async function planMp06WithAdvisoryNlu(
@@ -925,20 +1154,102 @@ function parseUsage(value: unknown): Mp06AiNluUsage | undefined {
 
 async function parseSafeProviderError(response: Response): Promise<{
   readonly providerErrorCode?: string;
+  readonly providerErrorType?: string;
   readonly providerErrorParam?: string;
 }> {
   try {
     const value: unknown = await response.json();
     if (!isRecord(value) || !isRecord(value.error)) return {};
     const code = safeProviderMetadata(value.error.code);
+    const type = safeProviderMetadata(value.error.type);
     const param = safeProviderMetadata(value.error.param);
     return {
       ...(code ? { providerErrorCode: code } : {}),
+      ...(type ? { providerErrorType: type } : {}),
       ...(param ? { providerErrorParam: param } : {}),
     };
   } catch {
     return {};
   }
+}
+
+function safeProviderHeaders(headers: Headers): {
+  readonly providerRequestId?: string;
+  readonly retryAfterMs?: number;
+  readonly rateLimitRemainingRequests?: number;
+} {
+  const providerRequestId = safeProviderMetadata(headers.get("x-request-id"));
+  const retryAfter = headers.get("retry-after");
+  const retryAfterSeconds =
+    retryAfter === null ? undefined : Number(retryAfter);
+  const remaining = headers.get("x-ratelimit-remaining-requests");
+  const rateLimitRemainingRequests =
+    remaining === null ? undefined : Number(remaining);
+  return {
+    ...(providerRequestId ? { providerRequestId } : {}),
+    ...(Number.isFinite(retryAfterSeconds) &&
+    Number(retryAfterSeconds) >= 0 &&
+    Number(retryAfterSeconds) <= 3_600
+      ? { retryAfterMs: Math.round(Number(retryAfterSeconds) * 1_000) }
+      : {}),
+    ...(Number.isSafeInteger(rateLimitRemainingRequests) &&
+    Number(rateLimitRemainingRequests) >= 0
+      ? { rateLimitRemainingRequests: Number(rateLimitRemainingRequests) }
+      : {}),
+  };
+}
+
+function metadataFromLifecycle(
+  diagnostics: Mp06ProviderLifecycleDiagnostics,
+): Pick<
+  Mp06AiNluSafeMetadata,
+  | "clientRequestId"
+  | "httpStatus"
+  | "providerRequestId"
+  | "providerErrorType"
+  | "providerErrorCode"
+  | "retryAfterMs"
+  | "rateLimitRemainingRequests"
+  | "phaseDurationsMs"
+> {
+  return {
+    clientRequestId: diagnostics.clientRequestId,
+    ...(diagnostics.httpStatus === undefined
+      ? {}
+      : { httpStatus: diagnostics.httpStatus }),
+    ...(diagnostics.providerRequestId
+      ? { providerRequestId: diagnostics.providerRequestId }
+      : {}),
+    ...(diagnostics.providerErrorType
+      ? { providerErrorType: diagnostics.providerErrorType }
+      : {}),
+    ...(diagnostics.providerErrorCode
+      ? { providerErrorCode: diagnostics.providerErrorCode }
+      : {}),
+    ...(diagnostics.retryAfterMs === undefined
+      ? {}
+      : { retryAfterMs: diagnostics.retryAfterMs }),
+    ...(diagnostics.rateLimitRemainingRequests === undefined
+      ? {}
+      : {
+          rateLimitRemainingRequests: diagnostics.rateLimitRemainingRequests,
+        }),
+    phaseDurationsMs: {
+      dispatch: diagnostics.dispatchMs,
+      ...(diagnostics.headersWaitMs === undefined
+        ? {}
+        : { headersWait: diagnostics.headersWaitMs }),
+      ...(diagnostics.bodyReadMs === undefined
+        ? {}
+        : { bodyRead: diagnostics.bodyReadMs }),
+      ...(diagnostics.parsingMs === undefined
+        ? {}
+        : { parsing: diagnostics.parsingMs }),
+      ...(diagnostics.settlementMs === undefined
+        ? {}
+        : { settlement: diagnostics.settlementMs }),
+    },
+  };
 }
 
 function safeProviderMetadata(value: unknown): string | undefined {

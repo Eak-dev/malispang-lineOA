@@ -263,6 +263,104 @@ describe("MP-06 WP8A runtime pilot contract", () => {
     expect(JSON.stringify(result)).not.toContain(marker);
   });
 
+  it("bounds settlement RPC wait and rejects a late completion without authorizing AI output", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-07T00:00:00.000Z"));
+    try {
+      let finishSettlement: ((accepted: boolean) => void) | undefined;
+      let settlementStarted = false;
+      const resultPromise = requestOpenAiMp06Nlu("ขอเมนู", {
+        env: aiEnvironment,
+        fetcher: vi.fn<typeof fetch>().mockResolvedValue(validResponse()),
+        attemptController: {
+          ...recordingController([]),
+          settle: () =>
+            new Promise<boolean>((resolve) => {
+              settlementStarted = true;
+              finishSettlement = resolve;
+            }),
+        },
+      });
+      await vi.waitFor(() => expect(settlementStarted).toBe(true));
+      await vi.advanceTimersByTimeAsync(2_000);
+      const result = await resultPromise;
+      expect(result.ok).toBe(false);
+      expect(result.metadata).toMatchObject({
+        outcomeCode: "PILOT_CONTROL_REJECTED",
+        settlementCode: "SETTLEMENT_UNAVAILABLE",
+        phaseDurationsMs: { settlement: 2_000 },
+      });
+      finishSettlement?.(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(result.ok).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("captures only sanitized provider IDs, error metadata, headers and phase timings", async () => {
+    const settleInputs: Parameters<Mp06AiNluAttemptController["settle"]>[0][] =
+      [];
+    const fetcher = vi.fn<typeof fetch>().mockImplementation((_url, init) => {
+      expect(new Headers(init?.headers).get("x-client-request-id")).toBe(
+        "client-request-safe-1",
+      );
+      return Promise.resolve(
+        Response.json(
+          {
+            error: {
+              type: "invalid_request_error",
+              code: "synthetic_invalid",
+              param: "input",
+              message: "PRIVATE_PROVIDER_MESSAGE",
+            },
+          },
+          {
+            status: 400,
+            headers: {
+              "x-request-id": "req_safe_123",
+              "retry-after": "2",
+              "x-ratelimit-remaining-requests": "17",
+            },
+          },
+        ),
+      );
+    });
+    const base = recordingController([]);
+    const result = await requestOpenAiMp06Nlu("ขอเมนู", {
+      env: aiEnvironment,
+      fetcher,
+      clientRequestId: () => "client-request-safe-1",
+      attemptController: {
+        ...base,
+        settle: (input) => {
+          settleInputs.push(input);
+          return Promise.resolve(true);
+        },
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.metadata).toMatchObject({
+      outcomeCode: "PERMANENT_HTTP_ERROR",
+      httpStatus: 400,
+      providerRequestId: "req_safe_123",
+      clientRequestId: "client-request-safe-1",
+      providerErrorType: "invalid_request_error",
+      providerErrorCode: "synthetic_invalid",
+      retryAfterMs: 2_000,
+      rateLimitRemainingRequests: 17,
+    });
+    expect(settleInputs[0]?.diagnostics).toMatchObject({
+      clientRequestId: "client-request-safe-1",
+      providerRequestId: "req_safe_123",
+      httpStatus: 400,
+      providerErrorType: "invalid_request_error",
+      providerErrorCode: "synthetic_invalid",
+      outcomeCode: "PROVIDER_HTTP_ERROR",
+    });
+    expect(JSON.stringify(result)).not.toContain("PRIVATE_PROVIDER_MESSAGE");
+  });
+
   it("treats 5xx and missing usage as uncertain instead of reclaiming budget", async () => {
     for (const response of [
       Response.json({}, { status: 500 }),

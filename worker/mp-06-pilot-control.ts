@@ -67,6 +67,35 @@ export interface Mp06PilotAttemptInput {
 export interface SettleMp06PilotAttemptInput extends Mp06PilotAttemptInput {
   readonly outcome: "KNOWN" | "USAGE_UNKNOWN";
   readonly actualCostMicroUsd?: number;
+  readonly diagnostics?: Mp06ProviderLifecycleDiagnostics;
+}
+
+export interface Mp06ProviderLifecycleDiagnostics {
+  readonly clientRequestId: string;
+  readonly providerRequestId?: string;
+  readonly httpStatus?: number;
+  readonly providerErrorType?: string;
+  readonly providerErrorCode?: string;
+  readonly retryAfterMs?: number;
+  readonly rateLimitRemainingRequests?: number;
+  readonly dispatchMs: number;
+  readonly headersWaitMs?: number;
+  readonly bodyReadMs?: number;
+  readonly parsingMs?: number;
+  readonly settlementMs?: number;
+  readonly outcomeCode: string;
+}
+
+export interface ReconcileMp06PilotUnknownUsageInput {
+  readonly now: number;
+  readonly expectedState: "STOPPED";
+  readonly expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN";
+  readonly expectedAdmittedEvents: 1;
+  readonly expectedProviderAttempts: 1;
+  readonly expectedBudgetConsumedMicroUsd: 0;
+  readonly expectedBudgetReservedMicroUsd: 12932;
+  readonly expectedInFlight: 1;
+  readonly disposition: "CONSUME_FULL_RESERVATION_NO_REFUND";
 }
 
 export type Mp06PilotAdmissionCode =
@@ -135,6 +164,7 @@ export interface Mp06PilotAttemptDiagnostics {
   readonly budgetConsumedMicroUsd: number;
   readonly budgetReservedMicroUsd: number;
   readonly inFlight: number;
+  readonly latestLifecycle?: Mp06ProviderLifecycleDiagnostics;
 }
 
 export interface Mp06PilotStatus {

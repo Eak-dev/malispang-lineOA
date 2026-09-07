@@ -23,6 +23,8 @@ import {
   type Mp06PilotAttemptResult,
   type Mp06PilotStatus,
   type Mp06PilotStopResult,
+  type Mp06ProviderLifecycleDiagnostics,
+  type ReconcileMp06PilotUnknownUsageInput,
   type ReserveMp06PilotAttemptInput,
   type SettleMp06PilotAttemptInput,
 } from "./mp-06-pilot-control.js";
@@ -82,6 +84,22 @@ interface Mp06PilotAttemptRow extends Record<string, SqlStorageValue> {
   state: "RESERVED" | "DISPATCHED" | "SETTLED" | "USAGE_UNKNOWN";
   reserved_cost_micro_usd: number;
   actual_cost_micro_usd: number | null;
+}
+
+interface Mp06PilotLifecycleRow extends Record<string, SqlStorageValue> {
+  client_request_id: string;
+  provider_request_id: string | null;
+  http_status: number | null;
+  provider_error_type: string | null;
+  provider_error_code: string | null;
+  retry_after_ms: number | null;
+  rate_limit_remaining_requests: number | null;
+  dispatch_ms: number;
+  headers_wait_ms: number | null;
+  body_read_ms: number | null;
+  parsing_ms: number | null;
+  settlement_ms: number | null;
+  outcome_code: string;
 }
 
 export class ConversationStateDO extends DurableObject<Env> {
@@ -169,6 +187,23 @@ export class ConversationStateDO extends DurableObject<Env> {
           reserved_at INTEGER NOT NULL,
           lease_expires_at INTEGER NOT NULL,
           settled_at INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS mp06_pilot_lifecycle_diagnostics (
+          attempt_ref TEXT PRIMARY KEY,
+          client_request_id TEXT NOT NULL,
+          provider_request_id TEXT,
+          http_status INTEGER,
+          provider_error_type TEXT,
+          provider_error_code TEXT,
+          retry_after_ms INTEGER,
+          rate_limit_remaining_requests INTEGER,
+          dispatch_ms INTEGER NOT NULL,
+          headers_wait_ms INTEGER,
+          body_read_ms INTEGER,
+          parsing_ms INTEGER,
+          settlement_ms INTEGER,
+          outcome_code TEXT NOT NULL,
+          recorded_at INTEGER NOT NULL
         );
       `);
       return Promise.resolve();
@@ -425,7 +460,10 @@ export class ConversationStateDO extends DurableObject<Env> {
     }
     return this.ctx.storage.transactionSync(() => {
       const current = this.mp06PilotSession();
-      if (current?.in_flight === 1) {
+      if (
+        current &&
+        (current.in_flight !== 0 || current.budget_reserved_micro_usd !== 0)
+      ) {
         return {
           activated: false,
           code: "UNRESOLVED_IN_FLIGHT",
@@ -444,15 +482,16 @@ export class ConversationStateDO extends DurableObject<Env> {
         };
       }
       const sql = this.ctx.storage.sql;
-      sql.exec("DELETE FROM mp06_pilot_attempts");
-      sql.exec("DELETE FROM mp06_pilot_events");
       sql.exec("DELETE FROM mp06_pilot_testers");
       sql.exec("DELETE FROM mp06_pilot_session");
       sql.exec(
-        "INSERT INTO mp06_pilot_session VALUES (1, ?, 'ACTIVE', ?, ?, 0, 0, 0, 0, 0, NULL)",
+        "INSERT INTO mp06_pilot_session VALUES (1, ?, 'ACTIVE', ?, ?, ?, ?, ?, 0, 0, NULL)",
         input.sessionRef,
         input.now,
         input.now + input.limits.sessionDurationMs,
+        current?.admitted_events ?? 0,
+        current?.provider_attempts ?? 0,
+        current?.budget_consumed_micro_usd ?? 0,
       );
       for (const testerRef of input.testerRefs) {
         sql.exec(
@@ -690,7 +729,10 @@ export class ConversationStateDO extends DurableObject<Env> {
     if (
       !validMp06PilotAttemptInput(input) ||
       (input.outcome !== "KNOWN" && input.outcome !== "USAGE_UNKNOWN") ||
-      (input.outcome === "KNOWN" && !isMp06PilotCost(input.actualCostMicroUsd))
+      (input.outcome === "KNOWN" &&
+        !isMp06PilotCost(input.actualCostMicroUsd)) ||
+      (input.diagnostics !== undefined &&
+        !validMp06ProviderLifecycleDiagnostics(input.diagnostics))
     ) {
       return { accepted: false, code: "CONTROL_UNAVAILABLE" };
     }
@@ -702,6 +744,13 @@ export class ConversationStateDO extends DurableObject<Env> {
         attempt.event_ref !== input.eventRef
       ) {
         return { accepted: false, code: "ATTEMPT_INVALID_STATE" };
+      }
+      if (input.diagnostics) {
+        this.recordMp06ProviderLifecycleDiagnostics(
+          input.attemptRef,
+          input.diagnostics,
+          input.now,
+        );
       }
       if (attempt.state === "SETTLED" || attempt.state === "USAGE_UNKNOWN") {
         return { accepted: true, code: "SETTLED_IDEMPOTENT" };
@@ -771,6 +820,16 @@ export class ConversationStateDO extends DurableObject<Env> {
           now,
         )
         .one();
+      const latest = this.ctx.storage.sql
+        .exec<Mp06PilotLifecycleRow>(
+          `SELECT client_request_id, provider_request_id, http_status,
+            provider_error_type, provider_error_code, retry_after_ms,
+            rate_limit_remaining_requests, dispatch_ms, headers_wait_ms,
+            body_read_ms, parsing_ms, settlement_ms, outcome_code
+          FROM mp06_pilot_lifecycle_diagnostics
+          ORDER BY recorded_at DESC, rowid DESC LIMIT 1`,
+        )
+        .toArray()[0];
       return {
         sessionState: pilotStatus(session, now).state,
         ...(session.stop_reason ? { stopReason: session.stop_reason } : {}),
@@ -783,12 +842,15 @@ export class ConversationStateDO extends DurableObject<Env> {
         budgetConsumedMicroUsd: session.budget_consumed_micro_usd,
         budgetReservedMicroUsd: session.budget_reserved_micro_usd,
         inFlight: session.in_flight,
+        ...(latest ? { latestLifecycle: lifecycleDiagnostics(latest) } : {}),
       };
     });
   }
 
-  reconcileMp06PilotUnknownUsage(now: number): Mp06PilotAttemptResult {
-    if (!isMp06PilotTimestamp(now)) {
+  reconcileMp06PilotUnknownUsage(
+    input: ReconcileMp06PilotUnknownUsageInput,
+  ): Mp06PilotAttemptResult {
+    if (!validMp06ReconciliationInput(input)) {
       return { accepted: false, code: "CONTROL_UNAVAILABLE" };
     }
     return this.ctx.storage.transactionSync(() => {
@@ -805,14 +867,23 @@ export class ConversationStateDO extends DurableObject<Env> {
         session.state === "STOPPED" &&
         session.stop_reason === "PROVIDER_USAGE_UNKNOWN_RECONCILED" &&
         session.in_flight === 0 &&
+        session.budget_reserved_micro_usd === 0 &&
+        session.budget_consumed_micro_usd ===
+          input.expectedBudgetReservedMicroUsd &&
         Number(alreadyReconciled) === 1
       ) {
         return { accepted: true, code: "RECONCILED_IDEMPOTENT" };
       }
       if (
-        session.state !== "STOPPED" ||
-        session.stop_reason !== "IN_FLIGHT_USAGE_UNKNOWN" ||
-        session.in_flight !== 1
+        session.state !== input.expectedState ||
+        session.stop_reason !== input.expectedStopReason ||
+        session.admitted_events !== input.expectedAdmittedEvents ||
+        session.provider_attempts !== input.expectedProviderAttempts ||
+        session.budget_consumed_micro_usd !==
+          input.expectedBudgetConsumedMicroUsd ||
+        session.budget_reserved_micro_usd !==
+          input.expectedBudgetReservedMicroUsd ||
+        session.in_flight !== input.expectedInFlight
       ) {
         return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
       }
@@ -822,16 +893,20 @@ export class ConversationStateDO extends DurableObject<Env> {
           reserved_cost_micro_usd: number;
         }>(
           "SELECT attempt_ref, reserved_cost_micro_usd FROM mp06_pilot_attempts WHERE state = 'DISPATCHED' AND lease_expires_at <= ?",
-          now,
+          input.now,
         )
         .toArray();
-      if (attempts.length !== 1) {
+      if (
+        attempts.length !== 1 ||
+        attempts[0]?.reserved_cost_micro_usd !==
+          input.expectedBudgetReservedMicroUsd
+      ) {
         return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
       }
-      const attempt = attempts[0]!;
+      const attempt = attempts[0];
       const changed = this.ctx.storage.sql.exec(
         "UPDATE mp06_pilot_attempts SET state = 'USAGE_UNKNOWN', actual_cost_micro_usd = reserved_cost_micro_usd, settled_at = ? WHERE attempt_ref = ? AND state = 'DISPATCHED'",
-        now,
+        input.now,
         attempt.attempt_ref,
       ).rowsWritten;
       if (changed !== 1) {
@@ -941,6 +1016,36 @@ export class ConversationStateDO extends DurableObject<Env> {
       .toArray()[0];
   }
 
+  private recordMp06ProviderLifecycleDiagnostics(
+    attemptRef: string,
+    diagnostics: Mp06ProviderLifecycleDiagnostics,
+    recordedAt: number,
+  ): void {
+    this.ctx.storage.sql.exec(
+      `INSERT OR IGNORE INTO mp06_pilot_lifecycle_diagnostics (
+        attempt_ref, client_request_id, provider_request_id, http_status,
+        provider_error_type, provider_error_code, retry_after_ms,
+        rate_limit_remaining_requests, dispatch_ms, headers_wait_ms,
+        body_read_ms, parsing_ms, settlement_ms, outcome_code, recorded_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      attemptRef,
+      diagnostics.clientRequestId,
+      diagnostics.providerRequestId ?? null,
+      diagnostics.httpStatus ?? null,
+      diagnostics.providerErrorType ?? null,
+      diagnostics.providerErrorCode ?? null,
+      diagnostics.retryAfterMs ?? null,
+      diagnostics.rateLimitRemainingRequests ?? null,
+      diagnostics.dispatchMs,
+      diagnostics.headersWaitMs ?? null,
+      diagnostics.bodyReadMs ?? null,
+      diagnostics.parsingMs ?? null,
+      diagnostics.settlementMs ?? null,
+      diagnostics.outcomeCode,
+      recordedAt,
+    );
+  }
+
   private expireOrStopUncertainMp06Pilot(
     now: number,
   ): Mp06PilotSessionRow | undefined {
@@ -1020,6 +1125,80 @@ export class ConversationStateDO extends DurableObject<Env> {
       input.now + input.auditRetentionSeconds * 1000,
     );
   }
+}
+
+function validMp06ProviderLifecycleDiagnostics(
+  value: Mp06ProviderLifecycleDiagnostics,
+): boolean {
+  const safeMetadata = (input: string | undefined): boolean =>
+    input === undefined || /^[A-Za-z0-9_.:-]{1,128}$/u.test(input);
+  const safeOptionalInteger = (input: number | undefined): boolean =>
+    input === undefined || (Number.isSafeInteger(input) && input >= 0);
+  return (
+    safeMetadata(value.clientRequestId) &&
+    value.clientRequestId.length > 0 &&
+    safeMetadata(value.providerRequestId) &&
+    safeMetadata(value.providerErrorType) &&
+    safeMetadata(value.providerErrorCode) &&
+    safeMetadata(value.outcomeCode) &&
+    value.outcomeCode.length > 0 &&
+    safeOptionalInteger(value.httpStatus) &&
+    safeOptionalInteger(value.retryAfterMs) &&
+    safeOptionalInteger(value.rateLimitRemainingRequests) &&
+    safeOptionalInteger(value.dispatchMs) &&
+    safeOptionalInteger(value.headersWaitMs) &&
+    safeOptionalInteger(value.bodyReadMs) &&
+    safeOptionalInteger(value.parsingMs) &&
+    safeOptionalInteger(value.settlementMs)
+  );
+}
+
+function validMp06ReconciliationInput(
+  input: ReconcileMp06PilotUnknownUsageInput,
+): boolean {
+  return (
+    isMp06PilotTimestamp(input.now) &&
+    input.expectedState === "STOPPED" &&
+    input.expectedStopReason === "IN_FLIGHT_USAGE_UNKNOWN" &&
+    input.expectedAdmittedEvents === 1 &&
+    input.expectedProviderAttempts === 1 &&
+    input.expectedBudgetConsumedMicroUsd === 0 &&
+    input.expectedBudgetReservedMicroUsd === 12_932 &&
+    input.expectedInFlight === 1 &&
+    input.disposition === "CONSUME_FULL_RESERVATION_NO_REFUND"
+  );
+}
+
+function lifecycleDiagnostics(
+  row: Mp06PilotLifecycleRow,
+): Mp06ProviderLifecycleDiagnostics {
+  return {
+    clientRequestId: row.client_request_id,
+    ...(row.provider_request_id
+      ? { providerRequestId: row.provider_request_id }
+      : {}),
+    ...(row.http_status === null ? {} : { httpStatus: row.http_status }),
+    ...(row.provider_error_type
+      ? { providerErrorType: row.provider_error_type }
+      : {}),
+    ...(row.provider_error_code
+      ? { providerErrorCode: row.provider_error_code }
+      : {}),
+    ...(row.retry_after_ms === null
+      ? {}
+      : { retryAfterMs: row.retry_after_ms }),
+    ...(row.rate_limit_remaining_requests === null
+      ? {}
+      : { rateLimitRemainingRequests: row.rate_limit_remaining_requests }),
+    dispatchMs: row.dispatch_ms,
+    ...(row.headers_wait_ms === null
+      ? {}
+      : { headersWaitMs: row.headers_wait_ms }),
+    ...(row.body_read_ms === null ? {} : { bodyReadMs: row.body_read_ms }),
+    ...(row.parsing_ms === null ? {} : { parsingMs: row.parsing_ms }),
+    ...(row.settlement_ms === null ? {} : { settlementMs: row.settlement_ms }),
+    outcomeCode: row.outcome_code,
+  };
 }
 
 function validMp06PilotLimits(
