@@ -37,14 +37,25 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const remediation = evaluateProjectAction(
+  const pilot = evaluateProjectAction(
     roadmap,
     currentWork,
-    "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
+    "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
   );
-  if (!remediation.allowed) {
+  if (!pilot.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8A runtime pilot-control remediation must be authorized",
+      "ROADMAP_UNVERIFIED: WP8 controlled TEST pilot must be authorized",
+    );
+  }
+
+  const testDeployment = evaluateProjectAction(
+    roadmap,
+    currentWork,
+    "DEPLOY_TEST",
+  );
+  if (!testDeployment.allowed) {
+    throw new Error(
+      "ROADMAP_UNVERIFIED: exact TEST deployment must be authorized",
     );
   }
 
@@ -58,8 +69,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "TEST_READINESS_ASSESSMENT_WP6",
     "TEST_READINESS_CONDITION_CLOSURE_WP6",
     "AI_NLU_IMPLEMENTATION_WP7",
+    "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
     "LOCAL_IMPLEMENTATION",
-    "DEPLOY_TEST",
     "CHANGE_PRODUCTION",
   ] as const) {
     const decision = evaluateProjectAction(roadmap, currentWork, action);
@@ -73,7 +84,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.07-v6, MP-06 (GitHub #12), WP8A runtime pilot-control remediation only is authorized; TEST deployment and Production remain blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.07-v7, MP-06 (GitHub #12), exact WP8 TEST deploy/smoke/rollback is authorized but not yet attempted; Production remains blocked, ${warningSuffix}`,
   );
 }
 

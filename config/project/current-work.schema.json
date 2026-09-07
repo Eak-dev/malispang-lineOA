@@ -29,6 +29,7 @@
     "testReadinessConditionClosurePlan",
     "wp7AiNluPlan",
     "wp8aRuntimePilotControlPlan",
+    "wp8TestPilotPlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -45,9 +46,9 @@
     },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
-    "currentPhase": { "const": "WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION" },
+    "currentPhase": { "const": "WP8_CONTROLLED_TEST_PILOT" },
     "status": {
-      "const": "AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY"
+      "const": "AUTHORIZED_TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8_ONLY"
     },
     "base": {
       "type": "object",
@@ -59,8 +60,8 @@
       }
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
-    "targetEnvironment": { "const": "LOCAL_ONLY" },
-    "authorizedWorkPackage": { "const": "WP8A" },
+    "targetEnvironment": { "const": "TEST_ONLY" },
+    "authorizedWorkPackage": { "const": "WP8" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -89,11 +90,15 @@
         "aiNluImplementationWp7",
         "aiNluLocalAcceptanceCompleteWp7",
         "runtimePilotControlRemediationWp8a",
+        "runtimePilotControlsCompleteWp8a",
+        "testDeploymentSmokeRollbackWp8",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
         "pushBranch",
         "githubRoadmapUpdate",
+        "testDeploymentAuthorization",
+        "testDeploymentOccurred",
         "testDeployment",
         "production"
       ],
@@ -109,13 +114,17 @@
         "testReadinessConditionsClosedWp6": { "const": true },
         "aiNluImplementationWp7": { "const": false },
         "aiNluLocalAcceptanceCompleteWp7": { "const": true },
-        "runtimePilotControlRemediationWp8a": { "const": true },
+        "runtimePilotControlRemediationWp8a": { "const": false },
+        "runtimePilotControlsCompleteWp8a": { "const": true },
+        "testDeploymentSmokeRollbackWp8": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeployment": { "type": "boolean" },
+        "testDeploymentAuthorization": { "const": true },
+        "testDeploymentOccurred": { "const": false },
+        "testDeployment": { "const": false },
         "production": { "type": "boolean" }
       }
     },
@@ -1184,6 +1193,68 @@
         },
         "testDeploymentAuthorization": { "const": false },
         "remoteMutationAuthorization": { "const": false },
+        "productionStatus": { "const": "NO_GO" },
+        "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8TestPilotPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorizationStatus",
+        "executionControlBaseCommit",
+        "candidateRuntimeCommit",
+        "candidateArtifactSha256",
+        "workerName",
+        "configPath",
+        "workerDomain",
+        "rollbackTargetVersionId",
+        "credentialSlot",
+        "deploymentOccurred",
+        "currentDeployedRevision",
+        "pilotAiEnabled",
+        "ownerUatStatus",
+        "gateA",
+        "gateB",
+        "gateC",
+        "maximumTestEvents",
+        "maximumProviderAttempts",
+        "maximumSessionMinutes",
+        "maximumCostMicroUsd",
+        "productionStatus",
+        "issueMustRemainOpen"
+      ],
+      "properties": {
+        "authorizationStatus": { "const": "AUTHORIZED_NOT_ATTEMPTED" },
+        "executionControlBaseCommit": {
+          "const": "ae4ec0c312a40c577e5e4e27ac07273f5f3849f4"
+        },
+        "candidateRuntimeCommit": {
+          "const": "d48c5066a4b92d4035bcf41076734199cc0fea4a"
+        },
+        "candidateArtifactSha256": {
+          "const": "810c6d51f4898076ce2d6c4f93666128370387e79263d695021c50cf250ed36b"
+        },
+        "workerName": { "const": "malispang-lineoa-test" },
+        "configPath": { "const": "wrangler.jsonc" },
+        "workerDomain": {
+          "const": "malispang-lineoa-test.eakkachai-dev.workers.dev"
+        },
+        "rollbackTargetVersionId": {
+          "const": "3e02e79b-29c9-46cf-9218-ed2d0b7d7655"
+        },
+        "credentialSlot": { "const": "OPENAI_API_KEY" },
+        "deploymentOccurred": { "const": false },
+        "currentDeployedRevision": { "const": null },
+        "pilotAiEnabled": { "const": false },
+        "ownerUatStatus": { "const": "PENDING" },
+        "gateA": { "const": "PASS_SAFE_OVER_HANDOFF_ONLY" },
+        "gateB": { "const": "PASS_RUNTIME_ENFORCED" },
+        "gateC": { "const": "PASS_RETAINED_TEST_V21_NO_AI" },
+        "maximumTestEvents": { "const": 200 },
+        "maximumProviderAttempts": { "const": 200 },
+        "maximumSessionMinutes": { "const": 60 },
+        "maximumCostMicroUsd": { "const": 5000000 },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
       }

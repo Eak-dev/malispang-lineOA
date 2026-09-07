@@ -65,11 +65,15 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "testDeploymentAuthorization",
+        "testDeploymentOccurred",
         "testDeployment",
         "productionStatus",
         "productionAuthorizationReference"
       ],
       "properties": {
+        "testDeploymentAuthorization": { "type": "boolean" },
+        "testDeploymentOccurred": { "type": "boolean" },
         "testDeployment": { "type": "boolean" },
         "productionStatus": { "enum": ["NO_GO", "GO"] },
         "productionAuthorizationReference": { "type": ["string", "null"] }

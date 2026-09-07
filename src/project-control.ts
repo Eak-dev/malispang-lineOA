@@ -25,6 +25,7 @@ export type ProjectAction =
   | "TEST_READINESS_CONDITION_CLOSURE_WP6"
   | "AI_NLU_IMPLEMENTATION_WP7"
   | "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A"
+  | "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -79,7 +80,6 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "SUPPLY_CHAIN_REDESIGN",
   "CREATE_NEW_CI_WORKFLOW",
   "START_MP_07_OR_OTHER_WORK",
-  "DEPLOY_TEST",
   "DEPLOY_PRODUCTION",
   "MERGE_DEFAULT_BRANCH",
   "REBASE_BRANCH",
@@ -87,12 +87,12 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "CHANGE_DEFAULT_BRANCH",
   "RESOLVE_DEFAULT_BRANCH_DRIFT",
   "CHANGE_LINE_OA",
-  "CHANGE_CLOUDFLARE_REMOTE_STATE",
   "CHANGE_LINE_WEBHOOK_CONFIGURATION",
   "CHANGE_RICH_MENU",
   "CHANGE_REWARD_CARD",
   "CREATE_OR_CHANGE_REMOTE_TEST_RESOURCE",
-  "ADD_CHANGE_OR_DELETE_SECRET",
+  "CHANGE_TEST_REMOTE_STATE_OUTSIDE_EXACT_WP8_TARGET",
+  "CHANGE_SECRET_OTHER_THAN_APPROVED_OPENAI_API_KEY_TEST_SLOT",
   "READ_SECRET_VALUES",
   "QUERY_OR_OPEN_PRODUCTION_REMOTE_STATE",
   "CHANGE_WRANGLER_OUTSIDE_TEST_PILOT_CONTROL_CONFIGURATION",
@@ -101,13 +101,18 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP8A_SCOPE = [
-  "MP_06_WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION",
-  "WEBHOOK_ADMISSION_PILOT_CONTROL_ONLY",
-  "DURABLE_OBJECT_ATOMIC_PILOT_COORDINATION",
-  "OUTBOUND_PROVIDER_ATTEMPT_RESERVATION",
-  "TEST_ONLY_NON_SECRET_CONTROL_CONFIGURATION",
-  "READINESS_CORRECTION_AND_EVIDENCE",
+const REQUIRED_WP8_SCOPE = [
+  "MP_06_WP8_CONTROLLED_TEST_DEPLOYMENT_SMOKE_ROLLBACK",
+  "READ_EXACT_TEST_REMOTE_METADATA",
+  "INSTALL_APPROVED_OPENAI_API_KEY_IN_EXACT_TEST_SECRET_SLOT",
+  "DEPLOY_VERIFIED_CANDIDATE_TO_EXISTING_TEST_WORKER",
+  "AUTHENTICATED_INTERNAL_ALLOWLIST_PILOT",
+  "SYNTHETIC_TEST_HTTP_SMOKE",
+  "VERIFIED_LINE_TEST_CHANNEL_SMOKE",
+  "TEST_KILL_SWITCH_REHEARSAL",
+  "ROLLBACK_EXACT_VERIFIED_TEST_REVISION",
+  "REDEPLOY_VERIFIED_CANDIDATE_ONCE_AFTER_ROLLBACK",
+  "TEST_EVIDENCE_AND_OWNER_UAT_HANDOFF",
   "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
   "POLICY_SNAPSHOT_READ_ONLY",
@@ -137,7 +142,7 @@ const EXPECTED_RUNTIME_UNDER_TEST_COMMIT =
   "d4dc0f24a64f29ea6d238ececfca6e57ed9433b5";
 const EXPECTED_WP2_ARTIFACT_COMMIT = "12e0d27dc06052f5f9a2075aff8f12c90bf5852e";
 const EXPECTED_WP8A_CONTROL_BASE_COMMIT =
-  "464a9250e1b50cb912d2854683e942f87a1db3f7";
+  "ae4ec0c312a40c577e5e4e27ac07273f5f3849f4";
 const EXPECTED_WP8A_CONTROL_AUTHORIZATION_COMMIT =
   "4da15774c7d19027f48a443488f3db8a0c248f23";
 const EXPECTED_WP8A_RUNTIME_IMPLEMENTATION_COMMIT =
@@ -265,7 +270,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.07-v6",
+    "2026.09.07-v7",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -276,7 +281,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-07-V6",
+      "MP-OD-2026-09-07-V7",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -288,7 +293,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.06-v5",
+      "2026.09.07-v6",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -327,9 +332,21 @@ export function validateProjectControl(
   } else {
     expectEqual(
       errors,
+      roadmap.authorization.testDeploymentAuthorization,
+      true,
+      "TEST_DEPLOYMENT_AUTHORIZATION_MISSING",
+    );
+    expectEqual(
+      errors,
+      roadmap.authorization.testDeploymentOccurred,
+      false,
+      "TEST_DEPLOYMENT_OCCURRED_PREMATURELY",
+    );
+    expectEqual(
+      errors,
       roadmap.authorization.testDeployment,
       false,
-      "TEST_DEPLOYMENT_MUST_DEFAULT_FALSE",
+      "TEST_DEPLOYMENT_OCCURRED_MUST_REMAIN_FALSE_BEFORE_EXECUTION",
     );
     expectEqual(
       errors,
@@ -477,26 +494,26 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION",
+    "WP8_CONTROLLED_TEST_PILOT",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY",
+    "AUTHORIZED_TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
     errors,
     currentWork.targetEnvironment,
-    "LOCAL_ONLY",
-    "TARGET_ENVIRONMENT_MUST_BE_LOCAL_ONLY",
+    "TEST_ONLY",
+    "TARGET_ENVIRONMENT_MUST_BE_TEST_ONLY",
   );
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP8A",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP8A",
+    "WP8",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP8",
   );
   expectEqual(
     errors,
@@ -604,8 +621,20 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.runtimePilotControlRemediationWp8a,
+      false,
+      "WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION_MUST_BE_COMPLETE",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.runtimePilotControlsCompleteWp8a,
       true,
-      "WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION_NOT_AUTHORIZED",
+      "WP8A_RUNTIME_PILOT_CONTROL_EVIDENCE_MISSING",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.testDeploymentSmokeRollbackWp8,
+      true,
+      "WP8_TEST_PILOT_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -639,9 +668,21 @@ export function validateProjectControl(
     );
     expectEqual(
       errors,
+      currentWork.authorization.testDeploymentAuthorization,
+      true,
+      "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MISSING",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.testDeploymentOccurred,
+      false,
+      "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRED_PREMATURELY",
+    );
+    expectEqual(
+      errors,
       currentWork.authorization.testDeployment,
       false,
-      "CURRENT_WORK_TEST_DEPLOYMENT_MUST_BE_FALSE",
+      "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRED_MUST_BE_FALSE",
     );
     expectEqual(
       errors,
@@ -655,10 +696,10 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP8A_SCOPE.length ||
-    REQUIRED_WP8A_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP8_SCOPE.length ||
+    REQUIRED_WP8_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP8A_SCOPE_INVALID");
+    errors.push("WP8_SCOPE_INVALID");
   }
 
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
@@ -684,6 +725,7 @@ export function validateProjectControl(
     errors,
     currentWork.wp8aRuntimePilotControlPlan,
   );
+  validateWp8TestPilotPlan(errors, currentWork.wp8TestPilotPlan);
 
   if (!isRecord(currentWork.policySnapshotReference)) {
     errors.push("POLICY_SNAPSHOT_REFERENCE_MISSING");
@@ -810,11 +852,12 @@ export function evaluateProjectAction(
     AI_NLU_IMPLEMENTATION_WP7: "aiNluImplementationWp7",
     RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A:
       "runtimePilotControlRemediationWp8a",
+    TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8: "testDeploymentSmokeRollbackWp8",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
     UPDATE_GITHUB_ROADMAP: "githubRoadmapUpdate",
-    DEPLOY_TEST: "testDeployment",
+    DEPLOY_TEST: "testDeploymentAuthorization",
     CHANGE_PRODUCTION: "production",
   };
   const key = keyByAction[action];
@@ -1847,6 +1890,63 @@ function validateWp8aRuntimePilotControlPlan(
       ["benchmarkThresholds", true],
       ["benchmarkWatchdogs", true],
     ]);
+  }
+}
+
+function validateWp8TestPilotPlan(errors: string[], plan: unknown): void {
+  if (!isRecord(plan)) {
+    errors.push("WP8_TEST_PILOT_PLAN_MISSING");
+    return;
+  }
+  for (const [field, expected, code] of [
+    [
+      "authorizationStatus",
+      "AUTHORIZED_NOT_ATTEMPTED",
+      "WP8_AUTHORIZATION_STATUS_INVALID",
+    ],
+    [
+      "executionControlBaseCommit",
+      "ae4ec0c312a40c577e5e4e27ac07273f5f3849f4",
+      "WP8_EXECUTION_CONTROL_BASE_INVALID",
+    ],
+    [
+      "candidateRuntimeCommit",
+      EXPECTED_WP8A_RUNTIME_IMPLEMENTATION_COMMIT,
+      "WP8_CANDIDATE_RUNTIME_INVALID",
+    ],
+    [
+      "candidateArtifactSha256",
+      "810c6d51f4898076ce2d6c4f93666128370387e79263d695021c50cf250ed36b",
+      "WP8_CANDIDATE_ARTIFACT_INVALID",
+    ],
+    ["workerName", "malispang-lineoa-test", "WP8_WORKER_INVALID"],
+    ["configPath", "wrangler.jsonc", "WP8_CONFIG_PATH_INVALID"],
+    [
+      "workerDomain",
+      "malispang-lineoa-test.eakkachai-dev.workers.dev",
+      "WP8_WORKER_DOMAIN_INVALID",
+    ],
+    [
+      "rollbackTargetVersionId",
+      "3e02e79b-29c9-46cf-9218-ed2d0b7d7655",
+      "WP8_ROLLBACK_TARGET_INVALID",
+    ],
+    ["credentialSlot", "OPENAI_API_KEY", "WP8_CREDENTIAL_SLOT_INVALID"],
+    ["deploymentOccurred", false, "WP8_DEPLOYMENT_OCCURRED_PREMATURELY"],
+    ["currentDeployedRevision", null, "WP8_CURRENT_REVISION_PREMATURE"],
+    ["pilotAiEnabled", false, "WP8_PILOT_MUST_START_OFF"],
+    ["ownerUatStatus", "PENDING", "WP8_OWNER_UAT_STATUS_INVALID"],
+    ["gateA", "PASS_SAFE_OVER_HANDOFF_ONLY", "WP8_GATE_A_INVALID"],
+    ["gateB", "PASS_RUNTIME_ENFORCED", "WP8_GATE_B_INVALID"],
+    ["gateC", "PASS_RETAINED_TEST_V21_NO_AI", "WP8_GATE_C_INVALID"],
+    ["maximumTestEvents", 200, "WP8_EVENT_BUDGET_INVALID"],
+    ["maximumProviderAttempts", 200, "WP8_ATTEMPT_BUDGET_INVALID"],
+    ["maximumSessionMinutes", 60, "WP8_SESSION_LIMIT_INVALID"],
+    ["maximumCostMicroUsd", 5_000_000, "WP8_COST_LIMIT_INVALID"],
+    ["productionStatus", "NO_GO", "WP8_PRODUCTION_STATUS_INVALID"],
+    ["issueMustRemainOpen", true, "WP8_ISSUE_MUST_REMAIN_OPEN"],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
   }
 }
 

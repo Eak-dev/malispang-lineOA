@@ -1,6 +1,15 @@
 # Roadmap Changelog
 
-## 2026.09.07-v6 — current
+## 2026.09.07-v7 — current
+
+- supersedes `2026.09.07-v6` while retaining MP-06 (GitHub #12) as the only current work
+- records WP8A control/runtime/evidence commits `4da15774c7d19027f48a443488f3db8a0c248f23`, `d48c5066a4b92d4035bcf41076734199cc0fea4a` and `ae4ec0c312a40c577e5e4e27ac07273f5f3849f4`
+- separates `testDeploymentAuthorization=true` from `testDeploymentOccurred=false` and sets phase/status/action to `WP8_CONTROLLED_TEST_PILOT` / `AUTHORIZED_TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8_ONLY` / `TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8`
+- freezes exact Worker `malispang-lineoa-test`, TEST workers.dev domain, `wrangler.jsonc`, approved credential slot `OPENAI_API_KEY`, runtime commit, dry-run bundle SHA-256 and retained rollback v21 in current-work
+- records gate A as safe over-handoff only, gate B as runtime-enforced, and gate C as retained exact TEST v21 with matching Durable Object namespaces/classes and no AI integration
+- authorizes only approved-key installation, candidate deploy, authenticated allowlisted smoke, kill switch, exact rollback and one candidate redeploy; Production, other secrets/resources, LINE configuration, PR/merge and Issue closure remain blocked
+
+## 2026.09.07-v6 — superseded
 
 - supersedes `2026.09.06-v5` while retaining MP-06 (GitHub #12) as the only current work
 - sets phase/status/action to `WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION` / `AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY` / `RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A`
