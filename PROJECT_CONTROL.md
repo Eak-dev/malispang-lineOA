@@ -1,26 +1,26 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดยบันทึกว่า WP5 local deterministic acceptance ผ่านแบบมีข้อจำกัด, สี่ WP6 TEST-readiness conditions ถูกปิดแล้ว และ WP7 guarded AI/NLU ผ่าน local acceptance แบบมีข้อจำกัด
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) โดย WP7 guarded AI/NLU ผ่าน local acceptance แล้ว แต่ WP8 pre-deployment gate พบว่า WP6 ตรึง operator/readiness limits โดยยังไม่มี runtime enforcement จึงอนุญาต WP8A remediation แบบแคบเท่านั้น
 
 ## Current control snapshot
 
-| Field                 | Value                                             |
-| --------------------- | ------------------------------------------------- |
-| Roadmap               | `MP-ROADMAP` / GitHub #9                          |
-| Version               | `2026.09.06-v5`                                   |
-| Current               | `MP-06 (GitHub #12)`                              |
-| Current phase         | `WP7_AI_NLU_LOCAL_ACCEPTANCE_COMPLETE`            |
-| Current authorization | `AWAITING_TEST_DEPLOYMENT_AUTHORIZATION`          |
-| Current action        | `NONE`                                            |
-| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates |
-| Verified baseline     | `237c754389fd95f433d4e9ff419afaec21d081a2`        |
-| Implementation branch | `codex/mp-06-guardrailed-ai`                      |
-| Target                | `LOCAL_ONLY`                                      |
-| TEST readiness        | `READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION`     |
-| TEST deployment       | Not authorized                                    |
-| Production            | `NO_GO`                                           |
+| Field                 | Value                                                    |
+| --------------------- | -------------------------------------------------------- |
+| Roadmap               | `MP-ROADMAP` / GitHub #9                                 |
+| Version               | `2026.09.07-v6`                                          |
+| Current               | `MP-06 (GitHub #12)`                                     |
+| Current phase         | `WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION`                 |
+| Current authorization | `AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY` |
+| Current action        | `RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A`                 |
+| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates        |
+| Verified baseline     | `464a9250e1b50cb912d2854683e942f87a1db3f7`               |
+| Implementation branch | `codex/mp-06-guardrailed-ai`                             |
+| Target                | `LOCAL_ONLY`                                             |
+| TEST readiness        | `BLOCKED_PENDING_RUNTIME_PILOT_CONTROLS`                 |
+| TEST deployment       | Not authorized                                           |
+| Production            | `NO_GO`                                                  |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP7 implementation ถูก freeze หลัง local acceptance และไม่มี implementation/deployment action เปิดอยู่ Deterministic evaluator/policy เป็น final authority, feature flag ยัง default off และ AI ห้ามสร้างข้อความตอบลูกค้า, downgrade `STAFF_ONLY` หรือสร้าง business claims Policy snapshot `2026.09.05-policy-v1` checksum `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0`, deterministic benchmark evidence, KB/catalog และ deployment configuration เป็น read-only
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP8A เปิดเฉพาะ runtime pilot controls: verified LINE identity, private allowlist, shared atomic session/rate/budget/concurrency accounting และ authenticated kill/expiry Model/prompt/schema, deterministic evaluator/policy, KB/catalog และ benchmark evidenceยัง read-only; remote mutationและ TEST deploymentยังไม่เปิด
 
 WP1–WP4 ผ่าน local deterministic validation แล้ว และ WP2 artifacts ถูก commit ที่ `12e0d27dc06052f5f9a2075aff8f12c90bf5852e` Dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, failed-result checksum `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` และ remediated PASS result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6` ถูกตรึงไว้ WP5 แก้ timeout แบบ non-semantic ที่ `98f6bc0843e376de9932acad767fb463932514cc` และ pin/enforce Node.js `24.19.0` กับ pnpm `11.19.0` ที่ `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`; clean-checkout reproducibility ผ่าน จึงบันทึก local verdict เป็น `PASS_WITH_LIMITATIONS`
 
@@ -32,7 +32,7 @@ WP7 control commit `3722dcce68ca48412b0fc6e4a41e8fcaa1b77b70`, implementation co
 
 Issue #12 ยังเปิด: TEST ยังไม่ deploy, live LINE smoke, rollback rehearsal และ Owner TEST UAT ยังไม่เกิด, PR/default-branch integration ยังไม่เกิด และ Production ยังเป็น `NO_GO`
 
-Condition-closure verdict คือ `WP6_TEST_READINESS_CONDITIONS_CLOSED` แต่ action flag ถูกปิดแล้ว ห้ามตีความ `READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION` ว่า TEST deployed, deployment approved, Production ready หรือ go-live
+Historical condition-closure verdict `WP6_TEST_READINESS_CONDITIONS_CLOSED` หมายถึง operator/readiness artifacts ปิดครบตาม scope เดิมเท่านั้น ไม่ได้พิสูจน์ runtime enforcement WP8 gate B พบว่า `runtimeRateLimiterPresent=false` และไม่มี shared tester/session/rate coordinator จึงแก้ readiness เป็น blocked จน WP8A ผ่าน ห้ามตีความ historical readiness ว่า deployed, Production ready หรือ go-live
 
 GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้าหลังกว่า verified latest baseline ข้อนี้ถูกบันทึกเป็น `DEFAULT_BRANCH_DRIFT` แบบ known/non-blocking เพราะใช้ dedicated MP-06 branch จาก transition commit ที่ Owner อนุมัติแล้ว ห้ามตีความว่า default branch เป็นฐานล่าสุด
 
@@ -66,7 +66,7 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
 
-Roadmap `2026.09.06-v5` บันทึก WP7 guarded AI/NLU local acceptance แบบมีข้อจำกัด ใช้ OpenAI project `MalisPang TEST`, environment variable `OPENAI_API_KEY` แบบไม่เปิดเผยค่า และ model `gpt-5.6-terra` ปัจจุบัน action เป็น `NONE`; การ deploy TEST ต้องได้รับ authorization แยกต่างหาก ห้ามตั้ง Cloudflare remote secret, สร้าง PR, merge หรือ deploy และยังห้ามเปลี่ยน policy, KB/catalog, deterministic benchmark evidence หรือ deployment configuration
+Roadmap `2026.09.07-v6` อนุญาต `RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A` เท่านั้นโดยใช้ existing SQLite `CONVERSATION_STATE` namespace กับ reserved singleton object; ห้ามเพิ่ม binding/resource, ตั้ง remote secret, deploy, สร้าง PR, merge หรือแตะ Production ระหว่าง remediation
 
 ## Safe commands
 

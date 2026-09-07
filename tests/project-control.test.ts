@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
-  it("accepts the 2026.09.06-v5 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP8A runtime pilot-control remediation", () => {
+  it("accepts the 2026.09.07-v6 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -48,15 +48,16 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
             testReadinessConditionsClosedWp6: { const: boolean };
             aiNluImplementationWp7: { const: boolean };
             aiNluLocalAcceptanceCompleteWp7: { const: boolean };
+            runtimePilotControlRemediationWp8a: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP7_AI_NLU_LOCAL_ACCEPTANCE_COMPLETE",
+      "WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION",
     );
     expect(schema.properties.status.const).toBe(
-      "AWAITING_TEST_DEPLOYMENT_AUTHORIZATION",
+      "AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -90,6 +91,10 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
       schema.properties.authorization.properties.aiNluLocalAcceptanceCompleteWp7
         .const,
     ).toBe(true);
+    expect(
+      schema.properties.authorization.properties
+        .runtimePilotControlRemediationWp8a.const,
+    ).toBe(true);
   });
 
   it("keeps canonical work IDs mapped to immutable GitHub issues", () => {
@@ -103,10 +108,10 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("freezes WP7 evidence and waits for a separate TEST deployment authorization", () => {
+  it("authorizes only WP8A runtime pilot controls while deployment stays blocked", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP7_LOCAL_ACCEPTANCE_EVIDENCE_READ_ONLY",
+      "MP_06_WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION",
     );
     expect(
       evaluateProjectAction(
@@ -121,6 +126,20 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
     expect(evaluateProjectAction(roadmap, currentWork, "RUNTIME_WP1")).toEqual({
       allowed: false,
       reason: "RUNTIME_WP1_NOT_AUTHORIZED",
+    });
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
+      ),
+    ).toEqual({
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
+    });
+    expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
+      allowed: false,
+      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -352,6 +371,66 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
+  it("freezes WP8A shared atomic limits and no-remote-mutation posture", () => {
+    const record = currentWork as {
+      wp8aRuntimePilotControlPlan: Record<string, unknown> & {
+        coordinator: Record<string, unknown>;
+        limits: Record<string, unknown>;
+      };
+    };
+    expect(record.wp8aRuntimePilotControlPlan).toMatchObject({
+      implementationStatus: "AUTHORIZED_NOT_STARTED",
+      blocker: "WP8_GATE_B_RUNTIME_ENFORCEMENT_MISSING",
+      readinessCorrection:
+        "WP6_OPERATOR_CONDITIONS_CLOSED_RUNTIME_ENFORCEMENT_NOT_VERIFIED",
+      coordinator: {
+        existingNamespace: "CONVERSATION_STATE",
+        reservedObjectName: "mp06-pilot-control-v1",
+        storageBackend: "SQLITE",
+        sharedAcrossAllTesters: true,
+        newBindingRequired: false,
+        newRemoteResourceRequired: false,
+      },
+      limits: {
+        maximumTesters: 5,
+        rollingMinuteEvents: 20,
+        rollingHourEvents: 200,
+        maximumSessionEvents: 200,
+        maximumProviderAttempts: 200,
+        maximumSessionMinutes: 60,
+        maximumSessionCostMicroUsd: 5_000_000,
+        maximumConcurrentProviderRequests: 1,
+      },
+      testDeploymentAuthorization: false,
+      remoteMutationAuthorization: false,
+      productionStatus: "NO_GO",
+      issueMustRemainOpen: true,
+    });
+  });
+
+  it("fails closed when WP8A limits, atomic scope, or deployment authorization drift", () => {
+    const changed = clone(currentWork) as {
+      authorization: { runtimePilotControlRemediationWp8a: boolean };
+      wp8aRuntimePilotControlPlan: {
+        coordinator: { sharedAcrossAllTesters: boolean };
+        limits: { rollingMinuteEvents: number };
+        testDeploymentAuthorization: boolean;
+      };
+    };
+    changed.authorization.runtimePilotControlRemediationWp8a = false;
+    changed.wp8aRuntimePilotControlPlan.coordinator.sharedAcrossAllTesters = false;
+    changed.wp8aRuntimePilotControlPlan.limits.rollingMinuteEvents = 21;
+    changed.wp8aRuntimePilotControlPlan.testDeploymentAuthorization = true;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION_NOT_AUTHORIZED",
+        "WP8A_COORDINATOR_SCOPE_INVALID",
+        "WP8A_MINUTE_EVENTS_INVALID",
+        "WP8A_TEST_DEPLOYMENT_MUST_BE_FALSE",
+      ]),
+    );
+  });
+
   it("fails closed when WP7 local acceptance evidence drifts", () => {
     const changed = clone(currentWork) as {
       wp7AiNluPlan: {
@@ -560,7 +639,7 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP7 scope removal/expansion", () => {
+  it("rejects policy checksum drift or WP8A scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -572,7 +651,7 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP7_SCOPE_INVALID",
+      "WP8A_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -580,11 +659,11 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
     };
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
-        (scope) => scope !== "MP_06_WP7_LOCAL_ACCEPTANCE_EVIDENCE_READ_ONLY",
+        (scope) => scope !== "MP_06_WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP7_SCOPE_INVALID");
+    ).toContain("WP8A_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {
@@ -611,11 +690,10 @@ describe("MP-06 WP7 guarded AI/NLU local acceptance control", () => {
   it("fails closed if the narrow runtime boundary is removed", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) =>
-        scope !== "CHANGE_MP_06_RUNTIME_OUTSIDE_WP7_ADVISORY_INTEGRATION",
+      (scope) => scope !== "CHANGE_MP_06_RUNTIME_OUTSIDE_WP8A_PILOT_CONTROLS",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME_OUTSIDE_WP7_ADVISORY_INTEGRATION",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME_OUTSIDE_WP8A_PILOT_CONTROLS",
     );
   });
 

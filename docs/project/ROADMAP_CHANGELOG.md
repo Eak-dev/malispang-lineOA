@@ -1,6 +1,15 @@
 # Roadmap Changelog
 
-## 2026.09.06-v5 — current
+## 2026.09.07-v6 — current
+
+- supersedes `2026.09.06-v5` while retaining MP-06 (GitHub #12) as the only current work
+- sets phase/status/action to `WP8A_RUNTIME_PILOT_CONTROL_REMEDIATION` / `AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY` / `RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A`
+- corrects the WP6 readiness interpretation: frozen operator limits and runbooks did not prove runtime tester/session/rate/budget/concurrency enforcement; WP8 gate B remains blocked until WP8A passes
+- authorizes only verified LINE identity admission, private allowlist, shared atomic SQLite Durable Object accounting, provider-attempt reservation/reconcile, kill/expiry races and associated tests/evidence
+- requires the existing `CONVERSATION_STATE` namespace with reserved object `mp06-pilot-control-v1`; no new binding or remote resource is authorized
+- freezes WP7 model/prompt/schema and deterministic policy/KB/catalog/benchmark evidence; keeps remote mutation and TEST deployment false, Production `NO_GO`, Issue #12 open and MP-07 blocked
+
+## 2026.09.06-v5 — superseded
 
 - supersedes `2026.09.06-v4` while retaining MP-06 (GitHub #12) as the only current work
 - initially authorized advisory implementation at control commit `3722dcce68ca48412b0fc6e4a41e8fcaa1b77b70`; implementation commit `d14aa95d8ed95bcc967233d6cda252a2f61f1cd6` and safe credential-error follow-up `796b1c2775ede01e98f5eb34314e8719b815e868` complete WP7 local evidence

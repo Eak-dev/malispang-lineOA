@@ -4,12 +4,12 @@
   "roadmapId": "MP-ROADMAP",
   "githubIssue": 9,
   "repository": "Eak-dev/malispang-lineOA",
-  "version": "2026.09.06-v5",
+  "version": "2026.09.07-v6",
   "status": "ACTIVE",
   "ownerDecision": {
-    "decisionId": "MP-OD-2026-09-06-V5",
+    "decisionId": "MP-OD-2026-09-07-V6",
     "decidedAt": "2026-09-07",
-    "supersedes": "2026.09.06-v4"
+    "supersedes": "2026.09.06-v5"
   },
   "sourceOfTruthPrecedence": [
     "OWNER_DECISION_REPOSITORY_RECORD",
@@ -20,7 +20,7 @@
     "CHAT_CONTEXT_ONLY"
   ],
   "verifiedLatestBaseline": {
-    "commit": "237c754389fd95f433d4e9ff419afaec21d081a2",
+    "commit": "464a9250e1b50cb912d2854683e942f87a1db3f7",
     "branch": "codex/mp-06-guardrailed-ai",
     "verifiedAt": "2026-09-07",
     "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05", "MP-06"]

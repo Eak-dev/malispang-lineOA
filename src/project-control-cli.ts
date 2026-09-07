@@ -37,6 +37,17 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
+  const remediation = evaluateProjectAction(
+    roadmap,
+    currentWork,
+    "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
+  );
+  if (!remediation.allowed) {
+    throw new Error(
+      "ROADMAP_UNVERIFIED: WP8A runtime pilot-control remediation must be authorized",
+    );
+  }
+
   for (const action of [
     "POLICY_SNAPSHOT",
     "RUNTIME_WP1",
@@ -62,7 +73,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.06-v5, MP-06 (GitHub #12), WP7 AI/NLU local acceptance is complete with limitations, implementation is frozen and separate TEST deployment authorization remains required; Production remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.07-v6, MP-06 (GitHub #12), WP8A runtime pilot-control remediation only is authorized; TEST deployment and Production remain blocked, ${warningSuffix}`,
   );
 }
 

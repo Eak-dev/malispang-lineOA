@@ -46,8 +46,9 @@
 - `AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION` permits no implementation or deployment action; WP6 closure evidence may be verified/reconciled, but AI/NLU and TEST deployment each require a separate Owner/PO transition
 - `AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY` permits only advisory OpenAI Responses API NLU, strict structured outputs, PII redaction, mock/failure coverage and capped synthetic PII-free live evaluation through `AI_NLU_IMPLEMENTATION_WP7`; deterministic policy retains final routing authority, the feature defaults off, and PR/merge/deployment remain blocked
 - `AWAITING_TEST_DEPLOYMENT_AUTHORIZATION` records WP7 local acceptance evidence and freezes the advisory implementation; action is `NONE`, TEST deployment still requires a separate Owner/PO transition, and Production remains blocked
+- `AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY` permits only TEST-only runtime pilot admission and a shared SQLite Durable Object coordinator through `RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A`. Missing/malformed identity/session/storage state must make zero provider calls; all limits are shared and atomically reserved; model/prompt/schema, deterministic policy and benchmark evidence remain read-only. Remote mutation, TEST deployment, PR/merge and Production remain blocked until remediation evidence passes
 - no validator output may contain PII, raw chat, tokens or secrets
 
 ## Review handoff
 
-Roadmap `2026.09.06-v5` records WP7 guarded AI/NLU local acceptance as `PASS_WITH_LIMITATIONS`. The model is an advisory parser/classifier only; deterministic policy retains final authority and the runtime feature defaults off. Issue #12 remains open, and PR, TEST deployment and all Production access/action remain unauthorized.
+Roadmap `2026.09.07-v6` authorizes WP8A runtime pilot-control remediation only after correcting that WP6 froze operator/readiness limits but did not prove runtime enforcement. Issue #12 remains open; remote mutation, PR, TEST deployment and all Production access/action remain unauthorized during WP8A.
