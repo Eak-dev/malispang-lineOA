@@ -561,6 +561,7 @@
     },
     "requiredCheckpoints": [
       "DISPATCH_AUTHORIZED",
+      "OUTBOUND_FETCH_STARTING",
       "FETCH_PROMISE_CREATED",
       "RESPONSE_HEADERS_RECEIVED",
       "RESPONSE_BODY_READ",

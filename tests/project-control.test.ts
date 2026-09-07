@@ -287,6 +287,7 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
       record.wp8dDurableLifecycleDiagnosticsPlan.requiredCheckpoints,
     ).toEqual([
       "DISPATCH_AUTHORIZED",
+      "OUTBOUND_FETCH_STARTING",
       "FETCH_PROMISE_CREATED",
       "RESPONSE_HEADERS_RECEIVED",
       "RESPONSE_BODY_READ",

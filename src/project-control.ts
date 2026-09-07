@@ -2377,6 +2377,7 @@ function validateWp8dDurableLifecycleDiagnosticsPlan(
 
   const checkpoints = [
     "DISPATCH_AUTHORIZED",
+    "OUTBOUND_FETCH_STARTING",
     "FETCH_PROMISE_CREATED",
     "RESPONSE_HEADERS_RECEIVED",
     "RESPONSE_BODY_READ",
@@ -2384,12 +2385,12 @@ function validateWp8dDurableLifecycleDiagnosticsPlan(
     "SETTLEMENT_STARTED",
     "SETTLEMENT_SUCCEEDED",
   ];
+  const requiredCheckpoints = Array.isArray(plan.requiredCheckpoints)
+    ? plan.requiredCheckpoints
+    : [];
   if (
-    !Array.isArray(plan.requiredCheckpoints) ||
-    plan.requiredCheckpoints.length !== checkpoints.length ||
-    checkpoints.some(
-      (phase, index) => plan.requiredCheckpoints[index] !== phase,
-    )
+    requiredCheckpoints.length !== checkpoints.length ||
+    checkpoints.some((phase, index) => requiredCheckpoints[index] !== phase)
   ) {
     errors.push("WP8D_CHECKPOINT_SEQUENCE_INVALID");
   }
