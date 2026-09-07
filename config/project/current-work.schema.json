@@ -1525,7 +1525,7 @@
             "maximumTotalCostMicroUsd",
             "maximumSessionMinutes",
             "carryForwardPriorAccounting",
-            "secondLiveRetryForbidden"
+            "timeoutRetryForbidden"
           ],
           "properties": {
             "maximumNewSessions": { "const": 1 },
@@ -1535,7 +1535,7 @@
             "maximumTotalCostMicroUsd": { "const": 5000000 },
             "maximumSessionMinutes": { "const": 60 },
             "carryForwardPriorAccounting": { "const": true },
-            "secondLiveRetryForbidden": { "const": true }
+            "timeoutRetryForbidden": { "const": true }
           }
         },
         "providerLifecycleDiagnostics": {

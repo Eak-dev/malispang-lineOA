@@ -2247,11 +2247,7 @@ function validateWp8cProviderReconciliationControlledRetestPlan(
       true,
       "WP8C_ACCOUNTING_CARRY_FORWARD_REQUIRED",
     ],
-    [
-      "secondLiveRetryForbidden",
-      true,
-      "WP8C_SECOND_LIVE_RETRY_MUST_BE_FORBIDDEN",
-    ],
+    ["timeoutRetryForbidden", true, "WP8C_TIMEOUT_RETRY_MUST_BE_FORBIDDEN"],
   ] as const) {
     expectEqual(errors, plan.newSessionContract[field], expected, code);
   }

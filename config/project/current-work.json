@@ -515,7 +515,7 @@
       "maximumTotalCostMicroUsd": 5000000,
       "maximumSessionMinutes": 60,
       "carryForwardPriorAccounting": true,
-      "secondLiveRetryForbidden": true
+      "timeoutRetryForbidden": true
     },
     "providerLifecycleDiagnostics": {
       "contentFree": true,

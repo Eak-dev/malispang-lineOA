@@ -212,7 +212,7 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
           maximumTotalCostMicroUsd: 5_000_000,
           maximumSessionMinutes: 60,
           carryForwardPriorAccounting: true,
-          secondLiveRetryForbidden: true,
+          timeoutRetryForbidden: true,
         },
         historicalObservability: "UNAVAILABLE_HTTP_403_NO_SCOPE_ESCALATION",
       },
