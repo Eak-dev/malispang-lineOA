@@ -37,14 +37,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const pilot = evaluateProjectAction(
+  const remediation = evaluateProjectAction(
     roadmap,
     currentWork,
-    "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
+    "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
   );
-  if (!pilot.allowed) {
+  if (!remediation.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8 controlled TEST pilot must be authorized",
+      "ROADMAP_UNVERIFIED: WP8B settlement remediation must be authorized",
     );
   }
 
@@ -53,9 +53,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     currentWork,
     "DEPLOY_TEST",
   );
-  if (!testDeployment.allowed) {
+  if (testDeployment.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: exact TEST deployment must be authorized",
+      "ROADMAP_UNVERIFIED: TEST deployment must remain blocked during WP8B",
     );
   }
 
@@ -70,6 +70,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "TEST_READINESS_CONDITION_CLOSURE_WP6",
     "AI_NLU_IMPLEMENTATION_WP7",
     "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
+    "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
   ] as const) {
@@ -84,7 +85,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.07-v7, MP-06 (GitHub #12), TEST candidate is deployed with AI off after rollback rehearsal; actual LINE smoke remains blocked on secure tester identity, Production remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.07-v8, MP-06 (GitHub #12), WP8B provider-attempt settlement remediation is authorized locally while TEST AI/pilot and deployment remain blocked, Production remains blocked, ${warningSuffix}`,
   );
 }
 

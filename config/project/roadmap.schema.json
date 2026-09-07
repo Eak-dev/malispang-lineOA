@@ -74,7 +74,7 @@
       "properties": {
         "testDeploymentAuthorization": { "type": "boolean" },
         "testDeploymentOccurred": { "const": true },
-        "testDeployment": { "const": true },
+        "testDeployment": { "const": false },
         "productionStatus": { "enum": ["NO_GO", "GO"] },
         "productionAuthorizationReference": { "type": ["string", "null"] }
       }

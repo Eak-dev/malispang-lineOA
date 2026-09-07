@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP8 controlled TEST pilot", () => {
-  it("accepts the 2026.09.07-v7 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP8B provider-attempt settlement remediation", () => {
+  it("accepts the 2026.09.07-v8 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -51,15 +51,16 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
             runtimePilotControlRemediationWp8a: { const: boolean };
             runtimePilotControlsCompleteWp8a: { const: boolean };
             testDeploymentSmokeRollbackWp8: { const: boolean };
+            providerAttemptSettlementRemediationWp8b: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP8_CONTROLLED_TEST_PILOT",
+      "WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8_ONLY",
+      "AUTHORIZED_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -104,6 +105,10 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
     expect(
       schema.properties.authorization.properties.testDeploymentSmokeRollbackWp8
         .const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties
+        .providerAttemptSettlementRemediationWp8b.const,
     ).toBe(true);
   });
 
@@ -118,10 +123,43 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
     ).toEqual(CANONICAL_GITHUB_ISSUES);
   });
 
-  it("authorizes only exact WP8 TEST pilot and deployment while Production stays blocked", () => {
+  it("freezes the unresolved attempt facts without treating unknown provider lifecycle as failure evidence", () => {
+    const record = currentWork as {
+      wp8bProviderAttemptSettlementPlan: {
+        observedState: {
+          pilot: string;
+          aiEnabled: boolean;
+          budgetReservedMicroUsd: number;
+          inFlight: number;
+        };
+        verifiedFacts: string[];
+        unverifiedFacts: string[];
+        existingRemoteAttemptMutation: string;
+      };
+    };
+    expect(record.wp8bProviderAttemptSettlementPlan.observedState).toEqual(
+      expect.objectContaining({
+        pilot: "STOPPED",
+        aiEnabled: false,
+        budgetReservedMicroUsd: 12_932,
+        inFlight: 1,
+      }),
+    );
+    expect(record.wp8bProviderAttemptSettlementPlan.verifiedFacts).toContain(
+      "DISPATCH_AUTHORIZED",
+    );
+    expect(record.wp8bProviderAttemptSettlementPlan.unverifiedFacts).toContain(
+      "PROVIDER_RESPONSE_OR_ERROR",
+    );
+    expect(
+      record.wp8bProviderAttemptSettlementPlan.existingRemoteAttemptMutation,
+    ).toBe("FORBIDDEN_PENDING_VERIFIED_CANDIDATE_AND_SEPARATE_ACTION");
+  });
+
+  it("authorizes only WP8B local settlement remediation while TEST writes and Production stay blocked", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP8_CONTROLLED_TEST_DEPLOYMENT_SMOKE_ROLLBACK",
+      "MP_06_WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION",
     );
     expect(
       evaluateProjectAction(
@@ -151,12 +189,12 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
       evaluateProjectAction(
         roadmap,
         currentWork,
-        "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
+        "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
       ),
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -227,8 +265,8 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
       reason: "AUTHORIZED_BY_CURRENT_WORK",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "CHANGE_PRODUCTION"),
@@ -672,26 +710,26 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
         production: boolean;
       };
     };
-    changedRoadmap.authorization.testDeploymentAuthorization = false;
+    changedRoadmap.authorization.testDeploymentAuthorization = true;
     changedRoadmap.authorization.testDeploymentOccurred = false;
-    changedRoadmap.authorization.testDeployment = false;
+    changedRoadmap.authorization.testDeployment = true;
     changedRoadmap.authorization.productionStatus = "GO";
     changedRoadmap.authorization.productionAuthorizationReference =
       "unapproved";
-    changedWork.authorization.testDeploymentAuthorization = false;
+    changedWork.authorization.testDeploymentAuthorization = true;
     changedWork.authorization.testDeploymentOccurred = false;
-    changedWork.authorization.testDeployment = false;
+    changedWork.authorization.testDeployment = true;
     changedWork.authorization.production = true;
     expect(validateProjectControl(changedRoadmap, changedWork).errors).toEqual(
       expect.arrayContaining([
-        "TEST_DEPLOYMENT_AUTHORIZATION_MISSING",
+        "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
         "TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
-        "TEST_DEPLOYMENT_LEGACY_EVIDENCE_MISSING",
+        "TEST_DEPLOYMENT_MUST_BE_FALSE_DURING_WP8B",
         "PRODUCTION_MUST_REMAIN_NO_GO",
         "PRODUCTION_AUTHORIZATION_MUST_BE_ABSENT",
-        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MISSING",
+        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
         "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
-        "CURRENT_WORK_TEST_DEPLOYMENT_LEGACY_EVIDENCE_MISSING",
+        "CURRENT_WORK_TEST_DEPLOYMENT_MUST_BE_FALSE_DURING_WP8B",
         "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
       ]),
     );
@@ -748,7 +786,7 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP8_SCOPE_INVALID",
+      "WP8B_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -757,11 +795,11 @@ describe("MP-06 WP8 controlled TEST pilot", () => {
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
         (scope) =>
-          scope !== "MP_06_WP8_CONTROLLED_TEST_DEPLOYMENT_SMOKE_ROLLBACK",
+          scope !== "MP_06_WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP8_SCOPE_INVALID");
+    ).toContain("WP8B_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {
