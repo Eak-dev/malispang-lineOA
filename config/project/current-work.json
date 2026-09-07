@@ -426,8 +426,11 @@
     "issueMustRemainOpen": true
   },
   "wp8bProviderAttemptSettlementPlan": {
-    "authorizationStatus": "AUTHORIZED_LOCAL_REMEDIATION_ONLY",
+    "authorizationStatus": "LOCAL_CANDIDATE_VERIFIED_REMOTE_ACTION_BLOCKED",
     "controlBaseCommit": "e1ee74e37e5a4e2ebbfd01cc3b591e93a6ed9c9a",
+    "controlAuthorizationCommit": "63bc6cc0ba2aff535c8b7d809232525c10259ed4",
+    "implementationCommit": "25b0bc9f726b05d80aeb586fd09290c43bc3ba35",
+    "remediationVerdict": "PASS",
     "observedStopReason": "IN_FLIGHT_USAGE_UNKNOWN",
     "observedState": {
       "pilot": "STOPPED",
@@ -460,6 +463,17 @@
       "existingUnknownAttempt": "KEEP_FULL_RESERVATION_NO_REFUND"
     },
     "existingRemoteAttemptMutation": "FORBIDDEN_PENDING_VERIFIED_CANDIDATE_AND_SEPARATE_ACTION",
+    "candidateDeploymentOccurred": false,
+    "existingRemoteAttemptReconciled": false,
+    "validationTotals": {
+      "nodeUnit": 450,
+      "deterministicBenchmark": 14,
+      "worker": 66,
+      "combinedUnique": 530,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
     "testDeploymentAuthorization": false,
     "liveProviderAuthorization": false,
     "pilotSessionAuthorization": false,

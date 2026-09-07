@@ -135,6 +135,10 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
         verifiedFacts: string[];
         unverifiedFacts: string[];
         existingRemoteAttemptMutation: string;
+        implementationCommit: string;
+        remediationVerdict: string;
+        candidateDeploymentOccurred: boolean;
+        existingRemoteAttemptReconciled: boolean;
       };
     };
     expect(record.wp8bProviderAttemptSettlementPlan.observedState).toEqual(
@@ -154,6 +158,12 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
     expect(
       record.wp8bProviderAttemptSettlementPlan.existingRemoteAttemptMutation,
     ).toBe("FORBIDDEN_PENDING_VERIFIED_CANDIDATE_AND_SEPARATE_ACTION");
+    expect(record.wp8bProviderAttemptSettlementPlan).toMatchObject({
+      implementationCommit: "25b0bc9f726b05d80aeb586fd09290c43bc3ba35",
+      remediationVerdict: "PASS",
+      candidateDeploymentOccurred: false,
+      existingRemoteAttemptReconciled: false,
+    });
   });
 
   it("authorizes only WP8B local settlement remediation while TEST writes and Production stay blocked", () => {

@@ -329,3 +329,16 @@ The machine-readable snapshot contains no raw chat, PII, token, secret or custom
 | Existing attempt  | Keep the full reservation and stopped state. Do not refund, clear, reconcile or otherwise mutate the remote attempt in this work package; propose an exact separately authorized action after the candidate is verified               |
 | Remote/deployment | No new pilot session, live provider request, remote-state mutation or TEST deploy; historical TEST deployment occurrence remains recorded                                                                                             |
 | Production/Issue  | Production `NO_GO — NOT TOUCHED`; no PR/merge; Issue #12 remains open                                                                                                                                                                 |
+
+## MP-OD-2026-09-07-V8-REMEDIATION-EVIDENCE
+
+| Field                   | Evidence                                                                                                                                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Control/implementation  | `63bc6cc0ba2aff535c8b7d809232525c10259ed4` / `25b0bc9f726b05d80aeb586fd09290c43bc3ba35`                                                                                                                   |
+| Root cause class        | Transport abort was best-effort only; a fetch/body promise that did not settle could prevent the application from reaching its settlement path after dispatch                                             |
+| Remediation             | Application deadline races the complete provider fetch/body operation; timeout settles usage unknown; late result is ignored; safe settlement codes and identifier-free aggregate diagnostics added       |
+| Durable recovery        | Conservative idempotent primitive can move a single stale DISPATCHED reservation fully to consumed while keeping session STOPPED and result unauthorized; it has no HTTP mutation route in this candidate |
+| Validation              | Node unit 450, benchmark 14, Worker 66, unique total 530; failed/skipped/cancelled 0; two `pnpm check` runs, dry-run, secret scan and audit passed; deterministic reports byte-identical                  |
+| Existing remote attempt | Unchanged: `12,932` micro-USD reserved, `inFlight=1`, AI off and pilot stopped. Provider result/usage remain unknown                                                                                      |
+| Next gate               | Separate authorization is required to deploy the verified candidate and expose/invoke an exact authenticated TEST-only conservative reconcile action before a new one-event retest                        |
+| Production/Issue        | Production `NO_GO — NOT TOUCHED`; Issue #12 remains OPEN                                                                                                                                                  |

@@ -1300,12 +1300,18 @@
       "required": [
         "authorizationStatus",
         "controlBaseCommit",
+        "controlAuthorizationCommit",
+        "implementationCommit",
+        "remediationVerdict",
         "observedStopReason",
         "observedState",
         "verifiedFacts",
         "unverifiedFacts",
         "requiredFailureSemantics",
         "existingRemoteAttemptMutation",
+        "candidateDeploymentOccurred",
+        "existingRemoteAttemptReconciled",
+        "validationTotals",
         "testDeploymentAuthorization",
         "liveProviderAuthorization",
         "pilotSessionAuthorization",
@@ -1314,11 +1320,18 @@
       ],
       "properties": {
         "authorizationStatus": {
-          "const": "AUTHORIZED_LOCAL_REMEDIATION_ONLY"
+          "const": "LOCAL_CANDIDATE_VERIFIED_REMOTE_ACTION_BLOCKED"
         },
         "controlBaseCommit": {
           "const": "e1ee74e37e5a4e2ebbfd01cc3b591e93a6ed9c9a"
         },
+        "controlAuthorizationCommit": {
+          "const": "63bc6cc0ba2aff535c8b7d809232525c10259ed4"
+        },
+        "implementationCommit": {
+          "const": "25b0bc9f726b05d80aeb586fd09290c43bc3ba35"
+        },
+        "remediationVerdict": { "const": "PASS" },
         "observedStopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
         "observedState": {
           "type": "object",
@@ -1382,6 +1395,30 @@
         },
         "existingRemoteAttemptMutation": {
           "const": "FORBIDDEN_PENDING_VERIFIED_CANDIDATE_AND_SEPARATE_ACTION"
+        },
+        "candidateDeploymentOccurred": { "const": false },
+        "existingRemoteAttemptReconciled": { "const": false },
+        "validationTotals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "nodeUnit",
+            "deterministicBenchmark",
+            "worker",
+            "combinedUnique",
+            "failed",
+            "skipped",
+            "cancelled"
+          ],
+          "properties": {
+            "nodeUnit": { "const": 450 },
+            "deterministicBenchmark": { "const": 14 },
+            "worker": { "const": 66 },
+            "combinedUnique": { "const": 530 },
+            "failed": { "const": 0 },
+            "skipped": { "const": 0 },
+            "cancelled": { "const": 0 }
+          }
         },
         "testDeploymentAuthorization": { "const": false },
         "liveProviderAuthorization": { "const": false },

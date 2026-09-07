@@ -6,6 +6,8 @@
 - records TEST pilot `STOPPED`, AI off and the unresolved `IN_FLIGHT_USAGE_UNKNOWN` evidence: one admitted event, one provider attempt, one in-flight attempt and `12,932` micro-USD still reserved
 - separates facts from unknowns: admission/reservation/dispatch authorization and fail-closed stop are verified; provider receipt/response/usage and settlement-RPC execution are not verified
 - authorizes only local WP8B provider-attempt lifecycle, application deadline, idempotent settlement, sanitized diagnostics and conservative reconciliation implementation/tests/evidence
+- records control commit `63bc6cc0ba2aff535c8b7d809232525c10259ed4` and verified local candidate `25b0bc9f726b05d80aeb586fd09290c43bc3ba35`; candidate deployment and existing-attempt reconciliation remain false
+- local gates pass 450 Node unit + 14 deterministic benchmark + 66 Worker = 530 unique tests with zero failed/skipped/cancelled; two validation-chain runs are clean and deterministic reports remain byte-identical
 - blocks new TEST deployment, pilot activation, live provider calls and any mutation of the existing remote unresolved attempt; full reservation must remain held unless a separately verified and authorized recovery action is executed
 - preserves model/prompt/policy/KB/catalog/deterministic benchmark and Production boundaries; Issue #12 remains open
 

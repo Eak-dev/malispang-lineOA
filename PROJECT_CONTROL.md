@@ -14,6 +14,7 @@
 | Current action        | `PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B`                 |
 | Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates              |
 | Verified baseline     | `e1ee74e37e5a4e2ebbfd01cc3b591e93a6ed9c9a`                     |
+| Verified candidate    | `25b0bc9f726b05d80aeb586fd09290c43bc3ba35`                     |
 | Implementation branch | `codex/mp-06-guardrailed-ai`                                   |
 | Target                | `LOCAL_ONLY`                                                   |
 | TEST readiness        | `BLOCKED_PENDING_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION`      |
@@ -23,6 +24,8 @@
 คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP8B เปิดเฉพาะการไล่ lifecycle ของ attempt เดิม, application-level provider deadline, idempotent settlement, sanitized diagnostics และ local recovery contract Model/prompt/schema, deterministic evaluator/policy, KB/catalog และ benchmark evidenceยัง read-only; remote attempt, pilot session, live provider และ TEST deploymentยังไม่เปิด
 
 หลักฐานที่ยืนยันได้ของ attempt เดิมคือ event ถูก admit, budget/attempt ถูก reserve, dispatch ถูก authorize, session หยุดแบบ fail closed, reservation `12,932` micro-USD ยังคงถูกถือไว้ และไม่มี AI reply ที่ได้รับอนุญาต สิ่งที่ยังยืนยันไม่ได้คือ provider ได้รับ request หรือไม่, response/error/usage เป็นอะไร และ settlement RPC เริ่มหรือจบหรือไม่ จึงห้ามสรุปว่า provider ล้มเหลวหรือคืน reservation เป็นศูนย์
+
+Candidate `25b0bc9…` เพิ่ม application-level deadline ที่ครอบคลุม fetch และ response parsing, late-result suppression, idempotent conservative reconciliation primitive และ authenticated aggregate diagnostics; local validation ผ่าน 450 Node unit + 14 benchmark + 66 Worker = 530 unique tests โดยไม่มี failed/skipped/cancelled Candidate นี้ยังไม่ถูก deploy และ attempt เดิมยังไม่ถูก reconcile
 
 WP1–WP4 ผ่าน local deterministic validation แล้ว และ WP2 artifacts ถูก commit ที่ `12e0d27dc06052f5f9a2075aff8f12c90bf5852e` Dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, failed-result checksum `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` และ remediated PASS result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6` ถูกตรึงไว้ WP5 แก้ timeout แบบ non-semantic ที่ `98f6bc0843e376de9932acad767fb463932514cc` และ pin/enforce Node.js `24.19.0` กับ pnpm `11.19.0` ที่ `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`; clean-checkout reproducibility ผ่าน จึงบันทึก local verdict เป็น `PASS_WITH_LIMITATIONS`
 

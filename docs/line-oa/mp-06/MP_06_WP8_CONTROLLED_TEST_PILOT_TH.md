@@ -78,3 +78,9 @@ AI enabled: `false`
 Pilot closed: `true`
 
 Production: `NO_GO — NOT TOUCHED`
+
+## WP8 delegated UAT failure correction — superseding current operational status
+
+หลักฐานภายหลังรายงาน v7 ด้านบนยืนยันว่า TEST รับ event 1 รายการและ authorize dispatch 1 attempt แต่ settlement evidence ไม่ครบ Session จึงหยุดแบบ fail closed ด้วย `IN_FLIGHT_USAGE_UNKNOWN`; budget `12,932` micro-USD ยังคง reserved, `inFlight=1`, AI ปิด และ pilot ปิดอยู่ ไม่พบ authorized AI reply
+
+หลักฐานนี้ไม่พิสูจน์ว่า provider ล้มเหลวหรือ usage เป็นศูนย์ เพราะไม่สามารถยืนยัน provider receipt/response/usage หรือ settlement-RPC execution ได้ รายละเอียด root cause และ remediation contract อยู่ที่ `MP_06_WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_TH.md` Historical deployment/rollback evidence ด้านบนยังคงเดิม แต่ verdict ปัจจุบันไม่ใช่ UAT PASS และ Issue #12 ต้อง OPEN

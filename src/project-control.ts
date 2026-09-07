@@ -1921,7 +1921,7 @@ function validateWp8TestPilotPlan(errors: string[], plan: unknown): void {
     ],
     [
       "executionControlBaseCommit",
-      "ae4ec0c312a40c577e5e4e27ac07273f5f3849f4",
+      EXPECTED_WP8A_CONTROL_BASE_COMMIT,
       "WP8_EXECUTION_CONTROL_BASE_INVALID",
     ],
     [
@@ -2002,7 +2002,7 @@ function validateWp8bProviderAttemptSettlementPlan(
   for (const [field, expected, code] of [
     [
       "authorizationStatus",
-      "AUTHORIZED_LOCAL_REMEDIATION_ONLY",
+      "LOCAL_CANDIDATE_VERIFIED_REMOTE_ACTION_BLOCKED",
       "WP8B_AUTHORIZATION_STATUS_INVALID",
     ],
     [
@@ -2010,6 +2010,17 @@ function validateWp8bProviderAttemptSettlementPlan(
       EXPECTED_WP8B_CONTROL_BASE_COMMIT,
       "WP8B_CONTROL_BASE_INVALID",
     ],
+    [
+      "controlAuthorizationCommit",
+      "63bc6cc0ba2aff535c8b7d809232525c10259ed4",
+      "WP8B_CONTROL_AUTHORIZATION_COMMIT_INVALID",
+    ],
+    [
+      "implementationCommit",
+      "25b0bc9f726b05d80aeb586fd09290c43bc3ba35",
+      "WP8B_IMPLEMENTATION_COMMIT_INVALID",
+    ],
+    ["remediationVerdict", "PASS", "WP8B_REMEDIATION_VERDICT_INVALID"],
     [
       "observedStopReason",
       "IN_FLIGHT_USAGE_UNKNOWN",
@@ -2019,6 +2030,16 @@ function validateWp8bProviderAttemptSettlementPlan(
       "existingRemoteAttemptMutation",
       "FORBIDDEN_PENDING_VERIFIED_CANDIDATE_AND_SEPARATE_ACTION",
       "WP8B_EXISTING_REMOTE_ATTEMPT_MUTATION_MUST_BE_BLOCKED",
+    ],
+    [
+      "candidateDeploymentOccurred",
+      false,
+      "WP8B_CANDIDATE_DEPLOYMENT_MUST_BE_FALSE",
+    ],
+    [
+      "existingRemoteAttemptReconciled",
+      false,
+      "WP8B_EXISTING_REMOTE_ATTEMPT_MUST_REMAIN_UNCHANGED",
     ],
     [
       "testDeploymentAuthorization",
@@ -2031,6 +2052,21 @@ function validateWp8bProviderAttemptSettlementPlan(
     ["issueMustRemainOpen", true, "WP8B_ISSUE_MUST_REMAIN_OPEN"],
   ] as const) {
     expectEqual(errors, plan[field], expected, code);
+  }
+  if (!isRecord(plan.validationTotals)) {
+    errors.push("WP8B_VALIDATION_TOTALS_MISSING");
+  } else {
+    for (const [field, expected, code] of [
+      ["nodeUnit", 450, "WP8B_NODE_UNIT_TOTAL_INVALID"],
+      ["deterministicBenchmark", 14, "WP8B_BENCHMARK_TOTAL_INVALID"],
+      ["worker", 66, "WP8B_WORKER_TOTAL_INVALID"],
+      ["combinedUnique", 530, "WP8B_COMBINED_TOTAL_INVALID"],
+      ["failed", 0, "WP8B_FAILED_TESTS_MUST_BE_ZERO"],
+      ["skipped", 0, "WP8B_SKIPPED_TESTS_MUST_BE_ZERO"],
+      ["cancelled", 0, "WP8B_CANCELLED_TESTS_MUST_BE_ZERO"],
+    ] as const) {
+      expectEqual(errors, plan.validationTotals[field], expected, code);
+    }
   }
   for (const [field, expected, code] of [
     ["pilot", "STOPPED", "WP8B_OBSERVED_PILOT_STATE_INVALID"],
