@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
-  it("accepts the 2026.09.07-v9 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
+  it("accepts the 2026.09.08-v10 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -53,15 +53,16 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
             testDeploymentSmokeRollbackWp8: { const: boolean };
             providerAttemptSettlementRemediationWp8b: { const: boolean };
             providerReconciliationControlledRetestWp8c: { const: boolean };
+            durableLifecycleDiagnosticsRemediationWp8d: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
+      "WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C_ONLY",
+      "AUTHORIZED_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -114,6 +115,10 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
     expect(
       schema.properties.authorization.properties
         .providerReconciliationControlledRetestWp8c.const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties
+        .durableLifecycleDiagnosticsRemediationWp8d.const,
     ).toBe(true);
   });
 
@@ -219,10 +224,82 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
     );
   });
 
-  it("authorizes only WP8C TEST reconciliation and one controlled retest", () => {
+  it("separates dispatch authorization from provider receipt and freezes conservative WP8D accounting", () => {
+    const record = currentWork as {
+      wp8dDurableLifecycleDiagnosticsPlan: {
+        observedState: Record<string, unknown>;
+        evidenceBoundary: Record<string, unknown>;
+        requiredCheckpoints: string[];
+        webhookLifecycle: Record<string, unknown>;
+        isolatedDiagnostic: Record<string, unknown>;
+        secondAttemptReconciliationProposal: Record<string, unknown>;
+      };
+    };
+    expect(record.wp8dDurableLifecycleDiagnosticsPlan).toMatchObject({
+      observedState: {
+        sessionState: "STOPPED",
+        aiEnabled: false,
+        admittedEvents: 2,
+        providerAttempts: 2,
+        budgetConsumedMicroUsd: 12_932,
+        budgetReservedMicroUsd: 12_932,
+        inFlight: 1,
+        actualUsage: "UNKNOWN",
+        latestLifecyclePresent: false,
+      },
+      evidenceBoundary: {
+        dispatchAuthorizationProvesFetchStarted: false,
+        fetchStartedProvesProviderReceived: false,
+        preFetchCheckpointProvesProviderReceived: false,
+        remoteRootCauseConfirmed: false,
+      },
+      webhookLifecycle: {
+        executionContextWaitUntilRequired: true,
+        waitUntilMaximumSeconds: 30,
+        waitUntilDurabilityGuarantee: false,
+        allPromisesTracked: true,
+      },
+      isolatedDiagnostic: {
+        authenticatedTestAdminOnly: true,
+        separateDurableObject: true,
+        providerCalls: 0,
+        lineReplies: 0,
+        remoteInvocationAuthorized: false,
+      },
+      secondAttemptReconciliationProposal: {
+        requiredSessionState: "STOPPED",
+        requiredProviderAttempts: 2,
+        requiredBudgetConsumedMicroUsd: 12_932,
+        requiredBudgetReservedMicroUsd: 12_932,
+        requiredInFlight: 1,
+        disposition: "CONSUME_FULL_RESERVATION_NO_REFUND",
+        finalBudgetConsumedMicroUsd: 25_864,
+        finalBudgetReservedMicroUsd: 0,
+        finalInFlight: 0,
+        actualUsage: "UNKNOWN",
+        sessionRemainsStopped: true,
+        idempotent: true,
+        deleteEvidence: false,
+        remoteExecutionAuthorized: false,
+      },
+    });
+    expect(
+      record.wp8dDurableLifecycleDiagnosticsPlan.requiredCheckpoints,
+    ).toEqual([
+      "DISPATCH_AUTHORIZED",
+      "FETCH_PROMISE_CREATED",
+      "RESPONSE_HEADERS_RECEIVED",
+      "RESPONSE_BODY_READ",
+      "RESPONSE_PARSED",
+      "SETTLEMENT_STARTED",
+      "SETTLEMENT_SUCCEEDED",
+    ]);
+  });
+
+  it("authorizes only local WP8D durable lifecycle diagnostics remediation", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
+      "MP_06_WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
     );
     expect(
       evaluateProjectAction(
@@ -264,10 +341,20 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
         currentWork,
         "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
       ),
+    ).toEqual({
+      allowed: false,
+      reason: "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C_NOT_AUTHORIZED",
+    });
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
+      ),
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -338,8 +425,8 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
       reason: "AUTHORIZED_BY_CURRENT_WORK",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "CHANGE_PRODUCTION"),
@@ -783,24 +870,24 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
         production: boolean;
       };
     };
-    changedRoadmap.authorization.testDeploymentAuthorization = false;
+    changedRoadmap.authorization.testDeploymentAuthorization = true;
     changedRoadmap.authorization.testDeploymentOccurred = false;
     changedRoadmap.authorization.testDeployment = true;
     changedRoadmap.authorization.productionStatus = "GO";
     changedRoadmap.authorization.productionAuthorizationReference =
       "unapproved";
-    changedWork.authorization.testDeploymentAuthorization = false;
+    changedWork.authorization.testDeploymentAuthorization = true;
     changedWork.authorization.testDeploymentOccurred = false;
     changedWork.authorization.testDeployment = true;
     changedWork.authorization.production = true;
     expect(validateProjectControl(changedRoadmap, changedWork).errors).toEqual(
       expect.arrayContaining([
-        "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
+        "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
         "TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
         "TEST_DEPLOYMENT_MUST_BE_FALSE_BEFORE_WP8C_DEPLOY",
         "PRODUCTION_MUST_REMAIN_NO_GO",
         "PRODUCTION_AUTHORIZATION_MUST_BE_ABSENT",
-        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
+        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
         "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
         "CURRENT_WORK_TEST_DEPLOYMENT_MUST_BE_FALSE_BEFORE_WP8C_DEPLOY",
         "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
@@ -847,7 +934,7 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP8C scope removal/expansion", () => {
+  it("rejects policy checksum drift or WP8D scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -859,7 +946,7 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP8C_SCOPE_INVALID",
+      "WP8D_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -868,11 +955,11 @@ describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
         (scope) =>
-          scope !== "MP_06_WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
+          scope !== "MP_06_WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP8C_SCOPE_INVALID");
+    ).toContain("WP8D_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {

@@ -28,6 +28,7 @@ export type ProjectAction =
   | "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8"
   | "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B"
   | "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C"
+  | "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -103,18 +104,15 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP8C_SCOPE = [
-  "MP_06_WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
-  "ADD_SANITIZED_PROVIDER_LIFECYCLE_DIAGNOSTICS",
-  "HARDEN_SETTLEMENT_RPC_DEADLINE",
-  "ADD_AUTHENTICATED_TEST_RECONCILIATION_ROUTE",
-  "CARRY_FORWARD_CUMULATIVE_WP8_ACCOUNTING",
-  "DEPLOY_EXACT_TEST_TARGET_AI_OFF",
-  "RECONCILE_EXISTING_REMOTE_ATTEMPT_CONSERVATIVE",
-  "VERIFY_PRIOR_ATTEMPT_ISOLATION",
-  "OPEN_ONE_TEST_PILOT_SESSION",
-  "CALL_ONE_LIVE_PROVIDER_ATTEMPT_VIA_LINE_TEST",
-  "STOP_TEST_PILOT_AI_OFF",
+const REQUIRED_WP8D_SCOPE = [
+  "MP_06_WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
+  "TRACE_WEBHOOK_PROVIDER_SETTLEMENT_LIFECYCLE",
+  "PERSIST_PRE_DISPATCH_CHECKPOINT_ACK",
+  "PERSIST_SANITIZED_PROVIDER_PHASE_CHECKPOINTS",
+  "HARDEN_WEBHOOK_EXECUTION_LIFECYCLE",
+  "ADD_AUTHENTICATED_ISOLATED_TEST_LIFECYCLE_SELF_TEST",
+  "ADD_WORKER_RUNTIME_LIFECYCLE_REGRESSION_TESTS",
+  "PREPARE_CONSERVATIVE_SECOND_ATTEMPT_RECONCILIATION",
   "READ_TEST_PILOT_STATE_METADATA_ONLY",
   "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
@@ -150,6 +148,8 @@ const EXPECTED_WP8B_CONTROL_BASE_COMMIT =
   "e1ee74e37e5a4e2ebbfd01cc3b591e93a6ed9c9a";
 const EXPECTED_WP8C_CONTROL_BASE_COMMIT =
   "fa5eb1505e8d1cf6fe3a88619c51f9548e60163d";
+const EXPECTED_WP8D_CONTROL_BASE_COMMIT =
+  "337fcf5c660867b31ffc2a0b56d0a32d99504821";
 const EXPECTED_WP8A_CONTROL_AUTHORIZATION_COMMIT =
   "4da15774c7d19027f48a443488f3db8a0c248f23";
 const EXPECTED_WP8A_RUNTIME_IMPLEMENTATION_COMMIT =
@@ -277,7 +277,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.07-v9",
+    "2026.09.08-v10",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -288,19 +288,19 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-07-V9",
+      "MP-OD-2026-09-08-V10",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.decidedAt,
-      "2026-09-07",
+      "2026-09-08",
       "OWNER_DECISION_DATE_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.07-v8",
+      "2026.09.07-v9",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -317,7 +317,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      EXPECTED_WP8C_CONTROL_BASE_COMMIT,
+      EXPECTED_WP8D_CONTROL_BASE_COMMIT,
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -340,8 +340,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.authorization.testDeploymentAuthorization,
-      true,
-      "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
+      false,
+      "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
     );
     expectEqual(
       errors,
@@ -501,26 +501,26 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
+    "WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C_ONLY",
+    "AUTHORIZED_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
     errors,
     currentWork.targetEnvironment,
-    "TEST_ONLY",
-    "TARGET_ENVIRONMENT_MUST_BE_TEST_ONLY",
+    "LOCAL_ONLY",
+    "TARGET_ENVIRONMENT_MUST_BE_LOCAL_ONLY",
   );
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP8C",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP8C",
+    "WP8D",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP8D",
   );
   expectEqual(
     errors,
@@ -652,8 +652,14 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.providerReconciliationControlledRetestWp8c,
+      false,
+      "WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_MUST_BE_BLOCKED",
+    );
+    expectEqual(
+      errors,
+      currentWork.authorization.durableLifecycleDiagnosticsRemediationWp8d,
       true,
-      "WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_NOT_AUTHORIZED",
+      "WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_NOT_AUTHORIZED",
     );
     expectEqual(
       errors,
@@ -688,8 +694,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testDeploymentAuthorization,
-      true,
-      "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
+      false,
+      "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
     );
     expectEqual(
       errors,
@@ -715,10 +721,10 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP8C_SCOPE.length ||
-    REQUIRED_WP8C_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP8D_SCOPE.length ||
+    REQUIRED_WP8D_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP8C_SCOPE_INVALID");
+    errors.push("WP8D_SCOPE_INVALID");
   }
 
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
@@ -752,6 +758,10 @@ export function validateProjectControl(
   validateWp8cProviderReconciliationControlledRetestPlan(
     errors,
     currentWork.wp8cProviderReconciliationControlledRetestPlan,
+  );
+  validateWp8dDurableLifecycleDiagnosticsPlan(
+    errors,
+    currentWork.wp8dDurableLifecycleDiagnosticsPlan,
   );
 
   if (!isRecord(currentWork.policySnapshotReference)) {
@@ -884,6 +894,8 @@ export function evaluateProjectAction(
       "providerAttemptSettlementRemediationWp8b",
     PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C:
       "providerReconciliationControlledRetestWp8c",
+    DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D:
+      "durableLifecycleDiagnosticsRemediationWp8d",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -2286,6 +2298,198 @@ function validateWp8cProviderReconciliationControlledRetestPlan(
     "IDEMPOTENT_NO_SECOND_REPLY",
     "WP8C_SETTLEMENT_RPC_LATE_COMPLETION_INVALID",
   );
+}
+
+function validateWp8dDurableLifecycleDiagnosticsPlan(
+  errors: string[],
+  plan: unknown,
+): void {
+  if (
+    !isRecord(plan) ||
+    !isRecord(plan.observedState) ||
+    !isRecord(plan.evidenceBoundary) ||
+    !isRecord(plan.checkpointContract) ||
+    !isRecord(plan.webhookLifecycle) ||
+    !isRecord(plan.isolatedDiagnostic) ||
+    !isRecord(plan.secondAttemptReconciliationProposal)
+  ) {
+    errors.push("WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_PLAN_MISSING");
+    return;
+  }
+  for (const [field, expected, code] of [
+    [
+      "authorizationStatus",
+      "AUTHORIZED_LOCAL_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
+      "WP8D_AUTHORIZATION_STATUS_INVALID",
+    ],
+    [
+      "controlBaseCommit",
+      EXPECTED_WP8D_CONTROL_BASE_COMMIT,
+      "WP8D_CONTROL_BASE_INVALID",
+    ],
+    ["exactTestWorker", "malispang-lineoa-test", "WP8D_TEST_WORKER_INVALID"],
+    [
+      "exactTestDomain",
+      "malispang-lineoa-test.eakkachai-dev.workers.dev",
+      "WP8D_TEST_DOMAIN_INVALID",
+    ],
+    ["testDeploymentAuthorization", false, "WP8D_DEPLOYMENT_MUST_BE_BLOCKED"],
+    [
+      "remoteReconciliationAuthorization",
+      false,
+      "WP8D_REMOTE_RECONCILIATION_MUST_BE_BLOCKED",
+    ],
+    ["liveProviderAuthorization", false, "WP8D_LIVE_PROVIDER_MUST_BE_BLOCKED"],
+    ["productionStatus", "NO_GO", "WP8D_PRODUCTION_STATUS_INVALID"],
+    ["issueMustRemainOpen", true, "WP8D_ISSUE_MUST_REMAIN_OPEN"],
+  ] as const) {
+    expectEqual(errors, plan[field], expected, code);
+  }
+
+  for (const [field, expected, code] of [
+    ["sessionState", "STOPPED", "WP8D_SESSION_STATE_INVALID"],
+    ["stopReason", "IN_FLIGHT_USAGE_UNKNOWN", "WP8D_STOP_REASON_INVALID"],
+    ["aiEnabled", false, "WP8D_AI_MUST_REMAIN_OFF"],
+    ["admittedEvents", 2, "WP8D_EVENT_COUNT_INVALID"],
+    ["providerAttempts", 2, "WP8D_ATTEMPT_COUNT_INVALID"],
+    ["budgetConsumedMicroUsd", 12_932, "WP8D_CONSUMED_INVALID"],
+    ["budgetReservedMicroUsd", 12_932, "WP8D_RESERVED_INVALID"],
+    ["inFlight", 1, "WP8D_IN_FLIGHT_INVALID"],
+    ["actualUsage", "UNKNOWN", "WP8D_USAGE_MUST_REMAIN_UNKNOWN"],
+    ["latestLifecyclePresent", false, "WP8D_MISSING_LIFECYCLE_FACT_INVALID"],
+  ] as const) {
+    expectEqual(errors, plan.observedState[field], expected, code);
+  }
+
+  for (const field of [
+    "dispatchAuthorizationProvesFetchStarted",
+    "fetchStartedProvesProviderReceived",
+    "preFetchCheckpointProvesProviderReceived",
+    "remoteRootCauseConfirmed",
+  ]) {
+    expectEqual(
+      errors,
+      plan.evidenceBoundary[field],
+      false,
+      `WP8D_EVIDENCE_BOUNDARY_${field.toUpperCase()}_INVALID`,
+    );
+  }
+
+  const checkpoints = [
+    "DISPATCH_AUTHORIZED",
+    "FETCH_PROMISE_CREATED",
+    "RESPONSE_HEADERS_RECEIVED",
+    "RESPONSE_BODY_READ",
+    "RESPONSE_PARSED",
+    "SETTLEMENT_STARTED",
+    "SETTLEMENT_SUCCEEDED",
+  ];
+  if (
+    !Array.isArray(plan.requiredCheckpoints) ||
+    plan.requiredCheckpoints.length !== checkpoints.length ||
+    checkpoints.some(
+      (phase, index) => plan.requiredCheckpoints[index] !== phase,
+    )
+  ) {
+    errors.push("WP8D_CHECKPOINT_SEQUENCE_INVALID");
+  }
+
+  for (const field of [
+    "preDispatchAcknowledgementRequired",
+    "contentFree",
+    "correlationIdentifiersOnly",
+    "rawResponseBodyForbidden",
+    "secretOrUserIdentifierForbidden",
+  ]) {
+    expectEqual(
+      errors,
+      plan.checkpointContract[field],
+      true,
+      `WP8D_CHECKPOINT_CONTRACT_${field.toUpperCase()}_INVALID`,
+    );
+  }
+  expectEqual(
+    errors,
+    plan.webhookLifecycle.executionContextWaitUntilRequired,
+    true,
+    "WP8D_WAIT_UNTIL_REQUIRED",
+  );
+  expectEqual(
+    errors,
+    plan.webhookLifecycle.waitUntilMaximumSeconds,
+    30,
+    "WP8D_WAIT_UNTIL_BOUND_INVALID",
+  );
+  expectEqual(
+    errors,
+    plan.webhookLifecycle.waitUntilDurabilityGuarantee,
+    false,
+    "WP8D_WAIT_UNTIL_MUST_NOT_CLAIM_DURABILITY",
+  );
+  expectEqual(
+    errors,
+    plan.webhookLifecycle.allPromisesTracked,
+    true,
+    "WP8D_ALL_PROMISES_MUST_BE_TRACKED",
+  );
+
+  for (const [field, expected, code] of [
+    ["authenticatedTestAdminOnly", true, "WP8D_DIAGNOSTIC_AUTH_REQUIRED"],
+    ["separateDurableObject", true, "WP8D_DIAGNOSTIC_ISOLATION_REQUIRED"],
+    ["providerCalls", 0, "WP8D_DIAGNOSTIC_PROVIDER_CALL_FORBIDDEN"],
+    ["lineReplies", 0, "WP8D_DIAGNOSTIC_LINE_REPLY_FORBIDDEN"],
+    ["remoteInvocationAuthorized", false, "WP8D_REMOTE_SELF_TEST_FORBIDDEN"],
+  ] as const) {
+    expectEqual(errors, plan.isolatedDiagnostic[field], expected, code);
+  }
+
+  const reconciliation = plan.secondAttemptReconciliationProposal;
+  for (const [field, expected, code] of [
+    ["requiredSessionState", "STOPPED", "WP8D_RECONCILIATION_STATE_INVALID"],
+    [
+      "requiredStopReason",
+      "IN_FLIGHT_USAGE_UNKNOWN",
+      "WP8D_RECONCILIATION_REASON_INVALID",
+    ],
+    ["requiredAdmittedEvents", 2, "WP8D_RECONCILIATION_EVENTS_INVALID"],
+    ["requiredProviderAttempts", 2, "WP8D_RECONCILIATION_ATTEMPTS_INVALID"],
+    [
+      "requiredBudgetConsumedMicroUsd",
+      12_932,
+      "WP8D_RECONCILIATION_CONSUMED_INVALID",
+    ],
+    [
+      "requiredBudgetReservedMicroUsd",
+      12_932,
+      "WP8D_RECONCILIATION_RESERVED_INVALID",
+    ],
+    ["requiredInFlight", 1, "WP8D_RECONCILIATION_IN_FLIGHT_INVALID"],
+    [
+      "requiredStaleDispatchedAttempts",
+      1,
+      "WP8D_RECONCILIATION_STALE_ATTEMPT_INVALID",
+    ],
+    [
+      "requiredExistingTerminalUsageUnknownAttempts",
+      1,
+      "WP8D_RECONCILIATION_TERMINAL_UNKNOWN_INVALID",
+    ],
+    [
+      "disposition",
+      "CONSUME_FULL_RESERVATION_NO_REFUND",
+      "WP8D_RECONCILIATION_DISPOSITION_INVALID",
+    ],
+    ["finalBudgetConsumedMicroUsd", 25_864, "WP8D_FINAL_CONSUMED_INVALID"],
+    ["finalBudgetReservedMicroUsd", 0, "WP8D_FINAL_RESERVED_INVALID"],
+    ["finalInFlight", 0, "WP8D_FINAL_IN_FLIGHT_INVALID"],
+    ["actualUsage", "UNKNOWN", "WP8D_FINAL_USAGE_MUST_REMAIN_UNKNOWN"],
+    ["sessionRemainsStopped", true, "WP8D_SESSION_MUST_REMAIN_STOPPED"],
+    ["idempotent", true, "WP8D_RECONCILIATION_IDEMPOTENCY_REQUIRED"],
+    ["deleteEvidence", false, "WP8D_EVIDENCE_DELETE_FORBIDDEN"],
+    ["remoteExecutionAuthorized", false, "WP8D_REMOTE_EXECUTION_FORBIDDEN"],
+  ] as const) {
+    expectEqual(errors, reconciliation[field], expected, code);
+  }
 }
 
 function validateWp7LocalAcceptanceEvidence(

@@ -1,6 +1,15 @@
 # Roadmap Changelog
 
-## 2026.09.07-v9 — current
+## 2026.09.08-v10 — current
+
+- supersedes `2026.09.07-v9` while retaining MP-06 (GitHub #12) as the only current work
+- records baseline `337fcf5c660867b31ffc2a0b56d0a32d99504821` and latest TEST evidence as AI off / session stopped with 2 events, 2 attempts, `12,932` micro-USD consumed, `12,932` reserved, 1 in-flight and actual usage `UNKNOWN`
+- authorizes only local WP8D lifecycle tracing, durable content-free phase checkpoints, webhook execution-context hardening, Worker-runtime regression, an authenticated isolated no-provider/no-LINE diagnostic mechanism and a future reconciliation proposal
+- requires durable acknowledgement before outbound fetch while explicitly recording that dispatch authorization does not prove fetch start and fetch start does not prove provider receipt
+- preserves the unresolved second attempt and forbids refund, clear, remote reconciliation, TEST deploy, new session, live provider or LINE request in this work package
+- keeps model/prompt/policy/thresholds, remote TEST state and Production read-only; Issue #12 remains open
+
+## 2026.09.07-v9 — superseded
 
 - supersedes `2026.09.07-v8` while retaining MP-06 (GitHub #12) as the only current work
 - authorizes only the exact TEST Worker `malispang-lineoa-test` candidate deployment while AI is off, authenticated exact-state reconciliation of the single stale attempt, one new session and one Owner-sent LINE retest

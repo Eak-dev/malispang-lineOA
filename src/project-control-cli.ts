@@ -37,25 +37,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const controlledRetest = evaluateProjectAction(
+  const durableDiagnostics = evaluateProjectAction(
     roadmap,
     currentWork,
-    "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
+    "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
   );
-  if (!controlledRetest.allowed) {
+  if (!durableDiagnostics.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8C TEST reconciliation and controlled retest must be authorized",
-    );
-  }
-
-  const testDeployment = evaluateProjectAction(
-    roadmap,
-    currentWork,
-    "DEPLOY_TEST",
-  );
-  if (!testDeployment.allowed) {
-    throw new Error(
-      "ROADMAP_UNVERIFIED: exact TEST deployment must be authorized during WP8C",
+      "ROADMAP_UNVERIFIED: WP8D durable lifecycle diagnostics remediation must be authorized",
     );
   }
 
@@ -72,6 +61,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
     "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
     "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
+    "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
+    "DEPLOY_TEST",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
   ] as const) {
@@ -86,7 +77,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.07-v9, MP-06 (GitHub #12), WP8C exact TEST reconciliation, candidate deployment, and one controlled LINE retest are authorized while Production remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.08-v10, MP-06 (GitHub #12), WP8D local durable lifecycle diagnostics remediation is authorized while TEST remote mutation and Production remain blocked, ${warningSuffix}`,
   );
 }
 

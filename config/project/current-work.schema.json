@@ -32,6 +32,7 @@
     "wp8TestPilotPlan",
     "wp8bProviderAttemptSettlementPlan",
     "wp8cProviderReconciliationControlledRetestPlan",
+    "wp8dDurableLifecycleDiagnosticsPlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -49,10 +50,10 @@
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {
-      "const": "WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST"
+      "const": "WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION"
     },
     "status": {
-      "const": "AUTHORIZED_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C_ONLY"
+      "const": "AUTHORIZED_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_ONLY"
     },
     "base": {
       "type": "object",
@@ -64,8 +65,8 @@
       }
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
-    "targetEnvironment": { "const": "TEST_ONLY" },
-    "authorizedWorkPackage": { "const": "WP8C" },
+    "targetEnvironment": { "const": "LOCAL_ONLY" },
+    "authorizedWorkPackage": { "const": "WP8D" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -98,6 +99,7 @@
         "testDeploymentSmokeRollbackWp8",
         "providerAttemptSettlementRemediationWp8b",
         "providerReconciliationControlledRetestWp8c",
+        "durableLifecycleDiagnosticsRemediationWp8d",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -124,13 +126,14 @@
         "runtimePilotControlsCompleteWp8a": { "const": true },
         "testDeploymentSmokeRollbackWp8": { "const": false },
         "providerAttemptSettlementRemediationWp8b": { "const": false },
-        "providerReconciliationControlledRetestWp8c": { "const": true },
+        "providerReconciliationControlledRetestWp8c": { "const": false },
+        "durableLifecycleDiagnosticsRemediationWp8d": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": true },
+        "testDeploymentAuthorization": { "const": false },
         "testDeploymentOccurred": { "const": true },
         "testDeployment": { "const": false },
         "production": { "type": "boolean" }
@@ -1581,6 +1584,196 @@
         },
         "testDeploymentAuthorization": { "const": true },
         "singleLiveProviderAuthorization": { "const": true },
+        "productionStatus": { "const": "NO_GO" },
+        "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8dDurableLifecycleDiagnosticsPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorizationStatus",
+        "controlBaseCommit",
+        "exactTestWorker",
+        "exactTestDomain",
+        "observedState",
+        "evidenceBoundary",
+        "requiredCheckpoints",
+        "checkpointContract",
+        "webhookLifecycle",
+        "isolatedDiagnostic",
+        "secondAttemptReconciliationProposal",
+        "testDeploymentAuthorization",
+        "remoteReconciliationAuthorization",
+        "liveProviderAuthorization",
+        "productionStatus",
+        "issueMustRemainOpen"
+      ],
+      "properties": {
+        "authorizationStatus": {
+          "const": "AUTHORIZED_LOCAL_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION"
+        },
+        "controlBaseCommit": {
+          "const": "337fcf5c660867b31ffc2a0b56d0a32d99504821"
+        },
+        "exactTestWorker": { "const": "malispang-lineoa-test" },
+        "exactTestDomain": {
+          "const": "malispang-lineoa-test.eakkachai-dev.workers.dev"
+        },
+        "observedState": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sessionState",
+            "stopReason",
+            "aiEnabled",
+            "admittedEvents",
+            "providerAttempts",
+            "budgetConsumedMicroUsd",
+            "budgetReservedMicroUsd",
+            "inFlight",
+            "actualUsage",
+            "latestLifecyclePresent"
+          ],
+          "properties": {
+            "sessionState": { "const": "STOPPED" },
+            "stopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
+            "aiEnabled": { "const": false },
+            "admittedEvents": { "const": 2 },
+            "providerAttempts": { "const": 2 },
+            "budgetConsumedMicroUsd": { "const": 12932 },
+            "budgetReservedMicroUsd": { "const": 12932 },
+            "inFlight": { "const": 1 },
+            "actualUsage": { "const": "UNKNOWN" },
+            "latestLifecyclePresent": { "const": false }
+          }
+        },
+        "evidenceBoundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dispatchAuthorizationProvesFetchStarted",
+            "fetchStartedProvesProviderReceived",
+            "preFetchCheckpointProvesProviderReceived",
+            "remoteRootCauseConfirmed"
+          ],
+          "properties": {
+            "dispatchAuthorizationProvesFetchStarted": { "const": false },
+            "fetchStartedProvesProviderReceived": { "const": false },
+            "preFetchCheckpointProvesProviderReceived": { "const": false },
+            "remoteRootCauseConfirmed": { "const": false }
+          }
+        },
+        "requiredCheckpoints": {
+          "const": [
+            "DISPATCH_AUTHORIZED",
+            "FETCH_PROMISE_CREATED",
+            "RESPONSE_HEADERS_RECEIVED",
+            "RESPONSE_BODY_READ",
+            "RESPONSE_PARSED",
+            "SETTLEMENT_STARTED",
+            "SETTLEMENT_SUCCEEDED"
+          ]
+        },
+        "checkpointContract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preDispatchAcknowledgementRequired",
+            "contentFree",
+            "correlationIdentifiersOnly",
+            "rawResponseBodyForbidden",
+            "secretOrUserIdentifierForbidden"
+          ],
+          "properties": {
+            "preDispatchAcknowledgementRequired": { "const": true },
+            "contentFree": { "const": true },
+            "correlationIdentifiersOnly": { "const": true },
+            "rawResponseBodyForbidden": { "const": true },
+            "secretOrUserIdentifierForbidden": { "const": true }
+          }
+        },
+        "webhookLifecycle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executionContextWaitUntilRequired",
+            "waitUntilMaximumSeconds",
+            "waitUntilDurabilityGuarantee",
+            "allPromisesTracked"
+          ],
+          "properties": {
+            "executionContextWaitUntilRequired": { "const": true },
+            "waitUntilMaximumSeconds": { "const": 30 },
+            "waitUntilDurabilityGuarantee": { "const": false },
+            "allPromisesTracked": { "const": true }
+          }
+        },
+        "isolatedDiagnostic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "authenticatedTestAdminOnly",
+            "separateDurableObject",
+            "providerCalls",
+            "lineReplies",
+            "remoteInvocationAuthorized"
+          ],
+          "properties": {
+            "authenticatedTestAdminOnly": { "const": true },
+            "separateDurableObject": { "const": true },
+            "providerCalls": { "const": 0 },
+            "lineReplies": { "const": 0 },
+            "remoteInvocationAuthorized": { "const": false }
+          }
+        },
+        "secondAttemptReconciliationProposal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requiredSessionState",
+            "requiredStopReason",
+            "requiredAdmittedEvents",
+            "requiredProviderAttempts",
+            "requiredBudgetConsumedMicroUsd",
+            "requiredBudgetReservedMicroUsd",
+            "requiredInFlight",
+            "requiredStaleDispatchedAttempts",
+            "requiredExistingTerminalUsageUnknownAttempts",
+            "disposition",
+            "finalBudgetConsumedMicroUsd",
+            "finalBudgetReservedMicroUsd",
+            "finalInFlight",
+            "actualUsage",
+            "sessionRemainsStopped",
+            "idempotent",
+            "deleteEvidence",
+            "remoteExecutionAuthorized"
+          ],
+          "properties": {
+            "requiredSessionState": { "const": "STOPPED" },
+            "requiredStopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
+            "requiredAdmittedEvents": { "const": 2 },
+            "requiredProviderAttempts": { "const": 2 },
+            "requiredBudgetConsumedMicroUsd": { "const": 12932 },
+            "requiredBudgetReservedMicroUsd": { "const": 12932 },
+            "requiredInFlight": { "const": 1 },
+            "requiredStaleDispatchedAttempts": { "const": 1 },
+            "requiredExistingTerminalUsageUnknownAttempts": { "const": 1 },
+            "disposition": { "const": "CONSUME_FULL_RESERVATION_NO_REFUND" },
+            "finalBudgetConsumedMicroUsd": { "const": 25864 },
+            "finalBudgetReservedMicroUsd": { "const": 0 },
+            "finalInFlight": { "const": 0 },
+            "actualUsage": { "const": "UNKNOWN" },
+            "sessionRemainsStopped": { "const": true },
+            "idempotent": { "const": true },
+            "deleteEvidence": { "const": false },
+            "remoteExecutionAuthorized": { "const": false }
+          }
+        },
+        "testDeploymentAuthorization": { "const": false },
+        "remoteReconciliationAuthorization": { "const": false },
+        "liveProviderAuthorization": { "const": false },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
       }
