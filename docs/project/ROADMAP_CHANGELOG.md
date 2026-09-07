@@ -1,6 +1,16 @@
 # Roadmap Changelog
 
-## 2026.09.07-v8 — current
+## 2026.09.07-v9 — current
+
+- supersedes `2026.09.07-v8` while retaining MP-06 (GitHub #12) as the only current work
+- authorizes only the exact TEST Worker `malispang-lineoa-test` candidate deployment while AI is off, authenticated exact-state reconciliation of the single stale attempt, one new session and one Owner-sent LINE retest
+- requires the old `12,932` micro-USD reservation to become conservative consumed usage while actual usage remains `UNKNOWN`; no refund, deletion or historical rewrite is allowed
+- requires cumulative WP8 accounting to carry 1 admitted event, 1 provider attempt and consumed reservation into the new session rather than reset on activation
+- requires content-free lifecycle diagnostics and a bounded settlement RPC so a provider timeout cannot move the unresolved wait into settlement
+- records historical Workers Observability as unavailable with HTTP 403 and forbids credential-scope escalation; accessible authenticated TEST diagnostics are used instead
+- keeps model/prompt/policy/thresholds, LINE channel configuration and Production read-only; Issue #12 remains open
+
+## 2026.09.07-v8 — superseded
 
 - supersedes `2026.09.07-v7` while retaining MP-06 (GitHub #12) as the only current work
 - records TEST pilot `STOPPED`, AI off and the unresolved `IN_FLIGHT_USAGE_UNKNOWN` evidence: one admitted event, one provider attempt, one in-flight attempt and `12,932` micro-USD still reserved

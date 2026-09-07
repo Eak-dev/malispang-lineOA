@@ -1,27 +1,27 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) ปัจจุบัน TEST candidate ถูกหยุดแบบ fail closed หลังพบ provider attempt ที่ reserve/dispatch แล้วแต่ไม่มี settlement evidence เพียงพอ จึงอนุญาต WP8B local remediation เฉพาะ settlement lifecycle และ sanitized diagnostics เท่านั้น
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) ปัจจุบัน TEST ยัง AI off / pilot stopped และอนุญาต WP8C แบบแคบเพื่อ deploy candidate ที่ตรวจแล้ว, reconcile attempt เดิมแบบ conservative และทำ LINE retest เพียงหนึ่งข้อความ
 
 ## Current control snapshot
 
-| Field                 | Value                                                          |
-| --------------------- | -------------------------------------------------------------- |
-| Roadmap               | `MP-ROADMAP` / GitHub #9                                       |
-| Version               | `2026.09.07-v8`                                                |
-| Current               | `MP-06 (GitHub #12)`                                           |
-| Current phase         | `WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION`                 |
-| Current authorization | `AUTHORIZED_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B_ONLY` |
-| Current action        | `PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B`                 |
-| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates              |
-| Verified baseline     | `e1ee74e37e5a4e2ebbfd01cc3b591e93a6ed9c9a`                     |
-| Verified candidate    | `25b0bc9f726b05d80aeb586fd09290c43bc3ba35`                     |
-| Implementation branch | `codex/mp-06-guardrailed-ai`                                   |
-| Target                | `LOCAL_ONLY`                                                   |
-| TEST readiness        | `BLOCKED_PENDING_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION`      |
-| TEST deployment       | Historical occurrence recorded; new deploy not authorized      |
-| Production            | `NO_GO`                                                        |
+| Field                 | Value                                                             |
+| --------------------- | ----------------------------------------------------------------- |
+| Roadmap               | `MP-ROADMAP` / GitHub #9                                          |
+| Version               | `2026.09.07-v9`                                                   |
+| Current               | `MP-06 (GitHub #12)`                                              |
+| Current phase         | `WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST`                  |
+| Current authorization | `AUTHORIZED_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C_ONLY`  |
+| Current action        | `PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C`                  |
+| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates                 |
+| Verified baseline     | `fa5eb1505e8d1cf6fe3a88619c51f9548e60163d`                        |
+| Verified candidate    | `25b0bc9f726b05d80aeb586fd09290c43bc3ba35`                        |
+| Implementation branch | `codex/mp-06-guardrailed-ai`                                      |
+| Target                | `TEST_ONLY`                                                       |
+| TEST readiness        | `AUTHORIZED_CONTROLLED_RECONCILIATION_AND_SINGLE_RETEST`          |
+| TEST deployment       | Exact existing TEST target authorized; candidate not yet deployed |
+| Production            | `NO_GO`                                                           |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP8B เปิดเฉพาะการไล่ lifecycle ของ attempt เดิม, application-level provider deadline, idempotent settlement, sanitized diagnostics และ local recovery contract Model/prompt/schema, deterministic evaluator/policy, KB/catalog และ benchmark evidenceยัง read-only; remote attempt, pilot session, live provider และ TEST deploymentยังไม่เปิด
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP8C เปิดเฉพาะ sanitized lifecycle diagnostics, bounded settlement RPC, authenticated exact-state reconciliation, deploy ไป Worker `malispang-lineoa-test` ขณะ AI off, carry-forward accounting และ LINE retest เพียงหนึ่งข้อความ Model/prompt/schema, deterministic evaluator/policy, KB/catalog และ benchmark evidenceยัง read-only
 
 หลักฐานที่ยืนยันได้ของ attempt เดิมคือ event ถูก admit, budget/attempt ถูก reserve, dispatch ถูก authorize, session หยุดแบบ fail closed, reservation `12,932` micro-USD ยังคงถูกถือไว้ และไม่มี AI reply ที่ได้รับอนุญาต สิ่งที่ยังยืนยันไม่ได้คือ provider ได้รับ request หรือไม่, response/error/usage เป็นอะไร และ settlement RPC เริ่มหรือจบหรือไม่ จึงห้ามสรุปว่า provider ล้มเหลวหรือคืน reservation เป็นศูนย์
 
@@ -71,7 +71,7 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
 
-Roadmap `2026.09.07-v8` อนุญาต `PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B` แบบ local-only เท่านั้น; ห้ามเปิด session, เรียก live provider, reconcile attempt เดิม, deploy, สร้าง PR, merge หรือแตะ Production ระหว่าง remediation
+Roadmap `2026.09.07-v9` อนุญาต `PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C` เฉพาะ TEST: ต้อง deploy candidate ที่ commit/push แล้วขณะ AI off, reconcile reservationเดิม `12,932` micro-USD เป็น consumedโดยคง usage `UNKNOWN` และ sessionเดิม `STOPPED`, จากนั้นเปิด sessionเดียวและรับ LINE หนึ่งข้อความเท่านั้น ห้าม request/retry เพิ่ม, สร้าง PR, merge หรือแตะ Production
 
 ## Safe commands
 

@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP8B provider-attempt settlement remediation", () => {
-  it("accepts the 2026.09.07-v8 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP8C provider reconciliation and controlled retest", () => {
+  it("accepts the 2026.09.07-v9 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -52,15 +52,16 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
             runtimePilotControlsCompleteWp8a: { const: boolean };
             testDeploymentSmokeRollbackWp8: { const: boolean };
             providerAttemptSettlementRemediationWp8b: { const: boolean };
+            providerReconciliationControlledRetestWp8c: { const: boolean };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION",
+      "WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B_ONLY",
+      "AUTHORIZED_PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -109,6 +110,10 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
     expect(
       schema.properties.authorization.properties
         .providerAttemptSettlementRemediationWp8b.const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties
+        .providerReconciliationControlledRetestWp8c.const,
     ).toBe(true);
   });
 
@@ -166,10 +171,58 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
     });
   });
 
-  it("authorizes only WP8B local settlement remediation while TEST writes and Production stay blocked", () => {
+  it("freezes exact reconciliation preconditions and cumulative single-retest limits", () => {
+    const record = currentWork as {
+      wp8cProviderReconciliationControlledRetestPlan: {
+        exactTestWorker: string;
+        activeBaselineVersion: string;
+        existingAttempt: Record<string, unknown>;
+        reconciliationPreconditions: Record<string, unknown>;
+        newSessionContract: Record<string, unknown>;
+        historicalObservability: string;
+      };
+    };
+    expect(record.wp8cProviderReconciliationControlledRetestPlan).toMatchObject(
+      {
+        exactTestWorker: "malispang-lineoa-test",
+        activeBaselineVersion: "509c3587-7ae9-41a8-8ba2-1082d03e138d",
+        existingAttempt: {
+          sessionState: "STOPPED",
+          stopReason: "IN_FLIGHT_USAGE_UNKNOWN",
+          admittedEvents: 1,
+          providerAttempts: 1,
+          budgetConsumedMicroUsd: 0,
+          budgetReservedMicroUsd: 12_932,
+          inFlight: 1,
+          actualUsage: "UNKNOWN",
+          reconciliationDisposition: "CONSUME_FULL_RESERVATION_NO_REFUND",
+        },
+        reconciliationPreconditions: {
+          authenticatedTestAdminOnly: true,
+          exactSingleStaleDispatchedAttempt: true,
+          originalSessionMustRemainStopped: true,
+          idempotent: true,
+          deleteEvidence: false,
+        },
+        newSessionContract: {
+          maximumNewSessions: 1,
+          maximumNewLineEvents: 1,
+          maximumTotalEvents: 200,
+          maximumTotalProviderAttempts: 200,
+          maximumTotalCostMicroUsd: 5_000_000,
+          maximumSessionMinutes: 60,
+          carryForwardPriorAccounting: true,
+          secondLiveRetryForbidden: true,
+        },
+        historicalObservability: "UNAVAILABLE_HTTP_403_NO_SCOPE_ESCALATION",
+      },
+    );
+  });
+
+  it("authorizes only WP8C TEST reconciliation and one controlled retest", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION",
+      "MP_06_WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
     );
     expect(
       evaluateProjectAction(
@@ -201,10 +254,20 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
         currentWork,
         "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
       ),
+    ).toEqual({
+      allowed: false,
+      reason: "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B_NOT_AUTHORIZED",
+    });
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
+      ),
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: false,
-      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -275,8 +338,8 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
       reason: "AUTHORIZED_BY_CURRENT_WORK",
     });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: false,
-      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "CHANGE_PRODUCTION"),
@@ -720,26 +783,26 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
         production: boolean;
       };
     };
-    changedRoadmap.authorization.testDeploymentAuthorization = true;
+    changedRoadmap.authorization.testDeploymentAuthorization = false;
     changedRoadmap.authorization.testDeploymentOccurred = false;
     changedRoadmap.authorization.testDeployment = true;
     changedRoadmap.authorization.productionStatus = "GO";
     changedRoadmap.authorization.productionAuthorizationReference =
       "unapproved";
-    changedWork.authorization.testDeploymentAuthorization = true;
+    changedWork.authorization.testDeploymentAuthorization = false;
     changedWork.authorization.testDeploymentOccurred = false;
     changedWork.authorization.testDeployment = true;
     changedWork.authorization.production = true;
     expect(validateProjectControl(changedRoadmap, changedWork).errors).toEqual(
       expect.arrayContaining([
-        "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
+        "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
         "TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
-        "TEST_DEPLOYMENT_MUST_BE_FALSE_DURING_WP8B",
+        "TEST_DEPLOYMENT_MUST_BE_FALSE_BEFORE_WP8C_DEPLOY",
         "PRODUCTION_MUST_REMAIN_NO_GO",
         "PRODUCTION_AUTHORIZATION_MUST_BE_ABSENT",
-        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
+        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
         "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
-        "CURRENT_WORK_TEST_DEPLOYMENT_MUST_BE_FALSE_DURING_WP8B",
+        "CURRENT_WORK_TEST_DEPLOYMENT_MUST_BE_FALSE_BEFORE_WP8C_DEPLOY",
         "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
       ]),
     );
@@ -784,7 +847,7 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP8 scope removal/expansion", () => {
+  it("rejects policy checksum drift or WP8C scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -796,7 +859,7 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP8B_SCOPE_INVALID",
+      "WP8C_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -805,11 +868,11 @@ describe("MP-06 WP8B provider-attempt settlement remediation", () => {
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
         (scope) =>
-          scope !== "MP_06_WP8B_PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION",
+          scope !== "MP_06_WP8C_PROVIDER_RECONCILIATION_CONTROLLED_RETEST",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP8B_SCOPE_INVALID");
+    ).toContain("WP8C_SCOPE_INVALID");
   });
 
   it("requires the policy snapshot to remain read-only", () => {

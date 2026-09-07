@@ -37,14 +37,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const remediation = evaluateProjectAction(
+  const controlledRetest = evaluateProjectAction(
     roadmap,
     currentWork,
-    "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
+    "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
   );
-  if (!remediation.allowed) {
+  if (!controlledRetest.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8B settlement remediation must be authorized",
+      "ROADMAP_UNVERIFIED: WP8C TEST reconciliation and controlled retest must be authorized",
     );
   }
 
@@ -53,9 +53,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     currentWork,
     "DEPLOY_TEST",
   );
-  if (testDeployment.allowed) {
+  if (!testDeployment.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: TEST deployment must remain blocked during WP8B",
+      "ROADMAP_UNVERIFIED: exact TEST deployment must be authorized during WP8C",
     );
   }
 
@@ -71,6 +71,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "AI_NLU_IMPLEMENTATION_WP7",
     "RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A",
     "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
+    "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
   ] as const) {
@@ -85,7 +86,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.07-v8, MP-06 (GitHub #12), WP8B provider-attempt settlement remediation is authorized locally while TEST AI/pilot and deployment remain blocked, Production remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.07-v9, MP-06 (GitHub #12), WP8C exact TEST reconciliation, candidate deployment, and one controlled LINE retest are authorized while Production remains blocked, ${warningSuffix}`,
   );
 }
 
