@@ -37,14 +37,25 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const durableDiagnostics = evaluateProjectAction(
+  const exactStateReconciliation = evaluateProjectAction(
     roadmap,
     currentWork,
-    "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
+    "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
   );
-  if (!durableDiagnostics.allowed) {
+  if (!exactStateReconciliation.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8D durable lifecycle diagnostics remediation must be authorized",
+      "ROADMAP_UNVERIFIED: WP8E exact-state reconciliation and controlled retest must be authorized",
+    );
+  }
+
+  const testDeployment = evaluateProjectAction(
+    roadmap,
+    currentWork,
+    "DEPLOY_TEST",
+  );
+  if (!testDeployment.allowed) {
+    throw new Error(
+      "ROADMAP_UNVERIFIED: exact TEST deployment must be authorized for WP8E",
     );
   }
 
@@ -62,7 +73,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "TEST_DEPLOYMENT_SMOKE_ROLLBACK_WP8",
     "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
     "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
-    "DEPLOY_TEST",
+    "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
   ] as const) {
@@ -77,7 +88,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.08-v10, MP-06 (GitHub #12), WP8D local durable lifecycle diagnostics remediation is authorized while TEST remote mutation and Production remain blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.08-v11, MP-06 (GitHub #12), WP8E exact TEST reconciliation/deployment and one conditional Owner LINE retest are authorized while Production remains blocked, ${warningSuffix}`,
   );
 }
 

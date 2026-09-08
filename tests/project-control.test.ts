@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
-  it("accepts the 2026.09.08-v10 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
+  it("accepts the 2026.09.08-v11 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -54,15 +54,18 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
             providerAttemptSettlementRemediationWp8b: { const: boolean };
             providerReconciliationControlledRetestWp8c: { const: boolean };
             durableLifecycleDiagnosticsRemediationWp8d: { const: boolean };
+            exactStateReconciliationControlledRetestWp8e: {
+              const: boolean;
+            };
           };
         };
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
+      "WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_ONLY",
+      "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -119,6 +122,10 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     expect(
       schema.properties.authorization.properties
         .durableLifecycleDiagnosticsRemediationWp8d.const,
+    ).toBe(false);
+    expect(
+      schema.properties.authorization.properties
+        .exactStateReconciliationControlledRetestWp8e.const,
     ).toBe(true);
   });
 
@@ -297,10 +304,113 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     ]);
   });
 
-  it("authorizes only local WP8D durable lifecycle diagnostics remediation", () => {
+  it("freezes exact identity, conservative reconciliation, isolated self-test, and one-event retest", () => {
+    const record = currentWork as {
+      wp8eExactStateReconciliationControlledRetestPlan: {
+        authorizationStatus: string;
+        controlBaseCommit: string;
+        exactTestWorker: string;
+        exactTestDomain: string;
+        exactPilotObject: string;
+        preMutationState: Record<string, unknown>;
+        exactIdentityContract: Record<string, unknown>;
+        expectedTransition: Record<string, unknown>;
+        isolatedLifecycleSelfTest: Record<string, unknown>;
+        oldAttemptIsolation: Record<string, unknown>;
+        conditionalLiveRetest: Record<string, unknown>;
+        candidateDeploymentOccurred: boolean;
+        testDeploymentAuthorization: boolean;
+        remoteReconciliationAuthorization: boolean;
+        noNetworkLifecycleSelfTestAuthorization: boolean;
+        conditionalLiveProviderAuthorization: boolean;
+        productionStatus: string;
+        issueMustRemainOpen: boolean;
+      };
+    };
+    expect(
+      record.wp8eExactStateReconciliationControlledRetestPlan,
+    ).toMatchObject({
+      authorizationStatus:
+        "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
+      controlBaseCommit: "d15b3f0fd794a5a08c0251a88a0a663a23d1141b",
+      exactTestWorker: "malispang-lineoa-test",
+      exactTestDomain: "malispang-lineoa-test.eakkachai-dev.workers.dev",
+      exactPilotObject: "mp06-pilot-control-v1",
+      preMutationState: {
+        sessionState: "STOPPED",
+        stopReason: "IN_FLIGHT_USAGE_UNKNOWN",
+        admittedEvents: 2,
+        providerAttempts: 2,
+        budgetConsumedMicroUsd: 12_932,
+        budgetReservedMicroUsd: 12_932,
+        inFlight: 1,
+        existingTerminalUsageUnknownAttempts: 1,
+        staleDispatchedAttempts: 1,
+        actualUsage: "UNKNOWN",
+      },
+      exactIdentityContract: {
+        sessionReferenceRequired: true,
+        attemptTargetReferenceRequired: true,
+        countersAloneForbidden: true,
+        attemptReferenceDisclosureForbidden: true,
+        atomicTransactionRequired: true,
+        idempotent: true,
+        lateSettlementMustBeNoOp: true,
+      },
+      expectedTransition: {
+        finalSessionState: "STOPPED",
+        finalStopReason: "PROVIDER_USAGE_UNKNOWN_RECONCILED",
+        finalAdmittedEvents: 2,
+        finalProviderAttempts: 2,
+        finalBudgetConsumedMicroUsd: 25_864,
+        finalBudgetReservedMicroUsd: 0,
+        finalInFlight: 0,
+        attemptTerminalState: "USAGE_UNKNOWN",
+        actualUsage: "UNKNOWN",
+        refund: false,
+        deleteEvidence: false,
+      },
+      isolatedLifecycleSelfTest: {
+        authenticatedTestAdminOnly: true,
+        separateDurableObject: true,
+        providerCalls: 0,
+        lineReplies: 0,
+        mustCompleteBeforeReconciliation: true,
+        mustNotMutatePilotAccounting: true,
+      },
+      oldAttemptIsolation: {
+        terminalBeforeNewSession: true,
+        retryForbidden: true,
+        resultAuthorizationForbidden: true,
+        lateSettlementIdempotentNoOp: true,
+        externalProviderCompletionRemainsUnknown: true,
+      },
+      conditionalLiveRetest: {
+        maximumNewSessions: 1,
+        maximumOwnerLineEvents: 1,
+        maximumSessionMinutes: 60,
+        maximumCumulativeEvents: 200,
+        maximumCumulativeProviderAttempts: 200,
+        maximumCumulativeCostMicroUsd: 5_000_000,
+        carryForwardPriorAccounting: true,
+        separateLiveProbeForbidden: true,
+        retryForbidden: true,
+        ownerMessageRequired: true,
+      },
+      candidateDeploymentOccurred: false,
+      testDeploymentAuthorization: true,
+      remoteReconciliationAuthorization: true,
+      noNetworkLifecycleSelfTestAuthorization: true,
+      conditionalLiveProviderAuthorization: true,
+      productionStatus: "NO_GO",
+      issueMustRemainOpen: true,
+    });
+  });
+
+  it("authorizes only exact TEST WP8E reconciliation/deployment and one controlled retest", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
+      "MP_06_WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
     );
     expect(
       evaluateProjectAction(
@@ -352,10 +462,20 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
         currentWork,
         "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
       ),
+    ).toEqual({
+      allowed: false,
+      reason: "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_NOT_AUTHORIZED",
+    });
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+      ),
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: false,
-      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
+      allowed: true,
+      reason: "AUTHORIZED_BY_CURRENT_WORK",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -424,10 +544,6 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     ).toEqual({
       allowed: true,
       reason: "AUTHORIZED_BY_CURRENT_WORK",
-    });
-    expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: false,
-      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "CHANGE_PRODUCTION"),
@@ -883,12 +999,10 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     changedWork.authorization.production = true;
     expect(validateProjectControl(changedRoadmap, changedWork).errors).toEqual(
       expect.arrayContaining([
-        "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
         "TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
         "TEST_DEPLOYMENT_MUST_BE_FALSE_BEFORE_WP8C_DEPLOY",
         "PRODUCTION_MUST_REMAIN_NO_GO",
         "PRODUCTION_AUTHORIZATION_MUST_BE_ABSENT",
-        "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_FALSE",
         "CURRENT_WORK_TEST_DEPLOYMENT_OCCURRENCE_EVIDENCE_MISSING",
         "CURRENT_WORK_TEST_DEPLOYMENT_MUST_BE_FALSE_BEFORE_WP8C_DEPLOY",
         "CURRENT_WORK_PRODUCTION_MUST_BE_FALSE",
@@ -935,7 +1049,7 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
-  it("rejects policy checksum drift or WP8D scope removal/expansion", () => {
+  it("rejects policy checksum drift or WP8E scope removal/expansion", () => {
     const checksumDrift = clone(currentWork) as {
       policySnapshotReference: { checksum: string };
     };
@@ -947,7 +1061,7 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP8D_SCOPE_INVALID",
+      "WP8E_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -956,11 +1070,58 @@ describe("MP-06 WP8D durable lifecycle diagnostics remediation", () => {
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
         (scope) =>
-          scope !== "MP_06_WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION",
+          scope !== "MP_06_WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP8D_SCOPE_INVALID");
+    ).toContain("WP8E_SCOPE_INVALID");
+  });
+
+  it("fails closed when WP8E exact identity, accounting, isolation, or live caps drift", () => {
+    const changed = clone(currentWork) as {
+      wp8eExactStateReconciliationControlledRetestPlan: {
+        preMutationState: { providerAttempts: number };
+        exactIdentityContract: { countersAloneForbidden: boolean };
+        expectedTransition: {
+          finalBudgetConsumedMicroUsd: number;
+          refund: boolean;
+        };
+        isolatedLifecycleSelfTest: { providerCalls: number };
+        oldAttemptIsolation: { lateSettlementIdempotentNoOp: boolean };
+        conditionalLiveRetest: {
+          maximumOwnerLineEvents: number;
+          retryForbidden: boolean;
+        };
+      };
+    };
+    const plan = changed.wp8eExactStateReconciliationControlledRetestPlan;
+    plan.preMutationState.providerAttempts = 1;
+    plan.exactIdentityContract.countersAloneForbidden = false;
+    plan.expectedTransition.finalBudgetConsumedMicroUsd = 12_932;
+    plan.expectedTransition.refund = true;
+    plan.isolatedLifecycleSelfTest.providerCalls = 1;
+    plan.oldAttemptIsolation.lateSettlementIdempotentNoOp = false;
+    plan.conditionalLiveRetest.maximumOwnerLineEvents = 2;
+    plan.conditionalLiveRetest.retryForbidden = false;
+    expect(validateProjectControl(roadmap, changed).errors).toEqual(
+      expect.arrayContaining([
+        "WP8E_ATTEMPT_COUNT_INVALID",
+        "WP8E_IDENTITY_CONTRACT_COUNTERSALONEFORBIDDEN_INVALID",
+        "WP8E_FINAL_CONSUMED_INVALID",
+        "WP8E_REFUND_FORBIDDEN",
+        "WP8E_SELF_TEST_PROVIDER_CALL_FORBIDDEN",
+        "WP8E_OLD_ATTEMPT_LATESETTLEMENTIDEMPOTENTNOOP_INVALID",
+        "WP8E_MAX_LINE_EVENTS_INVALID",
+        "WP8E_RETRY_FORBIDDEN",
+      ]),
+    );
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        changed,
+        "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+      ),
+    ).toEqual({ allowed: false, reason: "ROADMAP_UNVERIFIED" });
   });
 
   it("requires the policy snapshot to remain read-only", () => {

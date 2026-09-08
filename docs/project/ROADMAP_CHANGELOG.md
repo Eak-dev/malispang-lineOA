@@ -1,6 +1,16 @@
 # Roadmap Changelog
 
-## 2026.09.08-v10 — current
+## 2026.09.08-v11 — current
+
+- supersedes `2026.09.08-v10` while retaining MP-06 (GitHub #12) as the only current work
+- records baseline `d15b3f0fd794a5a08c0251a88a0a663a23d1141b`, exact TEST Worker `malispang-lineoa-test`, active version `d1ad3c23-de9e-4807-a7b0-31eb6c782a02`, and remote pre-mutation state STOPPED/AI off with events/attempts 2/2, consumed/reserved `12,932/12,932` micro-USD, in-flight 1 and actual usage `UNKNOWN`
+- authorizes exact identity-bound, authenticated, TEST-only, atomic and idempotent reconciliation; counters alone are insufficient and the raw attempt reference must not be exposed
+- freezes the only permitted transition as consumed/reserved/in-flight `12,932/12,932/1` to `25,864/0/0`, one exact attempt terminal `USAGE_UNKNOWN`, session still STOPPED and actual usage still `UNKNOWN`; no refund, evidence deletion or actual-billing claim
+- requires candidate commit/push before exact TEST deployment with AI off/pilot stopped, then an isolated no-provider/no-LINE lifecycle self-test in separate state before pilot accounting mutation
+- requires proof that old attempts cannot retry, dispatch or authorize results before at most one new 60-minute session and one Owner LINE event; forbids a separate probe and any retry, and carries prior accounting into cumulative caps of 200 events, 200 attempts and 5,000,000 micro-USD
+- requires final AI off/pilot closed evidence and keeps model/prompt/policy/thresholds, LINE channel settings and Production read-only; Issue #12 remains open
+
+## 2026.09.08-v10 — superseded
 
 - supersedes `2026.09.07-v9` while retaining MP-06 (GitHub #12) as the only current work
 - records baseline `337fcf5c660867b31ffc2a0b56d0a32d99504821` and latest TEST evidence as AI off / session stopped with 2 events, 2 attempts, `12,932` micro-USD consumed, `12,932` reserved, 1 in-flight and actual usage `UNKNOWN`

@@ -1,33 +1,33 @@
 # MalisPang Project Control
 
-เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) ปัจจุบัน TEST ยัง AI off / pilot stopped และอนุญาต WP8D แบบ local-only เพื่อพิสูจน์ lifecycle และเพิ่ม durable diagnostics ก่อน controlled live retest รอบถัดไป
+เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) ปัจจุบัน TEST ยัง AI off / pilot stopped และอนุญาต WP8E เฉพาะ exact-state reconciliation, exact TEST candidate deployment, no-network lifecycle self-test และ conditional controlled retest หนึ่งข้อความจาก Owner
 
 ## Current control snapshot
 
-| Field                 | Value                                                            |
-| --------------------- | ---------------------------------------------------------------- |
-| Roadmap               | `MP-ROADMAP` / GitHub #9                                         |
-| Version               | `2026.09.08-v10`                                                 |
-| Current               | `MP-06 (GitHub #12)`                                             |
-| Current phase         | `WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION`                 |
-| Current authorization | `AUTHORIZED_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_ONLY` |
-| Current action        | `DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D`                 |
-| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates                |
-| Verified baseline     | `337fcf5c660867b31ffc2a0b56d0a32d99504821`                       |
-| Verified candidate    | `25b0bc9f726b05d80aeb586fd09290c43bc3ba35`                       |
-| Implementation branch | `codex/mp-06-guardrailed-ai`                                     |
-| Target                | `LOCAL_ONLY`                                                     |
-| TEST readiness        | `BLOCKED_PENDING_DURABLE_LIFECYCLE_EVIDENCE`                     |
-| TEST deployment       | Historical occurrence retained; no deployment authorized in WP8D |
-| Production            | `NO_GO`                                                          |
+| Field                 | Value                                                                      |
+| --------------------- | -------------------------------------------------------------------------- |
+| Roadmap               | `MP-ROADMAP` / GitHub #9                                                   |
+| Version               | `2026.09.08-v11`                                                           |
+| Current               | `MP-06 (GitHub #12)`                                                       |
+| Current phase         | `WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST`                        |
+| Current authorization | `AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E_ONLY`        |
+| Current action        | `EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E`                        |
+| Next                  | `MP-07 (GitHub #7)` — blocked pending MP-06 gates                          |
+| Verified baseline     | `d15b3f0fd794a5a08c0251a88a0a663a23d1141b`                                 |
+| Verified candidate    | `d15b3f0fd794a5a08c0251a88a0a663a23d1141b`                                 |
+| Implementation branch | `codex/mp-06-guardrailed-ai`                                               |
+| Target                | exact existing `TEST_ONLY` Worker                                          |
+| TEST readiness        | `AUTHORIZED_FOR_EXACT_RECONCILIATION_AND_ONE_CONDITIONAL_RETEST`           |
+| TEST deployment       | Historical occurrence retained; exact WP8E candidate deployment authorized |
+| Production            | `NO_GO`                                                                    |
 
-คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP8D เปิดเฉพาะ webhook/provider/settlement lifecycle, content-free durable checkpoints, Worker-runtime regression, authenticated isolated TEST diagnostic preparation และ conservative reconciliation proposal โดยยังห้าม deploy, remote reconciliation, session activation, live provider และ LINE request Model/prompt/schema, deterministic evaluator/policy, KB/catalog และ benchmark evidenceยัง read-only
+คำว่า `CURRENT` ระบุลำดับ Roadmap เท่านั้น WP8E เปิดเฉพาะ exact session/attempt reconciliation ที่ authenticated, TEST-only, atomic และ idempotent; deploy candidate ที่ commit/push และตรวจแล้วขณะ AI off/pilot stopped; no-network lifecycle self-test ใน Durable Object แยก; และเมื่อทุก gate ผ่านจึงเปิด session ใหม่หนึ่งครั้งเพื่อรับ Owner LINE event หนึ่งข้อความ ห้าม probe/retry เพิ่ม Model/prompt/schema, deterministic evaluator/policy, KB/catalog และ benchmark evidenceยัง read-only
 
 หลักฐานที่ยืนยันได้ของ attempt เดิมคือ event ถูก admit, budget/attempt ถูก reserve, dispatch ถูก authorize, session หยุดแบบ fail closed, reservation `12,932` micro-USD ยังคงถูกถือไว้ และไม่มี AI reply ที่ได้รับอนุญาต สิ่งที่ยังยืนยันไม่ได้คือ provider ได้รับ request หรือไม่, response/error/usage เป็นอะไร และ settlement RPC เริ่มหรือจบหรือไม่ จึงห้ามสรุปว่า provider ล้มเหลวหรือคืน reservation เป็นศูนย์
 
 WP8B candidate `25b0bc9…` แก้ defect ที่ fetch/body promise อาจไม่ settle จน code ไม่ถึง settlement โดยเพิ่ม application deadline, late-result suppression, idempotent conservative reconciliation primitive และ aggregate diagnostics แต่ไม่ได้ persist phase ก่อน settlement WP8C remote attempt ที่สองจึงเหลือหลักฐานเพียง dispatch authorization และ `latestLifecyclePresent=false`; ข้อเท็จจริงนี้ยังไม่พิสูจน์ว่า fetch เริ่มหรือ OpenAI ได้รับ request และ local regression เพียงอย่างเดียวไม่ยืนยัน root cause ของ remote failure
 
-สถานะ remote ล่าสุดที่ตรึงไว้คือ session `STOPPED`, AI off, 2 admitted events, 2 provider attempts, consumed `12,932`, reserved `12,932` micro-USD, in-flight 1 และ actual usage `UNKNOWN` WP8D ห้าม refund/clear/reconcile ค่าเหล่านี้ และกำหนด proposal ในอนาคตแบบ exact/idempotent ให้ consume reservation ที่เหลือจน consumed `25,864`, reserved 0, in-flight 0 โดยยังคง usage `UNKNOWN` และ session `STOPPED`
+สถานะ remote ล่าสุดที่ตรึงไว้คือ session `STOPPED`, AI off, 2 admitted events, 2 provider attempts, consumed `12,932`, reserved `12,932` micro-USD, in-flight 1 และ actual usage `UNKNOWN` WP8E อนุญาต reconciliation ของ attempt ที่ระบุด้วย safe session/attempt target references เท่านั้น ไม่อนุญาตการอ้าง counters `2/2` เพียงอย่างเดียว การเปลี่ยนต้อง consume reservation ที่เหลือแบบ conservative จน consumed `25,864`, reserved 0, in-flight 0, attempt เป็น terminal `USAGE_UNKNOWN`, session ยัง `STOPPED` และ actual usage ยัง `UNKNOWN`; ห้าม refund, ลบ audit หรืออ้างเป็น actual billed usage
 
 WP1–WP4 ผ่าน local deterministic validation แล้ว และ WP2 artifacts ถูก commit ที่ `12e0d27dc06052f5f9a2075aff8f12c90bf5852e` Dataset checksum `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, failed-result checksum `4ce92a2e78a4168b189a4912469c132b6710a049421614c3f905cae213fdc2e6` และ remediated PASS result checksum `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6` ถูกตรึงไว้ WP5 แก้ timeout แบบ non-semantic ที่ `98f6bc0843e376de9932acad767fb463932514cc` และ pin/enforce Node.js `24.19.0` กับ pnpm `11.19.0` ที่ `9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331`; clean-checkout reproducibility ผ่าน จึงบันทึก local verdict เป็น `PASS_WITH_LIMITATIONS`
 
@@ -73,7 +73,7 @@ GitHub default branch ยังชี้ฐาน Phase 1A ซึ่งล้า
 7. commit/push dedicated branch และให้ Owner/PO review
 8. ห้ามเริ่ม next work หรือ deploy จนมี authorization แยก
 
-Roadmap `2026.09.08-v10` อนุญาต `DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D` แบบ local-only: ทุก outbound dispatch ต้องมี durable pre-dispatch checkpoint acknowledgement และ phase หลังจากนั้นต้องบันทึกเท่าที่ตรวจได้จริง โดย pre-fetch checkpoint ห้ามถูกอ้างเป็นหลักฐาน provider receipt; `waitUntil` ใช้ติดตามงานหลัง webhook response ภายในขอบเขต runtime แต่ไม่ใช่ durability guarantee ห้าม deploy, remote reconcile, เปิด session, live provider/LINE request, สร้าง PR, merge หรือแตะ Production
+Roadmap `2026.09.08-v11` อนุญาต `EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E`: ต้อง commit/push candidate ก่อน deploy exact TEST, รัน isolated no-network lifecycle self-test ก่อนแตะ pilot accounting, พิสูจน์ attempt เก่า terminal และไม่สามารถ retry/authorize reply จากนั้นจึง reconcile exact attempt หนึ่งครั้งแบบ idempotent และเปิดได้สูงสุดหนึ่ง session/หนึ่ง Owner LINE eventภายใน cumulative WP8 cap เดิม การเปิด sessionไม่ reset accounting; จบรอบต้อง AI off/pilot closed ห้ามสร้าง PR, merge, ปิด Issue #12 หรือแตะ Production
 
 ## Safe commands
 

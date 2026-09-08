@@ -33,6 +33,7 @@
     "wp8bProviderAttemptSettlementPlan",
     "wp8cProviderReconciliationControlledRetestPlan",
     "wp8dDurableLifecycleDiagnosticsPlan",
+    "wp8eExactStateReconciliationControlledRetestPlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -50,10 +51,10 @@
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {
-      "const": "WP8D_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION"
+      "const": "WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST"
     },
     "status": {
-      "const": "AUTHORIZED_DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D_ONLY"
+      "const": "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E_ONLY"
     },
     "base": {
       "type": "object",
@@ -65,8 +66,8 @@
       }
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
-    "targetEnvironment": { "const": "LOCAL_ONLY" },
-    "authorizedWorkPackage": { "const": "WP8D" },
+    "targetEnvironment": { "const": "TEST_ONLY" },
+    "authorizedWorkPackage": { "const": "WP8E" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -100,6 +101,7 @@
         "providerAttemptSettlementRemediationWp8b",
         "providerReconciliationControlledRetestWp8c",
         "durableLifecycleDiagnosticsRemediationWp8d",
+        "exactStateReconciliationControlledRetestWp8e",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -127,13 +129,14 @@
         "testDeploymentSmokeRollbackWp8": { "const": false },
         "providerAttemptSettlementRemediationWp8b": { "const": false },
         "providerReconciliationControlledRetestWp8c": { "const": false },
-        "durableLifecycleDiagnosticsRemediationWp8d": { "const": true },
+        "durableLifecycleDiagnosticsRemediationWp8d": { "const": false },
+        "exactStateReconciliationControlledRetestWp8e": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": false },
+        "testDeploymentAuthorization": { "const": true },
         "testDeploymentOccurred": { "const": true },
         "testDeployment": { "const": false },
         "production": { "type": "boolean" }
@@ -1777,6 +1780,83 @@
         "liveProviderAuthorization": { "const": false },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8eExactStateReconciliationControlledRetestPlan": {
+      "const": {
+        "authorizationStatus": "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
+        "controlBaseCommit": "d15b3f0fd794a5a08c0251a88a0a663a23d1141b",
+        "exactTestWorker": "malispang-lineoa-test",
+        "exactTestDomain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
+        "exactPilotObject": "mp06-pilot-control-v1",
+        "preMutationState": {
+          "sessionState": "STOPPED",
+          "stopReason": "IN_FLIGHT_USAGE_UNKNOWN",
+          "admittedEvents": 2,
+          "providerAttempts": 2,
+          "budgetConsumedMicroUsd": 12932,
+          "budgetReservedMicroUsd": 12932,
+          "inFlight": 1,
+          "existingTerminalUsageUnknownAttempts": 1,
+          "staleDispatchedAttempts": 1,
+          "actualUsage": "UNKNOWN"
+        },
+        "exactIdentityContract": {
+          "sessionReferenceRequired": true,
+          "attemptTargetReferenceRequired": true,
+          "countersAloneForbidden": true,
+          "attemptReferenceDisclosureForbidden": true,
+          "atomicTransactionRequired": true,
+          "idempotent": true,
+          "lateSettlementMustBeNoOp": true
+        },
+        "expectedTransition": {
+          "finalSessionState": "STOPPED",
+          "finalStopReason": "PROVIDER_USAGE_UNKNOWN_RECONCILED",
+          "finalAdmittedEvents": 2,
+          "finalProviderAttempts": 2,
+          "finalBudgetConsumedMicroUsd": 25864,
+          "finalBudgetReservedMicroUsd": 0,
+          "finalInFlight": 0,
+          "attemptTerminalState": "USAGE_UNKNOWN",
+          "actualUsage": "UNKNOWN",
+          "refund": false,
+          "deleteEvidence": false
+        },
+        "isolatedLifecycleSelfTest": {
+          "authenticatedTestAdminOnly": true,
+          "separateDurableObject": true,
+          "providerCalls": 0,
+          "lineReplies": 0,
+          "mustCompleteBeforeReconciliation": true,
+          "mustNotMutatePilotAccounting": true
+        },
+        "oldAttemptIsolation": {
+          "terminalBeforeNewSession": true,
+          "retryForbidden": true,
+          "resultAuthorizationForbidden": true,
+          "lateSettlementIdempotentNoOp": true,
+          "externalProviderCompletionRemainsUnknown": true
+        },
+        "conditionalLiveRetest": {
+          "maximumNewSessions": 1,
+          "maximumOwnerLineEvents": 1,
+          "maximumSessionMinutes": 60,
+          "maximumCumulativeEvents": 200,
+          "maximumCumulativeProviderAttempts": 200,
+          "maximumCumulativeCostMicroUsd": 5000000,
+          "carryForwardPriorAccounting": true,
+          "separateLiveProbeForbidden": true,
+          "retryForbidden": true,
+          "ownerMessageRequired": true
+        },
+        "candidateDeploymentOccurred": false,
+        "testDeploymentAuthorization": true,
+        "remoteReconciliationAuthorization": true,
+        "noNetworkLifecycleSelfTestAuthorization": true,
+        "conditionalLiveProviderAuthorization": true,
+        "productionStatus": "NO_GO",
+        "issueMustRemainOpen": true
       }
     },
     "benchmarkAcceptanceCriteria": {
