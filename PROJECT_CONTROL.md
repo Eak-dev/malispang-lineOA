@@ -1,6 +1,16 @@
 # MalisPang Project Control
 
-## Current v15 — exact diagnostics follow-up
+## Current v16 — deterministic precedence and one continuation
+
+Roadmap 2026.09.08-v16, decision MP-OD-2026-09-08-V16, supersedes v15. Baseline a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0; MP-06 / Issue #12 / WP8F / TEST_ONLY. Exact eight-path runtime/test remediation allowlist plus one evidence path are in wp8fExecutionEnvelope. worker/durable-objects.ts is authorized only for one atomic/idempotent continuation and immutable SELECT-only lineage. Preserve every original activation marker, audit, attempt and ledger record.
+
+Known deterministic HIGH_RISK, sensitive data, STAFF_ONLY or handoff decisions must win before admission/reservation/provider construction: zero provider calls/attempts/cost increment, approved deterministic reply once. Required signed-webhook and real SQLite tests preserve safe AUTO/CLARIFY, duplicates, failures, lifecycle and privacy. No model/prompt/policy/catalog/threshold/timeout/retry/business/LINE changes.
+
+The only pre-deploy triplet is 8486019d-9b62-4de9-ae15-6299909a23d9 / 8a5b6547b4713ff50ad6b08ee58682e129641b6a / 15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64. Independently verify fresh exact TEST identity, STOPPED / OPERATOR_STOP / AI OFF, events/attempts6/6, consumed/reserved34082/0, pending/in-flight0; candidate must be committed/pushed descendant of validated v16 control, exact-diff reviewed, fully validated and clean-checkout artifact reproduced. One candidate TEST deployment only after gates. No manifest self-authorization or alias/wildcard.
+
+Then one continuation, at most60minutes, preserves cumulative USD5/200events/200attempts and rate/concurrency/Owner controls. Atomic exact-state activation, immutable additional marker/lineage, no replay extension/reopen/third activation, no accounting reset/refund. Existing audited exact Owner handoff-close at most3 times: before targeted F4, F5, F6. Owner sends one case at a time; stop on failure. F6 follows explicit AI OFF/pilot stop. Conditional compatible rollback/redeploy only after UAT/kill-switch; draft PR only after full TEST acceptance/final review. No Production query/mutation, merge, Issue closure, MP-07, new remote resources or destructive migration. Validated control commit becomes authoritative automatically; authorization is not deployment/UAT evidence.
+
+## Historical v15 — exact diagnostics follow-up
 
 Roadmap `2026.09.08-v15`, decision `MP-OD-2026-09-08-V15`, supersedes v14. Accepted evidence baseline `fb9458e995a44a0233c3746fd506198f2f1805c7`; MP-06 / Issue #12 / WP8F / TEST_ONLY. Only D1 SELECT-only EXPIRED_PURGED invariants and D2 immutable session-lineage observation corrections are authorized in the four existing diagnostics paths. No draft normalization, cleanup, new recovery mechanism or accounting change. State observation and activation eligibility are distinct; neither grants activation/dispatch/reply/recovery authority.
 

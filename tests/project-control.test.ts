@@ -27,7 +27,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.08-v15 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.08-v16 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -1149,10 +1149,11 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
   it("fails closed if the narrow runtime boundary is removed", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) => scope !== "CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_DIAGNOSTICS",
+      (scope) =>
+        scope !== "CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_V16_REMEDIATION",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_DIAGNOSTICS",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_V16_REMEDIATION",
     );
   });
 
@@ -1858,10 +1859,11 @@ function validCandidateEvidence(
 ) {
   return {
     candidate: {
-      ownerDecision: "MP-OD-2026-09-08-V15",
-      baseline: "fb9458e995a44a0233c3746fd506198f2f1805c7",
-      patchSha256:
-        "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
+      ownerDecision: "MP-OD-2026-09-08-V16",
+      baseline: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+      precedenceTestsPassed: true,
+      continuationStorageTestsPassed: true,
+      rollbackAdditiveCompatibilityPassed: true,
       sourceCommit: target.sourceCommit,
       validatedSourceCommit: target.sourceCommit,
       pushedSourceCommit: target.sourceCommit,
@@ -1870,8 +1872,8 @@ function validCandidateEvidence(
       committed: true,
       baselineAncestryVerified: true,
       controlCommit: "3".repeat(40),
-      controlParentCommit: "fb9458e995a44a0233c3746fd506198f2f1805c7",
-      controlOwnerDecision: "MP-OD-2026-09-08-V15",
+      controlParentCommit: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+      controlOwnerDecision: "MP-OD-2026-09-08-V16",
       controlAncestryVerified: true,
       cleanCheckoutPassed: true,
       validationPassed: true,
@@ -1879,16 +1881,16 @@ function validCandidateEvidence(
       executablePaths: [
         "worker/index.ts",
         "worker/durable-objects.ts",
-        "worker/draft-order-objects.ts",
-        "worker-tests/mp-06-owner-readiness.test.ts",
+        "worker/mp-06-wp1.ts",
+        "worker-tests/mp-06-pilot-control.test.ts",
       ],
     },
     test: {
       worker: target.worker,
-      version: "5e04ec6f-f225-4a45-b9f1-6908bc79596c",
-      sourceCommit: "946876eb94daecbb90eed24c2f4b8834a63447a2",
+      version: "8486019d-9b62-4de9-ae15-6299909a23d9",
+      sourceCommit: "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
       artifactSha256:
-        "eab12622a248b115ffce0b2cd1915a61171a0afe104265f38b924eccec7a933b",
+        "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
       accountIdentity: "c395…407d",
       environment: "TEST_ONLY",
       observedAt: Date.now(),
@@ -1897,6 +1899,11 @@ function validCandidateEvidence(
       secretsPresenceVerified: true,
       rollbackTargetVerified: true,
       accountingPreserved: true,
+      events: 6,
+      attempts: 6,
+      consumedMicroUsd: 34082,
+      pendingAttempts: 0,
+      stopReason: "OPERATOR_STOP",
       pilot: "STOPPED",
       aiAdmission: false,
       reservedMicroUsd: 0,
@@ -1905,7 +1912,112 @@ function validCandidateEvidence(
   };
 }
 
-describe("v15 explicit Owner execution envelope", () => {
+describe("v16 explicit Owner execution envelope", () => {
+  it("freezes the single v16 continuation, three scoped recoveries and immutable history", () => {
+    for (const [key, value] of [
+      ["maximumNewSessions", 2],
+      ["maximumHandoffCloses", 4],
+      ["originalActivationMarkerImmutable", false],
+      ["baselineEvents", 3],
+      ["baselineConsumedMicroUsd", 27824],
+      ["continuation", "GENERIC_REOPEN"],
+    ]) {
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: Record<string, unknown>;
+      };
+      Object.assign(changed.wp8fExecutionEnvelope, { [key as string]: value });
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+  });
+  it("requires exact 6/6 accounting and all security/storage compatibility evidence", () => {
+    const target = {
+      worker: "malispang-lineoa-test",
+      sourceCommit: "1".repeat(40),
+      artifactSha256: "2".repeat(64),
+    };
+    for (const change of [
+      { events: 3 },
+      { attempts: 7 },
+      { consumedMicroUsd: 34081 },
+      { pendingAttempts: 1 },
+      { stopReason: "SESSION_EXPIRED" },
+    ]) {
+      const evidence = validCandidateEvidence();
+      Object.assign(evidence.test, change);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+    for (const key of [
+      "precedenceTestsPassed",
+      "continuationStorageTestsPassed",
+      "rollbackAdditiveCompatibilityPassed",
+    ]) {
+      const evidence = validCandidateEvidence();
+      Object.assign(evidence.candidate, { [key]: false });
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+  it("limits v16 runtime and evidence separately without retaining superseded diagnostics authority", () => {
+    const envelope = (
+      currentWork as {
+        wp8fExecutionEnvelope: {
+          remediationFiles: string[];
+          evidenceFiles: string[];
+        };
+      }
+    ).wp8fExecutionEnvelope;
+    for (const path of envelope.remediationFiles) {
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [path])
+          .allowed,
+      ).toBe(true);
+    }
+    for (const path of [
+      "worker/routing.ts",
+      "worker/mp-06-ai-nlu.ts",
+      "worker/draft-order-objects.ts",
+      "worker-tests/mp-06-owner-readiness.test.ts",
+    ]) {
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [path])
+          .allowed,
+      ).toBe(false);
+    }
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "DIAGNOSTICS", [
+        "worker/index.ts",
+      ]).allowed,
+    ).toBe(false);
+    expect(
+      evaluateWp8fPaths(
+        roadmap,
+        currentWork,
+        "EVIDENCE",
+        envelope.evidenceFiles,
+      ).allowed,
+    ).toBe(true);
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "EVIDENCE", ["worker/index.ts"])
+        .allowed,
+    ).toBe(false);
+  });
   it("accepts only the independently observed fixed follow-up triplet, never the rollback pair", () => {
     const target = {
       worker: "malispang-lineoa-test",
@@ -1953,7 +2065,7 @@ describe("v15 explicit Owner execution envelope", () => {
       ).toBe(false);
     }
   });
-  it("does not accept candidate self-authorization or unverified v15 control lineage", () => {
+  it("does not accept candidate self-authorization or unverified v16 control lineage", () => {
     const target = {
       worker: "malispang-lineoa-test",
       sourceCommit: "1".repeat(40),
@@ -1961,7 +2073,7 @@ describe("v15 explicit Owner execution envelope", () => {
     };
     for (const change of [
       { controlCommit: target.sourceCommit },
-      { controlCommit: "fb9458e995a44a0233c3746fd506198f2f1805c7" },
+      { controlCommit: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0" },
       { controlCommit: "latest" },
       { controlAncestryVerified: false },
       { controlParentCommit: "4".repeat(40) },
@@ -1996,8 +2108,8 @@ describe("v15 explicit Owner execution envelope", () => {
       undefined,
       "",
       JSON.stringify(currentWork),
-      record.replaceAll("MP-OD-2026-09-08-V15", "SELF_APPROVED"),
-      record.replaceAll("superseding v14", "superseding v13"),
+      record.replaceAll("MP-OD-2026-09-08-V16", "SELF_APPROVED"),
+      record.replaceAll("superseding v15", "superseding v13"),
     ]) {
       expect(validateWp8fOwnerDecisionRecord(missing)).toBe(false);
     }
@@ -2007,9 +2119,9 @@ describe("v15 explicit Owner execution envelope", () => {
     sourceCommit: "1".repeat(40),
     artifactSha256: "2".repeat(64),
   };
-  it("rejects runtime paths outside the four diagnostics files, aliases and unknown phases", () => {
+  it("rejects runtime paths outside the exact remediation files, aliases and unknown phases", () => {
     expect(
-      evaluateWp8fPaths(roadmap, currentWork, "DIAGNOSTICS", [
+      evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [
         "worker/index.ts",
       ]).allowed,
     ).toBe(true);
@@ -2025,7 +2137,8 @@ describe("v15 explicit Owner execution envelope", () => {
       ["worker/index.ts", "unknown.ts"],
     ]) {
       expect(
-        evaluateWp8fPaths(roadmap, currentWork, "DIAGNOSTICS", paths).allowed,
+        evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", paths)
+          .allowed,
       ).toBe(false);
     }
     expect(
@@ -2166,7 +2279,7 @@ describe("v15 explicit Owner execution envelope", () => {
   });
   it("rejects modified envelope paths, caps, recovery, evidence shortcuts and unknown keys", () => {
     for (const [key, value] of [
-      ["diagnosticsFiles", ["worker/*"]],
+      ["remediationFiles", ["worker/*"]],
       ["maximumNewSessions", 2],
       ["maximumCumulativeCostMicroUsd", 6000000],
       ["newRecoveryMechanism", true],
@@ -2242,7 +2355,7 @@ describe("v15 explicit Owner execution envelope", () => {
       ).toBe(false);
     }
   });
-  it("requires the closed v15 plan in the manifest and schema", () => {
+  it("requires the closed v16 plan in the manifest and schema", () => {
     const changed = clone(currentWork) as { wp8fExecutionEnvelope?: unknown };
     const schema = currentWorkSchema as {
       required: string[];
@@ -2254,12 +2367,12 @@ describe("v15 explicit Owner execution envelope", () => {
     );
     delete changed.wp8fExecutionEnvelope;
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "WP8F_V15_ENVELOPE_MISSING",
+      "WP8F_V16_ENVELOPE_MISSING",
     );
   });
   it("denies draft PR until every TEST, rollback, source association and final review gate passes", () => {
     const review = {
-      ownerDecision: "MP-OD-2026-09-08-V15",
+      ownerDecision: "MP-OD-2026-09-08-V16",
       sourceCommit: "1".repeat(40),
       reviewedSourceCommit: "1".repeat(40),
       testAcceptedSourceCommit: "1".repeat(40),

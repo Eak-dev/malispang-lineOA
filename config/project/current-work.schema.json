@@ -1789,9 +1789,8 @@
     },
     "wp8fExecutionEnvelope": {
       "const": {
-        "ownerDecision": "MP-OD-2026-09-08-V15",
-        "baseline": "fb9458e995a44a0233c3746fd506198f2f1805c7",
-        "patchSha256": "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
+        "ownerDecision": "MP-OD-2026-09-08-V16",
+        "baseline": "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
         "controlFiles": [
           "config/project/roadmap.json",
           "config/project/current-work.json",
@@ -1804,19 +1803,12 @@
           "docs/project/EXECUTION_GATES.md",
           "docs/project/OWNER_DECISION_LOG.md"
         ],
-        "diagnosticsFiles": [
-          "worker/index.ts",
-          "worker/durable-objects.ts",
-          "worker/draft-order-objects.ts",
-          "worker-tests/mp-06-owner-readiness.test.ts"
-        ],
         "worker": "malispang-lineoa-test",
         "targetEnvironment": "TEST_ONLY",
         "candidateGate": "VALIDATED_COMMITTED_PUSHED_EXACT_SOURCE_ARTIFACT_AND_FRESH_STOPPED_TEST",
-        "diagnosticsFollowUp": "D1_PURGE_INVARIANTS_AND_D2_SESSION_LINEAGE_ONLY",
-        "followUpVersion": "5e04ec6f-f225-4a45-b9f1-6908bc79596c",
-        "followUpSource": "946876eb94daecbb90eed24c2f4b8834a63447a2",
-        "followUpArtifact": "eab12622a248b115ffce0b2cd1915a61171a0afe104265f38b924eccec7a933b",
+        "followUpVersion": "8486019d-9b62-4de9-ae15-6299909a23d9",
+        "followUpSource": "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
+        "followUpArtifact": "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
         "recovery": "EXISTING_AUDITED_RETAINED_OWNER_CONVERSATION_ONLY",
         "maximumNewSessions": 1,
         "maximumSessionMinutes": 60,
@@ -1834,7 +1826,30 @@
         "accountingResetOrRefund": false,
         "production": "NO_GO",
         "issueClosure": false,
-        "merge": false
+        "merge": false,
+        "remediationFiles": [
+          "worker/index.ts",
+          "worker/mp-06-wp1.ts",
+          "worker-tests/mp-06-pilot-control.test.ts",
+          "tests/mp-06-wp1.test.ts",
+          "tests/mp-06-wp7-ai-nlu.test.ts",
+          "tests/mp-06-wp8a-pilot-control.test.ts",
+          "tests/mock-webhook-pipeline.test.ts",
+          "worker/durable-objects.ts"
+        ],
+        "evidenceFiles": [
+          "docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md"
+        ],
+        "purpose": "DETERMINISTIC_HANDOFF_PRECEDENCE_AND_ONE_ATOMIC_CONTINUATION",
+        "maximumHandoffCloses": 3,
+        "continuation": "ONE_IMMUTABLE_V16_CONTINUATION_NO_REOPEN_OR_ACCOUNTING_RESET",
+        "baselineEvents": 6,
+        "baselineAttempts": 6,
+        "baselineConsumedMicroUsd": 34082,
+        "baselineReservedMicroUsd": 0,
+        "baselineInFlight": 0,
+        "baselineStopReason": "OPERATOR_STOP",
+        "originalActivationMarkerImmutable": true
       }
     },
     "wp8fApprovedDeployment": {
