@@ -1,6 +1,14 @@
 # MalisPang Project Control
 
-## Current v14 — explicit Owner control transition
+## Current v15 — exact diagnostics follow-up
+
+Roadmap `2026.09.08-v15`, decision `MP-OD-2026-09-08-V15`, supersedes v14. Accepted evidence baseline `fb9458e995a44a0233c3746fd506198f2f1805c7`; MP-06 / Issue #12 / WP8F / TEST_ONLY. Only D1 SELECT-only EXPIRED_PURGED invariants and D2 immutable session-lineage observation corrections are authorized in the four existing diagnostics paths. No draft normalization, cleanup, new recovery mechanism or accounting change. State observation and activation eligibility are distinct; neither grants activation/dispatch/reply/recovery authority.
+
+The only follow-up pre-deployment observation is version `5e04ec6f-f225-4a45-b9f1-6908bc79596c`, source `946876eb94daecbb90eed24c2f4b8834a63447a2`, artifact `eab12622a248b115ffce0b2cd1915a61171a0afe104265f38b924eccec7a933b` together. Independently verify this fresh exact TEST triplet and STOPPED/AI OFF/reserved0/in-flight0/accounting preservation. Candidate must descend from the verified v15 control commit, be validated/committed/pushed, exact-diff reviewed and artifact-reproduced in a clean checkout. Current-work cannot supply remote evidence or self-authorize. The old 83fab7f1/f986a478 pair is rollback-only, never substitute pre-deployment evidence.
+
+One successor TEST deployment after all candidate gates; then readiness before the existing single cumulative Owner-mobile UAT session. Existing UAT/kill-switch/conditional rollback/redeploy/review/draft-PR gates and original acceptance remain unchanged. No Production query/mutation, merge, Issue closure, MP-07, model/prompt/policy/threshold/timeout/retry/business/LINE change, reset/refund, audit/history deletion or broader recovery. The validated explicit v15 transition commit becomes authoritative automatically, without further baseline approval. Authorization is not acceptance or deployment evidence.
+
+## Historical v14 — explicit Owner control transition
 
 Roadmap `2026.09.08-v14` supersedes v13 under `MP-OD-2026-09-08-V14`. Baseline `a4ff8298ff75b077d333b6336d115886cf2907d3`; MP-06 / Issue #12 / WP8F_TEST_ACCEPTANCE_COMPLETION / TEST_ONLY. The preserved 12-line Owner decision and subsequent explicit ten-file control approval authorize this transition. Historical v12/v13 deployment/acceptance plans remain frozen snapshots, not reusable grants. Current authority is `wp8fExecutionEnvelope`.
 

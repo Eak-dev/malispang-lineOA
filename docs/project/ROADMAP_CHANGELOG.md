@@ -225,6 +225,12 @@ Supersedes `2026.09.08-v12`; decision `MP-OD-2026-09-08-V13`. Baseline `2b379570
 
 ## 2026.09.08-v14
 
+Historical transition; superseded by v15 below. Its validation and execution claims remain unchanged.
+
 Explicit Owner control transition from a4ff8298ff75b077d333b6336d115886cf2907d3 supersedes v13, preserving its decision/history and all Issue #12 criteria. Exact-path reviewed diagnostics, evidence-gated TEST deployment, existing audited Owner recovery, one cumulative UAT session, compatible one-round rollback/redeploy and acceptance-gated final review/draft PR are authorized. No implicit candidate/Production approval, merge, closure, reset/refund, new recovery mechanism or MP-07. TEST acceptance remains incomplete; authorization is not execution.
 
 Transition validation: 57 control tests pass (45 retained cases, 12 new v14 security/negative cases), failed/skipped/cancelled 0. Formatting, ESLint, both TypeScript projects, build, control/toolchain validation, secret scan and diff-check pass. The retained runtime-boundary test follows the narrower diagnostics boundary; exact deployment tests additionally require independently collected candidate/state evidence. Initial stale-label and TypeScript/lint development failures were corrected without suppressions or weaker assertions. No Worker executable, model/prompt/policy, benchmark, dependencies/lockfile or deployment configuration changed in this control transition. Issue #12 was verified OPEN. No remote TEST write or new UAT session occurred during transition preparation.
+
+## 2026.09.08-v15
+
+Owner decision `MP-OD-2026-09-08-V15` supersedes v14 from `fb9458e995a44a0233c3746fd506198f2f1805c7`. Closed exact follow-up triplet 5e04ec6f/946876eb/eab12622 (full immutable values in the envelope); 83fab7f1/f986a478 remains rollback-only. No arbitrary remote mapping or current-work self-grant. Preserve all candidate validation, committed/pushed v15 ancestry, reproducible artifact, exact-path, fresh TEST identity/STOPPED/OFF/zero reservation gates. D1 SELECT-only purge invariants and D2 immutable session-lineage observation only; no draft/accounting/recovery mutation, timeout/retry/model/policy change or acceptance reduction. Existing one-session UAT, kill-switch, compatible rollback/redeploy and acceptance-gated final review/draft PR remain conditional. Production NO_GO; Issue #12 OPEN. No new deployment or acceptance PASS is asserted by this transition.

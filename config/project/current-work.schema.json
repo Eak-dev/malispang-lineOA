@@ -1789,8 +1789,8 @@
     },
     "wp8fExecutionEnvelope": {
       "const": {
-        "ownerDecision": "MP-OD-2026-09-08-V14",
-        "baseline": "a4ff8298ff75b077d333b6336d115886cf2907d3",
+        "ownerDecision": "MP-OD-2026-09-08-V15",
+        "baseline": "fb9458e995a44a0233c3746fd506198f2f1805c7",
         "patchSha256": "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
         "controlFiles": [
           "config/project/roadmap.json",
@@ -1813,6 +1813,10 @@
         "worker": "malispang-lineoa-test",
         "targetEnvironment": "TEST_ONLY",
         "candidateGate": "VALIDATED_COMMITTED_PUSHED_EXACT_SOURCE_ARTIFACT_AND_FRESH_STOPPED_TEST",
+        "diagnosticsFollowUp": "D1_PURGE_INVARIANTS_AND_D2_SESSION_LINEAGE_ONLY",
+        "followUpVersion": "5e04ec6f-f225-4a45-b9f1-6908bc79596c",
+        "followUpSource": "946876eb94daecbb90eed24c2f4b8834a63447a2",
+        "followUpArtifact": "eab12622a248b115ffce0b2cd1915a61171a0afe104265f38b924eccec7a933b",
         "recovery": "EXISTING_AUDITED_RETAINED_OWNER_CONVERSATION_ONLY",
         "maximumNewSessions": 1,
         "maximumSessionMinutes": 60,

@@ -53,7 +53,15 @@
 
 Roadmap `2026.09.07-v6` authorizes WP8A runtime pilot-control remediation only after correcting that WP6 froze operator/readiness limits but did not prove runtime enforcement. Issue #12 remains open; remote mutation, PR, TEST deployment and all Production access/action remain unauthorized during WP8A.
 
-## Current v14 — explicit Owner control transition
+## Current v15 — exact diagnostics follow-up
+
+Decision `MP-OD-2026-09-08-V15` / `2026.09.08-v15` supersedes v14 from `fb9458e995a44a0233c3746fd506198f2f1805c7`. The same ten control paths and four diagnostics paths remain closed allowlists. D1 purge invariants and D2 immutable previous/current session-lineage reads only; missing, malformed, ambiguous or changed observations fail closed. No state cleanup/mutation to pass readiness.
+
+Follow-up deployment requires the independently observed exact version/source/artifact triplet `5e04ec6f-f225-4a45-b9f1-6908bc79596c` / `946876eb94daecbb90eed24c2f4b8834a63447a2` / `eab12622a248b115ffce0b2cd1915a61171a0afe104265f38b924eccec7a933b`. Reject swapped/unknown/stale/missing evidence, artifact drift and rollback-pair misuse. Candidate evidence must also prove descent from the validated v15 control commit, commit/push, exact diff, full validation, clean-checkout reproduction and fresh TEST identity/STOPPED/AI OFF/reserved0/in-flight0/accounting preservation. No manifest self-grant, wildcard or alias. Rollback remains conditional on UAT/kill-switch/compatibility and is not a bypass.
+
+Readiness response separates stateObservation from activationEligibility; neither is an authorization token. Only when every readiness gate passes may the existing single cumulative UAT session begin. Production NO_GO, Issue #12 OPEN, no merge/PR before acceptance/MP-07; preserve all earlier safety and accounting prohibitions.
+
+## Historical v14 — explicit Owner control transition
 
 Roadmap `2026.09.08-v14` supersedes v13 under `MP-OD-2026-09-08-V14`. Baseline `a4ff8298ff75b077d333b6336d115886cf2907d3`; MP-06 / Issue #12 / WP8F_TEST_ACCEPTANCE_COMPLETION / TEST_ONLY. The preserved 12-line Owner decision and subsequent explicit ten-file control approval authorize this transition. Historical v12/v13 deployment/acceptance plans remain frozen snapshots, not reusable grants. Current authority is `wp8fExecutionEnvelope`.
 

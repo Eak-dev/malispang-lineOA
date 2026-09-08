@@ -27,7 +27,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.08-v14 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.08-v15 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -1858,8 +1858,8 @@ function validCandidateEvidence(
 ) {
   return {
     candidate: {
-      ownerDecision: "MP-OD-2026-09-08-V14",
-      baseline: "a4ff8298ff75b077d333b6336d115886cf2907d3",
+      ownerDecision: "MP-OD-2026-09-08-V15",
+      baseline: "fb9458e995a44a0233c3746fd506198f2f1805c7",
       patchSha256:
         "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
       sourceCommit: target.sourceCommit,
@@ -1869,6 +1869,10 @@ function validCandidateEvidence(
       reproducedArtifactSha256: target.artifactSha256,
       committed: true,
       baselineAncestryVerified: true,
+      controlCommit: "3".repeat(40),
+      controlParentCommit: "fb9458e995a44a0233c3746fd506198f2f1805c7",
+      controlOwnerDecision: "MP-OD-2026-09-08-V15",
+      controlAncestryVerified: true,
       cleanCheckoutPassed: true,
       validationPassed: true,
       exactDiffReviewed: true,
@@ -1881,8 +1885,10 @@ function validCandidateEvidence(
     },
     test: {
       worker: target.worker,
-      version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
-      sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+      version: "5e04ec6f-f225-4a45-b9f1-6908bc79596c",
+      sourceCommit: "946876eb94daecbb90eed24c2f4b8834a63447a2",
+      artifactSha256:
+        "eab12622a248b115ffce0b2cd1915a61171a0afe104265f38b924eccec7a933b",
       accountIdentity: "c395…407d",
       environment: "TEST_ONLY",
       observedAt: Date.now(),
@@ -1899,7 +1905,87 @@ function validCandidateEvidence(
   };
 }
 
-describe("v14 explicit Owner execution envelope", () => {
+describe("v15 explicit Owner execution envelope", () => {
+  it("accepts only the independently observed fixed follow-up triplet, never the rollback pair", () => {
+    const target = {
+      worker: "malispang-lineoa-test",
+      sourceCommit: "1".repeat(40),
+      artifactSha256: "2".repeat(64),
+    };
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "DEPLOY_TEST",
+        target,
+        validCandidateEvidence(target),
+      ).allowed,
+    ).toBe(true);
+    for (const change of [
+      { version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072" },
+      { sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a" },
+      {
+        version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
+        sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+        artifactSha256:
+          "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+      },
+      { version: "00000000-0000-4000-8000-000000000001" },
+      { version: "active" },
+      { version: "latest" },
+      { artifactSha256: "9".repeat(64) },
+      {
+        sourceCommit: target.sourceCommit,
+        artifactSha256: target.artifactSha256,
+      },
+      { observedAt: Date.now() - 120_001 },
+    ]) {
+      const evidence = validCandidateEvidence(target);
+      Object.assign(evidence.test, change);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+  it("does not accept candidate self-authorization or unverified v15 control lineage", () => {
+    const target = {
+      worker: "malispang-lineoa-test",
+      sourceCommit: "1".repeat(40),
+      artifactSha256: "2".repeat(64),
+    };
+    for (const change of [
+      { controlCommit: target.sourceCommit },
+      { controlCommit: "fb9458e995a44a0233c3746fd506198f2f1805c7" },
+      { controlCommit: "latest" },
+      { controlAncestryVerified: false },
+      { controlParentCommit: "4".repeat(40) },
+      { controlOwnerDecision: "MP-OD-2026-09-08-V14" },
+    ]) {
+      const evidence = validCandidateEvidence(target);
+      Object.assign(evidence.candidate, change);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", target, {
+        candidate: validCandidateEvidence().candidate,
+        test: currentWork,
+      }).allowed,
+    ).toBe(false);
+  });
   it("requires the independent repository Owner record, not current-work assertions", async () => {
     const record = await readFile(
       new URL("docs/project/OWNER_DECISION_LOG.md", root),
@@ -1910,8 +1996,8 @@ describe("v14 explicit Owner execution envelope", () => {
       undefined,
       "",
       JSON.stringify(currentWork),
-      record.replaceAll("MP-OD-2026-09-08-V14", "SELF_APPROVED"),
-      record.replaceAll("superseding v13", "superseding v12"),
+      record.replaceAll("MP-OD-2026-09-08-V15", "SELF_APPROVED"),
+      record.replaceAll("superseding v14", "superseding v13"),
     ]) {
       expect(validateWp8fOwnerDecisionRecord(missing)).toBe(false);
     }
@@ -2156,7 +2242,7 @@ describe("v14 explicit Owner execution envelope", () => {
       ).toBe(false);
     }
   });
-  it("requires the closed v14 plan in the manifest and schema", () => {
+  it("requires the closed v15 plan in the manifest and schema", () => {
     const changed = clone(currentWork) as { wp8fExecutionEnvelope?: unknown };
     const schema = currentWorkSchema as {
       required: string[];
@@ -2168,12 +2254,12 @@ describe("v14 explicit Owner execution envelope", () => {
     );
     delete changed.wp8fExecutionEnvelope;
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "WP8F_V14_ENVELOPE_MISSING",
+      "WP8F_V15_ENVELOPE_MISSING",
     );
   });
   it("denies draft PR until every TEST, rollback, source association and final review gate passes", () => {
     const review = {
-      ownerDecision: "MP-OD-2026-09-08-V14",
+      ownerDecision: "MP-OD-2026-09-08-V15",
       sourceCommit: "1".repeat(40),
       reviewedSourceCommit: "1".repeat(40),
       testAcceptedSourceCommit: "1".repeat(40),
