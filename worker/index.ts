@@ -448,18 +448,37 @@ async function handleAdmin(
       )
         return result("READINESS_CHANGED_DURING_READ", 409);
       const ready =
+        before.activationEligible &&
         context.mode === "BOT_ACTIVE" &&
         !context.clarificationUsed &&
         context.pendingTemplate === null &&
         context.pendingReplies === 0 &&
-        draftContext.state === "NO_DRAFT" &&
+        draftContext.nonBlocking &&
         draftContext.pendingReplies === 0;
       return result(
-        ready ? "READINESS_OBSERVED" : "CONVERSATION_RECOVERY_REVIEW_REQUIRED",
+        ready
+          ? "READINESS_OBSERVED"
+          : before.activationEligible
+            ? "CONVERSATION_RECOVERY_REVIEW_REQUIRED"
+            : "STATE_OBSERVED",
         200,
         {
           readyAtObservation: ready,
           activationAuthorizedByResponse: false,
+          activationEligibility: {
+            eligibleAtObservation: ready,
+            authorizedByResponse: false,
+          },
+          stateObservation: {
+            available: true,
+            lineage: before.lineage,
+            pilot: before.state,
+            aiAdmission: before.aiAdmission,
+            expiredAtObservation: before.expiredAtObservation,
+            dispatchAuthorizedByResponse: false,
+            replyAuthorizedByResponse: false,
+            recoveryAuthorizedByResponse: false,
+          },
           ownerLink: "RETAINED_SETTLED_WP8E_EVENT_AND_SINGLE_PRIVATE_ALLOWLIST",
           conversation: context,
           draft: draftContext,
@@ -472,6 +491,9 @@ async function handleAdmin(
             inFlight: before.inFlight,
             conservativeMicroUsd: before.conservativeMicroUsd,
             reportedUsageMicroUsd: before.reportedUsageMicroUsd,
+            pendingAttempts: before.pendingAttempts,
+            usageUnknownAttempts: before.usageUnknownAttempts,
+            settledAttempts: before.settledAttempts,
             independentlyVerifiedBilling: "UNKNOWN",
           },
         },

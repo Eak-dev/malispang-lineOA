@@ -535,83 +535,296 @@ export class ConversationStateDO extends DurableObject<Env> {
     }
   }
 
-  ownerUatPilotObservation() {
+  async ownerUatPilotObservation() {
     try {
       const sql = this.ctx.storage.sql;
       const session = this.mp06PilotSession();
       if (
+        this.env.ENVIRONMENT !== "TEST" ||
+        this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+        this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
         !session ||
         !isMp06PilotReference(session.session_ref) ||
-        session.state !== "STOPPED" ||
-        session.stop_reason !== "OPERATOR_STOP" ||
-        session.admitted_events !== 3 ||
-        session.provider_attempts !== 3 ||
-        session.budget_consumed_micro_usd !== 27824 ||
-        session.budget_reserved_micro_usd !== 0 ||
-        session.in_flight !== 0
+        !["STOPPED", "ACTIVE", "EXPIRED"].includes(session.state) ||
+        !isMp06PilotTimestamp(session.started_at) ||
+        !isMp06PilotTimestamp(session.expires_at) ||
+        session.expires_at - session.started_at !==
+          MP06_PILOT_SESSION_DURATION_MS ||
+        ![
+          session.admitted_events,
+          session.provider_attempts,
+          session.in_flight,
+          session.budget_consumed_micro_usd,
+          session.budget_reserved_micro_usd,
+        ].every((value) => Number.isSafeInteger(value) && value >= 0) ||
+        session.admitted_events > 200 ||
+        session.provider_attempts > 200 ||
+        session.in_flight > 1 ||
+        session.budget_consumed_micro_usd + session.budget_reserved_micro_usd >
+          5_000_000
       )
-        throw new Error("READINESS_UNAVAILABLE");
-      const totals = sql
-        .exec<{
-          total: number;
-          unknown_count: number;
-          settled_count: number;
-          conservative: number;
-          reported: number;
-        }>(
-          `SELECT COUNT(*) AS total,
-      SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN 1 ELSE 0 END) AS unknown_count,
-      SUM(CASE WHEN state = 'SETTLED' THEN 1 ELSE 0 END) AS settled_count,
-      SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN reserved_cost_micro_usd ELSE 0 END) AS conservative,
-      SUM(CASE WHEN state = 'SETTLED' THEN actual_cost_micro_usd ELSE 0 END) AS reported
-      FROM mp06_pilot_attempts`,
+        return null;
+      // Do not CREATE this table during a read. It is written once by existing activation.
+      const markerTable = sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'mp06_wp8f_activation'",
         )
-        .one();
+        .one().count;
+      const markers =
+        markerTable === 1
+          ? sql
+              .exec<{
+                id: number;
+                previous_session_ref: string;
+                operation_ref: string;
+                session_ref: string;
+                activated_at: number;
+              }>(
+                "SELECT id, previous_session_ref, operation_ref, session_ref, activated_at FROM mp06_wp8f_activation ORDER BY id",
+              )
+              .toArray()
+          : [];
+      if (markers.length > 1) return null;
+      const lineage = markers[0];
       if (
-        totals.total !== 3 ||
-        totals.unknown_count !== 2 ||
-        totals.settled_count !== 1 ||
-        totals.conservative !== 25864 ||
-        totals.reported !== 1960
+        lineage &&
+        (lineage.id !== 1 ||
+          !isMp06PilotReference(lineage.previous_session_ref) ||
+          !isMp06PilotReference(lineage.operation_ref) ||
+          !isMp06PilotReference(lineage.session_ref) ||
+          lineage.previous_session_ref === lineage.session_ref ||
+          lineage.session_ref !== session.session_ref ||
+          lineage.activated_at !== session.started_at)
       )
-        throw new Error("READINESS_UNAVAILABLE");
-      // Resolve only the retained, uniquely settled WP8E Owner event, not a caller-supplied identity.
+        return null;
+      if (
+        !lineage &&
+        (session.state !== "STOPPED" ||
+          session.stop_reason !== "OPERATOR_STOP" ||
+          session.admitted_events !== 3 ||
+          session.provider_attempts !== 3 ||
+          session.budget_consumed_micro_usd !== 27824 ||
+          session.budget_reserved_micro_usd !== 0 ||
+          session.in_flight !== 0)
+      )
+        return null;
+      const anchorSession =
+        lineage?.previous_session_ref ?? session.session_ref;
+      const testers = sql
+        .exec<{ session_ref: string; tester_ref: string }>(
+          "SELECT session_ref, tester_ref FROM mp06_pilot_testers ORDER BY session_ref, tester_ref",
+        )
+        .toArray();
+      if (
+        testers.length !== 1 ||
+        testers[0]!.session_ref !== session.session_ref ||
+        !isMp06PilotReference(testers[0]!.tester_ref)
+      )
+        return null;
+      // Immutable old event stays in the previous session; private allowlist moves to current.
       const owners = sql
         .exec<{ tester_ref: string; event_ref: string }>(
           `SELECT e.tester_ref, e.event_ref FROM mp06_pilot_attempts a
-      JOIN mp06_pilot_events e ON e.session_ref = a.session_ref AND e.event_ref = a.event_ref
-      JOIN mp06_pilot_testers t ON t.session_ref = e.session_ref AND t.tester_ref = e.tester_ref
-      WHERE a.state = 'SETTLED' AND a.session_ref = ? AND a.actual_cost_micro_usd = 1960 AND e.result_authorized = 1`,
-          session.session_ref,
+         JOIN mp06_pilot_events e ON e.session_ref = a.session_ref AND e.event_ref = a.event_ref
+         WHERE a.state = 'SETTLED' AND a.session_ref = ?
+         AND a.actual_cost_micro_usd = 1960 AND e.result_authorized = 1`,
+          anchorSession,
         )
         .toArray();
-      const testerCount = Number(
-        sql
-          .exec<{ count: number }>(
-            "SELECT COUNT(*) AS count FROM mp06_pilot_testers WHERE session_ref = ?",
-            session.session_ref,
-          )
-          .one().count,
-      );
       if (
         owners.length !== 1 ||
-        testerCount !== 1 ||
-        !isMp06PilotReference(owners[0]!.tester_ref) ||
+        owners[0]!.tester_ref !== testers[0]!.tester_ref ||
         !isMp06PilotReference(owners[0]!.event_ref)
       )
-        throw new Error("READINESS_UNAVAILABLE");
+        return null;
+      const attempts = sql
+        .exec<
+          Mp06PilotAttemptRow & {
+            attempt_ref: string;
+            reserved_at: number;
+            lease_expires_at: number;
+            settled_at: number | null;
+          }
+        >("SELECT * FROM mp06_pilot_attempts ORDER BY attempt_ref")
+        .toArray();
+      const events = sql
+        .exec<{
+          session_ref: string;
+          event_ref: string;
+          tester_ref: string;
+          admitted_at: number;
+          result_authorized: number;
+        }>("SELECT * FROM mp06_pilot_events ORDER BY session_ref, event_ref")
+        .toArray();
+      if (
+        events.length !== session.admitted_events ||
+        events.some(
+          (e) =>
+            !isMp06PilotReference(e.session_ref) ||
+            !isMp06PilotReference(e.event_ref) ||
+            !isMp06PilotReference(e.tester_ref) ||
+            !isMp06PilotTimestamp(e.admitted_at) ||
+            ![0, 1].includes(e.result_authorized),
+        ) ||
+        attempts.some(
+          (a) =>
+            !events.some(
+              (e) =>
+                e.session_ref === a.session_ref && e.event_ref === a.event_ref,
+            ),
+        )
+      )
+        return null;
+      if (
+        attempts.length !== session.provider_attempts ||
+        attempts.some(
+          (a) =>
+            !isMp06PilotReference(a.session_ref) ||
+            !isMp06PilotReference(a.event_ref) ||
+            !isMp06PilotReference(a.attempt_ref) ||
+            !["RESERVED", "DISPATCHED", "SETTLED", "USAGE_UNKNOWN"].includes(
+              a.state,
+            ) ||
+            !isMp06PilotCost(a.reserved_cost_micro_usd) ||
+            !isMp06PilotTimestamp(a.reserved_at) ||
+            !isMp06PilotTimestamp(a.lease_expires_at) ||
+            (a.state === "SETTLED" &&
+              (!isMp06PilotCost(a.actual_cost_micro_usd) ||
+                a.actual_cost_micro_usd > a.reserved_cost_micro_usd)) ||
+            (a.state === "USAGE_UNKNOWN" &&
+              a.actual_cost_micro_usd !== null &&
+              a.actual_cost_micro_usd !== a.reserved_cost_micro_usd) ||
+            (["RESERVED", "DISPATCHED"].includes(a.state)
+              ? a.actual_cost_micro_usd !== null || a.settled_at !== null
+              : !isMp06PilotTimestamp(a.settled_at)),
+        )
+      )
+        return null;
+      const historical = attempts.filter(
+        (a) => !lineage || a.session_ref !== session.session_ref,
+      );
+      if (
+        historical.length !== 3 ||
+        historical.filter((a) => a.state === "USAGE_UNKNOWN").length !== 2 ||
+        historical
+          .filter((a) => a.state === "USAGE_UNKNOWN")
+          .reduce((n, a) => n + a.reserved_cost_micro_usd, 0) !== 25864 ||
+        historical.filter((a) => a.state === "SETTLED").length !== 1 ||
+        historical.find((a) => a.state === "SETTLED")?.actual_cost_micro_usd !==
+          1960 ||
+        historical.find((a) => a.state === "SETTLED")?.session_ref !==
+          anchorSession
+      )
+        return null;
+      const currentEvents = lineage
+        ? events.filter((e) => e.session_ref === session.session_ref)
+        : [];
+      if (
+        lineage &&
+        (session.admitted_events !== 3 + currentEvents.length ||
+          currentEvents.some(
+            (e) =>
+              e.tester_ref !== owners[0]!.tester_ref ||
+              !isMp06PilotReference(e.event_ref) ||
+              ![0, 1].includes(e.result_authorized) ||
+              !isMp06PilotTimestamp(e.admitted_at) ||
+              e.admitted_at < lineage.activated_at ||
+              e.admitted_at >= session.expires_at,
+          ) ||
+          attempts
+            .filter((a) => a.session_ref === session.session_ref)
+            .some(
+              (a) => !currentEvents.some((e) => e.event_ref === a.event_ref),
+            ))
+      )
+        return null;
+      const pending = attempts.filter(
+        (a) => a.state === "RESERVED" || a.state === "DISPATCHED",
+      );
+      const conservative = attempts
+        .filter((a) => a.state === "USAGE_UNKNOWN")
+        .reduce((n, a) => n + a.reserved_cost_micro_usd, 0);
+      const reported = attempts
+        .filter((a) => a.state === "SETTLED")
+        .reduce((n, a) => n + a.actual_cost_micro_usd!, 0);
+      if (
+        pending.some((a) => a.session_ref !== session.session_ref) ||
+        pending.length !== session.in_flight ||
+        pending.reduce((n, a) => n + a.reserved_cost_micro_usd, 0) !==
+          session.budget_reserved_micro_usd ||
+        conservative + reported !== session.budget_consumed_micro_usd
+      )
+        return null;
+      const stopReasons = [
+        "OPERATOR_STOP",
+        "EVENT_RATE_LIMIT_REACHED",
+        "SESSION_EVENT_LIMIT_REACHED",
+        "PROVIDER_ATTEMPT_LIMIT_REACHED",
+        "PROVIDER_BUDGET_LIMIT_REACHED",
+        "PROVIDER_USAGE_UNKNOWN",
+        "IN_FLIGHT_USAGE_UNKNOWN",
+        "SESSION_EXPIRED",
+      ];
+      if (
+        session.state === "ACTIVE"
+          ? session.stop_reason !== null
+          : !stopReasons.includes(session.stop_reason ?? "")
+      )
+        return null;
+      const expired = Date.now() >= session.expires_at;
+      // Capture all SELECT results before awaiting crypto. No storage cursor crosses await.
+      const snapshot = JSON.stringify({
+        session,
+        markers,
+        testers,
+        attempts,
+        events,
+      });
+      const fingerprint = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(snapshot),
+      );
+      if (lineage) {
+        const expected = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(
+            "malispang-test:mp06-wp8f:" + lineage.operation_ref,
+          ),
+        );
+        if (
+          Array.from(new Uint8Array(expected), (b) =>
+            b.toString(16).padStart(2, "0"),
+          ).join("") !== lineage.session_ref
+        )
+          return null;
+      }
       return {
         sessionRef: session.session_ref,
         ownerRef: owners[0]!.tester_ref,
         eventRef: owners[0]!.event_ref,
-        state: "STOPPED" as const,
-        events: 3,
-        attempts: 3,
-        consumedMicroUsd: 27824,
-        reservedMicroUsd: 0,
-        inFlight: 0,
-        conservativeMicroUsd: 25864,
-        reportedUsageMicroUsd: 1960,
+        // Internal-only comparison material, never part of HTTP output or authorization.
+        observationFingerprint: Array.from(new Uint8Array(fingerprint), (b) =>
+          b.toString(16).padStart(2, "0"),
+        ).join(""),
+        lineage: lineage
+          ? ("IMMUTABLE_PREVIOUS_CURRENT_SESSION" as const)
+          : ("RETAINED_PRE_ACTIVATION_SESSION" as const),
+        activationEligible: !lineage,
+        state: session.state,
+        expiredAtObservation: expired,
+        aiAdmission: session.state === "ACTIVE" && !expired,
+        events: session.admitted_events,
+        attempts: session.provider_attempts,
+        consumedMicroUsd: session.budget_consumed_micro_usd,
+        reservedMicroUsd: session.budget_reserved_micro_usd,
+        inFlight: session.in_flight,
+        conservativeMicroUsd: conservative,
+        reportedUsageMicroUsd: reported,
+        pendingAttempts: pending.length,
+        usageUnknownAttempts: attempts.filter(
+          (a) => a.state === "USAGE_UNKNOWN",
+        ).length,
+        settledAttempts: attempts.filter((a) => a.state === "SETTLED").length,
       };
     } catch {
       return null;

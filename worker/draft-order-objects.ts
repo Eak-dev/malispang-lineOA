@@ -157,7 +157,8 @@ export class DraftOrderDO extends DurableObject<Env> {
 
   ownerUatDraftObservation() {
     try {
-      const row = this.ctx.storage.sql
+      const sql = this.ctx.storage.sql;
+      const row = sql
         .exec<{ state: string }>(
           "SELECT json_extract(aggregate_json, '$.state') AS state FROM draft_current WHERE id = 1",
         )
@@ -176,15 +177,79 @@ export class DraftOrderDO extends DurableObject<Env> {
           "FAILED_REVIEW",
         ].includes(state)
       )
-        throw new Error("READINESS_UNAVAILABLE");
-      const pendingReplies = Number(
-        this.ctx.storage.sql
-          .exec<{ count: number }>(
-            "SELECT COUNT(*) AS count FROM draft_processed_events WHERE delivered != 1",
-          )
-          .one().count,
-      );
-      return { state, pendingReplies };
+        return null;
+      const deliveries = sql
+        .exec<{ pending: number; malformed: number }>(
+          "SELECT COUNT(CASE WHEN delivered != 1 THEN 1 END) AS pending, COUNT(CASE WHEN delivered NOT IN (0, 1) THEN 1 END) AS malformed FROM draft_processed_events",
+        )
+        .one();
+      if (deliveries.malformed !== 0) return null;
+      // Project predicates only: never load/normalize customer fields or invoke expiry.
+      const purge =
+        state === "EXPIRED_PURGED"
+          ? sql
+              .exec<{
+                structure: number;
+                empty_fields: number;
+                empty_items: number;
+                no_expiry: number;
+                history: number;
+                audit: number;
+              }>(
+                `
+        SELECT
+          (json_type(aggregate_json) = 'object'
+           AND (SELECT COUNT(*) FROM json_each(aggregate_json)) = 6
+           AND (SELECT COUNT(DISTINCT key) FROM json_each(aggregate_json)) = 6
+           AND NOT EXISTS (SELECT 1 FROM json_each(aggregate_json)
+             WHERE key NOT IN ('state','revision','updatedAt','fields','catalogVersion','catalogChecksum'))
+           AND json_type(aggregate_json, '$.revision') = 'integer'
+           AND json_extract(aggregate_json, '$.revision') > 0
+           AND json_type(aggregate_json, '$.updatedAt') = 'integer'
+           AND json_extract(aggregate_json, '$.updatedAt') = updated_at
+           AND updated_at > 0
+           AND json_extract(aggregate_json, '$.catalogVersion') = ?
+           AND json_extract(aggregate_json, '$.catalogChecksum') = ?) AS structure,
+          (json_type(aggregate_json, '$.fields') = 'object'
+           AND (SELECT COUNT(*) FROM json_each(aggregate_json, '$.fields')) = 1
+           AND NOT EXISTS (SELECT 1 FROM json_each(aggregate_json, '$.fields') WHERE key != 'items')) AS empty_fields,
+          (json_type(aggregate_json, '$.fields.items') = 'array'
+           AND json_array_length(aggregate_json, '$.fields.items') = 0) AS empty_items,
+          (expires_at IS NULL AND json_type(aggregate_json, '$.expiresAt') IS NULL) AS no_expiry,
+          (NOT EXISTS (SELECT 1 FROM draft_revisions r WHERE r.aggregate_json != d.aggregate_json
+           OR r.revision != json_extract(d.aggregate_json, '$.revision'))) AS history,
+          (EXISTS (SELECT 1 FROM draft_audit a WHERE a.id = (SELECT MAX(id) FROM draft_audit)
+           AND a.outcome = 'DRAFT_EXPIRED_PII_PURGED'
+           AND a.revision = json_extract(d.aggregate_json, '$.revision')
+           AND a.created_at = d.updated_at AND a.expires_at > a.created_at
+           AND a.actor_ref IS NULL)) AS audit
+        FROM draft_current d WHERE id = 1`,
+                newDraft(0).catalogVersion,
+                newDraft(0).catalogChecksum,
+              )
+              .one()
+          : null;
+      const purgeInvariants = purge
+        ? {
+            validStructure: purge.structure === 1,
+            noRetainedCustomerFields: purge.empty_fields === 1,
+            noRetainedItems: purge.empty_items === 1,
+            noActiveExpiry: purge.no_expiry === 1,
+            purgedHistory: purge.history === 1,
+            validPurgeAudit: purge.audit === 1,
+            noPendingDelivery: deliveries.pending === 0,
+          }
+        : null;
+      const purgeVerified =
+        purgeInvariants !== null &&
+        Object.values(purgeInvariants).every((value) => value === true);
+      // A row labelled NO_DRAFT is not equivalent to absence of an aggregate.
+      return {
+        state,
+        pendingReplies: deliveries.pending,
+        nonBlocking: (!row || purgeVerified) && deliveries.pending === 0,
+        purgeInvariants,
+      };
     } catch {
       return null;
     }
