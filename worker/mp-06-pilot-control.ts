@@ -48,6 +48,11 @@ export interface ReactivateReconciledMp06PilotInput {
   readonly limits: Mp06PilotLimits;
 }
 
+export interface ResumeMp06AcceptanceInput extends ReactivateReconciledMp06PilotInput {
+  readonly expectedSessionRef: string;
+  readonly operationRef: string;
+}
+
 export interface AdmitMp06PilotEventInput {
   readonly sessionRef: string;
   readonly eventRef: string;
@@ -196,6 +201,8 @@ export interface Mp06PilotActivationResult {
   readonly activated: boolean;
   readonly code:
     | "ACTIVATED"
+    | "ACTIVATED_IDEMPOTENT"
+    | "ACTIVATION_STORAGE_UNAVAILABLE"
     | "INVALID_ACTIVATION"
     | "PILOT_ALREADY_ACTIVE"
     | "UNRESOLVED_IN_FLIGHT";

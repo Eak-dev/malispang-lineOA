@@ -31,6 +31,7 @@ import {
   type Mp06PilotStopResult,
   type Mp06ProviderLifecycleDiagnostics,
   type ReactivateReconciledMp06PilotInput,
+  type ResumeMp06AcceptanceInput,
   type ReconcileMp06PilotUnknownUsageInput,
   type RecordMp06PilotLifecycleCheckpointInput,
   type ReserveMp06PilotAttemptInput,
@@ -601,6 +602,133 @@ export class ConversationStateDO extends DurableObject<Env> {
       };
     }
     return this.activateMp06Pilot({ ...input, testerRefs });
+  }
+
+  resumeMp06Acceptance(
+    input: ResumeMp06AcceptanceInput,
+  ): Mp06PilotActivationResult {
+    const denied = (): Mp06PilotActivationResult => {
+      const current = this.mp06PilotSession();
+      return {
+        activated: false,
+        code: "INVALID_ACTIVATION",
+        status: current
+          ? pilotStatus(current, input.now)
+          : inactivePilotStatus(),
+      };
+    };
+    if (
+      this.env.ENVIRONMENT !== "TEST" ||
+      this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      !isMp06PilotReference(input.expectedSessionRef) ||
+      !isMp06PilotReference(input.operationRef) ||
+      !isMp06PilotReference(input.sessionRef) ||
+      input.sessionRef === input.expectedSessionRef ||
+      !isMp06PilotTimestamp(input.now) ||
+      !validMp06PilotLimits(input.limits)
+    )
+      return denied();
+    try {
+      return this.ctx.storage.transactionSync(() => {
+        const sql = this.ctx.storage.sql;
+        // TEST-only additive one-shot audit; never deleted by activation, stop or restart.
+        sql.exec(`CREATE TABLE IF NOT EXISTS mp06_wp8f_activation (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        previous_session_ref TEXT NOT NULL,
+        operation_ref TEXT NOT NULL,
+        session_ref TEXT NOT NULL,
+        activated_at INTEGER NOT NULL
+      )`);
+        const applied = sql
+          .exec<{
+            previous_session_ref: string;
+            operation_ref: string;
+            session_ref: string;
+          }>(
+            "SELECT previous_session_ref, operation_ref, session_ref FROM mp06_wp8f_activation WHERE id = 1",
+          )
+          .toArray()[0];
+        const current = this.mp06PilotSession();
+        if (applied) {
+          if (
+            applied.previous_session_ref !== input.expectedSessionRef ||
+            applied.operation_ref !== input.operationRef ||
+            applied.session_ref !== input.sessionRef ||
+            current?.session_ref !== input.sessionRef
+          )
+            return denied();
+          // A replay acknowledges the original operation, even if now stopped/expired.
+          // It never changes activation time, accounting, or reopens a session.
+          return {
+            activated: true,
+            code: "ACTIVATED_IDEMPOTENT",
+            status: pilotStatus(current, input.now),
+          };
+        }
+        if (
+          !current ||
+          current.session_ref !== input.expectedSessionRef ||
+          current.state !== "STOPPED" ||
+          current.stop_reason !== "OPERATOR_STOP" ||
+          input.now < current.started_at ||
+          current.admitted_events !== 3 ||
+          current.provider_attempts !== 3 ||
+          current.budget_consumed_micro_usd !== 27_824 ||
+          current.budget_reserved_micro_usd !== 0 ||
+          current.in_flight !== 0
+        )
+          return denied();
+        const attempts = sql
+          .exec<{ state: string; count: number }>(
+            "SELECT state, COUNT(*) AS count FROM mp06_pilot_attempts GROUP BY state",
+          )
+          .toArray();
+        if (
+          attempts.length !== 2 ||
+          attempts.find((row) => row.state === "USAGE_UNKNOWN")?.count !== 2 ||
+          attempts.find((row) => row.state === "SETTLED")?.count !== 1
+        )
+          return denied();
+        const testers = sql
+          .exec<{ tester_ref: string }>(
+            "SELECT tester_ref FROM mp06_pilot_testers WHERE session_ref = ?",
+            current.session_ref,
+          )
+          .toArray();
+        if (
+          testers.length < 1 ||
+          testers.length > MP06_PILOT_MAX_TESTERS ||
+          !testers.every((row) => isMp06PilotReference(row.tester_ref))
+        )
+          return denied();
+        sql.exec(
+          "INSERT INTO mp06_wp8f_activation VALUES (1, ?, ?, ?, ?)",
+          current.session_ref,
+          input.operationRef,
+          input.sessionRef,
+          input.now,
+        );
+        sql.exec(
+          "UPDATE mp06_pilot_testers SET session_ref = ? WHERE session_ref = ?",
+          input.sessionRef,
+          current.session_ref,
+        );
+        sql.exec(
+          "UPDATE mp06_pilot_session SET session_ref = ?, state = 'ACTIVE', started_at = ?, expires_at = ?, stop_reason = NULL WHERE id = 1",
+          input.sessionRef,
+          input.now,
+          input.now + input.limits.sessionDurationMs,
+        );
+        return {
+          activated: true,
+          code: "ACTIVATED",
+          status: pilotStatus(this.mp06PilotSession()!, input.now),
+        };
+      });
+    } catch {
+      return { ...denied(), code: "ACTIVATION_STORAGE_UNAVAILABLE" };
+    }
   }
 
   admitMp06PilotEvent(

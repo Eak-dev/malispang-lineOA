@@ -709,6 +709,48 @@ async function handleAdmin(
       { status: result.activated ? 201 : 409 },
     );
   }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/resume-acceptance"
+  ) {
+    const limits = mp06PilotLimitsFromEnvironment(env);
+    const aiEnv = env as Env & Mp06AiNluEnvironment;
+    if (
+      !limits ||
+      aiEnv.MP06_AI_NLU_MODEL !== MP06_AI_NLU_MODEL ||
+      typeof aiEnv.OPENAI_API_KEY !== "string" ||
+      aiEnv.OPENAI_API_KEY.length < 20
+    ) {
+      return Response.json(
+        { error: "PILOT_CONFIGURATION_INVALID" },
+        { status: 503 },
+      );
+    }
+    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
+    const input = parseAcceptanceResume(decoder.decode(body));
+    if (!input)
+      return Response.json(
+        { error: "INVALID_ACCEPTANCE_RESUME" },
+        { status: 400 },
+      );
+    const sessionRef = await sha256Reference(`mp06-wp8f:${input.operationRef}`);
+    const result = await pilot.resumeMp06Acceptance({
+      ...input,
+      sessionRef,
+      now: Date.now(),
+      limits,
+    });
+    return Response.json(
+      { pilot: result.status, outcome: result.code },
+      {
+        status: result.activated
+          ? result.code === "ACTIVATED_IDEMPOTENT"
+            ? 200
+            : 201
+          : 409,
+      },
+    );
+  }
   if (request.method === "POST" && url.pathname === "/admin/mp06-pilot/stop") {
     const result = await pilot.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
     return Response.json({ pilot: result.status, outcome: result.code });
@@ -983,6 +1025,31 @@ function parseExactPilotReconciliationInput(
       return undefined;
     }
     return value as ExactMp06PilotReconciliationRequest;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseAcceptanceResume(
+  raw: string,
+): { expectedSessionRef: string; operationRef: string } | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== 2 ||
+      !("expectedSessionRef" in value) ||
+      !isMp06PilotReference(value.expectedSessionRef) ||
+      !("operationRef" in value) ||
+      !isMp06PilotReference(value.operationRef)
+    )
+      return undefined;
+    return {
+      expectedSessionRef: value.expectedSessionRef,
+      operationRef: value.operationRef,
+    };
   } catch {
     return undefined;
   }
