@@ -7,6 +7,7 @@ import { env, exports } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 
 import worker from "../worker/index.js";
+import { classifyText } from "../worker/routing.js";
 import {
   MP06_AI_NLU_MODEL,
   MP06_AI_NLU_SCHEMA_VERSION,
@@ -41,6 +42,86 @@ const sessionRef = "a".repeat(64);
 const testerA = "b".repeat(64);
 const testerB = "c".repeat(64);
 const baseNow = 1_789_000_000_000;
+
+describe("v16 deterministic precedence compatibility gate", () => {
+  it("preserves the signed-webhook catalog follow-up while exposing the legacy UNKNOWN handoff conflict", async () => {
+    // Synthetic public catalog input only. This protects the existing safe F2
+    // behavior; it is NOT proof that the HIGH_RISK vulnerability is repaired.
+    const senderId = "U_SYNTHETIC_V16_CATALOG_FOLLOW_UP";
+    const conversation = env.CONVERSATION_STATE.getByName(
+      await hashReference(senderId),
+    );
+    const replies: string[] = [];
+    const network = vi.fn<typeof fetch>((input, init) => {
+      if (requestUrl(input) !== "https://api.line.me/v2/bot/message/reply")
+        throw new Error("UNEXPECTED_NETWORK_DESTINATION");
+      if (typeof init?.body !== "string")
+        throw new Error("EXPECTED_SERIALIZED_LINE_REPLY");
+      replies.push(init.body);
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    vi.stubGlobal("fetch", network);
+    try {
+      const localEnv = {
+        ...env,
+        MP06_PILOT_CONTROL_ENABLED: "false",
+        MP06_AI_NLU_ENABLED: "false",
+      };
+      const send = async (text: string, suffix: string) => {
+        const payload = JSON.stringify({
+          destination: env.LINE_BOT_USER_ID,
+          events: [
+            {
+              type: "message",
+              webhookEventId: `evt-v16-catalog-${suffix}`,
+              replyToken: `synthetic-v16-catalog-${suffix}`,
+              source: { type: "user", userId: senderId },
+              message: { type: "text", text },
+            },
+          ],
+        });
+        const ctx = createExecutionContext();
+        const response = await worker.fetch(
+          new Request("https://test.invalid/webhook", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-line-signature": await lineSignature(
+                payload,
+                env.LINE_CHANNEL_SECRET,
+              ),
+            },
+            body: payload,
+          }),
+          localEnv,
+          ctx,
+        );
+        expect(response.status).toBe(200);
+        await waitOnExecutionContext(ctx);
+      };
+      await send("ราคาเท่าไหร่", "clarify");
+      expect(await conversation.mp06Context()).toEqual({
+        pendingClarificationTemplateId: "T-C01",
+      });
+      expect(replies).toHaveLength(1);
+      expect(replies[0]).toContain("สินค้าอะไร");
+      const followUp = "แฮมชีส ปกติ";
+      expect(classifyText(followUp)).toMatchObject({
+        handoff: true,
+        replyKind: "SAFE_FALLBACK",
+        reasonCode: "NO_AUTHORITATIVE_ANSWER",
+      });
+      await send(followUp, "resolved");
+      expect(await conversation.state()).toBe("BOT_ACTIVE");
+      expect(await conversation.mp06Context()).toEqual({});
+      expect(replies).toHaveLength(2);
+      expect(replies[1]).toContain("39 บาท");
+      expect(network).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
 
 describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
   it("is deny-by-default and rejects missing, empty, oversized or malformed allowlists", async () => {

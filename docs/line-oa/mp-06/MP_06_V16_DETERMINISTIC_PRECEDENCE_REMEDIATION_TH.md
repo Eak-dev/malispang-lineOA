@@ -1,4 +1,62 @@
-# MP-06 v16 security remediation — preflight and scope blocker
+# MP-06 v16 security remediation — current gate and historical evidence
+
+## Current v16 — PRECEDENCE_CONTRACT_CONFLICT
+
+The additional worker/durable-objects.ts scope is approved. The old file-scope blocker below is historical and resolved; no repeat approval is requested. Accepted starting local/remote baseline: a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0. Control transition 222182bbf3c3fb794a4e5a64f4f75b53916e0d99 is committed/pushed on codex/mp-06-guardrailed-ai and is the automatically accepted v16 control baseline. Roadmap 2026.09.08-v16 / MP-OD-2026-09-08-V16 supersedes v15, MP-06 / Issue #12 / WP8F / TEST_ONLY.
+
+Exactly the ten authorized control files changed. The envelope adds only the approved eighth executable/test path, freezes 6/6 and 34082/0 with STOPPED / OPERATOR_STOP / no pending/in-flight, one immutable continuation, three scoped handoff closes, exact v15 pre-deploy triplet and all candidate/rollback/PR/Production restrictions. There is no new runtime candidate yet. Control authorization is not proof of a repaired vulnerability, completed continuation or deployment readiness.
+
+### New compatibility conflict, proven locally
+
+The blanket requirement that every existing deterministic decision with handoff:true must immediately win conflicts with the separate requirement to preserve existing safe AUTO/CLARIFY and business behavior. This is a different gate from the resolved Durable Object file allowlist.
+
+| Synthetic case / existing path                       | Existing deterministic evidence                                                                                                            | Consequence of a blanket legacy handoff guard                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| F1 ambiguous catalog-price question                  | Primary PRICE; legacy handoff false; WP1 CLARIFY T-C01                                                                                     | Remains CLARIFY                                                                                         |
+| F2 catalog product/size follow-up with pending T-C01 | Primary UNKNOWN; legacy SAFE_FALLBACK / NO_AUTHORITATIVE_ANSWER / handoff true; WP1 resolves approved catalog AUTO / PRICE / handoff false | Skips deterministic catalog resolution and changes the retained safe F2 result to HUMAN_HANDOFF         |
+| WP8E location wording variant                        | Primary UNKNOWN; legacy SAFE_FALLBACK / handoff true; WP1 undefined                                                                        | Removes the existing guarded semantic interpretation path; no new live retest was performed             |
+| F4 synthetic authority/refund request                | Primary HIGH_RISK; legacy HANDOFF_ACK / handoff true; WP1 undefined                                                                        | Must be blocked before AI; this original vulnerability remains unfixed                                  |
+| Existing canonical advance-order intake              | ADVANCE_ORDER / handoff true; existing deterministic draft transition is CONSENT_REQUIRED, enterHandoff false                              | Immediate forced handoff also conflicts with preserving the already approved deterministic draft intake |
+
+Reproduction used pure local functions with network disabled and a new signed HTTP webhook regression through the real Worker/SQLite runtime. The regression sends synthetic catalog clarification then a synthetic product/size follow-up, checks pending T-C01, catalog price response, BOT_ACTIVE, cleared pending template and exactly two mocked LINE replies. It explicitly checks that the legacy classifier returns handoff:true for that follow-up. No real customer data, OpenAI call or LINE request was used.
+
+Experiment: adding only `&& !decision.handoff` to the text WP1/AI entry condition in worker/index.ts made that same regression fail: expected BOT_ACTIVE, actual HUMAN_HANDOFF, with NO_AUTHORITATIVE_ANSWER. This experimentally demonstrates the F2 compatibility conflict, not a completed security fix. The experimental one-line guard was removed with an exact inverse patch; runtime source is byte-unchanged. Assertions were not weakened. The targeted experiment selected one test and deselected 29; it is not a zero-skipped full-suite claim. The final whole pilot-control file passes 30/30 with no failed/skipped/cancelled tests.
+
+The advance-order compatibility observation is a separate pure-function/source-path finding, not a new signed-webhook or live UAT result. An exploratory phrase that did not match ADVANCE_ORDER was excluded; the canonical intake matched ADVANCE_ORDER and produced the state above. Do not use the UNKNOWN exploratory result as draft evidence.
+
+### Exact Owner decision required before runtime implementation
+
+Proposed boundary clarification, not implemented or implicitly authorized:
+
+1. Mandatory known risk/authority/staff decisions, and deterministic WP1 STAFF_ONLY or policy-integrity/protected-risk decisions, always prevail before draft interception, AI admission, reservation, construction and dispatch. No advisory downgrade, provider attempt or AI cost increment; retain approved deterministic handoff replies, duplicate handling and audit.
+2. Treat only the two closed legacy unresolved-fallback reasons NO_AUTHORITATIVE_ANSWER and AMBIGUOUS_CUSTOMER_TEXT as unresolved interpretation, not a business authorization. Preserve existing context-aware deterministic catalog resolution and guarded advisory interpretation, with the unchanged deterministic policy retaining final authority. No exception for known risk, missing/stale/conflicting knowledge, or explicit staff/authority decisions.
+3. Explicitly preserve the existing deterministic ADVANCE_ORDER consent/draft intake, without any provider access or business confirmation; its existing staff-review boundary remains mandatory. Alternatively, changing that intake to immediate handoff is a business-behavior change that needs a distinct Owner decision and affected acceptance review.
+
+This clarification is necessary because the currently literal every-handoff:true requirement cannot simultaneously preserve the observed F2 and draft behavior. Do not silently add these exceptions, reclassify unknowns in worker/routing.ts, weaken assertions, change policy/model/thresholds or count the vulnerability as repaired. The atomic continuation implementation remains authorized in worker/durable-objects.ts, but no session should be enabled or deployed while this security/behavior conflict is unresolved.
+
+### Fresh TEST containment and validation
+
+At 2026-09-08T10:54:26.460Z, authenticated SELECT-only receipt 396b62e4-5b21-487d-aa8b-d422374b47e5 confirmed retained Owner linkage, AI admission OFF / pilot STOPPED, events/attempts 6/6, consumed/reserved 34082/0 micro-USD, pending/in-flight zero, Owner HUMAN_HANDOFF, no pending clarification/reply, and EXPIRED_PURGED draft with every purge invariant true. Activation eligibility remains false. No activation, handoff-close, accounting write or remote mutation was performed. The temporary process holding only the approved TEST_ADMIN_KEY exited; no secret value was printed, written or transmitted outside the exact TEST HTTPS endpoint.
+
+Independently queried TEST deployment metadata still resolves version 8486019d-9b62-4de9-ae15-6299909a23d9 at 100%, source 8a5b6547b4713ff50ad6b08ee58682e129641b6a and annotated reproduced artifact 15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64. TEST health returned 200 / TEST / correct TEST account name / durable-object-sqlite. This retains the build/upload/annotation association limitation described below; it is not a new independent remote executable download.
+
+Accounting remains 25864 conservative terminal USAGE_UNKNOWN plus 8218 reported-usage estimates = 34082, with two UNKNOWN and four SETTLED attempts. Historical independently verified billing remains UNKNOWN. No new attempt is shown between the prior stop observations and this receipt; no claim is made about future activity or absolute provider execution completion from counters alone.
+
+Validation: control tests 62/62 (59 retained, three new), full pilot-control Worker file 30/30 (29 retained, one new compatibility regression), formatting/ESLint/TypeScript/build, control validator, secret scan and diff-check pass. Initial test-harness lint errors were corrected with a typed serialized mock-reply capture; expectations were retained. Prior full candidate evidence remains 619 unique tests; current inventory is 623 after four additions, not a claim of a new 623-test full run. No runtime candidate, full candidate validation, new clean-checkout artifact or deployment PASS is claimed. Deterministic check passes all 5000 cases with semantic checksum f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6 unchanged. WP7 frozen evidence check passes with semantic checksum 7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55 unchanged; no live evaluation rerun. Dependency audit reports no known vulnerabilities; dependencies, lockfile, Worker runtime, model/prompt/policy and reports are unchanged.
+
+| Acceptance gate                                                    | Current verdict                                                        |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| v16 exact control / additional DO file authority                   | PASS, committed/pushed control                                         |
+| Existing F1/F2 / F3 button UAT                                     | Historical evidence retained; F2 compatibility regression PASS         |
+| Deterministic precedence security repair                           | BLOCKED — new exact contract conflict; original vulnerability retained |
+| Atomic one-shot continuation / lineage / rollback compatibility    | GAP — authorized, not implemented or validated                         |
+| Targeted F4, F5, F6 / new-session kill switch                      | NOT_STARTED                                                            |
+| TEST containment and unchanged accounting                          | PASS at the timestamped read above                                     |
+| New runtime deployment / rollback rehearsal / final release review | BLOCKED                                                                |
+| Draft PR / integration / Issue closure                             | BLOCKED; Issue #12 OPEN                                                |
+| Production                                                         | NO_GO — NOT TOUCHED                                                    |
+
+## Historical preflight — prior file-scope blocker, now resolved
 
 Status: BLOCKED_PENDING_EXACT_CONTINUATION_FILE_SCOPE. This is evidence only, not a v16 control transition, implemented fix, deployment authorization bypass or completed acceptance. Current committed control remains Roadmap 2026.09.08-v15. Owner has approved the v16 objective, but its exact runtime file allowlist does not include the coordinator required for continuation.
 
