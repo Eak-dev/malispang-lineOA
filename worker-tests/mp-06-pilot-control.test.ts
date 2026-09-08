@@ -462,8 +462,9 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
 
     const nextSessionRef = hexRef(588);
     expect(
-      await stub.reactivateReconciledMp06Pilot({
+      await stub.activateMp06Pilot({
         sessionRef: nextSessionRef,
+        testerRefs: [testerA],
         now: staleNow + 3,
         limits,
       }),
@@ -705,48 +706,139 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(body).not.toMatch(/sessionRef|eventRef|attemptRef|testerRef/u);
   });
 
-  it("requires authenticated exact preconditions and reconciles once idempotently", async () => {
+  it("requires safe session/attempt identity and reconciles the second attempt once", async () => {
     const endpoint =
-      "https://test.invalid/admin/mp06-pilot/reconcile-unknown-usage";
-    const requestBody = reconciliationRequestBody();
-    const unauthorized = await exports.default.fetch(
-      new Request(endpoint, { method: "POST", body: requestBody }),
-    );
-    expect(unauthorized.status).toBe(401);
+      "https://test.invalid/admin/mp06-pilot/reconcile-exact-unknown-usage";
+    expect(
+      await exports.default.fetch(
+        new Request(endpoint, { method: "POST", body: "{}" }),
+      ),
+    ).toMatchObject({ status: 401 });
 
     const stub = env.CONVERSATION_STATE.getByName("mp06-pilot-control-v1");
-    const now = Date.now() - MP06_PILOT_ATTEMPT_LEASE_MS - 1_000;
+    const firstNow = Date.now() - MP06_PILOT_ATTEMPT_LEASE_MS * 2;
     const oldSessionRef = hexRef(701);
-    const eventRef = hexRef(702);
-    const attemptRef = hexRef(703);
+    const firstEventRef = hexRef(702);
+    const firstAttemptRef = hexRef(703);
     await stub.activateMp06Pilot({
       sessionRef: oldSessionRef,
       testerRefs: [testerA],
-      now,
+      now: firstNow,
       limits,
     });
     await stub.admitMp06PilotEvent({
       sessionRef: oldSessionRef,
-      eventRef,
+      eventRef: firstEventRef,
       testerRef: testerA,
-      now,
+      now: firstNow,
     });
     await stub.reserveMp06PilotAttempt({
       sessionRef: oldSessionRef,
-      eventRef,
-      attemptRef,
+      eventRef: firstEventRef,
+      attemptRef: firstAttemptRef,
       upperBoundCostMicroUsd: 12_932,
-      now,
+      now: firstNow,
     });
     await stub.authorizeMp06PilotDispatch({
       sessionRef: oldSessionRef,
+      eventRef: firstEventRef,
+      attemptRef: firstAttemptRef,
+      clientRequestId: "client-first-unknown",
+      now: firstNow,
+    });
+    await stub.settleMp06PilotAttempt({
+      sessionRef: oldSessionRef,
+      eventRef: firstEventRef,
+      attemptRef: firstAttemptRef,
+      now: firstNow + 1,
+      outcome: "USAGE_UNKNOWN",
+    });
+
+    const sessionRef = hexRef(704);
+    await stub.activateMp06Pilot({
+      sessionRef,
+      testerRefs: [testerA],
+      now: firstNow + 2,
+      limits,
+    });
+    const eventRef = hexRef(705);
+    const attemptRef = hexRef(706);
+    await stub.admitMp06PilotEvent({
+      sessionRef,
+      eventRef,
+      testerRef: testerA,
+      now: firstNow + 3,
+    });
+    await stub.reserveMp06PilotAttempt({
+      sessionRef,
       eventRef,
       attemptRef,
-      clientRequestId: "client-admin-reconcile",
-      now,
+      upperBoundCostMicroUsd: 12_932,
+      now: firstNow + 3,
+    });
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      clientRequestId: "client-second-unknown",
+      now: firstNow + 3,
     });
     await stub.mp06PilotStatus(Date.now());
 
+    const targetResponse = await exports.default.fetch(
+      new Request(
+        "https://test.invalid/admin/mp06-pilot/exact-reconciliation-target",
+        { headers: { authorization: "Bearer unit-test-admin-key" } },
+      ),
+    );
+    expect(targetResponse.status).toBe(200);
+    const targetBody = await targetResponse.json<{
+      target: {
+        eligible: boolean;
+        code: string;
+        sessionRef: string;
+        attemptTargetRef: string;
+      };
+    }>();
+    expect(targetBody.target).toMatchObject({
+      eligible: true,
+      code: "EXACT_TARGET_READY",
+      sessionRef,
+    });
+    expect(targetBody.target.attemptTargetRef).toMatch(/^[a-f0-9]{64}$/u);
+    expect(JSON.stringify(targetBody)).not.toContain(attemptRef);
+    expect(JSON.stringify(targetBody)).not.toContain(testerA);
+
+    const wrongTarget = await exports.default.fetch(
+      new Request(endpoint, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer unit-test-admin-key",
+          "content-type": "application/json",
+        },
+        body: exactReconciliationRequestBody({
+          ...targetBody.target,
+          attemptTargetRef: hexRef(999),
+        }),
+      }),
+    );
+    expect(wrongTarget.status).toBe(409);
+    const wrongSession = await exports.default.fetch(
+      new Request(endpoint, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer unit-test-admin-key",
+          "content-type": "application/json",
+        },
+        body: exactReconciliationRequestBody({
+          ...targetBody.target,
+          sessionRef: hexRef(998),
+        }),
+      }),
+    );
+    expect(wrongSession.status).toBe(409);
+
+    const requestBody = exactReconciliationRequestBody(targetBody.target);
     const authorized = () =>
       exports.default.fetch(
         new Request(endpoint, {
@@ -758,14 +850,24 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
           body: requestBody,
         }),
       );
-    const first = await authorized();
-    expect(first.status).toBe(200);
-    expect(await first.json()).toMatchObject({
-      outcome: "RECONCILED_USAGE_UNKNOWN",
+    const concurrent = await Promise.all([authorized(), authorized()]);
+    expect(concurrent.map((response) => response.status)).toEqual([200, 200]);
+    const concurrentBodies = await Promise.all(
+      concurrent.map((response) =>
+        response.json<{ outcome: string; pilot: Record<string, unknown> }>(),
+      ),
+    );
+    expect(concurrentBodies.map((body) => body.outcome).sort()).toEqual([
+      "RECONCILED_EXACT_IDEMPOTENT",
+      "RECONCILED_EXACT_USAGE_UNKNOWN",
+    ]);
+    expect(concurrentBodies[0]).toMatchObject({
       pilot: {
         state: "STOPPED",
         stopReason: "PROVIDER_USAGE_UNKNOWN_RECONCILED",
-        budgetConsumedMicroUsd: 12_932,
+        admittedEvents: 2,
+        providerAttempts: 2,
+        budgetConsumedMicroUsd: 25_864,
         budgetReservedMicroUsd: 0,
         inFlight: 0,
       },
@@ -774,10 +876,10 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(repeated.status).toBe(200);
     const repeatedBody = await repeated.json();
     expect(repeatedBody).toMatchObject({
-      outcome: "RECONCILED_IDEMPOTENT",
+      outcome: "RECONCILED_EXACT_IDEMPOTENT",
       pilot: {
         state: "STOPPED",
-        budgetConsumedMicroUsd: 12_932,
+        budgetConsumedMicroUsd: 25_864,
         budgetReservedMicroUsd: 0,
         inFlight: 0,
       },
@@ -785,6 +887,35 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(JSON.stringify(repeatedBody)).not.toMatch(
       new RegExp(`${eventRef}|${attemptRef}|${testerA}`, "u"),
     );
+
+    const checkpointsBeforeLate =
+      await stub.mp06PilotLifecycleCheckpointSnapshot();
+    expect(
+      await stub.settleMp06PilotAttempt({
+        sessionRef,
+        eventRef,
+        attemptRef,
+        now: Date.now(),
+        outcome: "KNOWN",
+        actualCostMicroUsd: 0,
+        diagnostics: {
+          clientRequestId: "client-second-unknown",
+          httpStatus: 200,
+          dispatchMs: 1,
+          outcomeCode: "LATE_PROVIDER_COMPLETION",
+        },
+      }),
+    ).toMatchObject({ accepted: true, code: "SETTLED_IDEMPOTENT" });
+    expect(await stub.mp06PilotLifecycleCheckpointSnapshot()).toEqual(
+      checkpointsBeforeLate,
+    );
+    expect(
+      await stub.authorizeMp06PilotResult({
+        sessionRef,
+        eventRef,
+        now: Date.now(),
+      }),
+    ).toBe(false);
 
     const reactivated = await exports.default.fetch(
       new Request(
@@ -804,9 +935,9 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       outcome: "ACTIVATED",
       pilot: {
         state: "ACTIVE",
-        admittedEvents: 1,
-        providerAttempts: 1,
-        budgetConsumedMicroUsd: 12_932,
+        admittedEvents: 2,
+        providerAttempts: 2,
+        budgetConsumedMicroUsd: 25_864,
         budgetReservedMicroUsd: 0,
         inFlight: 0,
       },
@@ -820,6 +951,116 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     expect(stopped.status).toBe(200);
     expect(await stopped.json()).toMatchObject({
       pilot: { state: "STOPPED", inFlight: 0 },
+    });
+  });
+
+  it("rejects an exact reconciliation target after the underlying attempt state changes", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("exact-state-drift");
+    const firstNow = baseNow;
+    const firstSessionRef = hexRef(710);
+    const firstEventRef = hexRef(711);
+    const firstAttemptRef = hexRef(712);
+    await stub.activateMp06Pilot({
+      sessionRef: firstSessionRef,
+      testerRefs: [testerA],
+      now: firstNow,
+      limits,
+    });
+    await stub.admitMp06PilotEvent({
+      sessionRef: firstSessionRef,
+      eventRef: firstEventRef,
+      testerRef: testerA,
+      now: firstNow,
+    });
+    await stub.reserveMp06PilotAttempt({
+      sessionRef: firstSessionRef,
+      eventRef: firstEventRef,
+      attemptRef: firstAttemptRef,
+      upperBoundCostMicroUsd: 12_932,
+      now: firstNow,
+    });
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef: firstSessionRef,
+      eventRef: firstEventRef,
+      attemptRef: firstAttemptRef,
+      clientRequestId: "state-drift-first",
+      now: firstNow,
+    });
+    await stub.settleMp06PilotAttempt({
+      sessionRef: firstSessionRef,
+      eventRef: firstEventRef,
+      attemptRef: firstAttemptRef,
+      now: firstNow + 1,
+      outcome: "USAGE_UNKNOWN",
+    });
+
+    const sessionRef = hexRef(713);
+    const eventRef = hexRef(714);
+    const attemptRef = hexRef(715);
+    await stub.activateMp06Pilot({
+      sessionRef,
+      testerRefs: [testerA],
+      now: firstNow + 2,
+      limits,
+    });
+    await stub.admitMp06PilotEvent({
+      sessionRef,
+      eventRef,
+      testerRef: testerA,
+      now: firstNow + 3,
+    });
+    await stub.reserveMp06PilotAttempt({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      upperBoundCostMicroUsd: 12_932,
+      now: firstNow + 3,
+    });
+    await stub.authorizeMp06PilotDispatch({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      clientRequestId: "state-drift-second",
+      now: firstNow + 3,
+    });
+    const staleNow = firstNow + MP06_PILOT_ATTEMPT_LEASE_MS + 4;
+    await stub.mp06PilotStatus(staleNow);
+    const target = await stub.mp06PilotExactReconciliationTarget(staleNow);
+    expect(target).toMatchObject({
+      eligible: true,
+      code: "EXACT_TARGET_READY",
+    });
+
+    await stub.settleMp06PilotAttempt({
+      sessionRef,
+      eventRef,
+      attemptRef,
+      now: staleNow + 1,
+      outcome: "KNOWN",
+      actualCostMicroUsd: 0,
+    });
+    expect(
+      await stub.reconcileExactMp06PilotUnknownUsage({
+        now: staleNow + 2,
+        expectedSessionRef: target.sessionRef!,
+        expectedAttemptTargetRef: target.attemptTargetRef!,
+        expectedState: "STOPPED",
+        expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN",
+        expectedAdmittedEvents: 2,
+        expectedProviderAttempts: 2,
+        expectedBudgetConsumedMicroUsd: 12_932,
+        expectedBudgetReservedMicroUsd: 12_932,
+        expectedInFlight: 1,
+        disposition: "CONSUME_FULL_RESERVATION_NO_REFUND",
+      }),
+    ).toMatchObject({ accepted: false, code: "RECONCILIATION_NOT_ALLOWED" });
+    expect(await stub.mp06PilotStatus(staleNow + 2)).toMatchObject({
+      state: "STOPPED",
+      admittedEvents: 2,
+      providerAttempts: 2,
+      budgetConsumedMicroUsd: 12_932,
+      budgetReservedMicroUsd: 0,
+      inFlight: 0,
     });
   });
 
@@ -1036,6 +1277,15 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
           "SETTLEMENT_STARTED",
           "SETTLEMENT_SUCCEEDED",
         ],
+        coverage: {
+          isolatedDurableObject: true,
+          durableCheckpointRpc: true,
+          durableSettlementRpc: true,
+          simulatedTransportOnly: true,
+          nativeProviderFetch: false,
+          lineReply: false,
+          webhookExecutionContextCoveredByThisRoute: false,
+        },
       });
       expect(JSON.stringify(body)).not.toContain(runRef);
       const repeated = await call();
@@ -1055,9 +1305,13 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     const coordinator = env.CONVERSATION_STATE.getByName(
       MP06_PILOT_CONTROL_OBJECT_NAME,
     );
-    const initialCheckpointCount = (
-      await coordinator.mp06PilotLifecycleCheckpointSnapshot()
-    ).checkpointCount;
+    const initialCheckpointKeys = new Set(
+      (
+        await coordinator.mp06PilotLifecycleCheckpointSnapshot()
+      ).checkpoints.map(
+        (checkpoint) => `${checkpoint.clientRequestId}:${checkpoint.phase}`,
+      ),
+    );
     expect(
       await coordinator.activateMp06Pilot({
         sessionRef: hexRef(883),
@@ -1117,7 +1371,12 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         await coordinator.mp06PilotLifecycleCheckpointSnapshot();
       expect(
         beforeStop.checkpoints
-          .slice(initialCheckpointCount)
+          .filter(
+            (checkpoint) =>
+              !initialCheckpointKeys.has(
+                `${checkpoint.clientRequestId}:${checkpoint.phase}`,
+              ),
+          )
           .map((checkpoint) => checkpoint.phase),
       ).toEqual([
         "DISPATCH_AUTHORIZED",
@@ -1135,7 +1394,12 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       });
       expect(
         (await coordinator.mp06PilotLifecycleCheckpointSnapshot()).checkpoints
-          .slice(initialCheckpointCount)
+          .filter(
+            (checkpoint) =>
+              !initialCheckpointKeys.has(
+                `${checkpoint.clientRequestId}:${checkpoint.phase}`,
+              ),
+          )
           .map((checkpoint) => checkpoint.phase),
       ).toEqual([
         "DISPATCH_AUTHORIZED",
@@ -1159,9 +1423,13 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     const coordinator = env.CONVERSATION_STATE.getByName(
       MP06_PILOT_CONTROL_OBJECT_NAME,
     );
-    const initialCheckpointCount = (
-      await coordinator.mp06PilotLifecycleCheckpointSnapshot()
-    ).checkpointCount;
+    const initialCheckpointKeys = new Set(
+      (
+        await coordinator.mp06PilotLifecycleCheckpointSnapshot()
+      ).checkpoints.map(
+        (checkpoint) => `${checkpoint.clientRequestId}:${checkpoint.phase}`,
+      ),
+    );
     expect(
       await coordinator.activateMp06Pilot({
         sessionRef: hexRef(884),
@@ -1221,7 +1489,12 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       const snapshot = await coordinator.mp06PilotLifecycleCheckpointSnapshot();
       expect(
         snapshot.checkpoints
-          .slice(initialCheckpointCount)
+          .filter(
+            (checkpoint) =>
+              !initialCheckpointKeys.has(
+                `${checkpoint.clientRequestId}:${checkpoint.phase}`,
+              ),
+          )
           .map((checkpoint) => checkpoint.phase),
       ).toEqual([
         "DISPATCH_AUTHORIZED",
@@ -1328,13 +1601,18 @@ function reconciliationInput(now: number) {
   };
 }
 
-function reconciliationRequestBody(): string {
+function exactReconciliationRequestBody(target: {
+  readonly sessionRef: string;
+  readonly attemptTargetRef: string;
+}): string {
   return JSON.stringify({
+    expectedSessionRef: target.sessionRef,
+    expectedAttemptTargetRef: target.attemptTargetRef,
     expectedState: "STOPPED",
     expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN",
-    expectedAdmittedEvents: 1,
-    expectedProviderAttempts: 1,
-    expectedBudgetConsumedMicroUsd: 0,
+    expectedAdmittedEvents: 2,
+    expectedProviderAttempts: 2,
+    expectedBudgetConsumedMicroUsd: 12_932,
     expectedBudgetReservedMicroUsd: 12_932,
     expectedInFlight: 1,
     disposition: "CONSUME_FULL_RESERVATION_NO_REFUND",

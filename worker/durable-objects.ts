@@ -17,11 +17,13 @@ import {
   type ActivateMp06PilotInput,
   type AdmitMp06PilotEventInput,
   type AuthorizeMp06PilotDispatchInput,
+  type ExactReconcileMp06PilotUnknownUsageInput,
   type Mp06PilotActivationResult,
   type Mp06PilotAdmissionResult,
   type Mp06PilotAttemptInput,
   type Mp06PilotAttemptDiagnostics,
   type Mp06PilotAttemptResult,
+  type Mp06PilotExactReconciliationTarget,
   type Mp06PilotLifecycleCheckpoint,
   type Mp06PilotLifecycleCheckpointSnapshot,
   type Mp06PilotLifecyclePhase,
@@ -567,9 +569,9 @@ export class ConversationStateDO extends DurableObject<Env> {
       !current ||
       current.state !== "STOPPED" ||
       current.stop_reason !== "PROVIDER_USAGE_UNKNOWN_RECONCILED" ||
-      current.admitted_events !== 1 ||
-      current.provider_attempts !== 1 ||
-      current.budget_consumed_micro_usd !== 12_932 ||
+      current.admitted_events !== 2 ||
+      current.provider_attempts !== 2 ||
+      current.budget_consumed_micro_usd !== 25_864 ||
       current.budget_reserved_micro_usd !== 0 ||
       current.in_flight !== 0
     ) {
@@ -906,6 +908,17 @@ export class ConversationStateDO extends DurableObject<Env> {
     ) {
       return { accepted: false, code: "CONTROL_UNAVAILABLE" };
     }
+    const terminalAttempt = this.mp06PilotAttempt(input.attemptRef);
+    if (
+      terminalAttempt?.session_ref === input.sessionRef &&
+      terminalAttempt.event_ref === input.eventRef &&
+      (terminalAttempt.state === "SETTLED" ||
+        terminalAttempt.state === "USAGE_UNKNOWN")
+    ) {
+      // A late provider completion is an accounting and evidence no-op. In
+      // particular, it cannot mutate a later session or authorize a reply.
+      return { accepted: true, code: "SETTLED_IDEMPOTENT" };
+    }
     if (
       input.diagnostics &&
       !this.recordMp06PilotSettlementStartedCheckpoint(
@@ -1016,7 +1029,7 @@ export class ConversationStateDO extends DurableObject<Env> {
             rate_limit_remaining_requests, dispatch_ms, headers_wait_ms,
             body_read_ms, parsing_ms, settlement_ms, outcome_code
           FROM mp06_pilot_lifecycle_diagnostics
-          ORDER BY recorded_at DESC, rowid DESC LIMIT 1`,
+          ORDER BY rowid DESC LIMIT 1`,
         )
         .toArray()[0];
       const checkpointCount = Number(
@@ -1033,7 +1046,7 @@ export class ConversationStateDO extends DurableObject<Env> {
             retry_after_ms, rate_limit_remaining_requests, elapsed_ms,
             recorded_at
           FROM mp06_pilot_lifecycle_checkpoints
-          ORDER BY recorded_at DESC, sequence DESC LIMIT 1`,
+          ORDER BY rowid DESC LIMIT 1`,
         )
         .toArray()[0];
       return {
@@ -1065,11 +1078,180 @@ export class ConversationStateDO extends DurableObject<Env> {
           retry_after_ms, rate_limit_remaining_requests, elapsed_ms,
           recorded_at
         FROM mp06_pilot_lifecycle_checkpoints
-        ORDER BY recorded_at ASC, sequence ASC`,
+        ORDER BY rowid ASC`,
       )
       .toArray()
       .map(lifecycleCheckpoint);
     return { checkpointCount: checkpoints.length, checkpoints };
+  }
+
+  async mp06PilotExactReconciliationTarget(
+    now: number,
+  ): Promise<Mp06PilotExactReconciliationTarget> {
+    if (!isMp06PilotTimestamp(now)) {
+      return { eligible: false, code: "EXACT_TARGET_UNAVAILABLE" };
+    }
+    const session = this.mp06PilotSession();
+    if (!session) {
+      return { eligible: false, code: "EXACT_TARGET_UNAVAILABLE" };
+    }
+    const initialState =
+      session.state === "STOPPED" &&
+      session.stop_reason === "IN_FLIGHT_USAGE_UNKNOWN" &&
+      session.admitted_events === 2 &&
+      session.provider_attempts === 2 &&
+      session.budget_consumed_micro_usd === 12_932 &&
+      session.budget_reserved_micro_usd === 12_932 &&
+      session.in_flight === 1;
+    const reconciledState =
+      session.state === "STOPPED" &&
+      session.stop_reason === "PROVIDER_USAGE_UNKNOWN_RECONCILED" &&
+      session.admitted_events === 2 &&
+      session.provider_attempts === 2 &&
+      session.budget_consumed_micro_usd === 25_864 &&
+      session.budget_reserved_micro_usd === 0 &&
+      session.in_flight === 0;
+    if (!initialState && !reconciledState) {
+      return { eligible: false, code: "EXACT_TARGET_UNAVAILABLE" };
+    }
+    const attempt = this.ctx.storage.sql
+      .exec<{ attempt_ref: string }>(
+        initialState
+          ? "SELECT attempt_ref FROM mp06_pilot_attempts WHERE session_ref = ? AND state = 'DISPATCHED' AND lease_expires_at <= ?"
+          : "SELECT attempt_ref FROM mp06_pilot_attempts WHERE session_ref = ? AND state = 'USAGE_UNKNOWN'",
+        session.session_ref,
+        ...(initialState ? [now] : []),
+      )
+      .toArray();
+    if (attempt.length !== 1 || !attempt[0]) {
+      return { eligible: false, code: "EXACT_TARGET_UNAVAILABLE" };
+    }
+    return {
+      eligible: true,
+      code: initialState
+        ? "EXACT_TARGET_READY"
+        : "EXACT_TARGET_ALREADY_RECONCILED",
+      sessionRef: session.session_ref,
+      attemptTargetRef: await mp06PilotReconciliationTargetReference(
+        session.session_ref,
+        attempt[0].attempt_ref,
+      ),
+    };
+  }
+
+  async reconcileExactMp06PilotUnknownUsage(
+    input: ExactReconcileMp06PilotUnknownUsageInput,
+  ): Promise<Mp06PilotAttemptResult> {
+    if (!validExactMp06ReconciliationInput(input)) {
+      return { accepted: false, code: "CONTROL_UNAVAILABLE" };
+    }
+    const session = this.mp06PilotSession();
+    if (!session || session.session_ref !== input.expectedSessionRef) {
+      return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+    }
+    const initialState =
+      session.state === input.expectedState &&
+      session.stop_reason === input.expectedStopReason &&
+      session.admitted_events === input.expectedAdmittedEvents &&
+      session.provider_attempts === input.expectedProviderAttempts &&
+      session.budget_consumed_micro_usd ===
+        input.expectedBudgetConsumedMicroUsd &&
+      session.budget_reserved_micro_usd ===
+        input.expectedBudgetReservedMicroUsd &&
+      session.in_flight === input.expectedInFlight;
+    const reconciledState =
+      session.state === "STOPPED" &&
+      session.stop_reason === "PROVIDER_USAGE_UNKNOWN_RECONCILED" &&
+      session.admitted_events === 2 &&
+      session.provider_attempts === 2 &&
+      session.budget_consumed_micro_usd === 25_864 &&
+      session.budget_reserved_micro_usd === 0 &&
+      session.in_flight === 0;
+    if (!initialState && !reconciledState) {
+      return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+    }
+    const attempt = this.ctx.storage.sql
+      .exec<{ attempt_ref: string; reserved_cost_micro_usd: number }>(
+        initialState
+          ? "SELECT attempt_ref, reserved_cost_micro_usd FROM mp06_pilot_attempts WHERE session_ref = ? AND state = 'DISPATCHED' AND lease_expires_at <= ?"
+          : "SELECT attempt_ref, reserved_cost_micro_usd FROM mp06_pilot_attempts WHERE session_ref = ? AND state = 'USAGE_UNKNOWN'",
+        session.session_ref,
+        ...(initialState ? [input.now] : []),
+      )
+      .toArray();
+    if (
+      attempt.length !== 1 ||
+      !attempt[0] ||
+      attempt[0].reserved_cost_micro_usd !== 12_932 ||
+      (await mp06PilotReconciliationTargetReference(
+        session.session_ref,
+        attempt[0].attempt_ref,
+      )) !== input.expectedAttemptTargetRef
+    ) {
+      return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+    }
+    if (reconciledState) {
+      return { accepted: true, code: "RECONCILED_EXACT_IDEMPOTENT" };
+    }
+    const exactAttemptRef = attempt[0].attempt_ref;
+    try {
+      return this.ctx.storage.transactionSync(() => {
+        const current = this.mp06PilotSession();
+        const currentAttempt = this.mp06PilotAttempt(exactAttemptRef);
+        if (
+          current?.session_ref === input.expectedSessionRef &&
+          current.state === "STOPPED" &&
+          current.stop_reason === "PROVIDER_USAGE_UNKNOWN_RECONCILED" &&
+          current.admitted_events === 2 &&
+          current.provider_attempts === 2 &&
+          current.budget_consumed_micro_usd === 25_864 &&
+          current.budget_reserved_micro_usd === 0 &&
+          current.in_flight === 0 &&
+          currentAttempt?.session_ref === input.expectedSessionRef &&
+          currentAttempt.state === "USAGE_UNKNOWN"
+        ) {
+          return { accepted: true, code: "RECONCILED_EXACT_IDEMPOTENT" };
+        }
+        if (
+          !current ||
+          current.session_ref !== input.expectedSessionRef ||
+          current.state !== input.expectedState ||
+          current.stop_reason !== input.expectedStopReason ||
+          current.admitted_events !== input.expectedAdmittedEvents ||
+          current.provider_attempts !== input.expectedProviderAttempts ||
+          current.budget_consumed_micro_usd !==
+            input.expectedBudgetConsumedMicroUsd ||
+          current.budget_reserved_micro_usd !==
+            input.expectedBudgetReservedMicroUsd ||
+          current.in_flight !== input.expectedInFlight ||
+          !currentAttempt ||
+          currentAttempt.session_ref !== input.expectedSessionRef ||
+          currentAttempt.state !== "DISPATCHED" ||
+          currentAttempt.reserved_cost_micro_usd !== 12_932
+        ) {
+          return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+        }
+        const attemptChanged = this.ctx.storage.sql.exec(
+          "UPDATE mp06_pilot_attempts SET state = 'USAGE_UNKNOWN', actual_cost_micro_usd = NULL, settled_at = ? WHERE attempt_ref = ? AND session_ref = ? AND state = 'DISPATCHED'",
+          input.now,
+          exactAttemptRef,
+          input.expectedSessionRef,
+        ).rowsWritten;
+        const sessionChanged = this.ctx.storage.sql.exec(
+          "UPDATE mp06_pilot_session SET budget_reserved_micro_usd = 0, budget_consumed_micro_usd = 25864, in_flight = 0, stop_reason = 'PROVIDER_USAGE_UNKNOWN_RECONCILED' WHERE id = 1 AND session_ref = ? AND state = 'STOPPED' AND stop_reason = 'IN_FLIGHT_USAGE_UNKNOWN' AND admitted_events = 2 AND provider_attempts = 2 AND budget_consumed_micro_usd = 12932 AND budget_reserved_micro_usd = 12932 AND in_flight = 1",
+          input.expectedSessionRef,
+        ).rowsWritten;
+        if (attemptChanged !== 1 || sessionChanged !== 1) {
+          throw new Error("EXACT_RECONCILIATION_CONFLICT");
+        }
+        return {
+          accepted: true,
+          code: "RECONCILED_EXACT_USAGE_UNKNOWN",
+        };
+      });
+    } catch {
+      return { accepted: false, code: "RECONCILIATION_NOT_ALLOWED" };
+    }
   }
 
   reconcileMp06PilotUnknownUsage(
@@ -1593,6 +1775,36 @@ function validMp06ReconciliationInput(
     input.expectedInFlight === 1 &&
     input.disposition === "CONSUME_FULL_RESERVATION_NO_REFUND"
   );
+}
+
+function validExactMp06ReconciliationInput(
+  input: ExactReconcileMp06PilotUnknownUsageInput,
+): boolean {
+  return (
+    isMp06PilotTimestamp(input.now) &&
+    isMp06PilotReference(input.expectedSessionRef) &&
+    isMp06PilotReference(input.expectedAttemptTargetRef) &&
+    input.expectedState === "STOPPED" &&
+    input.expectedStopReason === "IN_FLIGHT_USAGE_UNKNOWN" &&
+    input.expectedAdmittedEvents === 2 &&
+    input.expectedProviderAttempts === 2 &&
+    input.expectedBudgetConsumedMicroUsd === 12_932 &&
+    input.expectedBudgetReservedMicroUsd === 12_932 &&
+    input.expectedInFlight === 1 &&
+    input.disposition === "CONSUME_FULL_RESERVATION_NO_REFUND"
+  );
+}
+
+async function mp06PilotReconciliationTargetReference(
+  sessionRef: string,
+  attemptRef: string,
+): Promise<string> {
+  const data = new TextEncoder().encode(
+    `mp06-exact-reconciliation-target-v1:${sessionRef}:${attemptRef}`,
+  );
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", data)))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function lifecycleDiagnostics(

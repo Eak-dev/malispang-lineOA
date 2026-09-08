@@ -153,6 +153,30 @@ export interface ReconcileMp06PilotUnknownUsageInput {
   readonly disposition: "CONSUME_FULL_RESERVATION_NO_REFUND";
 }
 
+export interface ExactReconcileMp06PilotUnknownUsageInput {
+  readonly now: number;
+  readonly expectedSessionRef: string;
+  readonly expectedAttemptTargetRef: string;
+  readonly expectedState: "STOPPED";
+  readonly expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN";
+  readonly expectedAdmittedEvents: 2;
+  readonly expectedProviderAttempts: 2;
+  readonly expectedBudgetConsumedMicroUsd: 12932;
+  readonly expectedBudgetReservedMicroUsd: 12932;
+  readonly expectedInFlight: 1;
+  readonly disposition: "CONSUME_FULL_RESERVATION_NO_REFUND";
+}
+
+export interface Mp06PilotExactReconciliationTarget {
+  readonly eligible: boolean;
+  readonly code:
+    | "EXACT_TARGET_READY"
+    | "EXACT_TARGET_ALREADY_RECONCILED"
+    | "EXACT_TARGET_UNAVAILABLE";
+  readonly sessionRef?: string;
+  readonly attemptTargetRef?: string;
+}
+
 export type Mp06PilotAdmissionCode =
   | "ADMITTED"
   | "DUPLICATE"
@@ -194,6 +218,8 @@ export type Mp06PilotAttemptCode =
   | "SETTLED_IDEMPOTENT"
   | "RECONCILED_USAGE_UNKNOWN"
   | "RECONCILED_IDEMPOTENT"
+  | "RECONCILED_EXACT_USAGE_UNKNOWN"
+  | "RECONCILED_EXACT_IDEMPOTENT"
   | "RECONCILIATION_NOT_ALLOWED"
   | "PILOT_INACTIVE"
   | "SESSION_EXPIRED"

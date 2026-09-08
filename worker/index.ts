@@ -476,6 +476,7 @@ async function handleAdmin(
           outcome: complete ? "SELF_TEST_IDEMPOTENT" : "SELF_TEST_INCOMPLETE",
           checkpointCount: existing.checkpointCount,
           phases: existingPhases,
+          coverage: noNetworkLifecycleSelfTestCoverage(),
         },
         { status: complete ? 200 : 409 },
       );
@@ -576,15 +577,30 @@ async function handleAdmin(
         outcome: passed ? "SELF_TEST_PASSED" : "SELF_TEST_FAILED",
         checkpointCount: snapshot.checkpointCount,
         phases: snapshot.checkpoints.map((checkpoint) => checkpoint.phase),
+        coverage: noNetworkLifecycleSelfTestCoverage(),
       },
       { status: passed ? 200 : 409 },
     );
   }
   if (
-    request.method === "POST" &&
-    url.pathname === "/admin/mp06-pilot/reconcile-unknown-usage"
+    request.method === "GET" &&
+    url.pathname === "/admin/mp06-pilot/exact-reconciliation-target"
   ) {
-    // Defense in depth: handleAdmin already authenticated this same TEST secret.
+    if (
+      !(await secureTextEqual(bearerToken(request), env.TEST_ADMIN_KEY)) ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true"
+    ) {
+      return Response.json({ error: "TEST_ADMIN_REQUIRED" }, { status: 403 });
+    }
+    const target = await pilot.mp06PilotExactReconciliationTarget(Date.now());
+    return Response.json({ target }, { status: target.eligible ? 200 : 409 });
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/reconcile-exact-unknown-usage"
+  ) {
     if (
       !(await secureTextEqual(bearerToken(request), env.TEST_ADMIN_KEY)) ||
       env.ENVIRONMENT !== "TEST" ||
@@ -594,14 +610,14 @@ async function handleAdmin(
       return Response.json({ error: "TEST_ADMIN_REQUIRED" }, { status: 403 });
     }
     const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
-    const input = parsePilotReconciliationInput(decoder.decode(body));
+    const input = parseExactPilotReconciliationInput(decoder.decode(body));
     if (!input) {
       return Response.json(
-        { error: "INVALID_RECONCILIATION_PRECONDITIONS" },
+        { error: "INVALID_EXACT_RECONCILIATION_PRECONDITIONS" },
         { status: 400 },
       );
     }
-    const result = await pilot.reconcileMp06PilotUnknownUsage({
+    const result = await pilot.reconcileExactMp06PilotUnknownUsage({
       ...input,
       now: Date.now(),
     });
@@ -908,37 +924,55 @@ function parsePilotLifecycleSelfTestInput(
   }
 }
 
-interface Mp06PilotReconciliationRequest {
+function noNetworkLifecycleSelfTestCoverage(): Record<string, boolean> {
+  return {
+    isolatedDurableObject: true,
+    durableCheckpointRpc: true,
+    durableSettlementRpc: true,
+    simulatedTransportOnly: true,
+    nativeProviderFetch: false,
+    lineReply: false,
+    webhookExecutionContextCoveredByThisRoute: false,
+  };
+}
+
+interface ExactMp06PilotReconciliationRequest {
+  readonly expectedSessionRef: string;
+  readonly expectedAttemptTargetRef: string;
   readonly expectedState: "STOPPED";
   readonly expectedStopReason: "IN_FLIGHT_USAGE_UNKNOWN";
-  readonly expectedAdmittedEvents: 1;
-  readonly expectedProviderAttempts: 1;
-  readonly expectedBudgetConsumedMicroUsd: 0;
+  readonly expectedAdmittedEvents: 2;
+  readonly expectedProviderAttempts: 2;
+  readonly expectedBudgetConsumedMicroUsd: 12932;
   readonly expectedBudgetReservedMicroUsd: 12932;
   readonly expectedInFlight: 1;
   readonly disposition: "CONSUME_FULL_RESERVATION_NO_REFUND";
 }
 
-function parsePilotReconciliationInput(
+function parseExactPilotReconciliationInput(
   raw: string,
-): Mp06PilotReconciliationRequest | undefined {
+): ExactMp06PilotReconciliationRequest | undefined {
   try {
     const value: unknown = JSON.parse(raw);
     if (
       typeof value !== "object" ||
       value === null ||
       Array.isArray(value) ||
-      Object.keys(value).length !== 8 ||
+      Object.keys(value).length !== 10 ||
+      !("expectedSessionRef" in value) ||
+      !isMp06PilotReference(value.expectedSessionRef) ||
+      !("expectedAttemptTargetRef" in value) ||
+      !isMp06PilotReference(value.expectedAttemptTargetRef) ||
       !("expectedState" in value) ||
       value.expectedState !== "STOPPED" ||
       !("expectedStopReason" in value) ||
       value.expectedStopReason !== "IN_FLIGHT_USAGE_UNKNOWN" ||
       !("expectedAdmittedEvents" in value) ||
-      value.expectedAdmittedEvents !== 1 ||
+      value.expectedAdmittedEvents !== 2 ||
       !("expectedProviderAttempts" in value) ||
-      value.expectedProviderAttempts !== 1 ||
+      value.expectedProviderAttempts !== 2 ||
       !("expectedBudgetConsumedMicroUsd" in value) ||
-      value.expectedBudgetConsumedMicroUsd !== 0 ||
+      value.expectedBudgetConsumedMicroUsd !== 12_932 ||
       !("expectedBudgetReservedMicroUsd" in value) ||
       value.expectedBudgetReservedMicroUsd !== 12_932 ||
       !("expectedInFlight" in value) ||
@@ -948,7 +982,7 @@ function parsePilotReconciliationInput(
     ) {
       return undefined;
     }
-    return value as Mp06PilotReconciliationRequest;
+    return value as ExactMp06PilotReconciliationRequest;
   } catch {
     return undefined;
   }
