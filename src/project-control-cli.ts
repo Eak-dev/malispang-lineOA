@@ -52,10 +52,16 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     roadmap,
     currentWork,
     "DEPLOY_TEST",
+    {
+      worker: "malispang-lineoa-test",
+      sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+      artifactSha256:
+        "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+    },
   );
-  if (testDeployment.allowed) {
+  if (!testDeployment.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: new TEST deployment requires separate reviewed Owner approval",
+      "ROADMAP_UNVERIFIED: exact Owner-approved WP8F deployment must be authorized",
     );
   }
 
@@ -90,7 +96,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.08-v12, MP-06 (GitHub #12), WP8F TEST acceptance work authorized; new deployment, incomplete draft PR, merge and Production blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.08-v13, MP-06 (GitHub #12), exact f986a478 TEST deployment and one cumulative UAT session authorized; all PR, unapproved rollback, merge and Production blocked, ${warningSuffix}`,
   );
 }
 

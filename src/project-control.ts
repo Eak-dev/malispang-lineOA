@@ -119,8 +119,8 @@ const REQUIRED_WP8F_SCOPE = [
   "OWNER_LINE_UAT_ONE_CASE_AT_A_TIME",
   "VERIFY_EXISTING_SAFETY_AND_ROLLBACK_EVIDENCE",
   "STOP_TEST_PILOT_AND_AI",
-  "PREPARE_REVIEWED_TEST_DEPLOYMENT_PROPOSAL",
-  "CREATE_DRAFT_PR_ONLY_AFTER_TEST_ACCEPTANCE",
+  "DEPLOY_EXACT_OWNER_APPROVED_WP8F_CANDIDATE",
+  "HANDOFF_FINAL_SECURITY_RELEASE_REVIEW_NO_PR",
   "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
   "POLICY_SNAPSHOT_READ_ONLY",
@@ -286,7 +286,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.08-v12",
+    "2026.09.08-v13",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -297,7 +297,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-08-V12",
+      "MP-OD-2026-09-08-V13",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -309,7 +309,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.08-v11",
+      "2026.09.08-v12",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -326,7 +326,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd",
+      "2b379570c830e1f2099ad88efdb998b05e36bd6c",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -349,7 +349,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.authorization.testDeploymentAuthorization,
-      false,
+      true,
       "NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
     );
     expectEqual(
@@ -709,7 +709,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testDeploymentAuthorization,
-      false,
+      true,
       "CURRENT_NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
     );
     expectEqual(
@@ -750,6 +750,7 @@ export function validateProjectControl(
       "WP8F_NOT_AUTHORIZED",
     );
   validateWp8fAcceptancePlan(errors, currentWork.wp8fTestAcceptancePlan);
+  validateWp8fApprovedDeployment(errors, currentWork.wp8fApprovedDeployment);
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
   validateBenchmarkCompletionPlan(errors, currentWork.benchmarkCompletionPlan);
   validateLocalClosureRemediationPlan(
@@ -853,6 +854,8 @@ export function validateProjectControl(
   const forbiddenScope = Array.isArray(currentWork.forbiddenScope)
     ? currentWork.forbiddenScope
     : [];
+  if (!forbiddenScope.includes("CREATE_ANY_PULL_REQUEST"))
+    errors.push("WP8F_ALL_PR_MUST_REMAIN_BLOCKED");
   for (const required of REQUIRED_FORBIDDEN_SCOPE) {
     if (!forbiddenScope.includes(required)) {
       errors.push(`FORBIDDEN_SCOPE_MISSING_${required}`);
@@ -889,6 +892,11 @@ export function evaluateProjectAction(
   roadmap: unknown,
   currentWork: unknown,
   action: ProjectAction,
+  deploymentTarget?: {
+    worker: string;
+    sourceCommit: string;
+    artifactSha256: string;
+  },
 ): ProjectActionDecision {
   const validation = validateProjectControl(roadmap, currentWork);
   if (validation.errors.length > 0) {
@@ -898,15 +906,22 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
-  if (
-    action === "CREATE_DRAFT_PR" &&
-    (!isRecord(currentWork.wp8fTestAcceptancePlan) ||
-      currentWork.wp8fTestAcceptancePlan.testAcceptanceStatus !== "PASS")
-  ) {
+  if (action === "CREATE_DRAFT_PR") {
     return {
       allowed: false,
-      reason: "TEST_ACCEPTANCE_REQUIRED_BEFORE_DRAFT_PR",
+      reason: "ALL_PR_BLOCKED_PENDING_FINAL_REVIEW",
     };
+  }
+  if (action === "DEPLOY_TEST") {
+    const plan = currentWork.wp8fApprovedDeployment;
+    if (
+      !isRecord(plan) ||
+      !deploymentTarget ||
+      deploymentTarget.worker !== plan.worker ||
+      deploymentTarget.sourceCommit !== plan.sourceCommit ||
+      deploymentTarget.artifactSha256 !== plan.artifactSha256
+    )
+      return { allowed: false, reason: "EXACT_DEPLOYMENT_TARGET_REQUIRED" };
   }
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
@@ -3027,4 +3042,32 @@ function validateWp8fAcceptancePlan(errors: string[], plan: unknown): void {
       `WP8F_${field.toUpperCase()}_INVALID`,
     );
   }
+}
+
+function validateWp8fApprovedDeployment(errors: string[], plan: unknown): void {
+  if (!isRecord(plan)) {
+    errors.push("WP8F_APPROVED_DEPLOYMENT_MISSING");
+    return;
+  }
+  const required = {
+    worker: "malispang-lineoa-test",
+    sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+    artifactSha256:
+      "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+    requiredPreDeploymentState: "STOPPED",
+    candidateDeploymentOccurredAtAuthorization: false,
+    maximumCandidateDeployments: 1,
+    rollbackRehearsalAuthorized: false,
+    anyPullRequestAuthorized: false,
+    preserveAccounting: true,
+  } as const;
+  if (Object.keys(plan).length !== Object.keys(required).length)
+    errors.push("WP8F_APPROVED_DEPLOYMENT_FIELDS_INVALID");
+  for (const [field, expected] of Object.entries(required))
+    expectEqual(
+      errors,
+      plan[field],
+      expected,
+      `WP8F_DEPLOY_${field.toUpperCase()}_INVALID`,
+    );
 }

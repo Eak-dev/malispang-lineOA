@@ -35,6 +35,7 @@
     "wp8dDurableLifecycleDiagnosticsPlan",
     "wp8eExactStateReconciliationControlledRetestPlan",
     "wp8fTestAcceptancePlan",
+    "wp8fApprovedDeployment",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -139,7 +140,7 @@
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": false },
+        "testDeploymentAuthorization": { "const": true },
         "testDeploymentOccurred": { "const": true },
         "testDeployment": { "const": false },
         "production": { "type": "boolean" }
@@ -1783,6 +1784,19 @@
         "liveProviderAuthorization": { "const": false },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8fApprovedDeployment": {
+      "const": {
+        "worker": "malispang-lineoa-test",
+        "sourceCommit": "f986a478bc980f9e53748ed49cedd543f54cd64a",
+        "artifactSha256": "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+        "requiredPreDeploymentState": "STOPPED",
+        "candidateDeploymentOccurredAtAuthorization": false,
+        "maximumCandidateDeployments": 1,
+        "rollbackRehearsalAuthorized": false,
+        "anyPullRequestAuthorized": false,
+        "preserveAccounting": true
       }
     },
     "wp8fTestAcceptancePlan": {

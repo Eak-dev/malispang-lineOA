@@ -2,13 +2,13 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.08-v12",
+  "roadmapVersion": "2026.09.08-v13",
   "workId": "MP-06",
   "githubIssue": 12,
   "currentPhase": "WP8F_TEST_ACCEPTANCE_COMPLETION",
   "status": "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY",
   "base": {
-    "commit": "3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd",
+    "commit": "2b379570c830e1f2099ad88efdb998b05e36bd6c",
     "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
@@ -22,8 +22,8 @@
     "OWNER_LINE_UAT_ONE_CASE_AT_A_TIME",
     "VERIFY_EXISTING_SAFETY_AND_ROLLBACK_EVIDENCE",
     "STOP_TEST_PILOT_AND_AI",
-    "PREPARE_REVIEWED_TEST_DEPLOYMENT_PROPOSAL",
-    "CREATE_DRAFT_PR_ONLY_AFTER_TEST_ACCEPTANCE",
+    "DEPLOY_EXACT_OWNER_APPROVED_WP8F_CANDIDATE",
+    "HANDOFF_FINAL_SECURITY_RELEASE_REVIEW_NO_PR",
     "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
     "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
     "POLICY_SNAPSHOT_READ_ONLY",
@@ -94,6 +94,7 @@
     "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
     "CREATE_READY_PULL_REQUEST",
     "CREATE_DRAFT_PR_BEFORE_TEST_ACCEPTANCE",
+    "CREATE_ANY_PULL_REQUEST",
     "DEPLOY_NEW_SOURCE_WITHOUT_OWNER_APPROVAL",
     "REHEARSE_ROLLBACK_WITHOUT_REVIEWED_APPROVAL",
     "CHANGE_MODEL_PROMPT_POLICY_THRESHOLDS_TIMEOUT"
@@ -122,11 +123,22 @@
     "commit": true,
     "pushBranch": true,
     "githubRoadmapUpdate": true,
-    "testDeploymentAuthorization": false,
+    "testDeploymentAuthorization": true,
     "testDeploymentOccurred": true,
     "testDeployment": false,
     "production": false,
     "testAcceptanceCompletionWp8f": true
+  },
+  "wp8fApprovedDeployment": {
+    "worker": "malispang-lineoa-test",
+    "sourceCommit": "f986a478bc980f9e53748ed49cedd543f54cd64a",
+    "artifactSha256": "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+    "requiredPreDeploymentState": "STOPPED",
+    "candidateDeploymentOccurredAtAuthorization": false,
+    "maximumCandidateDeployments": 1,
+    "rollbackRehearsalAuthorized": false,
+    "anyPullRequestAuthorized": false,
+    "preserveAccounting": true
   },
   "policySnapshotReference": {
     "version": "2026.09.05-policy-v1",

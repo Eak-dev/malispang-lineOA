@@ -25,7 +25,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.08-v12 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.08-v13 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -475,7 +475,7 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
       allowed: false,
-      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
+      reason: "EXACT_DEPLOYMENT_TARGET_REQUIRED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -1734,6 +1734,73 @@ function clone<T>(value: T): T {
 }
 
 describe("WP8F scoped acceptance safety gates", () => {
+  it("authorizes only the exact approved TEST worker, source and artifact", () => {
+    const target = {
+      worker: "malispang-lineoa-test",
+      sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+      artifactSha256:
+        "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+    };
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", target)
+        .allowed,
+    ).toBe(true);
+    for (const field of ["worker", "sourceCommit", "artifactSha256"] as const) {
+      expect(
+        evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", {
+          ...target,
+          [field]: "wrong-target",
+        }),
+      ).toEqual({ allowed: false, reason: "EXACT_DEPLOYMENT_TARGET_REQUIRED" });
+    }
+  });
+  it("rejects altered deployment approval and unapproved rollback or PR access", () => {
+    for (const [field, value] of [
+      ["sourceCommit", "0".repeat(40)],
+      ["maximumCandidateDeployments", 2],
+      ["rollbackRehearsalAuthorized", true],
+      ["anyPullRequestAuthorized", true],
+      ["preserveAccounting", false],
+      ["candidateDeploymentOccurredAtAuthorization", true],
+    ] as const) {
+      const changed = structuredClone(currentWork) as {
+        wp8fApprovedDeployment: Record<string, unknown>;
+      };
+      changed.wp8fApprovedDeployment[field] = value;
+      expect(validateProjectControl(roadmap, changed).errors).toContain(
+        `WP8F_DEPLOY_${field.toUpperCase()}_INVALID`,
+      );
+    }
+  });
+  it("requires the closed deployment plan in both manifest and schema", () => {
+    const changed = structuredClone(currentWork) as {
+      wp8fApprovedDeployment?: Record<string, unknown>;
+    };
+    delete changed.wp8fApprovedDeployment;
+    expect(validateProjectControl(roadmap, changed).errors).toContain(
+      "WP8F_APPROVED_DEPLOYMENT_MISSING",
+    );
+    const schema = currentWorkSchema as {
+      required: string[];
+      properties: { wp8fApprovedDeployment: { const: unknown } };
+    };
+    expect(schema.required).toContain("wp8fApprovedDeployment");
+    expect(schema.properties.wp8fApprovedDeployment.const).toEqual(
+      (currentWork as { wp8fApprovedDeployment: unknown })
+        .wp8fApprovedDeployment,
+    );
+  });
+  it("requires the explicit all-PR prohibition during final-review handoff", () => {
+    const changed = structuredClone(currentWork) as {
+      forbiddenScope: string[];
+    };
+    changed.forbiddenScope = changed.forbiddenScope.filter(
+      (scope) => scope !== "CREATE_ANY_PULL_REQUEST",
+    );
+    expect(validateProjectControl(roadmap, changed).errors).toContain(
+      "WP8F_ALL_PR_MUST_REMAIN_BLOCKED",
+    );
+  });
   it("denies old reconciliation and draft PR before verified TEST acceptance", () => {
     expect(
       evaluateProjectAction(
@@ -1746,7 +1813,7 @@ describe("WP8F scoped acceptance safety gates", () => {
       evaluateProjectAction(roadmap, currentWork, "CREATE_DRAFT_PR"),
     ).toEqual({
       allowed: false,
-      reason: "TEST_ACCEPTANCE_REQUIRED_BEFORE_DRAFT_PR",
+      reason: "ALL_PR_BLOCKED_PENDING_FINAL_REVIEW",
     });
   });
   it("fails closed when cumulative accounting, session cap or deploy approval requirement changes", () => {

@@ -1,5 +1,15 @@
 # MalisPang Project Control
 
+## Current v13 exact candidate approval — 8 September 2026
+
+Roadmap `2026.09.08-v13` supersedes v12 under the Owner's explicit approval of candidate `f986a478bc980f9e53748ed49cedd543f54cd64a`. MP-06 / Issue #12 remains WP8F TEST acceptance completion. Verified local/remote baseline `2b379570c830e1f2099ad88efdb998b05e36bd6c` is clean. Only this immutable candidate and minified artifact `f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2` may be deployed once to `malispang-lineoa-test`, with persisted pilot STOPPED and accounting unchanged. Authorization is not deployment occurrence. Deploy from the exact ancestor candidate, not from the later control/evidence commit.
+
+One already-approved cumulative Owner-mobile UAT session remains limited to 60 minutes, USD 5 / 200 events / 200 attempts including the existing 3/3 and 27,824 micro-USD. No replacement session or accounting reset. Stop on failure; final AI off/pilot STOPPED. A new rollback rehearsal requires separate approval of the exact reviewed recovery plan. All PR creation, including draft PR, is now forbidden pending final security/release review; this supersedes v12's conditional draft permission. No model/prompt/policy/threshold/timeout/configuration/secret changes, Production access, merge, Issue closure or MP-07.
+
+The machine-readable `wp8fTestAcceptancePlan` remains the historical v12 baseline; `wp8fApprovedDeployment` is the narrower current approval. Operational occurrence/version and UAT results belong to timestamped evidence, not pre-deployment authorization flags. On completion or a clear blocker, hand off to Owner for GPT-6 Astra / High final security and release review.
+
+## Historical v12 authorization — superseded by v13 above
+
 MP-06 (GitHub #12), Roadmap `2026.09.08-v12` supersedes v11 under Owner authorization to complete existing acceptance. Phase `WP8F_TEST_ACCEPTANCE_COMPLETION`, status `AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY`, action `TEST_ACCEPTANCE_COMPLETION_WP8F`.
 
 Baseline: `3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd` on `codex/mp-06-guardrailed-ai`. Current exact TEST deployed source `c8b0d8246058c5de4991bec369e91cfe2a609a4d`, version `5835b91b-7b0d-4708-a71b-6c31473adcae`. WP8E one-case provider/settlement/LINE evidence passed; this does not close full UAT. TEST is STOPPED / AI admission off, cumulative events/attempts 3/3, consumed/reserved 27,824/0 micro-USD, in-flight 0. Historical conservative consumed is 25,864; current successful reported-usage cost is 1,960; historical actual billing remains UNKNOWN.
