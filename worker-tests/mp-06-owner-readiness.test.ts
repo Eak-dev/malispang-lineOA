@@ -1,12 +1,14 @@
 import {
   createExecutionContext,
   evictDurableObject,
+  runDurableObjectAlarm,
   runInDurableObject,
   waitOnExecutionContext,
 } from "cloudflare:test";
 import { env, exports } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../worker/index.js";
+import { newDraft } from "../src/draft-order.js";
 import { MP06_PILOT_CONTROL_OBJECT_NAME } from "../worker/mp-06-pilot-control.js";
 
 const ref = (n: number) => n.toString(16).padStart(64, "0");
@@ -314,6 +316,78 @@ describe("local proposed read-only Owner readiness route", () => {
         ).rowsWritten,
     );
     const before = await snapshot();
+    expect((await exports.default.fetch(request())).status).toBe(409);
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it("reproduces the readiness gap for a genuinely alarm-purged, non-intercepting draft without resetting it", async () => {
+    const now = Date.now();
+    await runInDurableObject(draft(), async (_i, s) => {
+      s.storage.sql.exec(
+        "INSERT INTO draft_current VALUES (1, ?, ?, ?)",
+        JSON.stringify({
+          ...newDraft(now - 2),
+          state: "COLLECTING",
+          expiresAt: now - 1,
+        }),
+        now - 2,
+        now - 1,
+      );
+      await s.storage.setAlarm(now + 60_000);
+    });
+    expect(await runDurableObjectAlarm(draft())).toBe(true);
+    const before = await snapshot();
+    expect(
+      await draft().processText({
+        eventRef: ref(940),
+        text: "ราคาเท่าไหร่",
+        now: Date.now(),
+        startRequested: false,
+        promotion: { enabled: false, revision: 0, startAt: 0, endAt: 0 },
+        auditRetentionSeconds: 604800,
+      }),
+    ).toMatchObject({
+      handled: false,
+      state: "EXPIRED_PURGED",
+      messages: [],
+      enterHandoff: false,
+    });
+    const response = await exports.default.fetch(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      audit: { code: "CONVERSATION_RECOVERY_REVIEW_REQUIRED" },
+      observation: {
+        readyAtObservation: false,
+        draft: { state: "EXPIRED_PURGED", pendingReplies: 0 },
+      },
+    });
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it("reproduces loss of read observation after the existing one-shot activation, including after stop", async () => {
+    const response = await exports.default.fetch(
+      new Request(
+        endpoint.replace("owner-uat-readiness", "resume-acceptance"),
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            expectedSessionRef: session,
+            operationRef: ref(941),
+          }),
+        },
+      ),
+    );
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ outcome: "ACTIVATED" });
+    let before = await snapshot();
+    expect((await exports.default.fetch(request())).status).toBe(409);
+    expect(await snapshot()).toEqual(before);
+    await coordinator().stopMp06Pilot(Date.now(), "OPERATOR_STOP");
+    before = await snapshot();
     expect((await exports.default.fetch(request())).status).toBe(409);
     expect(await snapshot()).toEqual(before);
   });
