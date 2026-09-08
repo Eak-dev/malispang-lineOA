@@ -5,6 +5,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import {
   CANONICAL_GITHUB_ISSUES,
   evaluateProjectAction,
+  evaluateWp8fPaths,
+  validateWp8fOwnerDecisionRecord,
   validateProjectControl,
   validateSchemaDocuments,
 } from "../src/project-control.js";
@@ -25,7 +27,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.08-v13 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.08-v14 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -1147,10 +1149,10 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
   it("fails closed if the narrow runtime boundary is removed", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) => scope !== "CHANGE_MP_06_RUNTIME_OUTSIDE_WP8A_PILOT_CONTROLS",
+      (scope) => scope !== "CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_DIAGNOSTICS",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_CHANGE_MP_06_RUNTIME_OUTSIDE_WP8A_PILOT_CONTROLS",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_DIAGNOSTICS",
     );
   });
 
@@ -1737,13 +1739,18 @@ describe("WP8F scoped acceptance safety gates", () => {
   it("authorizes only the exact approved TEST worker, source and artifact", () => {
     const target = {
       worker: "malispang-lineoa-test",
-      sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+      sourceCommit: "1".repeat(40),
       artifactSha256:
         "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
     };
     expect(
-      evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", target)
-        .allowed,
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "DEPLOY_TEST",
+        target,
+        validCandidateEvidence(target),
+      ).allowed,
     ).toBe(true);
     for (const field of ["worker", "sourceCommit", "artifactSha256"] as const) {
       expect(
@@ -1790,12 +1797,12 @@ describe("WP8F scoped acceptance safety gates", () => {
         .wp8fApprovedDeployment,
     );
   });
-  it("requires the explicit all-PR prohibition during final-review handoff", () => {
+  it("requires the explicit PR gate before acceptance and final review", () => {
     const changed = structuredClone(currentWork) as {
       forbiddenScope: string[];
     };
     changed.forbiddenScope = changed.forbiddenScope.filter(
-      (scope) => scope !== "CREATE_ANY_PULL_REQUEST",
+      (scope) => scope !== "CREATE_PR_BEFORE_TEST_ACCEPTANCE_AND_FINAL_REVIEW",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
       "WP8F_ALL_PR_MUST_REMAIN_BLOCKED",
@@ -1839,5 +1846,380 @@ describe("WP8F scoped acceptance safety gates", () => {
         ).allowed,
       ).toBe(false);
     }
+  });
+});
+
+function validCandidateEvidence(
+  target = {
+    worker: "malispang-lineoa-test",
+    sourceCommit: "1".repeat(40),
+    artifactSha256: "2".repeat(64),
+  },
+) {
+  return {
+    candidate: {
+      ownerDecision: "MP-OD-2026-09-08-V14",
+      baseline: "a4ff8298ff75b077d333b6336d115886cf2907d3",
+      patchSha256:
+        "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
+      sourceCommit: target.sourceCommit,
+      validatedSourceCommit: target.sourceCommit,
+      pushedSourceCommit: target.sourceCommit,
+      artifactSha256: target.artifactSha256,
+      reproducedArtifactSha256: target.artifactSha256,
+      committed: true,
+      baselineAncestryVerified: true,
+      cleanCheckoutPassed: true,
+      validationPassed: true,
+      exactDiffReviewed: true,
+      executablePaths: [
+        "worker/index.ts",
+        "worker/durable-objects.ts",
+        "worker/draft-order-objects.ts",
+        "worker-tests/mp-06-owner-readiness.test.ts",
+      ],
+    },
+    test: {
+      worker: target.worker,
+      version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
+      sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+      accountIdentity: "c395…407d",
+      environment: "TEST_ONLY",
+      observedAt: Date.now(),
+      accountIdentityVerified: true,
+      sourceArtifactVerified: true,
+      secretsPresenceVerified: true,
+      rollbackTargetVerified: true,
+      accountingPreserved: true,
+      pilot: "STOPPED",
+      aiAdmission: false,
+      reservedMicroUsd: 0,
+      inFlight: 0,
+    },
+  };
+}
+
+describe("v14 explicit Owner execution envelope", () => {
+  it("requires the independent repository Owner record, not current-work assertions", async () => {
+    const record = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(record)).toBe(true);
+    for (const missing of [
+      undefined,
+      "",
+      JSON.stringify(currentWork),
+      record.replaceAll("MP-OD-2026-09-08-V14", "SELF_APPROVED"),
+      record.replaceAll("superseding v13", "superseding v12"),
+    ]) {
+      expect(validateWp8fOwnerDecisionRecord(missing)).toBe(false);
+    }
+  });
+  const target = {
+    worker: "malispang-lineoa-test",
+    sourceCommit: "1".repeat(40),
+    artifactSha256: "2".repeat(64),
+  };
+  it("rejects runtime paths outside the four diagnostics files, aliases and unknown phases", () => {
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "DIAGNOSTICS", [
+        "worker/index.ts",
+      ]).allowed,
+    ).toBe(true);
+    for (const paths of [
+      ["worker/mp-06-pilot-control.ts"],
+      ["src/mp-06/evaluator.ts"],
+      ["worker/*"],
+      ["./worker/index.ts"],
+      ["worker/../worker/index.ts"],
+      ["/worker/index.ts"],
+      ["worker/index.ts", "worker/index.ts"],
+      [],
+      ["worker/index.ts", "unknown.ts"],
+    ]) {
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "DIAGNOSTICS", paths).allowed,
+      ).toBe(false);
+    }
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "allowAll", ["worker/index.ts"])
+        .allowed,
+    ).toBe(false);
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "CONTROL_TRANSITION", [
+        "worker/index.ts",
+      ]).allowed,
+    ).toBe(false);
+  });
+  it("requires every candidate validation, commit, push, artifact and review gate before deploy", () => {
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", target)
+        .allowed,
+    ).toBe(false);
+    for (const field of Object.keys(validCandidateEvidence().candidate)) {
+      const evidence = validCandidateEvidence();
+      Reflect.deleteProperty(evidence.candidate, field);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+    const evidence = validCandidateEvidence();
+    evidence.candidate.executablePaths.push("worker/mp-06-pilot-control.ts");
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "DEPLOY_TEST",
+        target,
+        evidence,
+      ).allowed,
+    ).toBe(false);
+  });
+  it("rejects unsafe, missing, stale or mismatched pre-deployment TEST observations", () => {
+    for (const field of Object.keys(validCandidateEvidence().test)) {
+      const evidence = validCandidateEvidence();
+      Reflect.deleteProperty(evidence.test, field);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+    for (const change of [
+      { pilot: "ACTIVE" },
+      { aiAdmission: true },
+      { inFlight: 1 },
+      { reservedMicroUsd: 12932 },
+      { observedAt: 0 },
+      { observedAt: Date.now() + 60_000 },
+      { worker: "production" },
+      { environment: "PRODUCTION" },
+    ]) {
+      const evidence = validCandidateEvidence();
+      Object.assign(evidence.test, change);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          evidence,
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+  it("always denies Production query/mutation, merge and Issue closure", () => {
+    for (const action of [
+      "CHANGE_PRODUCTION",
+      "QUERY_PRODUCTION",
+      "DEPLOY_PRODUCTION",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE_12",
+      "START_MP_07",
+    ]) {
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          action,
+          target,
+          validCandidateEvidence(),
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+  it("rejects unknown action names even when current-work supplies a matching permission", () => {
+    const changed = clone(currentWork) as {
+      authorization: Record<string, unknown>;
+    };
+    changed.authorization.undefined = true;
+    changed.authorization.allowAll = true;
+    for (const action of [
+      "allowAll",
+      "undefined",
+      "__proto__",
+      "toString",
+      "SKIP_VALIDATION",
+    ]) {
+      expect(evaluateProjectAction(roadmap, changed, action).allowed).toBe(
+        false,
+      );
+    }
+  });
+  it("does not accept candidate or Production self-authorization from current-work", () => {
+    const changed = clone(currentWork) as {
+      authorization: Record<string, unknown>;
+      executionEvidence?: unknown;
+    };
+    changed.executionEvidence = validCandidateEvidence();
+    changed.authorization.candidateValidated = true;
+    expect(
+      evaluateProjectAction(roadmap, changed, "DEPLOY_TEST", target).allowed,
+    ).toBe(false);
+    changed.authorization.production = true;
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        changed,
+        "CHANGE_PRODUCTION",
+        target,
+        validCandidateEvidence(),
+      ).allowed,
+    ).toBe(false);
+  });
+  it("rejects modified envelope paths, caps, recovery, evidence shortcuts and unknown keys", () => {
+    for (const [key, value] of [
+      ["diagnosticsFiles", ["worker/*"]],
+      ["maximumNewSessions", 2],
+      ["maximumCumulativeCostMicroUsd", 6000000],
+      ["newRecoveryMechanism", true],
+      ["legacyMutatingGet", true],
+      ["accountingResetOrRefund", true],
+      ["production", "GO"],
+      ["allowAll", true],
+    ]) {
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: Record<string, unknown>;
+      };
+      changed.wp8fExecutionEnvelope[key as string] = value;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          changed,
+          "DEPLOY_TEST",
+          target,
+          validCandidateEvidence(),
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+  it("rejects any reduction of the existing acceptance criteria", () => {
+    for (const [key, value] of [
+      ["minimumTotal", 4999],
+      ["minimumAutoCorrectnessPercent", 97],
+      ["riskyStaffOnlyOrFailClosedPercent", 99],
+      ["maximumUnsupportedClaims", 1],
+      ["maximumPiiOrRawChatLeakage", 1],
+    ]) {
+      const changed = clone(currentWork) as {
+        benchmarkAcceptanceCriteria: Record<string, unknown>;
+      };
+      changed.benchmarkAcceptanceCriteria[key as string] = value;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+  });
+  it("requires MP-06 / Issue12 / TEST_ONLY and the exact Owner/supersedes chain", () => {
+    for (const [key, value] of [
+      ["workId", "MP-07"],
+      ["githubIssue", 13],
+      ["targetEnvironment", "PRODUCTION"],
+      ["currentPhase", "OTHER_PHASE"],
+    ]) {
+      const changed = clone(currentWork) as Record<string, unknown>;
+      changed[key as string] = value;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+    for (const [key, value] of [
+      ["decisionId", "SELF_APPROVED"],
+      ["supersedes", "2026.09.08-v12"],
+    ] as const) {
+      const changed = clone(roadmap) as {
+        ownerDecision: Record<string, unknown>;
+      };
+      changed.ownerDecision[key] = value;
+      expect(
+        evaluateProjectAction(
+          changed,
+          currentWork,
+          "DEPLOY_TEST",
+          target,
+          validCandidateEvidence(),
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+  it("requires the closed v14 plan in the manifest and schema", () => {
+    const changed = clone(currentWork) as { wp8fExecutionEnvelope?: unknown };
+    const schema = currentWorkSchema as {
+      required: string[];
+      properties: { wp8fExecutionEnvelope: { const: unknown } };
+    };
+    expect(schema.required).toContain("wp8fExecutionEnvelope");
+    expect(schema.properties.wp8fExecutionEnvelope.const).toEqual(
+      changed.wp8fExecutionEnvelope,
+    );
+    delete changed.wp8fExecutionEnvelope;
+    expect(validateProjectControl(roadmap, changed).errors).toContain(
+      "WP8F_V14_ENVELOPE_MISSING",
+    );
+  });
+  it("denies draft PR until every TEST, rollback, source association and final review gate passes", () => {
+    const review = {
+      ownerDecision: "MP-OD-2026-09-08-V14",
+      sourceCommit: "1".repeat(40),
+      reviewedSourceCommit: "1".repeat(40),
+      testAcceptedSourceCommit: "1".repeat(40),
+      integrationCheckedSourceCommit: "1".repeat(40),
+      issueState: "OPEN",
+      targetEnvironment: "TEST_ONLY",
+      diagnostics: "PASS",
+      ownerUat: "PASS",
+      killSwitch: "PASS",
+      rollback: "PASS",
+      security: "PASS",
+      integrationChecks: "PASS",
+      criticalFindings: 0,
+      aiAdmission: false,
+      pilot: "STOPPED",
+    };
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "CREATE_DRAFT_PR",
+        undefined,
+        { review },
+      ).allowed,
+    ).toBe(true);
+    for (const key of Object.keys(review)) {
+      const missing = structuredClone(review);
+      Reflect.deleteProperty(missing, key);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          "CREATE_DRAFT_PR",
+          undefined,
+          { review: missing },
+        ).allowed,
+      ).toBe(false);
+    }
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "CREATE_DRAFT_PR",
+        undefined,
+        { review: { ...review, ownerUat: "GAP" } },
+      ).allowed,
+    ).toBe(false);
   });
 });

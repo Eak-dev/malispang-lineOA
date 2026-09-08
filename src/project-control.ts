@@ -64,7 +64,7 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "CHANGE_OWNER_DECISIONS",
   "CHANGE_APPROVED_KNOWLEDGE_BASE",
   "CHANGE_APPROVED_PRODUCT_CATALOG",
-  "CHANGE_MP_06_RUNTIME_OUTSIDE_WP8A_PILOT_CONTROLS",
+  "CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_DIAGNOSTICS",
   "USE_AI_OUTPUT_AS_FINAL_AUTHORITY",
   "SEND_AI_OUTPUT_DIRECTLY_TO_CUSTOMER",
   "ALLOW_AI_TO_DOWNGRADE_STAFF_ONLY",
@@ -120,7 +120,7 @@ const REQUIRED_WP8F_SCOPE = [
   "VERIFY_EXISTING_SAFETY_AND_ROLLBACK_EVIDENCE",
   "STOP_TEST_PILOT_AND_AI",
   "DEPLOY_EXACT_OWNER_APPROVED_WP8F_CANDIDATE",
-  "HANDOFF_FINAL_SECURITY_RELEASE_REVIEW_NO_PR",
+  "REVIEWED_DIAGNOSTICS_AND_CONDITIONAL_TEST_RECOVERY_ROLLBACK_REVIEW_DRAFT_PR",
   "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
   "POLICY_SNAPSHOT_READ_ONLY",
@@ -286,7 +286,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.08-v13",
+    "2026.09.08-v14",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -297,7 +297,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-08-V13",
+      "MP-OD-2026-09-08-V14",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -309,7 +309,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.08-v12",
+      "2026.09.08-v13",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -326,7 +326,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "2b379570c830e1f2099ad88efdb998b05e36bd6c",
+      "a4ff8298ff75b077d333b6336d115886cf2907d3",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -751,6 +751,7 @@ export function validateProjectControl(
     );
   validateWp8fAcceptancePlan(errors, currentWork.wp8fTestAcceptancePlan);
   validateWp8fApprovedDeployment(errors, currentWork.wp8fApprovedDeployment);
+  validateWp8fEnvelope(errors, currentWork.wp8fExecutionEnvelope);
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
   validateBenchmarkCompletionPlan(errors, currentWork.benchmarkCompletionPlan);
   validateLocalClosureRemediationPlan(
@@ -854,7 +855,11 @@ export function validateProjectControl(
   const forbiddenScope = Array.isArray(currentWork.forbiddenScope)
     ? currentWork.forbiddenScope
     : [];
-  if (!forbiddenScope.includes("CREATE_ANY_PULL_REQUEST"))
+  if (
+    !forbiddenScope.includes(
+      "CREATE_PR_BEFORE_TEST_ACCEPTANCE_AND_FINAL_REVIEW",
+    )
+  )
     errors.push("WP8F_ALL_PR_MUST_REMAIN_BLOCKED");
   for (const required of REQUIRED_FORBIDDEN_SCOPE) {
     if (!forbiddenScope.includes(required)) {
@@ -891,12 +896,13 @@ export function validateProjectControl(
 export function evaluateProjectAction(
   roadmap: unknown,
   currentWork: unknown,
-  action: ProjectAction,
+  action: string,
   deploymentTarget?: {
     worker: string;
     sourceCommit: string;
     artifactSha256: string;
   },
+  executionEvidence?: unknown,
 ): ProjectActionDecision {
   const validation = validateProjectControl(roadmap, currentWork);
   if (validation.errors.length > 0) {
@@ -907,21 +913,23 @@ export function evaluateProjectAction(
   }
   const authorization = currentWork.authorization;
   if (action === "CREATE_DRAFT_PR") {
-    return {
-      allowed: false,
-      reason: "ALL_PR_BLOCKED_PENDING_FINAL_REVIEW",
-    };
+    return wp8fReviewGate(executionEvidence)
+      ? { allowed: true, reason: "VERIFIED_TEST_ACCEPTANCE_AND_FINAL_REVIEW" }
+      : { allowed: false, reason: "ALL_PR_BLOCKED_PENDING_FINAL_REVIEW" };
   }
   if (action === "DEPLOY_TEST") {
-    const plan = currentWork.wp8fApprovedDeployment;
     if (
-      !isRecord(plan) ||
       !deploymentTarget ||
-      deploymentTarget.worker !== plan.worker ||
-      deploymentTarget.sourceCommit !== plan.sourceCommit ||
-      deploymentTarget.artifactSha256 !== plan.artifactSha256
+      deploymentTarget.worker !== WP8F_V14_ENVELOPE.worker ||
+      !isFullSha(deploymentTarget.sourceCommit, 40) ||
+      !isFullSha(deploymentTarget.artifactSha256, 64)
     )
       return { allowed: false, reason: "EXACT_DEPLOYMENT_TARGET_REQUIRED" };
+    if (!wp8fCandidateGate(deploymentTarget, executionEvidence))
+      return {
+        allowed: false,
+        reason: "VERIFIED_CANDIDATE_AND_TEST_STATE_REQUIRED",
+      };
   }
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
@@ -959,7 +967,9 @@ export function evaluateProjectAction(
     DEPLOY_TEST: "testDeploymentAuthorization",
     CHANGE_PRODUCTION: "production",
   };
-  const key = keyByAction[action];
+  if (!Object.hasOwn(keyByAction, action))
+    return { allowed: false, reason: "UNKNOWN_OR_FORBIDDEN_ACTION" };
+  const key = keyByAction[action as ProjectAction];
   if (authorization[key] !== true) {
     return { allowed: false, reason: `${action}_NOT_AUTHORIZED` };
   }
@@ -3070,4 +3080,198 @@ function validateWp8fApprovedDeployment(errors: string[], plan: unknown): void {
       expected,
       `WP8F_DEPLOY_${field.toUpperCase()}_INVALID`,
     );
+}
+
+const WP8F_V14_ENVELOPE = {
+  ownerDecision: "MP-OD-2026-09-08-V14",
+  baseline: "a4ff8298ff75b077d333b6336d115886cf2907d3",
+  patchSha256:
+    "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
+  controlFiles: [
+    "config/project/roadmap.json",
+    "config/project/current-work.json",
+    "config/project/current-work.schema.json",
+    "src/project-control.ts",
+    "src/project-control-cli.ts",
+    "tests/project-control.test.ts",
+    "PROJECT_CONTROL.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/OWNER_DECISION_LOG.md",
+  ],
+  diagnosticsFiles: [
+    "worker/index.ts",
+    "worker/durable-objects.ts",
+    "worker/draft-order-objects.ts",
+    "worker-tests/mp-06-owner-readiness.test.ts",
+  ],
+  worker: "malispang-lineoa-test",
+  targetEnvironment: "TEST_ONLY",
+  candidateGate:
+    "VALIDATED_COMMITTED_PUSHED_EXACT_SOURCE_ARTIFACT_AND_FRESH_STOPPED_TEST",
+  recovery: "EXISTING_AUDITED_RETAINED_OWNER_CONVERSATION_ONLY",
+  maximumNewSessions: 1,
+  maximumSessionMinutes: 60,
+  maximumCumulativeCostMicroUsd: 5000000,
+  maximumCumulativeEvents: 200,
+  maximumCumulativeAttempts: 200,
+  rollbackVersion: "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
+  rollbackSource: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+  maximumRollbackRehearsals: 1,
+  maximumRecoveryRedeployments: 1,
+  rollbackGate: "UAT_KILL_SWITCH_COMPATIBILITY_AND_CONTAINMENT_PASS",
+  draftPrGate: "TEST_ACCEPTANCE_AND_FINAL_REVIEW_PASS",
+  legacyMutatingGet: false,
+  newRecoveryMechanism: false,
+  accountingResetOrRefund: false,
+  production: "NO_GO",
+  issueClosure: false,
+  merge: false,
+} as const;
+
+export function validateWp8fOwnerDecisionRecord(record: unknown): boolean {
+  if (typeof record !== "string") return false;
+  const section = record.split("## MP-OD-2026-09-08-V14 —")[1];
+  return (
+    typeof section === "string" &&
+    section.includes(WP8F_V14_ENVELOPE.baseline) &&
+    section.includes(WP8F_V14_ENVELOPE.patchSha256) &&
+    section.includes("superseding v13") &&
+    section.includes(
+      "Owner subsequently explicitly approved this v14 control transition",
+    )
+  );
+}
+
+function validateWp8fEnvelope(errors: string[], input: unknown): void {
+  if (!isRecord(input)) {
+    errors.push("WP8F_V14_ENVELOPE_MISSING");
+    return;
+  }
+  if (Object.keys(input).length !== Object.keys(WP8F_V14_ENVELOPE).length)
+    errors.push("WP8F_V14_ENVELOPE_FIELDS_INVALID");
+  for (const [key, value] of Object.entries(WP8F_V14_ENVELOPE)) {
+    if (JSON.stringify(input[key]) !== JSON.stringify(value))
+      errors.push(`WP8F_V14_${key.toUpperCase()}_INVALID`);
+  }
+}
+
+/** Exact repository-relative paths only. No normalization of traversal, glob or aliases. */
+export function evaluateWp8fPaths(
+  roadmap: unknown,
+  currentWork: unknown,
+  phase: string,
+  paths: unknown,
+): ProjectActionDecision {
+  if (validateProjectControl(roadmap, currentWork).errors.length)
+    return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
+  const allowed =
+    phase === "CONTROL_TRANSITION"
+      ? WP8F_V14_ENVELOPE.controlFiles
+      : phase === "DIAGNOSTICS"
+        ? WP8F_V14_ENVELOPE.diagnosticsFiles
+        : [];
+  return exactPaths(paths, allowed)
+    ? { allowed: true, reason: "EXACT_OWNER_APPROVED_PATHS" }
+    : { allowed: false, reason: "UNKNOWN_OR_OUT_OF_SCOPE_PATH" };
+}
+
+function exactPaths(paths: unknown, allowed: readonly string[]): boolean {
+  return (
+    Array.isArray(paths) &&
+    paths.length > 0 &&
+    new Set(paths).size === paths.length &&
+    paths.every(
+      (path: unknown) => typeof path === "string" && allowed.includes(path),
+    )
+  );
+}
+
+function isFullSha(value: unknown, length: number): value is string {
+  return (
+    typeof value === "string" &&
+    value.length === length &&
+    /^[a-f0-9]+$/u.test(value) &&
+    !/^0+$/u.test(value)
+  );
+}
+
+/**
+ * These inputs are independently collected operator evidence, never authorization
+ * flags from current-work. This pure decision does not perform remote verification,
+ * sign evidence, invoke Wrangler or grant Production rights.
+ */
+function wp8fCandidateGate(
+  target: { worker: string; sourceCommit: string; artifactSha256: string },
+  evidence: unknown,
+): boolean {
+  if (
+    !isRecord(evidence) ||
+    !isRecord(evidence.candidate) ||
+    !isRecord(evidence.test)
+  )
+    return false;
+  const candidate = evidence.candidate,
+    test = evidence.test;
+  const fresh =
+    typeof test.observedAt === "number" &&
+    Number.isSafeInteger(test.observedAt) &&
+    test.observedAt <= Date.now() &&
+    Date.now() - test.observedAt <= 120_000;
+  return (
+    candidate.baseline === WP8F_V14_ENVELOPE.baseline &&
+    candidate.ownerDecision === WP8F_V14_ENVELOPE.ownerDecision &&
+    candidate.patchSha256 === WP8F_V14_ENVELOPE.patchSha256 &&
+    candidate.sourceCommit === target.sourceCommit &&
+    candidate.sourceCommit !== WP8F_V14_ENVELOPE.baseline &&
+    candidate.sourceCommit !== WP8F_V14_ENVELOPE.rollbackSource &&
+    candidate.baselineAncestryVerified === true &&
+    candidate.validatedSourceCommit === target.sourceCommit &&
+    candidate.pushedSourceCommit === target.sourceCommit &&
+    candidate.artifactSha256 === target.artifactSha256 &&
+    candidate.reproducedArtifactSha256 === target.artifactSha256 &&
+    candidate.committed === true &&
+    candidate.cleanCheckoutPassed === true &&
+    candidate.validationPassed === true &&
+    candidate.exactDiffReviewed === true &&
+    exactPaths(candidate.executablePaths, WP8F_V14_ENVELOPE.diagnosticsFiles) &&
+    test.worker === WP8F_V14_ENVELOPE.worker &&
+    test.version === WP8F_V14_ENVELOPE.rollbackVersion &&
+    test.sourceCommit === WP8F_V14_ENVELOPE.rollbackSource &&
+    test.accountIdentity === "c395…407d" &&
+    test.environment === "TEST_ONLY" &&
+    test.accountIdentityVerified === true &&
+    test.sourceArtifactVerified === true &&
+    test.secretsPresenceVerified === true &&
+    test.rollbackTargetVerified === true &&
+    test.accountingPreserved === true &&
+    test.pilot === "STOPPED" &&
+    test.aiAdmission === false &&
+    test.reservedMicroUsd === 0 &&
+    test.inFlight === 0 &&
+    fresh
+  );
+}
+
+function wp8fReviewGate(evidence: unknown): boolean {
+  if (!isRecord(evidence) || !isRecord(evidence.review)) return false;
+  const review = evidence.review;
+  return (
+    review.ownerDecision === WP8F_V14_ENVELOPE.ownerDecision &&
+    isFullSha(review.sourceCommit, 40) &&
+    review.reviewedSourceCommit === review.sourceCommit &&
+    review.testAcceptedSourceCommit === review.sourceCommit &&
+    review.integrationCheckedSourceCommit === review.sourceCommit &&
+    review.issueState === "OPEN" &&
+    review.targetEnvironment === "TEST_ONLY" &&
+    review.diagnostics === "PASS" &&
+    review.ownerUat === "PASS" &&
+    review.killSwitch === "PASS" &&
+    review.rollback === "PASS" &&
+    review.security === "PASS" &&
+    review.integrationChecks === "PASS" &&
+    review.criticalFindings === 0 &&
+    review.aiAdmission === false &&
+    review.pilot === "STOPPED"
+  );
 }

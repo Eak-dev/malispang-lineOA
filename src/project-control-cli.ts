@@ -4,9 +4,22 @@ import {
   evaluateProjectAction,
   validateProjectControl,
   validateSchemaDocuments,
+  validateWp8fOwnerDecisionRecord,
 } from "./project-control.js";
 
 export async function runProjectControlValidation(root: URL): Promise<void> {
+  if (
+    !validateWp8fOwnerDecisionRecord(
+      await readFile(
+        new URL("docs/project/OWNER_DECISION_LOG.md", root),
+        "utf8",
+      ),
+    )
+  ) {
+    throw new Error(
+      "ROADMAP_UNVERIFIED: explicit v14 Owner decision record missing or inconsistent",
+    );
+  }
   const [roadmap, currentWork, roadmapSchema, currentWorkSchema] =
     await Promise.all([
       readJson(root, "config/project/roadmap.json"),
@@ -48,20 +61,17 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
-  const testDeployment = evaluateProjectAction(
-    roadmap,
-    currentWork,
-    "DEPLOY_TEST",
-    {
+  // A control snapshot alone must never authorize deployment.
+  if (
+    evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", {
       worker: "malispang-lineoa-test",
       sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
       artifactSha256:
         "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
-    },
-  );
-  if (!testDeployment.allowed) {
+    }).allowed
+  ) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: exact Owner-approved WP8F deployment must be authorized",
+      "ROADMAP_UNVERIFIED: deployment without candidate/state evidence",
     );
   }
 
@@ -96,7 +106,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.08-v13, MP-06 (GitHub #12), exact f986a478 TEST deployment and one cumulative UAT session authorized; all PR, unapproved rollback, merge and Production blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.08-v14, MP-06 (GitHub #12), reviewed diagnostics authorized; deployment requires independent candidate/state evidence; PR requires TEST acceptance/final review; merge and Production blocked, ${warningSuffix}`,
   );
 }
 

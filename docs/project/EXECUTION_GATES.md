@@ -52,3 +52,15 @@
 ## Review handoff
 
 Roadmap `2026.09.07-v6` authorizes WP8A runtime pilot-control remediation only after correcting that WP6 froze operator/readiness limits but did not prove runtime enforcement. Issue #12 remains open; remote mutation, PR, TEST deployment and all Production access/action remain unauthorized during WP8A.
+
+## Current v14 — explicit Owner control transition
+
+Roadmap `2026.09.08-v14` supersedes v13 under `MP-OD-2026-09-08-V14`. Baseline `a4ff8298ff75b077d333b6336d115886cf2907d3`; MP-06 / Issue #12 / WP8F_TEST_ACCEPTANCE_COMPLETION / TEST_ONLY. The preserved 12-line Owner decision and subsequent explicit ten-file control approval authorize this transition. Historical v12/v13 deployment/acceptance plans remain frozen snapshots, not reusable grants. Current authority is `wp8fExecutionEnvelope`.
+
+The envelope fixes ten control paths, four diagnostics paths and reviewed patch SHA-256 `6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0`. No wildcard, traversal/alias normalization, generic implementation or unknown-action allowance. Materialize, validate and explicit commit/push diagnostics; deployment to `malispang-lineoa-test` requires independently collected exact source/artifact, validation, clean-checkout, committed/pushed ancestry and fresh TEST identity/STOPPED/AI OFF/reserved0/in-flight0 evidence. The pure control decision does not itself collect or authenticate those observations; operators must verify them through approved tools. current-work fields cannot substitute for evidence or Owner approval. Never deploy from the transition/evidence SHA by implication.
+
+After readiness/accounting pass, only existing audited exact Owner conversation recovery and one cumulative Owner-mobile UAT session are authorized. Preserve 25,864 conservative unknown + 1,960 reported usage = 27,824 historical control consumption; billing stays UNKNOWN. No accounting reset/refund, new recovery mechanism or replacement session. Existing explicit stop is authorized for containment; legacy GET paths with hidden mutation are not. TEST_ADMIN_KEY may only use previously approved exact Keychain-to-memory-to-exact-TEST-HTTPS authentication, never logs/files/redirects.
+
+UAT and kill switch must pass before one compatible TEST rollback to `83fab7f1-646a-4ed8-be4d-a5f38df3a072` / `f986a478bc980f9e53748ed49cedd543f54cd64a`, then one exact candidate redeploy. Current schema/storage/accounting/configuration/secret/containment compatibility must be proved; do not assume it from old smoke evidence. Draft PR requires complete TEST acceptance, rollback, same-source final security review and integration checks, not test count or deployment alone. Keep the system STOPPED/AI OFF at each handoff.
+
+Production query/mutation/deployment, merge, Issue closure, MP-07, model/prompt/policy/threshold/timeout/retry/business/catalog/LINE changes, secret/PII exposure and acceptance reductions remain forbidden. v14 is authorization only; no UAT, deployment or release PASS is asserted.

@@ -36,6 +36,7 @@
     "wp8eExactStateReconciliationControlledRetestPlan",
     "wp8fTestAcceptancePlan",
     "wp8fApprovedDeployment",
+    "wp8fExecutionEnvelope",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -1784,6 +1785,52 @@
         "liveProviderAuthorization": { "const": false },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8fExecutionEnvelope": {
+      "const": {
+        "ownerDecision": "MP-OD-2026-09-08-V14",
+        "baseline": "a4ff8298ff75b077d333b6336d115886cf2907d3",
+        "patchSha256": "6d8535040f455f2bbbe8f6e80f3c851fe9c726b95854b9948f17f9c62fbacdf0",
+        "controlFiles": [
+          "config/project/roadmap.json",
+          "config/project/current-work.json",
+          "config/project/current-work.schema.json",
+          "src/project-control.ts",
+          "src/project-control-cli.ts",
+          "tests/project-control.test.ts",
+          "PROJECT_CONTROL.md",
+          "docs/project/ROADMAP_CHANGELOG.md",
+          "docs/project/EXECUTION_GATES.md",
+          "docs/project/OWNER_DECISION_LOG.md"
+        ],
+        "diagnosticsFiles": [
+          "worker/index.ts",
+          "worker/durable-objects.ts",
+          "worker/draft-order-objects.ts",
+          "worker-tests/mp-06-owner-readiness.test.ts"
+        ],
+        "worker": "malispang-lineoa-test",
+        "targetEnvironment": "TEST_ONLY",
+        "candidateGate": "VALIDATED_COMMITTED_PUSHED_EXACT_SOURCE_ARTIFACT_AND_FRESH_STOPPED_TEST",
+        "recovery": "EXISTING_AUDITED_RETAINED_OWNER_CONVERSATION_ONLY",
+        "maximumNewSessions": 1,
+        "maximumSessionMinutes": 60,
+        "maximumCumulativeCostMicroUsd": 5000000,
+        "maximumCumulativeEvents": 200,
+        "maximumCumulativeAttempts": 200,
+        "rollbackVersion": "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
+        "rollbackSource": "f986a478bc980f9e53748ed49cedd543f54cd64a",
+        "maximumRollbackRehearsals": 1,
+        "maximumRecoveryRedeployments": 1,
+        "rollbackGate": "UAT_KILL_SWITCH_COMPATIBILITY_AND_CONTAINMENT_PASS",
+        "draftPrGate": "TEST_ACCEPTANCE_AND_FINAL_REVIEW_PASS",
+        "legacyMutatingGet": false,
+        "newRecoveryMechanism": false,
+        "accountingResetOrRefund": false,
+        "production": "NO_GO",
+        "issueClosure": false,
+        "merge": false
       }
     },
     "wp8fApprovedDeployment": {
