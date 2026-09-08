@@ -2,13 +2,13 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.08-v16",
+  "roadmapVersion": "2026.09.08-v17",
   "workId": "MP-06",
   "githubIssue": 12,
   "currentPhase": "WP8F_TEST_ACCEPTANCE_COMPLETION",
   "status": "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY",
   "base": {
-    "commit": "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+    "commit": "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
     "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
@@ -130,8 +130,8 @@
     "testAcceptanceCompletionWp8f": true
   },
   "wp8fExecutionEnvelope": {
-    "ownerDecision": "MP-OD-2026-09-08-V16",
-    "baseline": "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+    "ownerDecision": "MP-OD-2026-09-08-V17",
+    "baseline": "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
     "controlFiles": [
       "config/project/roadmap.json",
       "config/project/current-work.json",
@@ -190,7 +190,19 @@
     "baselineReservedMicroUsd": 0,
     "baselineInFlight": 0,
     "baselineStopReason": "OPERATOR_STOP",
-    "originalActivationMarkerImmutable": true
+    "originalActivationMarkerImmutable": true,
+    "precedenceContract": {
+      "mandatoryBeforeDraftAndAi": true,
+      "unresolvedLegacyReasons": [
+        "NO_AUTHORITATIVE_ANSWER",
+        "AMBIGUOUS_CUSTOMER_TEXT"
+      ],
+      "unknownHandoffReasons": "MANDATORY_FAIL_CLOSED",
+      "advanceOrder": "DETERMINISTIC_CONSENT_DRAFT_NO_PROVIDER",
+      "activeDraftRisk": "PREEMPT_WITHOUT_DRAFT_OR_HISTORY_MUTATION",
+      "f1F2": "PRESERVE_APPROVED_CATALOG_CLARIFY_AUTO_AI_ON_AND_OFF",
+      "handoffBooleanAloneIsSecurityPredicate": false
+    }
   },
   "wp8fApprovedDeployment": {
     "worker": "malispang-lineoa-test",

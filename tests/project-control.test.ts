@@ -27,7 +27,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.08-v16 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.08-v17 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -1859,8 +1859,8 @@ function validCandidateEvidence(
 ) {
   return {
     candidate: {
-      ownerDecision: "MP-OD-2026-09-08-V16",
-      baseline: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+      ownerDecision: "MP-OD-2026-09-08-V17",
+      baseline: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
       precedenceTestsPassed: true,
       continuationStorageTestsPassed: true,
       rollbackAdditiveCompatibilityPassed: true,
@@ -1872,8 +1872,8 @@ function validCandidateEvidence(
       committed: true,
       baselineAncestryVerified: true,
       controlCommit: "3".repeat(40),
-      controlParentCommit: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
-      controlOwnerDecision: "MP-OD-2026-09-08-V16",
+      controlParentCommit: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
+      controlOwnerDecision: "MP-OD-2026-09-08-V17",
       controlAncestryVerified: true,
       cleanCheckoutPassed: true,
       validationPassed: true,
@@ -1913,6 +1913,50 @@ function validCandidateEvidence(
 }
 
 describe("v16 explicit Owner execution envelope", () => {
+  it("v17 closes precedence exceptions without expanding the inherited v16 grant", () => {
+    const original = (
+      currentWork as {
+        wp8fExecutionEnvelope: { precedenceContract: Record<string, unknown> };
+      }
+    ).wp8fExecutionEnvelope.precedenceContract;
+    expect(original.unresolvedLegacyReasons).toEqual([
+      "NO_AUTHORITATIVE_ANSWER",
+      "AMBIGUOUS_CUSTOMER_TEXT",
+    ]);
+    for (const [key, value] of [
+      ["mandatoryBeforeDraftAndAi", false],
+      [
+        "unresolvedLegacyReasons",
+        ["NO_AUTHORITATIVE_ANSWER", "AMBIGUOUS_CUSTOMER_TEXT", "HIGH_RISK"],
+      ],
+      ["unknownHandoffReasons", "ALLOW"],
+      ["advanceOrder", "IMMEDIATE_HANDOFF"],
+      ["activeDraftRisk", "CONSUME_AS_DRAFT_INPUT"],
+      ["f1F2", "ALWAYS_HANDOFF"],
+      ["handoffBooleanAloneIsSecurityPredicate", true],
+    ]) {
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: { precedenceContract: Record<string, unknown> };
+      };
+      changed.wp8fExecutionEnvelope.precedenceContract[key as string] = value;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          changed,
+          "DEPLOY_TEST",
+          {
+            worker: "malispang-lineoa-test",
+            sourceCommit: "1".repeat(40),
+            artifactSha256: "2".repeat(64),
+          },
+          validCandidateEvidence(),
+        ).allowed,
+      ).toBe(false);
+    }
+  });
   it("freezes the single v16 continuation, three scoped recoveries and immutable history", () => {
     for (const [key, value] of [
       ["maximumNewSessions", 2],
@@ -2073,7 +2117,7 @@ describe("v16 explicit Owner execution envelope", () => {
     };
     for (const change of [
       { controlCommit: target.sourceCommit },
-      { controlCommit: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0" },
+      { controlCommit: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037" },
       { controlCommit: "latest" },
       { controlAncestryVerified: false },
       { controlParentCommit: "4".repeat(40) },
@@ -2108,8 +2152,8 @@ describe("v16 explicit Owner execution envelope", () => {
       undefined,
       "",
       JSON.stringify(currentWork),
-      record.replaceAll("MP-OD-2026-09-08-V16", "SELF_APPROVED"),
-      record.replaceAll("superseding v15", "superseding v13"),
+      record.replaceAll("MP-OD-2026-09-08-V17", "SELF_APPROVED"),
+      record.replaceAll("superseding v16", "superseding v13"),
     ]) {
       expect(validateWp8fOwnerDecisionRecord(missing)).toBe(false);
     }
@@ -2367,12 +2411,12 @@ describe("v16 explicit Owner execution envelope", () => {
     );
     delete changed.wp8fExecutionEnvelope;
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "WP8F_V16_ENVELOPE_MISSING",
+      "WP8F_V17_ENVELOPE_MISSING",
     );
   });
   it("denies draft PR until every TEST, rollback, source association and final review gate passes", () => {
     const review = {
-      ownerDecision: "MP-OD-2026-09-08-V16",
+      ownerDecision: "MP-OD-2026-09-08-V17",
       sourceCommit: "1".repeat(40),
       reviewedSourceCommit: "1".repeat(40),
       testAcceptedSourceCommit: "1".repeat(40),

@@ -286,7 +286,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.08-v16",
+    "2026.09.08-v17",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -297,7 +297,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-08-V16",
+      "MP-OD-2026-09-08-V17",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -309,7 +309,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.08-v15",
+      "2026.09.08-v16",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -326,7 +326,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+      "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -920,7 +920,7 @@ export function evaluateProjectAction(
   if (action === "DEPLOY_TEST") {
     if (
       !deploymentTarget ||
-      deploymentTarget.worker !== WP8F_V16_ENVELOPE.worker ||
+      deploymentTarget.worker !== WP8F_V17_ENVELOPE.worker ||
       !isFullSha(deploymentTarget.sourceCommit, 40) ||
       !isFullSha(deploymentTarget.artifactSha256, 64)
     )
@@ -3082,9 +3082,9 @@ function validateWp8fApprovedDeployment(errors: string[], plan: unknown): void {
     );
 }
 
-const WP8F_V16_ENVELOPE = {
-  ownerDecision: "MP-OD-2026-09-08-V16",
-  baseline: "a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0",
+const WP8F_V17_ENVELOPE = {
+  ownerDecision: "MP-OD-2026-09-08-V17",
+  baseline: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
   controlFiles: [
     "config/project/roadmap.json",
     "config/project/current-work.json",
@@ -3146,32 +3146,44 @@ const WP8F_V16_ENVELOPE = {
   baselineInFlight: 0,
   baselineStopReason: "OPERATOR_STOP",
   originalActivationMarkerImmutable: true,
+  precedenceContract: {
+    mandatoryBeforeDraftAndAi: true,
+    unresolvedLegacyReasons: [
+      "NO_AUTHORITATIVE_ANSWER",
+      "AMBIGUOUS_CUSTOMER_TEXT",
+    ],
+    unknownHandoffReasons: "MANDATORY_FAIL_CLOSED",
+    advanceOrder: "DETERMINISTIC_CONSENT_DRAFT_NO_PROVIDER",
+    activeDraftRisk: "PREEMPT_WITHOUT_DRAFT_OR_HISTORY_MUTATION",
+    f1F2: "PRESERVE_APPROVED_CATALOG_CLARIFY_AUTO_AI_ON_AND_OFF",
+    handoffBooleanAloneIsSecurityPredicate: false,
+  },
 } as const;
 
 export function validateWp8fOwnerDecisionRecord(record: unknown): boolean {
   if (typeof record !== "string") return false;
-  const section = record.split("## MP-OD-2026-09-08-V16 —")[1];
+  const section = record.split("## MP-OD-2026-09-08-V17 —")[1];
   return (
     typeof section === "string" &&
-    section.includes(WP8F_V16_ENVELOPE.baseline) &&
+    section.includes(WP8F_V17_ENVELOPE.baseline) &&
     section.includes("worker/durable-objects.ts") &&
-    section.includes("superseding v15") &&
+    section.includes("superseding v16") &&
     section.includes(
-      "Owner explicitly approved v16 deterministic handoff precedence and one atomic continuation",
+      "Owner explicitly approved v17 precedence contract refinement without expanding v16 authority",
     )
   );
 }
 
 function validateWp8fEnvelope(errors: string[], input: unknown): void {
   if (!isRecord(input)) {
-    errors.push("WP8F_V16_ENVELOPE_MISSING");
+    errors.push("WP8F_V17_ENVELOPE_MISSING");
     return;
   }
-  if (Object.keys(input).length !== Object.keys(WP8F_V16_ENVELOPE).length)
-    errors.push("WP8F_V16_ENVELOPE_FIELDS_INVALID");
-  for (const [key, value] of Object.entries(WP8F_V16_ENVELOPE)) {
+  if (Object.keys(input).length !== Object.keys(WP8F_V17_ENVELOPE).length)
+    errors.push("WP8F_V17_ENVELOPE_FIELDS_INVALID");
+  for (const [key, value] of Object.entries(WP8F_V17_ENVELOPE)) {
     if (JSON.stringify(input[key]) !== JSON.stringify(value))
-      errors.push(`WP8F_V16_${key.toUpperCase()}_INVALID`);
+      errors.push(`WP8F_V17_${key.toUpperCase()}_INVALID`);
   }
 }
 
@@ -3186,11 +3198,11 @@ export function evaluateWp8fPaths(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   const allowed =
     phase === "CONTROL_TRANSITION"
-      ? WP8F_V16_ENVELOPE.controlFiles
+      ? WP8F_V17_ENVELOPE.controlFiles
       : phase === "SECURITY_REMEDIATION"
-        ? WP8F_V16_ENVELOPE.remediationFiles
+        ? WP8F_V17_ENVELOPE.remediationFiles
         : phase === "EVIDENCE"
-          ? WP8F_V16_ENVELOPE.evidenceFiles
+          ? WP8F_V17_ENVELOPE.evidenceFiles
           : [];
   return exactPaths(paths, allowed)
     ? { allowed: true, reason: "EXACT_OWNER_APPROVED_PATHS" }
@@ -3240,20 +3252,20 @@ function wp8fCandidateGate(
     test.observedAt <= Date.now() &&
     Date.now() - test.observedAt <= 120_000;
   return (
-    candidate.baseline === WP8F_V16_ENVELOPE.baseline &&
-    candidate.ownerDecision === WP8F_V16_ENVELOPE.ownerDecision &&
+    candidate.baseline === WP8F_V17_ENVELOPE.baseline &&
+    candidate.ownerDecision === WP8F_V17_ENVELOPE.ownerDecision &&
     candidate.precedenceTestsPassed === true &&
     candidate.continuationStorageTestsPassed === true &&
     candidate.rollbackAdditiveCompatibilityPassed === true &&
     candidate.sourceCommit === target.sourceCommit &&
-    candidate.sourceCommit !== WP8F_V16_ENVELOPE.baseline &&
-    candidate.sourceCommit !== WP8F_V16_ENVELOPE.rollbackSource &&
+    candidate.sourceCommit !== WP8F_V17_ENVELOPE.baseline &&
+    candidate.sourceCommit !== WP8F_V17_ENVELOPE.rollbackSource &&
     candidate.baselineAncestryVerified === true &&
     isFullSha(candidate.controlCommit, 40) &&
     candidate.controlCommit !== candidate.baseline &&
     candidate.controlCommit !== candidate.sourceCommit &&
-    candidate.controlParentCommit === WP8F_V16_ENVELOPE.baseline &&
-    candidate.controlOwnerDecision === WP8F_V16_ENVELOPE.ownerDecision &&
+    candidate.controlParentCommit === WP8F_V17_ENVELOPE.baseline &&
+    candidate.controlOwnerDecision === WP8F_V17_ENVELOPE.ownerDecision &&
     candidate.controlAncestryVerified === true &&
     candidate.validatedSourceCommit === target.sourceCommit &&
     candidate.pushedSourceCommit === target.sourceCommit &&
@@ -3263,11 +3275,11 @@ function wp8fCandidateGate(
     candidate.cleanCheckoutPassed === true &&
     candidate.validationPassed === true &&
     candidate.exactDiffReviewed === true &&
-    exactPaths(candidate.executablePaths, WP8F_V16_ENVELOPE.remediationFiles) &&
-    test.worker === WP8F_V16_ENVELOPE.worker &&
-    test.version === WP8F_V16_ENVELOPE.followUpVersion &&
-    test.sourceCommit === WP8F_V16_ENVELOPE.followUpSource &&
-    test.artifactSha256 === WP8F_V16_ENVELOPE.followUpArtifact &&
+    exactPaths(candidate.executablePaths, WP8F_V17_ENVELOPE.remediationFiles) &&
+    test.worker === WP8F_V17_ENVELOPE.worker &&
+    test.version === WP8F_V17_ENVELOPE.followUpVersion &&
+    test.sourceCommit === WP8F_V17_ENVELOPE.followUpSource &&
+    test.artifactSha256 === WP8F_V17_ENVELOPE.followUpArtifact &&
     test.accountIdentity === "c395…407d" &&
     test.environment === "TEST_ONLY" &&
     test.accountIdentityVerified === true &&
@@ -3292,7 +3304,7 @@ function wp8fReviewGate(evidence: unknown): boolean {
   if (!isRecord(evidence) || !isRecord(evidence.review)) return false;
   const review = evidence.review;
   return (
-    review.ownerDecision === WP8F_V16_ENVELOPE.ownerDecision &&
+    review.ownerDecision === WP8F_V17_ENVELOPE.ownerDecision &&
     isFullSha(review.sourceCommit, 40) &&
     review.reviewedSourceCommit === review.sourceCommit &&
     review.testAcceptedSourceCommit === review.sourceCommit &&

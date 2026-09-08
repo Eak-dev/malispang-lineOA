@@ -1,6 +1,20 @@
 # MalisPang Project Control
 
-## Current v16 — deterministic precedence and one continuation
+## Current v17 — closed deterministic precedence contract
+
+Roadmap 2026.09.08-v17 / MP-OD-2026-09-08-V17 supersedes 2026.09.08-v16 from 7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037. MP-06 / Issue #12 / WP8F / TEST_ONLY. This clarifies precedence only; the v16 eight executable paths (including worker/durable-objects.ts), ten control paths and existing evidence path remain exact. No new deployment target, budget, session, recovery, rollback, PR or Production permission.
+
+Known risk/authority/explicit staff and deterministic WP1 STAFF_ONLY must preempt draft interception and AI admission/reservation/provider construction. Provider calls, attempts, reservations and consumed-cost increments must be zero. Preserve active draft/history; approved deterministic reply/handoff and duplicate-delivery contract remain mandatory. Protected risk and policy-integrity failure fail closed.
+
+Only NO_AUTHORITATIVE_ANSWER and AMBIGUOUS_CUSTOMER_TEXT are unresolved legacy interpretation exceptions, not business authorization. Unknown handoff reasons remain mandatory/fail closed; handoff:true alone is not the security predicate. Existing deterministic WP1/advisory interpretation must retain final deterministic authority and approved knowledge only. F1 T-C01/pending and F2 approved catalog AUTO price39/BOT_ACTIVE/pending-clear must work with AI ON and OFF; unresolved or stale/missing/conflicting knowledge must fail closed. ADVANCE_ORDER remains deterministic consent/draft intake with no provider, real order, stock reservation or payment; normal draft input remains unchanged while mandatory risk preempts it without consuming that input.
+
+The unchanged pre-deploy triplet is 8486019d-9b62-4de9-ae15-6299909a23d9 / 8a5b6547b4713ff50ad6b08ee58682e129641b6a / 15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64. Fresh independent exact TEST identity, STOPPED/OPERATOR_STOP/AI OFF, events/attempts6/6, consumed/reserved34082/0, pending/in-flight0 and preserved accounting are required. Exact candidate must descend from validated v17 control, be committed/pushed, reviewed, fully validated, clean-checkout and artifact reproduced. One TEST candidate deployment only after gates; post-deploy diagnostics and isolated synthetic no-provider precedence evidence precede Owner interaction.
+
+The one already-granted immutable v16 continuation is not replenished by v17: at most60minutes, cumulative USD5/200events/200attempts, existing rate/concurrency/Owner controls, immutable original activation/history, atomic exact-state/idempotent replay, no extension/reopen/third activation/reset/refund. At most3 audited exact Owner handoff closes and targeted F4, F5, then F6 after explicit stop; stop on failure. Conditional compatible rollback once to83fab7f1-646a-4ed8-be4d-a5f38df3a072/f986a478bc980f9e53748ed49cedd543f54cd64a and exact candidate redeploy remain gated by UAT/kill switch. Draft PR remains gated by complete TEST acceptance/final review.
+
+No model gpt-5.6-terra, prompt/policy/catalog/threshold/timeout/retry/business/LINE change, new resource, broad reset, history deletion, secret/PII exposure, acceptance downgrade, Production query/mutation/deploy, merge, Issue closure or MP-07. Issue #12 stays OPEN. Production NO_GO — NOT TOUCHED. A validated explicit v17 transition commit becomes authoritative automatically; this records authorization, not runtime/security/UAT acceptance.
+
+## Historical v16 — superseded precedence contract
 
 Roadmap 2026.09.08-v16, decision MP-OD-2026-09-08-V16, supersedes v15. Baseline a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0; MP-06 / Issue #12 / WP8F / TEST_ONLY. Exact eight-path runtime/test remediation allowlist plus one evidence path are in wp8fExecutionEnvelope. worker/durable-objects.ts is authorized only for one atomic/idempotent continuation and immutable SELECT-only lineage. Preserve every original activation marker, audit, attempt and ledger record.
 
