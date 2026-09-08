@@ -1,8 +1,22 @@
 # MalisPang Project Control
 
+MP-06 (GitHub #12), Roadmap `2026.09.08-v12` supersedes v11 under Owner authorization to complete existing acceptance. Phase `WP8F_TEST_ACCEPTANCE_COMPLETION`, status `AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY`, action `TEST_ACCEPTANCE_COMPLETION_WP8F`.
+
+Baseline: `3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd` on `codex/mp-06-guardrailed-ai`. Current exact TEST deployed source `c8b0d8246058c5de4991bec369e91cfe2a609a4d`, version `5835b91b-7b0d-4708-a71b-6c31473adcae`. WP8E one-case provider/settlement/LINE evidence passed; this does not close full UAT. TEST is STOPPED / AI admission off, cumulative events/attempts 3/3, consumed/reserved 27,824/0 micro-USD, in-flight 0. Historical conservative consumed is 25,864; current successful reported-usage cost is 1,960; historical actual billing remains UNKNOWN.
+
+Allowed: acceptance matrix, one cumulative TEST UAT session (maximum 60 minutes), Owner-sent cases one at a time, existing-safety evidence verification, proven acceptance-blocker bug fixes with regressions, local validation, explicit commit/push/evidence, GitHub #9/#12 reconciliation. Draft PR is allowed only after TEST acceptance is verified complete. Deployment of new source and any new rollback rehearsal require Owner approval of exact reviewed candidate/target and recovery plan. Do not open a replacement session, reset accounting, change model/prompt/policy/thresholds/timeouts, permissions, channel settings or resources. Production remains NO_GO, Issue #12 OPEN, MP-07 blocked, merge/force-push/ready PR forbidden.
+
+The v11 authorization snapshot remains frozen under `wp8eExactStateReconciliationControlledRetestPlan`; its pre-execution fields are historical and superseded for current operational state by `wp8fTestAcceptancePlan` and the WP8E operational report. Prior Issue #9/#12 body sections marked current v4 are stale relative to newer evidence comments and are to be explicitly reconciled while preserving historical evidence and acceptance criteria.
+
+See [WP8F acceptance matrix/runbook](docs/line-oa/mp-06/MP_06_WP8F_TEST_ACCEPTANCE_TH.md), [WP8E evidence](docs/line-oa/mp-06/MP_06_WP8E_EXACT_RECONCILIATION_CONTROLLED_RETEST_TH.md), [execution gates](docs/project/EXECUTION_GATES.md), [Owner decision log](docs/project/OWNER_DECISION_LOG.md), and machine-readable current-work/schema. All prior policy, benchmark, knowledge/catalog and WP7 hashes remain frozen. Default-branch drift remains a recorded integration gap and must not be corrected by merge/rebase in this round.
+
+## Historical v11 authorization snapshot — superseded
+
+The following text records the state at v11 authorization, before WP8E execution. Current state and permissions are the v12 snapshot above; prior operational claims here are historical only.
+
 เอกสารนี้เป็นจุดเริ่มอ่าน Project Governance ของ MalisPang LINE OA ภายใต้ MP-06 (GitHub #12) ปัจจุบัน TEST ยัง AI off / pilot stopped และอนุญาต WP8E เฉพาะ exact-state reconciliation, exact TEST candidate deployment, no-network lifecycle self-test และ conditional controlled retest หนึ่งข้อความจาก Owner
 
-## Current control snapshot
+### v11 authorization snapshot
 
 | Field                 | Value                                                                      |
 | --------------------- | -------------------------------------------------------------------------- |

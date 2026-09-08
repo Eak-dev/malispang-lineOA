@@ -30,6 +30,8 @@ export type ProjectAction =
   | "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C"
   | "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D"
   | "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E"
+  | "TEST_ACCEPTANCE_COMPLETION_WP8F"
+  | "CREATE_DRAFT_PR"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -87,7 +89,11 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "DEPLOY_PRODUCTION",
   "MERGE_DEFAULT_BRANCH",
   "REBASE_BRANCH",
-  "CREATE_PULL_REQUEST",
+  "CREATE_READY_PULL_REQUEST",
+  "CREATE_DRAFT_PR_BEFORE_TEST_ACCEPTANCE",
+  "DEPLOY_NEW_SOURCE_WITHOUT_OWNER_APPROVAL",
+  "REHEARSE_ROLLBACK_WITHOUT_REVIEWED_APPROVAL",
+  "CHANGE_MODEL_PROMPT_POLICY_THRESHOLDS_TIMEOUT",
   "CHANGE_DEFAULT_BRANCH",
   "RESOLVE_DEFAULT_BRANCH_DRIFT",
   "CHANGE_LINE_OA",
@@ -105,19 +111,16 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "STORE_PII_RAW_CHAT_TOKEN_OR_SECRET",
 ] as const;
 
-const REQUIRED_WP8E_SCOPE = [
-  "MP_06_WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
-  "IMPLEMENT_EXACT_SESSION_ATTEMPT_RECONCILIATION",
-  "ADD_ATOMIC_IDEMPOTENT_RECONCILIATION_TESTS",
-  "DEPLOY_EXACT_TEST_CANDIDATE_AI_OFF",
-  "RUN_ISOLATED_NO_NETWORK_LIFECYCLE_SELF_TEST",
-  "READ_AND_RECONCILE_EXACT_TEST_PILOT_STATE",
-  "PROVE_OLD_ATTEMPT_TERMINAL_ISOLATION",
-  "ACTIVATE_ONE_TEST_SESSION_CONDITIONALLY",
-  "ACCEPT_ONE_OWNER_LINE_EVENT",
-  "VERIFY_DURABLE_PROVIDER_SETTLEMENT_AND_LINE_REPLY",
+const REQUIRED_WP8F_SCOPE = [
+  "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
+  "BUILD_ISSUE_12_ACCEPTANCE_MATRIX",
+  "FIX_PROVEN_ACCEPTANCE_BLOCKERS_ONLY",
+  "ACTIVATE_ONE_CUMULATIVE_TEST_SESSION",
+  "OWNER_LINE_UAT_ONE_CASE_AT_A_TIME",
+  "VERIFY_EXISTING_SAFETY_AND_ROLLBACK_EVIDENCE",
   "STOP_TEST_PILOT_AND_AI",
-  "RECORD_TEST_DEPLOYMENT_AND_RETEST_EVIDENCE",
+  "PREPARE_REVIEWED_TEST_DEPLOYMENT_PROPOSAL",
+  "CREATE_DRAFT_PR_ONLY_AFTER_TEST_ACCEPTANCE",
   "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
   "POLICY_SNAPSHOT_READ_ONLY",
@@ -283,7 +286,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.08-v11",
+    "2026.09.08-v12",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -294,7 +297,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-08-V11",
+      "MP-OD-2026-09-08-V12",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -306,7 +309,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.08-v10",
+      "2026.09.08-v11",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -323,7 +326,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      EXPECTED_WP8E_CONTROL_BASE_COMMIT,
+      "3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -346,8 +349,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.authorization.testDeploymentAuthorization,
-      true,
-      "TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
+      false,
+      "NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
     );
     expectEqual(
       errors,
@@ -507,13 +510,13 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.currentPhase,
-    "WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
+    "WP8F_TEST_ACCEPTANCE_COMPLETION",
     "CURRENT_WORK_PHASE_INVALID",
   );
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E_ONLY",
+    "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -525,8 +528,8 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.authorizedWorkPackage,
-    "WP8E",
-    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP8E",
+    "WP8F",
+    "AUTHORIZED_WORK_PACKAGE_MUST_BE_WP8F",
   );
   expectEqual(
     errors,
@@ -670,8 +673,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.exactStateReconciliationControlledRetestWp8e,
-      true,
-      "WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_NOT_AUTHORIZED",
+      false,
+      "WP8E_AUTHORIZATION_MUST_BE_COMPLETE",
     );
     expectEqual(
       errors,
@@ -706,8 +709,8 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testDeploymentAuthorization,
-      true,
-      "CURRENT_WORK_TEST_DEPLOYMENT_AUTHORIZATION_MUST_BE_TRUE",
+      false,
+      "CURRENT_NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
     );
     expectEqual(
       errors,
@@ -733,12 +736,20 @@ export function validateProjectControl(
     ? currentWork.allowedScope
     : [];
   if (
-    allowedScope.length !== REQUIRED_WP8E_SCOPE.length ||
-    REQUIRED_WP8E_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== REQUIRED_WP8F_SCOPE.length ||
+    REQUIRED_WP8F_SCOPE.some((scope) => !allowedScope.includes(scope))
   ) {
-    errors.push("WP8E_SCOPE_INVALID");
+    errors.push("WP8F_SCOPE_INVALID");
   }
 
+  if (isRecord(currentWork.authorization))
+    expectEqual(
+      errors,
+      currentWork.authorization.testAcceptanceCompletionWp8f,
+      true,
+      "WP8F_NOT_AUTHORIZED",
+    );
+  validateWp8fAcceptancePlan(errors, currentWork.wp8fTestAcceptancePlan);
   validateWp2BenchmarkReference(errors, currentWork.wp2BenchmarkReference);
   validateBenchmarkCompletionPlan(errors, currentWork.benchmarkCompletionPlan);
   validateLocalClosureRemediationPlan(
@@ -887,6 +898,16 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
+  if (
+    action === "CREATE_DRAFT_PR" &&
+    (!isRecord(currentWork.wp8fTestAcceptancePlan) ||
+      currentWork.wp8fTestAcceptancePlan.testAcceptanceStatus !== "PASS")
+  ) {
+    return {
+      allowed: false,
+      reason: "TEST_ACCEPTANCE_REQUIRED_BEFORE_DRAFT_PR",
+    };
+  }
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
       allowed: false,
@@ -914,6 +935,8 @@ export function evaluateProjectAction(
       "durableLifecycleDiagnosticsRemediationWp8d",
     EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E:
       "exactStateReconciliationControlledRetestWp8e",
+    TEST_ACCEPTANCE_COMPLETION_WP8F: "testAcceptanceCompletionWp8f",
+    CREATE_DRAFT_PR: "testAcceptanceCompletionWp8f",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -2957,4 +2980,51 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function uniqueSorted(values: string[]): string[] {
   return [...new Set(values)].sort();
+}
+
+function validateWp8fAcceptancePlan(errors: string[], plan: unknown): void {
+  if (!isRecord(plan)) {
+    errors.push("WP8F_PLAN_MISSING");
+    return;
+  }
+  const required = {
+    baselineCommit: "3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd",
+    deployedSourceCommit: "c8b0d8246058c5de4991bec369e91cfe2a609a4d",
+    deployedVersion: "5835b91b-7b0d-4708-a71b-6c31473adcae",
+    exactTestWorker: "malispang-lineoa-test",
+    baselineState: "STOPPED",
+    baselineEvents: 3,
+    baselineAttempts: 3,
+    baselineConsumedMicroUsd: 27824,
+    baselineReservedMicroUsd: 0,
+    baselineInFlight: 0,
+    conservativeHistoricalMicroUsd: 25864,
+    reportedUsageCostMicroUsd: 1960,
+    actualHistoricalBilledUsage: "UNKNOWN",
+    maximumNewSessions: 1,
+    maximumSessionMinutes: 60,
+    maximumCumulativeEvents: 200,
+    maximumCumulativeAttempts: 200,
+    maximumCumulativeCostMicroUsd: 5000000,
+    carryForwardAccounting: true,
+    ownerSendsLine: true,
+    noReplacementSession: true,
+    stopOnFailure: true,
+    newSourceDeploymentRequiresOwnerApproval: true,
+    rollbackRehearsalRequiresOwnerApproval: true,
+    testAcceptanceStatus: "GAP",
+    draftPrOnlyAfterTestAcceptance: true,
+    mergeAuthorized: false,
+    issueClosureAuthorized: false,
+    productionStatus: "NO_GO",
+    evidenceDocument: "docs/line-oa/mp-06/MP_06_WP8F_TEST_ACCEPTANCE_TH.md",
+  } as const;
+  for (const [field, expected] of Object.entries(required)) {
+    expectEqual(
+      errors,
+      plan[field],
+      expected,
+      `WP8F_${field.toUpperCase()}_INVALID`,
+    );
+  }
 }

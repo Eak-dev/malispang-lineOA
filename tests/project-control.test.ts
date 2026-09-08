@@ -24,8 +24,8 @@ beforeAll(async () => {
   ]);
 });
 
-describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
-  it("accepts the 2026.09.08-v11 control snapshot and records default-branch drift", () => {
+describe("MP-06 WP8F TEST acceptance completion", () => {
+  it("accepts the 2026.09.08-v12 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -62,10 +62,10 @@ describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
       };
     };
     expect(schema.properties.currentPhase.const).toBe(
-      "WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
+      "WP8F_TEST_ACCEPTANCE_COMPLETION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E_ONLY",
+      "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -126,7 +126,7 @@ describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
     expect(
       schema.properties.authorization.properties
         .exactStateReconciliationControlledRetestWp8e.const,
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("keeps canonical work IDs mapped to immutable GitHub issues", () => {
@@ -407,10 +407,10 @@ describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
     });
   });
 
-  it("authorizes only exact TEST WP8E reconciliation/deployment and one controlled retest", () => {
+  it("authorizes scoped acceptance work while deployment and incomplete draft PR remain blocked", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
+      "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
     );
     expect(
       evaluateProjectAction(
@@ -470,12 +470,12 @@ describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
       evaluateProjectAction(
         roadmap,
         currentWork,
-        "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+        "TEST_ACCEPTANCE_COMPLETION_WP8F",
       ),
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
-      allowed: true,
-      reason: "AUTHORIZED_BY_CURRENT_WORK",
+      allowed: false,
+      reason: "DEPLOY_TEST_NOT_AUTHORIZED",
     });
     expect(
       evaluateProjectAction(roadmap, currentWork, "BENCHMARK_WP2"),
@@ -1061,7 +1061,7 @@ describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
     const expandedScope = clone(currentWork) as { allowedScope: string[] };
     expandedScope.allowedScope.push("CHANGE_APPROVED_KNOWLEDGE_BASE");
     expect(validateProjectControl(roadmap, expandedScope).errors).toContain(
-      "WP8E_SCOPE_INVALID",
+      "WP8F_SCOPE_INVALID",
     );
 
     const missingAssessmentScope = clone(currentWork) as {
@@ -1069,12 +1069,11 @@ describe("MP-06 WP8E exact-state reconciliation and controlled retest", () => {
     };
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
-        (scope) =>
-          scope !== "MP_06_WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST",
+        (scope) => scope !== "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
-    ).toContain("WP8E_SCOPE_INVALID");
+    ).toContain("WP8F_SCOPE_INVALID");
   });
 
   it("fails closed when WP8E exact identity, accounting, isolation, or live caps drift", () => {
@@ -1733,3 +1732,45 @@ async function readJson(path: string): Promise<unknown> {
 function clone<T>(value: T): T {
   return structuredClone(value);
 }
+
+describe("WP8F scoped acceptance safety gates", () => {
+  it("denies old reconciliation and draft PR before verified TEST acceptance", () => {
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+      ).allowed,
+    ).toBe(false);
+    expect(
+      evaluateProjectAction(roadmap, currentWork, "CREATE_DRAFT_PR"),
+    ).toEqual({
+      allowed: false,
+      reason: "TEST_ACCEPTANCE_REQUIRED_BEFORE_DRAFT_PR",
+    });
+  });
+  it("fails closed when cumulative accounting, session cap or deploy approval requirement changes", () => {
+    for (const [key, value] of [
+      ["baselineConsumedMicroUsd", 0],
+      ["maximumNewSessions", 2],
+      ["carryForwardAccounting", false],
+      ["newSourceDeploymentRequiresOwnerApproval", false],
+      ["issueClosureAuthorized", true],
+    ] as const) {
+      const changed = structuredClone(currentWork) as {
+        wp8fTestAcceptancePlan: Record<string, unknown>;
+      };
+      changed.wp8fTestAcceptancePlan[key] = value;
+      expect(validateProjectControl(roadmap, changed).errors).toContain(
+        `WP8F_${key.toUpperCase()}_INVALID`,
+      );
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          changed,
+          "TEST_ACCEPTANCE_COMPLETION_WP8F",
+        ).allowed,
+      ).toBe(false);
+    }
+  });
+});

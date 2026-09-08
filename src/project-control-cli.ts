@@ -40,11 +40,11 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
   const exactStateReconciliation = evaluateProjectAction(
     roadmap,
     currentWork,
-    "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+    "TEST_ACCEPTANCE_COMPLETION_WP8F",
   );
   if (!exactStateReconciliation.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8E exact-state reconciliation and controlled retest must be authorized",
+      "ROADMAP_UNVERIFIED: WP8F scoped acceptance completion must be authorized",
     );
   }
 
@@ -53,9 +53,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     currentWork,
     "DEPLOY_TEST",
   );
-  if (!testDeployment.allowed) {
+  if (testDeployment.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: exact TEST deployment must be authorized for WP8E",
+      "ROADMAP_UNVERIFIED: new TEST deployment requires separate reviewed Owner approval",
     );
   }
 
@@ -74,6 +74,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "PROVIDER_ATTEMPT_SETTLEMENT_REMEDIATION_WP8B",
     "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
     "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
+    "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+    "CREATE_DRAFT_PR",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
   ] as const) {
@@ -88,7 +90,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.08-v11, MP-06 (GitHub #12), WP8E exact TEST reconciliation/deployment and one conditional Owner LINE retest are authorized while Production remains blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.08-v12, MP-06 (GitHub #12), WP8F TEST acceptance work authorized; new deployment, incomplete draft PR, merge and Production blocked, ${warningSuffix}`,
   );
 }
 

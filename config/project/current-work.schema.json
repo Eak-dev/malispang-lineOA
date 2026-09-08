@@ -34,6 +34,7 @@
     "wp8cProviderReconciliationControlledRetestPlan",
     "wp8dDurableLifecycleDiagnosticsPlan",
     "wp8eExactStateReconciliationControlledRetestPlan",
+    "wp8fTestAcceptancePlan",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -51,10 +52,10 @@
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {
-      "const": "WP8E_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST"
+      "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
     },
     "status": {
-      "const": "AUTHORIZED_EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E_ONLY"
+      "const": "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY"
     },
     "base": {
       "type": "object",
@@ -67,7 +68,7 @@
     },
     "implementationBranch": { "type": "string", "minLength": 1 },
     "targetEnvironment": { "const": "TEST_ONLY" },
-    "authorizedWorkPackage": { "const": "WP8E" },
+    "authorizedWorkPackage": { "const": "WP8F" },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
@@ -102,6 +103,7 @@
         "providerReconciliationControlledRetestWp8c",
         "durableLifecycleDiagnosticsRemediationWp8d",
         "exactStateReconciliationControlledRetestWp8e",
+        "testAcceptanceCompletionWp8f",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -130,13 +132,14 @@
         "providerAttemptSettlementRemediationWp8b": { "const": false },
         "providerReconciliationControlledRetestWp8c": { "const": false },
         "durableLifecycleDiagnosticsRemediationWp8d": { "const": false },
-        "exactStateReconciliationControlledRetestWp8e": { "const": true },
+        "exactStateReconciliationControlledRetestWp8e": { "const": false },
+        "testAcceptanceCompletionWp8f": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": true },
+        "testDeploymentAuthorization": { "const": false },
         "testDeploymentOccurred": { "const": true },
         "testDeployment": { "const": false },
         "production": { "type": "boolean" }
@@ -1780,6 +1783,40 @@
         "liveProviderAuthorization": { "const": false },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8fTestAcceptancePlan": {
+      "const": {
+        "baselineCommit": "3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd",
+        "deployedSourceCommit": "c8b0d8246058c5de4991bec369e91cfe2a609a4d",
+        "deployedVersion": "5835b91b-7b0d-4708-a71b-6c31473adcae",
+        "exactTestWorker": "malispang-lineoa-test",
+        "baselineState": "STOPPED",
+        "baselineEvents": 3,
+        "baselineAttempts": 3,
+        "baselineConsumedMicroUsd": 27824,
+        "baselineReservedMicroUsd": 0,
+        "baselineInFlight": 0,
+        "conservativeHistoricalMicroUsd": 25864,
+        "reportedUsageCostMicroUsd": 1960,
+        "actualHistoricalBilledUsage": "UNKNOWN",
+        "maximumNewSessions": 1,
+        "maximumSessionMinutes": 60,
+        "maximumCumulativeEvents": 200,
+        "maximumCumulativeAttempts": 200,
+        "maximumCumulativeCostMicroUsd": 5000000,
+        "carryForwardAccounting": true,
+        "ownerSendsLine": true,
+        "noReplacementSession": true,
+        "stopOnFailure": true,
+        "newSourceDeploymentRequiresOwnerApproval": true,
+        "rollbackRehearsalRequiresOwnerApproval": true,
+        "testAcceptanceStatus": "GAP",
+        "draftPrOnlyAfterTestAcceptance": true,
+        "mergeAuthorized": false,
+        "issueClosureAuthorized": false,
+        "productionStatus": "NO_GO",
+        "evidenceDocument": "docs/line-oa/mp-06/MP_06_WP8F_TEST_ACCEPTANCE_TH.md"
       }
     },
     "wp8eExactStateReconciliationControlledRetestPlan": {
