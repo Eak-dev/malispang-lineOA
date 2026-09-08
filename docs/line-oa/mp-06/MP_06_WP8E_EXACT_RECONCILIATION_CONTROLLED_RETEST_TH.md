@@ -4,7 +4,7 @@
 
 WP8E ดำเนินการเฉพาะ Worker `malispang-lineoa-test` บน workers.dev TEST domain ภายใต้ Roadmap `2026.09.08-v11` Production, model, prompt, schema, deterministic policy, KB/catalog, benchmark และ LINE channel configuration ไม่ถูกแก้ไข
 
-- control authorization commit: `4badfebc863a9ff17139641300a36a7dc02adc`
+- control authorization commit: `4badfebc863a9ff17139641300a36a7d55c02adc`
 - exact-state reconciliation candidate commit: `c8b0d8246058c5de4991bec369e91cfe2a609a4d`
 - deployed TEST version: `5835b91b-7b0d-4708-a71b-6c31473adcae` at 100%
 - candidate dry-run bundle SHA-256: `c38d2f8709be2b65b6916869fec02a0b75e0b35f0dbc1afe587942ec31731445`
