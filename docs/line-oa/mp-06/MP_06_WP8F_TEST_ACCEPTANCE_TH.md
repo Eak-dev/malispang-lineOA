@@ -1,5 +1,65 @@
 # MP-06 WP8F — TEST acceptance matrix และ Owner UAT
 
+## Current v13 execution — 8 September 2026
+
+**TEST_DEPLOYMENT_PASS_UAT_BLOCKED_BY_CONVERSATION_READINESS_OBSERVABILITY**. Exact approved deployment succeeded. WP8F session **NOT_STARTED**; F1–F6 not requested or executed. This is a verification gap, not evidence of provider failure or a failed UAT reply. Earlier approval gaps below are historical and superseded here.
+
+### Deployment and containment evidence
+
+- Baseline local/remote `2b379570c830e1f2099ad88efdb998b05e36bd6c`, branch `codex/mp-06-guardrailed-ai`, clean/no staged files; c8b0d824 → f986a478 → baseline ancestry verified. Both GitHub issues OPEN; initial default-branch drift 0 behind / 63 ahead, no PR.
+- Control `e65566cf285f631b460b1f4954037cf7c2140f9c` / Roadmap `2026.09.08-v13` was pushed and reconciled before remote write. It approves only the exact candidate/Worker/artifact, retains one cumulative session, and blocks **all PR creation** pending final review. New rollback rehearsal remains separately gated.
+- Exact TEST account masked `c395…407d`; Worker `malispang-lineoa-test`; `wrangler.jsonc`; endpoint `https://malispang-lineoa-test.eakkachai-dev.workers.dev`. Existing TEST Sandbox/channel provenance is retained; no Production metadata/channel settings access.
+- Before deploy at `2026-09-08T04:05:45.991Z`: old version `5835b91b-7b0d-4708-a71b-6c31473adcae` 100%, TEST health, STOPPED / OPERATOR_STOP, events/attempts 3/3, consumed/reserved 27,824/0 micro-USD, in-flight 0, handoffs 0.
+- Deployed source **`f986a478bc980f9e53748ed49cedd543f54cd64a`** once from its clean detached checkout, not the later control/evidence source. Empty-store frozen-lockfile install: 187 packages, reused 0; no env/key files copied.
+- New version **`83fab7f1-646a-4ed8-be4d-a5f38df3a072`** at **100%**, verified `2026-09-08T04:07:25.499Z`. Annotation records full source/artifact. Pre-deploy and actual-deploy minified bundle SHA-256 both **`f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2`**. No updated static assets uploaded.
+- All four DO binding identities/classes, plain configuration and six secret names/presence match old version. No secret write/readback, resource creation, migration or accounting reset. Only approved TEST_ADMIN_KEY was held in short-lived process memory for exact HTTPS authentication, redirect forwarding forbidden.
+- Health passes; unauthenticated resume returns 401. Existing signature/destination/unknown-sender/rate/budget/concurrency/default-off regressions cover unchanged paths; no new live provider/LINE test is claimed.
+- Final authenticated read **`2026-09-08T04:09:23.415Z`**: AI admission OFF, pilot STOPPED, events/attempts **3/3**, consumed/reserved **27,824/0**, in-flight **0**, active handoffs **0**. No attempts increased. No activation/stop/handoff-close/reconciliation write occurred. This proves retained containment, not a newly executed live kill-switch rehearsal.
+
+### Readiness blocker and exact next proposal
+
+The committed pre-F1 runbook requires verified Owner conversation/allowlist, BOT_ACTIVE, no pending clarification and no blocking draft. Current interfaces cannot fully prove it:
+
+1. Pilot status is aggregate only. `resume-acceptance` validates/reuses the stored private allowlist as part of activation, not a read-only preflight.
+2. Empty `/admin/handoffs` does not prove Owner context/clarification budget/draft state.
+3. `/admin/audit` needs an exact conversation reference and returns outcome/reason/time, not current state. `ConversationStateDO.state()` and `mp06Context()` have no authenticated readiness HTTP route; `mp06Context()` also omits the used-clarification flag. Draft handling precedes AI and may intercept input.
+4. Direct-user conversation/tester references are hashes of the verified sender internally. That supports a scoped future implementation, but does not establish current private allowlist contents. No identifier was guessed from a room name, other secret read, raw SQL reset or session replacement attempted.
+
+Do not consume one-shot activation to discover stale context. Proposed narrow diff, **not implemented/deployed here**: authenticated TEST-only `GET /admin/mp06-pilot/owner-uat-readiness`, exact expected STOPPED session, private server-side Owner/tester linkage, deny if the intended Owner cannot be uniquely resolved and verified. Return only verified/count booleans, conversation mode, pending-template enum, clarification-used flag, draft-state enum, safe reason/correlation codes. No identifiers, draft content, messages, secrets or provider output. Scoped read RPCs must not clear/repair/activate/change accounting. Files: `worker/index.ts`, `worker/durable-objects.ts`, `worker/draft-order-objects.ts`, focused Worker tests/runbook. Tests: auth/non-TEST, missing/ambiguous Owner, stale session, pending/used clarification, blocking draft, storage error, safe output and unchanged state/accounting. No model/prompt/policy/timeout change. Any new deployment needs reviewed candidate/artifact and separate exact-source approval; current approval cannot be reused for it.
+
+### Updated acceptance matrix
+
+| Existing criterion                                                                                     | Evidence/revision                                                               | Status  | Remaining action                                         |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------- | -------------------------------------------------------- |
+| Advisory semantics separated from deterministic authority; approved knowledge only                     | Frozen WP7; f986a478 does not change semantics                                  | PASS    | Preserve synthetic/generalization limitations            |
+| 5,000-case coverage, correctness/safety/fail-closed/confusion matrix and duplicate/failure regressions | Frozen WP2/WP7; candidate full/clean validation and fresh artifact checks       | PASS    | No changed labels or repeat live eval                    |
+| Exact TEST deployment                                                                                  | f986a478 / 83fab7f1, 100%, artifact/config/accounting verified                  | PASS    | No repeat deploy under used one-time approval            |
+| Owner location/general-information LINE case                                                           | WP8E c8b0d824 provider/settlement and Owner screenshot                          | PASS    | Reuse                                                    |
+| Owner UAT F1–F6                                                                                        | Frozen expected routes/replies/backend evidence below; not executed             | BLOCKED | Close read-only conversation/allowlist readiness gap     |
+| New-session kill switch / no attempts after stop / late-result safety                                  | Old WP8E + unchanged local controls; this round remains STOPPED with 3 attempts | GAP     | UAT F6 and new-session stop evidence                     |
+| Current-revision rollback                                                                              | Old v21 rehearsal at zero accounting; retained c8b0d824 binding-compatible      | GAP     | Approve exact rehearsal below                            |
+| PO/security/release review and integration                                                             | No PR/merge; branch not integrated                                              | BLOCKED | Final Owner-selected review; all PR forbidden this phase |
+
+Production is a separate NO_GO boundary, not an invented requirement to deploy Production for TEST acceptance. No full UAT/closure PASS is claimed.
+
+### Exact rollback proposal — not executed or authorized here
+
+Stop first; require reserved/in-flight zero; freeze then-current accounting, terminal inventory and private allowlist/containment evidence. Restore TEST version `5835b91b-7b0d-4708-a71b-6c31473adcae` / source `c8b0d8246058c5de4991bec369e91cfe2a609a4d` once. Additive WP8F marker is ignored, not dropped; existing columns/namespaces/accounting encoding/secret-config and stop/settlement fencing remain unchanged. Verify target 100%, health, STOPPED, identical accounting/audit, no new attempt; do not use generic activation. If separately approved rehearsal passes, redeploy exact f986a478 once and verify artifact/health/state, finish STOPPED. Targets remain decision 5 / recovery 15 minutes. Abort on identity/state/compatibility uncertainty; do not reset/reconcile/drop state. This rollback and additional recovery redeploy require approval. Old v21 evidence alone does not cover current nonzero accounting.
+
+### Validation and residual limitations
+
+Control-only targeted **45/45** (41 prior + four new exact-target/closed-plan/all-PR guards), failed/skipped/cancelled 0. Toolchain/control/readiness, format/ESLint/TypeScript/build, secret scan (207 files) and diff-check pass. Unchanged candidate's previous full/clean checks remain **459 unit + 14 benchmark + 83 Worker = 556 unique**; not rerun merely to inflate evidence. Four new control tests make current inventory 560, **not** a claim of a new full 560-test run.
+
+Fresh detached dry-run reproduces approved hash; deterministic benchmark and WP7 evidence check pass without live calls; tracked files/reports/assets/lockfile unchanged. Policy `504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0`, dataset `6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa`, deterministic result `f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6`, WP7 result `7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55` retained. Benchmark 5,000 cases / 10,000 evaluator attempts, buckets 3,000/1,000/1,000, AUTO/risky/authority 100%, false-AUTO/unsupported/leakage 0.
+
+Consumed 27,824 = conservative historical 25,864 + reported-response-usage cost 1,960 micro-USD. Historical actual billed usage/provider receipt/root cause remain UNKNOWN. Remaining cumulative caps USD 4.972176 / 197 events / 197 attempts. WP8F session never opened; no new provider request intentionally initiated. Temporary candidate checkout/store/bundles removed after clean verification; later evidence SHA is not deployed source.
+
+Wrangler skill guided pinned 4.122.0 CLI/exact-target/version verification against current [Workers CLI docs](https://developers.cloudflare.com/workers/wrangler/commands/workers/) and [versions/deployments](https://developers.cloudflare.com/workers/versions-and-deployments/). No tool/config upgrade.
+
+Owner need not send LINE yet. Ready to change to GPT-6 Astra / High for final security and release review of this blocker/recovery proposal, **not** a TEST acceptance PASS. TEST deployment occurred **true**; AI OFF / pilot STOPPED; Issue #12 **OPEN**; Production **NO_GO — NOT TOUCHED**.
+
+## Historical v12 preparation record
+
 Roadmap `2026.09.08-v12`; baseline `3ab8957e9c0e81b9a5dff95c6008f30e0c9d3fcd`. Issue #12 OPEN. Production `NO_GO — NOT TOUCHED`. This document does not grant new-source deployment or rollback approval.
 
 ## Verified baseline and current gaps
