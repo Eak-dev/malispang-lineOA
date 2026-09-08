@@ -155,6 +155,41 @@ export class DraftOrderDO extends DurableObject<Env> {
     return this.load(now).state;
   }
 
+  ownerUatDraftObservation() {
+    try {
+      const row = this.ctx.storage.sql
+        .exec<{ state: string }>(
+          "SELECT json_extract(aggregate_json, '$.state') AS state FROM draft_current WHERE id = 1",
+        )
+        .toArray()[0];
+      const state = row ? row.state : "NO_DRAFT";
+      if (
+        ![
+          "NO_DRAFT",
+          "CONSENT_REQUIRED",
+          "COLLECTING",
+          "READY_FOR_REVIEW",
+          "AWAITING_STAFF_REVIEW",
+          "PRICE_BLOCKED",
+          "CANCELLED",
+          "EXPIRED_PURGED",
+          "FAILED_REVIEW",
+        ].includes(state)
+      )
+        throw new Error("READINESS_UNAVAILABLE");
+      const pendingReplies = Number(
+        this.ctx.storage.sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM draft_processed_events WHERE delivered != 1",
+          )
+          .one().count,
+      );
+      return { state, pendingReplies };
+    } catch {
+      return null;
+    }
+  }
+
   redactedAudit(): readonly {
     outcome: string;
     revision: number;

@@ -482,6 +482,142 @@ export class ConversationStateDO extends DurableObject<Env> {
       : {};
   }
 
+  // Observation only: never call expiry, cleanup, settlement or activation helpers.
+  ownerUatConversationObservation(expectedEventRef: string) {
+    try {
+      const sql = this.ctx.storage.sql;
+      if (
+        !isMp06PilotReference(expectedEventRef) ||
+        Number(
+          sql
+            .exec<{ count: number }>(
+              "SELECT COUNT(*) AS count FROM mp06_response_plans WHERE event_ref = ? AND delivered = 1",
+              expectedEventRef,
+            )
+            .one().count,
+        ) !== 1
+      )
+        throw new Error("READINESS_UNAVAILABLE");
+      const mode = sql
+        .exec<{ mode: string }>(
+          "SELECT mode FROM conversation_state WHERE id = 1",
+        )
+        .one().mode;
+      const context = sql
+        .exec<{
+          clarification_used: number;
+          pending_template_id: string | null;
+        }>(
+          "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
+        )
+        .one();
+      if (
+        !["BOT_ACTIVE", "HUMAN_HANDOFF"].includes(mode) ||
+        ![0, 1].includes(context.clarification_used) ||
+        ![null, "T-C01", "T-C04"].includes(context.pending_template_id)
+      )
+        throw new Error("READINESS_UNAVAILABLE");
+      const pendingReplies = Number(
+        sql
+          .exec<{ count: number }>(
+            "SELECT (SELECT COUNT(*) FROM processed_events WHERE delivered != 1) + (SELECT COUNT(*) FROM mp06_response_plans WHERE delivered != 1) AS count",
+          )
+          .one().count,
+      );
+      return {
+        mode,
+        clarificationUsed: context.clarification_used === 1,
+        pendingTemplate: context.pending_template_id,
+        pendingReplies,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  ownerUatPilotObservation() {
+    try {
+      const sql = this.ctx.storage.sql;
+      const session = this.mp06PilotSession();
+      if (
+        !session ||
+        !isMp06PilotReference(session.session_ref) ||
+        session.state !== "STOPPED" ||
+        session.stop_reason !== "OPERATOR_STOP" ||
+        session.admitted_events !== 3 ||
+        session.provider_attempts !== 3 ||
+        session.budget_consumed_micro_usd !== 27824 ||
+        session.budget_reserved_micro_usd !== 0 ||
+        session.in_flight !== 0
+      )
+        throw new Error("READINESS_UNAVAILABLE");
+      const totals = sql
+        .exec<{
+          total: number;
+          unknown_count: number;
+          settled_count: number;
+          conservative: number;
+          reported: number;
+        }>(
+          `SELECT COUNT(*) AS total,
+      SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN 1 ELSE 0 END) AS unknown_count,
+      SUM(CASE WHEN state = 'SETTLED' THEN 1 ELSE 0 END) AS settled_count,
+      SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN reserved_cost_micro_usd ELSE 0 END) AS conservative,
+      SUM(CASE WHEN state = 'SETTLED' THEN actual_cost_micro_usd ELSE 0 END) AS reported
+      FROM mp06_pilot_attempts`,
+        )
+        .one();
+      if (
+        totals.total !== 3 ||
+        totals.unknown_count !== 2 ||
+        totals.settled_count !== 1 ||
+        totals.conservative !== 25864 ||
+        totals.reported !== 1960
+      )
+        throw new Error("READINESS_UNAVAILABLE");
+      // Resolve only the retained, uniquely settled WP8E Owner event, not a caller-supplied identity.
+      const owners = sql
+        .exec<{ tester_ref: string; event_ref: string }>(
+          `SELECT e.tester_ref, e.event_ref FROM mp06_pilot_attempts a
+      JOIN mp06_pilot_events e ON e.session_ref = a.session_ref AND e.event_ref = a.event_ref
+      JOIN mp06_pilot_testers t ON t.session_ref = e.session_ref AND t.tester_ref = e.tester_ref
+      WHERE a.state = 'SETTLED' AND a.session_ref = ? AND a.actual_cost_micro_usd = 1960 AND e.result_authorized = 1`,
+          session.session_ref,
+        )
+        .toArray();
+      const testerCount = Number(
+        sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM mp06_pilot_testers WHERE session_ref = ?",
+            session.session_ref,
+          )
+          .one().count,
+      );
+      if (
+        owners.length !== 1 ||
+        testerCount !== 1 ||
+        !isMp06PilotReference(owners[0]!.tester_ref) ||
+        !isMp06PilotReference(owners[0]!.event_ref)
+      )
+        throw new Error("READINESS_UNAVAILABLE");
+      return {
+        sessionRef: session.session_ref,
+        ownerRef: owners[0]!.tester_ref,
+        eventRef: owners[0]!.event_ref,
+        state: "STOPPED" as const,
+        events: 3,
+        attempts: 3,
+        consumedMicroUsd: 27824,
+        reservedMicroUsd: 0,
+        inFlight: 0,
+        conservativeMicroUsd: 25864,
+        reportedUsageMicroUsd: 1960,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   activateMp06Pilot(input: ActivateMp06PilotInput): Mp06PilotActivationResult {
     const validTesters =
       Array.isArray(input.testerRefs) &&

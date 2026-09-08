@@ -396,6 +396,90 @@ async function handleAdmin(
     );
     return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
+  if (url.pathname === "/admin/mp06-pilot/owner-uat-readiness") {
+    const receipt = {
+      actor: "AUTHENTICATED_TEST_ADMIN",
+      target: "RETAINED_WP8E_OWNER_CONVERSATION",
+      requestId: crypto.randomUUID(),
+      observedAt: new Date().toISOString(),
+    };
+    const result = (code: string, status: number, observation?: unknown) => {
+      const audit = { ...receipt, code };
+      console.info(
+        JSON.stringify({ outcome: "OWNER_READINESS_READ", ...audit }),
+      );
+      return Response.json(
+        { audit, ...(observation ? { observation } : {}) },
+        { status, headers: { "cache-control": "no-store" } },
+      );
+    };
+    if (
+      request.method !== "GET" ||
+      url.search !== "" ||
+      url.origin !==
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true"
+    )
+      return result("READINESS_TARGET_REJECTED", 403);
+    try {
+      const coordinator = env.CONVERSATION_STATE.getByName(
+        MP06_PILOT_CONTROL_OBJECT_NAME,
+      );
+      const before = await coordinator.ownerUatPilotObservation();
+      if (!before) return result("READINESS_UNAVAILABLE", 409);
+      const conversation = env.CONVERSATION_STATE.getByName(before.ownerRef);
+      const draft = env.DRAFT_ORDER.getByName(before.ownerRef);
+      const context = await conversation.ownerUatConversationObservation(
+        before.eventRef,
+      );
+      const draftContext = await draft.ownerUatDraftObservation();
+      if (!context || !draftContext)
+        return result("READINESS_UNAVAILABLE", 409);
+      // Cross-object observations are not a transaction or an activation capability.
+      if (
+        JSON.stringify(before) !==
+          JSON.stringify(await coordinator.ownerUatPilotObservation()) ||
+        JSON.stringify(context) !==
+          JSON.stringify(
+            await conversation.ownerUatConversationObservation(before.eventRef),
+          ) ||
+        JSON.stringify(draftContext) !==
+          JSON.stringify(await draft.ownerUatDraftObservation())
+      )
+        return result("READINESS_CHANGED_DURING_READ", 409);
+      const ready =
+        context.mode === "BOT_ACTIVE" &&
+        !context.clarificationUsed &&
+        context.pendingTemplate === null &&
+        context.pendingReplies === 0 &&
+        draftContext.state === "NO_DRAFT" &&
+        draftContext.pendingReplies === 0;
+      return result(
+        ready ? "READINESS_OBSERVED" : "CONVERSATION_RECOVERY_REVIEW_REQUIRED",
+        200,
+        {
+          readyAtObservation: ready,
+          activationAuthorizedByResponse: false,
+          ownerLink: "RETAINED_SETTLED_WP8E_EVENT_AND_SINGLE_PRIVATE_ALLOWLIST",
+          conversation: context,
+          draft: draftContext,
+          accounting: {
+            state: before.state,
+            events: before.events,
+            attempts: before.attempts,
+            consumedMicroUsd: before.consumedMicroUsd,
+            reservedMicroUsd: before.reservedMicroUsd,
+            inFlight: before.inFlight,
+            conservativeMicroUsd: before.conservativeMicroUsd,
+            reportedUsageMicroUsd: before.reportedUsageMicroUsd,
+            independentlyVerifiedBilling: "UNKNOWN",
+          },
+        },
+      );
+    } catch {
+      return result("READINESS_UNAVAILABLE", 409);
+    }
+  }
   const registry = env.HANDOFF_REGISTRY.getByName("test-active-handoffs");
   const promotion = env.PROMOTION_CONTROL.getByName("test-draft-promotion");
   const pilot = env.CONVERSATION_STATE.getByName(
