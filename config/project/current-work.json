@@ -2,24 +2,26 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.09-v18",
+  "roadmapVersion": "2026.09.09-v19",
   "workId": "MP-06",
   "githubIssue": 12,
   "currentPhase": "WP8F_TEST_ACCEPTANCE_COMPLETION",
-  "status": "AUTHORIZED_LOCAL_DELIVERY_FENCING_WP8F_ONLY",
+  "status": "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
   "base": {
-    "commit": "3db7738da3edc3da265ebb623190de03a629c0ff",
+    "commit": "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
     "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
   "targetEnvironment": "TEST_ONLY",
   "authorizedWorkPackage": "WP8F",
   "allowedScope": [
-    "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
+    "MP_06_WP8F_EXACT_TEST_DEPLOYMENT_PREPARATION",
     "BUILD_ISSUE_12_ACCEPTANCE_MATRIX",
-    "FIX_PROVEN_ACCEPTANCE_BLOCKERS_ONLY",
-    "ATOMIC_DELIVERY_CLAIM_AND_FENCED_ACK_LOCAL_ONLY",
-    "V17_PRECEDENCE_AND_V16_CONTINUATION_LOCAL_REGRESSIONS_ONLY",
+    "EXACT_V19_CONTROL_TRANSITION",
+    "EXACT_C59_CLEAN_CHECKOUT_LOCAL_ARTIFACT_REPRODUCTION",
+    "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
+    "INDEPENDENT_CONTAINMENT_FAILURE_MATRIX",
+    "PREPARE_COMMAND_STOP_BEFORE_FIRST_REMOTE_MUTATION",
     "VERIFY_EXISTING_SAFETY_AND_ROLLBACK_EVIDENCE",
     "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
     "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
@@ -31,8 +33,7 @@
     "APPROVED_KNOWLEDGE_BASE_READ_ONLY",
     "APPROVED_PRODUCT_CATALOG_READ_ONLY",
     "TOOLCHAIN_READ_ONLY",
-    "EXISTING_STAFF_REDEMPTION_BEFORE_DRAFT_LOCAL_ONLY",
-    "FOUR_ADVISORY_DEPENDENCY_REMEDIATION_LOCAL_ONLY",
+    "RUNTIME_AND_DEPENDENCIES_READ_ONLY",
     "COMMIT_MP_06_BRANCH",
     "PUSH_MP_06_BRANCH",
     "UPDATE_GITHUB_ROADMAP_AND_MP_06"
@@ -102,7 +103,12 @@
     "CREATE_PR_IN_V18",
     "RETRY_OR_RELEASE_DELIVERY_CLAIM",
     "OPTIONAL_OR_COMPATIBILITY_DELIVERY_ACK",
-    "CLAIM_EXACTLY_ONCE_EXTERNAL_DELIVERY"
+    "CLAIM_EXACTLY_ONCE_EXTERNAL_DELIVERY",
+    "CHANGE_RUNTIME_OR_DEPENDENCIES_IN_V19",
+    "REMOTE_MUTATION_IN_V19_PREPARATION",
+    "SESSION_UAT_LINE_RECOVERY_ROLLBACK_PR_IN_V19",
+    "AUTOMATIC_ROLLBACK_TO_UNFENCED_RUNTIME",
+    "REISSUE_DEPLOYMENT_GRANT_AFTER_AMBIGUOUS_OUTCOME"
   ],
   "authorization": {
     "localImplementation": false,
@@ -132,7 +138,69 @@
     "testDeploymentOccurred": true,
     "testDeployment": false,
     "production": false,
-    "testAcceptanceCompletionWp8f": true
+    "testAcceptanceCompletionWp8f": false,
+    "testDeploymentPreparationWp8f": true
+  },
+  "wp8fExactDeploymentPreparation": {
+    "ownerDecision": "MP-OD-2026-09-09-V19",
+    "supersedes": "2026.09.09-v18",
+    "baseline": "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+    "previousEvidenceBaseline": "42026b22069e4299dfc8ff5f73b5077e3b0856fb",
+    "integrationEvent": {
+      "pullRequest": 14,
+      "status": "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
+      "performedBy": "OWNER",
+      "headCommit": "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+      "defaultBranch": "codex/phase-1a-foundation",
+      "mergeCommit": "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+      "mergedAt": "2026-09-09T02:40:20Z",
+      "includesFullBranchHistory": true,
+      "finalSecurityReleaseReviewPassed": false,
+      "testAcceptancePassed": false,
+      "productionAcceptancePassed": false,
+      "deploymentOccurredByIntegration": false,
+      "additionalPrOrMergeAuthorized": false
+    },
+    "originalRuntimeControl": "64d598183ea55c3b79e3f27aa9f9992bc318ac27",
+    "sourceCommit": "c59eb5e12bb96a34da38759a5585be67d8c2ab6e",
+    "artifactSha256": "2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308",
+    "artifactFile": "index.js",
+    "worker": "malispang-lineoa-test",
+    "environment": "TEST_ONLY",
+    "domain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "historicalEnvelope": "V18_READ_ONLY_NOT_CURRENT_WRITE_AUTHORITY",
+    "status": "APPROVED_UNUSED",
+    "operationsUsed": 0,
+    "maximumOperations": 1,
+    "remoteMutationPermittedThisRound": false,
+    "firstRemoteMutation": "UPLOAD_OR_CREATE_VERSION_OR_CHANGE_TRAFFIC",
+    "executionGate": "FRESH_GATES_AND_NEW_OWNER_EXECUTE_CONFIRMATION",
+    "ambiguousOutcome": "CONSUME_OPERATION_NO_RETRY_OR_REISSUE",
+    "counterResetPermitted": false,
+    "automaticRollback": false,
+    "containment": "INDEPENDENT_FAIL_CLOSED_FIX_FORWARD_NOT_OLD_UNFENCED_RUNTIME",
+    "freshObservationMaximumAgeMs": 120000,
+    "missingEvidence": "DENY_NOT_UNKNOWN_AS_ZERO",
+    "requiredFullCandidateTests": 733,
+    "requiredAuditFindingsAllLevels": 0,
+    "runtimeDependencyChanges": false,
+    "sessionUatLineRecoveryRollbackPr": false,
+    "productionQueryOrMutation": false,
+    "issueClosure": false,
+    "merge": false,
+    "evidenceFiles": [
+      "docs/project/EXECUTION_GATES.md",
+      "docs/project/ROADMAP_CHANGELOG.md"
+    ],
+    "requiredFailureCases": [
+      "BEFORE_REMOTE_MUTATION",
+      "REMOTE_MUTATION_REJECTED",
+      "REMOTE_OUTCOME_UNKNOWN",
+      "VERSION_CREATED_TRAFFIC_UNCHANGED",
+      "TRAFFIC_CHANGED_VERIFICATION_FAILED",
+      "SCHEMA_MIGRATION_FAILED",
+      "UNEXPECTED_EVENT_DURING_DEPLOYMENT"
+    ]
   },
   "wp8fExecutionEnvelope": {
     "ownerDecision": "MP-OD-2026-09-09-V18",
@@ -1073,10 +1141,10 @@
   },
   "conflicts": [
     {
-      "code": "DEFAULT_BRANCH_DRIFT",
+      "code": "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
       "blocking": false,
-      "detail": "GitHub default branch remains on the Phase 1A baseline.",
-      "resolution": "Use the verified MP-06 WP1 baseline and dedicated MP-06 branch; do not merge default."
+      "detail": "Owner merged PR #14 with the full feature history into aad8c5e0ef41c5e47df3d93ae462b9122368c15d before final security/release review; this is not deployment or acceptance.",
+      "resolution": "Use Owner-approved ca4904ef3f316f8e381e57e4757f3fe173dbeb1f for v19 preparation only; keep all acceptance/release gates open and forbid additional PR/merge or Production access."
     }
   ],
   "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES",

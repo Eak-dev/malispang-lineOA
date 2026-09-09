@@ -17,7 +17,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     )
   ) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: explicit v18 Owner decision record missing or inconsistent",
+      "ROADMAP_UNVERIFIED: explicit v19 preparation-only Owner decision record missing or inconsistent",
     );
   }
   const [roadmap, currentWork, roadmapSchema, currentWorkSchema] =
@@ -53,11 +53,11 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
   const exactStateReconciliation = evaluateProjectAction(
     roadmap,
     currentWork,
-    "TEST_ACCEPTANCE_COMPLETION_WP8F",
+    "PREPARE_EXACT_TEST_DEPLOYMENT",
   );
   if (!exactStateReconciliation.allowed) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: WP8F scoped acceptance completion must be authorized",
+      "ROADMAP_UNVERIFIED: exact TEST deployment preparation must be authorized",
     );
   }
 
@@ -65,9 +65,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
   if (
     evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", {
       worker: "malispang-lineoa-test",
-      sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a",
+      sourceCommit: "c59eb5e12bb96a34da38759a5585be67d8c2ab6e",
       artifactSha256:
-        "f93807109b7d700f79a7b7b90979659ac285be8420e74fb809cc6900d78adec2",
+        "2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308",
     }).allowed
   ) {
     throw new Error(
@@ -91,6 +91,17 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "PROVIDER_RECONCILIATION_CONTROLLED_RETEST_WP8C",
     "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D",
     "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E",
+    "TEST_ACCEPTANCE_COMPLETION_WP8F",
+    "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS",
+    "UPLOAD_TEST_VERSION",
+    "CREATE_TEST_VERSION",
+    "CHANGE_TEST_TRAFFIC",
+    "OPEN_CONTINUATION",
+    "RECOVER_CONVERSATION",
+    "ROLLBACK_TEST",
+    "QUERY_PRODUCTION",
+    "MERGE_DEFAULT_BRANCH",
+    "CLOSE_ISSUE",
     "CREATE_DRAFT_PR",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
@@ -106,7 +117,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.09-v18, MP-06 (GitHub #12), local delivery fencing, existing mixed staff/redemption precedence and exact four-advisory dependency remediation authorized; TEST deployment/session/recovery/rollback/PR require separate Owner approval; merge and Production blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.09-v19, MP-06 (GitHub #12), exact TEST deployment preparation only; Owner PR #14 integration occurred before final review, not acceptance/deployment; grant APPROVED_UNUSED 0/1, executable deployment false; stop before upload/version/traffic mutation pending Owner execute confirmation; session/recovery/rollback/additional PR/merge/closure and Production blocked, ${warningSuffix}`,
   );
 }
 

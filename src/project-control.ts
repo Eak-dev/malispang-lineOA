@@ -31,6 +31,8 @@ export type ProjectAction =
   | "DURABLE_LIFECYCLE_DIAGNOSTICS_REMEDIATION_WP8D"
   | "EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E"
   | "TEST_ACCEPTANCE_COMPLETION_WP8F"
+  | "PREPARE_EXACT_TEST_DEPLOYMENT"
+  | "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS"
   | "CREATE_DRAFT_PR"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
@@ -116,14 +118,21 @@ const REQUIRED_FORBIDDEN_SCOPE = [
   "RETRY_OR_RELEASE_DELIVERY_CLAIM",
   "OPTIONAL_OR_COMPATIBILITY_DELIVERY_ACK",
   "CLAIM_EXACTLY_ONCE_EXTERNAL_DELIVERY",
+  "CHANGE_RUNTIME_OR_DEPENDENCIES_IN_V19",
+  "REMOTE_MUTATION_IN_V19_PREPARATION",
+  "SESSION_UAT_LINE_RECOVERY_ROLLBACK_PR_IN_V19",
+  "AUTOMATIC_ROLLBACK_TO_UNFENCED_RUNTIME",
+  "REISSUE_DEPLOYMENT_GRANT_AFTER_AMBIGUOUS_OUTCOME",
 ] as const;
 
 const REQUIRED_WP8F_SCOPE = [
-  "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
+  "MP_06_WP8F_EXACT_TEST_DEPLOYMENT_PREPARATION",
   "BUILD_ISSUE_12_ACCEPTANCE_MATRIX",
-  "FIX_PROVEN_ACCEPTANCE_BLOCKERS_ONLY",
-  "ATOMIC_DELIVERY_CLAIM_AND_FENCED_ACK_LOCAL_ONLY",
-  "V17_PRECEDENCE_AND_V16_CONTINUATION_LOCAL_REGRESSIONS_ONLY",
+  "EXACT_V19_CONTROL_TRANSITION",
+  "EXACT_C59_CLEAN_CHECKOUT_LOCAL_ARTIFACT_REPRODUCTION",
+  "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
+  "INDEPENDENT_CONTAINMENT_FAILURE_MATRIX",
+  "PREPARE_COMMAND_STOP_BEFORE_FIRST_REMOTE_MUTATION",
   "VERIFY_EXISTING_SAFETY_AND_ROLLBACK_EVIDENCE",
   "WP7_MODEL_PROMPT_SCHEMA_READ_ONLY",
   "DETERMINISTIC_POLICY_FINAL_AUTHORITY",
@@ -135,8 +144,7 @@ const REQUIRED_WP8F_SCOPE = [
   "APPROVED_KNOWLEDGE_BASE_READ_ONLY",
   "APPROVED_PRODUCT_CATALOG_READ_ONLY",
   "TOOLCHAIN_READ_ONLY",
-  "EXISTING_STAFF_REDEMPTION_BEFORE_DRAFT_LOCAL_ONLY",
-  "FOUR_ADVISORY_DEPENDENCY_REMEDIATION_LOCAL_ONLY",
+  "RUNTIME_AND_DEPENDENCIES_READ_ONLY",
   "COMMIT_MP_06_BRANCH",
   "PUSH_MP_06_BRANCH",
   "UPDATE_GITHUB_ROADMAP_AND_MP_06",
@@ -291,7 +299,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.09-v18",
+    "2026.09.09-v19",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -302,7 +310,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-09-V18",
+      "MP-OD-2026-09-09-V19",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -314,7 +322,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.08-v17",
+      "2026.09.09-v18",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -331,7 +339,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "3db7738da3edc3da265ebb623190de03a629c0ff",
+      "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -521,7 +529,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_LOCAL_DELIVERY_FENCING_WP8F_ONLY",
+    "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -751,9 +759,20 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testAcceptanceCompletionWp8f,
-      true,
-      "WP8F_NOT_AUTHORIZED",
+      false,
+      "WP8F_OPERATIONAL_ACCEPTANCE_MUST_REMAIN_BLOCKED_IN_V19",
     );
+  if (isRecord(currentWork.authorization))
+    expectEqual(
+      errors,
+      currentWork.authorization.testDeploymentPreparationWp8f,
+      true,
+      "WP8F_DEPLOYMENT_PREPARATION_NOT_AUTHORIZED",
+    );
+  validateWp8fExactDeploymentPreparation(
+    errors,
+    currentWork.wp8fExactDeploymentPreparation,
+  );
   validateWp8fAcceptancePlan(errors, currentWork.wp8fTestAcceptancePlan);
   validateWp8fApprovedDeployment(errors, currentWork.wp8fApprovedDeployment);
   validateWp8fEnvelope(errors, currentWork.wp8fExecutionEnvelope);
@@ -875,7 +894,7 @@ export function validateProjectControl(
   const conflicts = Array.isArray(currentWork.conflicts)
     ? currentWork.conflicts
     : [];
-  let defaultBranchDriftRecorded = false;
+  let ownerIntegrationRecorded = false;
   for (const conflict of conflicts) {
     if (!isRecord(conflict)) {
       errors.push("CONFLICT_RECORD_INVALID");
@@ -883,13 +902,15 @@ export function validateProjectControl(
     }
     if (conflict.blocking === true)
       errors.push(`BLOCKING_CONFLICT_${String(conflict.code)}`);
-    if (conflict.code === "DEFAULT_BRANCH_DRIFT") {
-      defaultBranchDriftRecorded = true;
-      warnings.push("DEFAULT_BRANCH_DRIFT");
+    if (conflict.code === "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW") {
+      ownerIntegrationRecorded = true;
+      warnings.push("INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW");
+    } else if (conflict.code === "DEFAULT_BRANCH_DRIFT") {
+      errors.push("STALE_PRE_INTEGRATION_CONFLICT");
     }
   }
-  if (!defaultBranchDriftRecorded) {
-    errors.push("DEFAULT_BRANCH_DRIFT_NOT_RECORDED");
+  if (!ownerIntegrationRecorded) {
+    errors.push("OWNER_INTEGRATION_EVENT_NOT_RECORDED");
   }
 
   return {
@@ -917,6 +938,15 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
+  if (action === "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS") {
+    return deploymentTarget &&
+      wp8fV19ReadinessGate(deploymentTarget, executionEvidence)
+      ? { allowed: true, reason: "READY_FOR_EXACT_TEST_DEPLOYMENT" }
+      : {
+          allowed: false,
+          reason: "INDEPENDENT_V19_READINESS_EVIDENCE_REQUIRED",
+        };
+  }
   if (action === "CREATE_DRAFT_PR") {
     return wp8fReviewGate(executionEvidence)
       ? {
@@ -938,6 +968,8 @@ export function evaluateProjectAction(
         allowed: false,
         reason: "VERIFIED_CANDIDATE_AND_TEST_STATE_REQUIRED",
       };
+    // Even complete historical evidence cannot execute the unused v19 grant.
+    return { allowed: false, reason: "V19_STOP_BEFORE_FIRST_REMOTE_MUTATION" };
   }
   if (action === "LOCAL_IMPLEMENTATION") {
     return {
@@ -967,6 +999,8 @@ export function evaluateProjectAction(
     EXACT_STATE_RECONCILIATION_CONTROLLED_RETEST_WP8E:
       "exactStateReconciliationControlledRetestWp8e",
     TEST_ACCEPTANCE_COMPLETION_WP8F: "testAcceptanceCompletionWp8f",
+    PREPARE_EXACT_TEST_DEPLOYMENT: "testDeploymentPreparationWp8f",
+    ASSESS_EXACT_TEST_DEPLOYMENT_READINESS: "testDeploymentPreparationWp8f",
     CREATE_DRAFT_PR: "testAcceptanceCompletionWp8f",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
@@ -1009,6 +1043,18 @@ export function validateSchemaDocuments(
     ) {
       errors.push(`${name}_SCHEMA_REQUIRED_FIELDS_MISSING`);
     }
+  }
+  if (isRecord(currentWorkSchema)) {
+    const properties = currentWorkSchema.properties;
+    if (
+      !Array.isArray(currentWorkSchema.required) ||
+      !currentWorkSchema.required.includes("wp8fExactDeploymentPreparation") ||
+      !isRecord(properties) ||
+      !isRecord(properties.wp8fExactDeploymentPreparation) ||
+      JSON.stringify(properties.wp8fExactDeploymentPreparation.const) !==
+        JSON.stringify(WP8F_V19_PREPARATION)
+    )
+      errors.push("V19_PREPARATION_SCHEMA_NOT_CLOSED");
   }
   return uniqueSorted(errors);
 }
@@ -3250,8 +3296,29 @@ const WP8F_V18_ENVELOPE = {
 
 export function validateWp8fOwnerDecisionRecord(record: unknown): boolean {
   if (typeof record !== "string") return false;
-  const section = record.split("## MP-OD-2026-09-09-V18 —")[1];
+  const section = record
+    .split("## MP-OD-2026-09-09-V18 —")[1]
+    ?.split("\n## ")[0];
+  const current = record
+    .split("## MP-OD-2026-09-09-V19 —")[1]
+    ?.split("\n## ")[0];
   return (
+    typeof current === "string" &&
+    current.includes(
+      "Owner explicitly approves the ten-path v19 control transition and preparation only",
+    ) &&
+    current.includes("supersedes 2026.09.09-v18") &&
+    current.includes(WP8F_V19_PREPARATION.baseline) &&
+    current.includes(WP8F_V19_PREPARATION.integrationEvent.mergeCommit) &&
+    current.includes("INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW") &&
+    current.includes(WP8F_V19_PREPARATION.sourceCommit) &&
+    current.includes(WP8F_V19_PREPARATION.artifactSha256) &&
+    current.includes("APPROVED_UNUSED, operations used0/maximum1") &&
+    current.includes("STOP_BEFORE_FIRST_REMOTE_MUTATION") &&
+    current.includes(
+      "ambiguous remote outcome consumes the single operation",
+    ) &&
+    current.includes("Production NO_GO — NOT TOUCHED") &&
     typeof section === "string" &&
     section.includes(WP8F_V18_ENVELOPE.baseline) &&
     section.includes("worker/durable-objects.ts") &&
@@ -3295,13 +3362,9 @@ export function evaluateWp8fPaths(
   const allowed =
     phase === "CONTROL_TRANSITION"
       ? WP8F_V18_ENVELOPE.controlFiles
-      : phase === "SECURITY_REMEDIATION"
-        ? WP8F_V18_ENVELOPE.remediationFiles
-        : phase === "DEPENDENCY_REMEDIATION"
-          ? WP8F_V18_ENVELOPE.dependencyFiles
-          : phase === "EVIDENCE"
-            ? WP8F_V18_ENVELOPE.evidenceFiles
-            : [];
+      : phase === "EVIDENCE"
+        ? WP8F_V19_PREPARATION.evidenceFiles
+        : [];
   return exactPaths(paths, allowed)
     ? { allowed: true, reason: "EXACT_OWNER_APPROVED_PATHS" }
     : { allowed: false, reason: "UNKNOWN_OR_OUT_OF_SCOPE_PATH" };
@@ -3418,5 +3481,222 @@ function wp8fReviewGate(evidence: unknown): boolean {
     review.criticalFindings === 0 &&
     review.aiAdmission === false &&
     review.pilot === "STOPPED"
+  );
+}
+
+// The v18 envelope above is frozen history. It cannot grant current file writes
+// or deployment. This separate record never enables a remote-mutating action.
+const WP8F_V19_PREPARATION = {
+  ownerDecision: "MP-OD-2026-09-09-V19",
+  supersedes: "2026.09.09-v18",
+  baseline: "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+  previousEvidenceBaseline: "42026b22069e4299dfc8ff5f73b5077e3b0856fb",
+  integrationEvent: {
+    pullRequest: 14,
+    status: "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
+    performedBy: "OWNER",
+    headCommit: "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+    defaultBranch: "codex/phase-1a-foundation",
+    mergeCommit: "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+    mergedAt: "2026-09-09T02:40:20Z",
+    includesFullBranchHistory: true,
+    finalSecurityReleaseReviewPassed: false,
+    testAcceptancePassed: false,
+    productionAcceptancePassed: false,
+    deploymentOccurredByIntegration: false,
+    additionalPrOrMergeAuthorized: false,
+  },
+  originalRuntimeControl: "64d598183ea55c3b79e3f27aa9f9992bc318ac27",
+  sourceCommit: "c59eb5e12bb96a34da38759a5585be67d8c2ab6e",
+  artifactSha256:
+    "2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308",
+  artifactFile: "index.js",
+  worker: "malispang-lineoa-test",
+  environment: "TEST_ONLY",
+  domain: "malispang-lineoa-test.eakkachai-dev.workers.dev",
+  historicalEnvelope: "V18_READ_ONLY_NOT_CURRENT_WRITE_AUTHORITY",
+  status: "APPROVED_UNUSED",
+  operationsUsed: 0,
+  maximumOperations: 1,
+  remoteMutationPermittedThisRound: false,
+  firstRemoteMutation: "UPLOAD_OR_CREATE_VERSION_OR_CHANGE_TRAFFIC",
+  executionGate: "FRESH_GATES_AND_NEW_OWNER_EXECUTE_CONFIRMATION",
+  ambiguousOutcome: "CONSUME_OPERATION_NO_RETRY_OR_REISSUE",
+  counterResetPermitted: false,
+  automaticRollback: false,
+  containment: "INDEPENDENT_FAIL_CLOSED_FIX_FORWARD_NOT_OLD_UNFENCED_RUNTIME",
+  freshObservationMaximumAgeMs: 120000,
+  missingEvidence: "DENY_NOT_UNKNOWN_AS_ZERO",
+  requiredFullCandidateTests: 733,
+  requiredAuditFindingsAllLevels: 0,
+  runtimeDependencyChanges: false,
+  sessionUatLineRecoveryRollbackPr: false,
+  productionQueryOrMutation: false,
+  issueClosure: false,
+  merge: false,
+  evidenceFiles: [
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+  ],
+  requiredFailureCases: [
+    "BEFORE_REMOTE_MUTATION",
+    "REMOTE_MUTATION_REJECTED",
+    "REMOTE_OUTCOME_UNKNOWN",
+    "VERSION_CREATED_TRAFFIC_UNCHANGED",
+    "TRAFFIC_CHANGED_VERIFICATION_FAILED",
+    "SCHEMA_MIGRATION_FAILED",
+    "UNEXPECTED_EVENT_DURING_DEPLOYMENT",
+  ],
+} as const;
+
+function validateWp8fExactDeploymentPreparation(
+  errors: string[],
+  input: unknown,
+): void {
+  if (!isRecord(input)) {
+    errors.push("V19_PREPARATION_MISSING");
+    return;
+  }
+  if (Object.keys(input).length !== Object.keys(WP8F_V19_PREPARATION).length)
+    errors.push("V19_PREPARATION_FIELDS_INVALID");
+  for (const [key, value] of Object.entries(WP8F_V19_PREPARATION))
+    if (JSON.stringify(input[key]) !== JSON.stringify(value))
+      errors.push(`V19_${key.toUpperCase()}_INVALID`);
+}
+
+/** Pure read-only readiness evaluation, not a signed attestation or execution lock.
+ * Callers must independently collect evidence; never synthesize it from manifests.
+ * APPROVED_UNUSED alone never permits upload, version creation, or traffic changes.
+ */
+function wp8fV19ReadinessGate(
+  target: { worker: string; sourceCommit: string; artifactSha256: string },
+  evidence: unknown,
+): boolean {
+  const grant = WP8F_V19_PREPARATION;
+  if (
+    target.worker !== grant.worker ||
+    target.sourceCommit !== grant.sourceCommit ||
+    target.artifactSha256 !== grant.artifactSha256 ||
+    !isRecord(evidence) ||
+    evidence.provenance !== "INDEPENDENT_OPERATOR_VERIFICATION" ||
+    !isRecord(evidence.candidate) ||
+    !isRecord(evidence.test) ||
+    !isRecord(evidence.containment) ||
+    !isRecord(evidence.operation)
+  )
+    return false;
+  const { candidate, test, containment, operation } = evidence;
+  const now = Date.now();
+  const fresh =
+    typeof test.observedAt === "number" &&
+    Number.isSafeInteger(test.observedAt) &&
+    test.observedAt <= now &&
+    now - test.observedAt <= grant.freshObservationMaximumAgeMs;
+  const historicalPaths = [
+    ...WP8F_V18_ENVELOPE.controlFiles,
+    "worker/index.ts",
+    "worker/mp-06-wp1.ts",
+    "worker/durable-objects.ts",
+    "worker-tests/mp-06-pilot-control.test.ts",
+    "worker-tests/durable-state.test.ts",
+    "tests/mp-06-wp1.test.ts",
+    ...WP8F_V18_ENVELOPE.dependencyFiles,
+    ...WP8F_V18_ENVELOPE.evidenceFiles,
+  ];
+  return (
+    candidate.sourceCommit === grant.sourceCommit &&
+    candidate.originalControlCommit === grant.originalRuntimeControl &&
+    candidate.evidenceBaseline === grant.baseline &&
+    candidate.previousEvidenceBaseline === grant.previousEvidenceBaseline &&
+    candidate.readmeOnlyAdvanceVerified === true &&
+    candidate.ownerIntegrationVerified === true &&
+    candidate.integrationMergeCommit === grant.integrationEvent.mergeCommit &&
+    candidate.integrationIncludesCandidateHistory === true &&
+    candidate.integrationIsReleaseAcceptance === false &&
+    candidate.originalControlIsCandidateAncestor === true &&
+    candidate.candidateIsV19ControlAncestor === true &&
+    isFullSha(candidate.v19ControlCommit, 40) &&
+    candidate.v19ControlCommit !== grant.sourceCommit &&
+    candidate.v19ControlCommit !== grant.originalRuntimeControl &&
+    candidate.v19ControlCommit !== grant.baseline &&
+    // The earlier evidence commit is also forbidden as a new v19 control SHA.
+    candidate.v19ControlCommit !== grant.previousEvidenceBaseline &&
+    candidate.v19ControlParent === grant.baseline &&
+    candidate.v19OwnerDecision === grant.ownerDecision &&
+    candidate.committedPushedAndClean === true &&
+    candidate.v19ControlGatesPassed === true &&
+    candidate.exactDiffReviewed === true &&
+    exactPaths(candidate.postCandidatePaths, [
+      ...WP8F_V18_ENVELOPE.controlFiles,
+      ...WP8F_V18_ENVELOPE.evidenceFiles,
+      "README.md",
+    ]) &&
+    candidate.noDeployAffectingChangesAfterCandidate === true &&
+    Array.isArray(candidate.originalChangedPaths) &&
+    candidate.originalChangedPaths.length === 20 &&
+    exactPaths(candidate.originalChangedPaths, historicalPaths) &&
+    candidate.cleanFrozenCheckout === true &&
+    candidate.nodeVersion === "24.19.0" &&
+    candidate.pnpmVersion === "11.19.0" &&
+    candidate.reproducedArtifactSha256 === grant.artifactSha256 &&
+    candidate.testsPassed === 733 &&
+    candidate.testsFailed === 0 &&
+    candidate.testsSkipped === 0 &&
+    candidate.testsCancelled === 0 &&
+    candidate.auditAllLevelsZero === true &&
+    candidate.protectedChecksumsUnchanged === true &&
+    test.worker === grant.worker &&
+    test.environment === grant.environment &&
+    test.accountIdentity === "c395…407d" &&
+    test.accountIdentityVerified === true &&
+    test.version === WP8F_V18_ENVELOPE.followUpVersion &&
+    test.sourceCommit === WP8F_V18_ENVELOPE.followUpSource &&
+    test.artifactSha256 === WP8F_V18_ENVELOPE.followUpArtifact &&
+    test.sourceArtifactAssociationVerified === true &&
+    test.trafficPercent === 100 &&
+    test.bindingsSecretsAndConfigurationVerified === true &&
+    test.pilot === "STOPPED" &&
+    test.aiAdmission === false &&
+    test.events === 6 &&
+    test.attempts === 6 &&
+    test.consumedMicroUsd === 34082 &&
+    test.reservedMicroUsd === 0 &&
+    test.inFlight === 0 &&
+    test.pendingAttempts === 0 &&
+    test.conservativeMicroUsd === 25864 &&
+    test.reportedUsageMicroUsd === 8218 &&
+    test.usageUnknownAttempts === 2 &&
+    test.settledAttempts === 4 &&
+    test.independentlyVerifiedBilling === "UNKNOWN" &&
+    test.ownerIdentityVerified === true &&
+    test.ownerMode === "HUMAN_HANDOFF" &&
+    test.clarificationUsed === false &&
+    test.pendingTemplate === null &&
+    test.pendingReplies === 0 &&
+    test.draftState === "EXPIRED_PURGED" &&
+    test.draftPurgeInvariantsVerified === true &&
+    test.draftPendingReplies === 0 &&
+    test.pendingDeliveryClaims === 0 &&
+    test.deliveryInventoryVerified === true &&
+    test.schemaObservationVerified === true &&
+    isFullSha(test.schemaSnapshotSha256, 64) &&
+    fresh &&
+    operation.status === "APPROVED_UNUSED" &&
+    operation.used === 0 &&
+    operation.maximum === 1 &&
+    operation.remoteOutcome === "NOT_STARTED" &&
+    operation.verifiedAt === test.observedAt &&
+    containment.independentOfOldRuntime === true &&
+    containment.ownerNoLine === true &&
+    containment.noProviderPath === true &&
+    containment.additiveIdempotentSchemaVerified === true &&
+    containment.preservesLedgerHistoryConversation === true &&
+    containment.unexpectedEventProcedureVerified === true &&
+    containment.failClosedFixForward === true &&
+    containment.automaticRollback === false &&
+    containment.newAuthorityBoundariesRecorded === true &&
+    Array.isArray(containment.failureCases) &&
+    containment.failureCases.length === 7 &&
+    exactPaths(containment.failureCases, grant.requiredFailureCases)
   );
 }

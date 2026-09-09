@@ -1,6 +1,14 @@
 import { readFile } from "node:fs/promises";
 
-import { beforeAll, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   CANONICAL_GITHUB_ISSUES,
@@ -12,6 +20,597 @@ import {
 } from "../src/project-control.js";
 
 const root = new URL("../", import.meta.url);
+
+// Synthetic independent operator evidence, not populated from current-work.
+// Passing this pure assessment is deliberately NOT a deployment capability.
+const v19Target = {
+  worker: "malispang-lineoa-test",
+  sourceCommit: "c59eb5e12bb96a34da38759a5585be67d8c2ab6e",
+  artifactSha256:
+    "2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308",
+};
+const v19Now = Date.parse("2026-09-09T03:00:00.000Z");
+function v19Evidence() {
+  return {
+    provenance: "INDEPENDENT_OPERATOR_VERIFICATION",
+    candidate: {
+      sourceCommit: v19Target.sourceCommit,
+      originalControlCommit: "64d598183ea55c3b79e3f27aa9f9992bc318ac27",
+      evidenceBaseline: "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+      previousEvidenceBaseline: "42026b22069e4299dfc8ff5f73b5077e3b0856fb",
+      readmeOnlyAdvanceVerified: true,
+      ownerIntegrationVerified: true,
+      integrationMergeCommit: "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+      integrationIncludesCandidateHistory: true,
+      integrationIsReleaseAcceptance: false,
+      originalControlIsCandidateAncestor: true,
+      candidateIsV19ControlAncestor: true,
+      v19ControlCommit: "a".repeat(40),
+      v19ControlParent: "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+      v19OwnerDecision: "MP-OD-2026-09-09-V19",
+      committedPushedAndClean: true,
+      v19ControlGatesPassed: true,
+      exactDiffReviewed: true,
+      postCandidatePaths: [
+        "src/project-control.ts",
+        "config/project/current-work.json",
+        "README.md",
+      ],
+      noDeployAffectingChangesAfterCandidate: true,
+      originalChangedPaths: [
+        "PROJECT_CONTROL.md",
+        "config/project/current-work.json",
+        "config/project/current-work.schema.json",
+        "config/project/roadmap.json",
+        "docs/project/EXECUTION_GATES.md",
+        "docs/project/OWNER_DECISION_LOG.md",
+        "docs/project/ROADMAP_CHANGELOG.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "src/project-control-cli.ts",
+        "src/project-control.ts",
+        "tests/mp-06-wp1.test.ts",
+        "tests/project-control.test.ts",
+        "worker-tests/durable-state.test.ts",
+        "worker-tests/mp-06-pilot-control.test.ts",
+        "worker/durable-objects.ts",
+        "worker/index.ts",
+        "worker/mp-06-wp1.ts",
+        "docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md",
+      ],
+      cleanFrozenCheckout: true,
+      nodeVersion: "24.19.0",
+      pnpmVersion: "11.19.0",
+      reproducedArtifactSha256: v19Target.artifactSha256,
+      testsPassed: 733,
+      testsFailed: 0,
+      testsSkipped: 0,
+      testsCancelled: 0,
+      auditAllLevelsZero: true,
+      protectedChecksumsUnchanged: true,
+    },
+    test: {
+      worker: v19Target.worker,
+      environment: "TEST_ONLY",
+      accountIdentity: "c395…407d",
+      accountIdentityVerified: true,
+      version: "8486019d-9b62-4de9-ae15-6299909a23d9",
+      sourceCommit: "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
+      artifactSha256:
+        "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
+      sourceArtifactAssociationVerified: true,
+      trafficPercent: 100,
+      bindingsSecretsAndConfigurationVerified: true,
+      pilot: "STOPPED",
+      aiAdmission: false,
+      events: 6,
+      attempts: 6,
+      consumedMicroUsd: 34082,
+      reservedMicroUsd: 0,
+      inFlight: 0,
+      pendingAttempts: 0,
+      conservativeMicroUsd: 25864,
+      reportedUsageMicroUsd: 8218,
+      usageUnknownAttempts: 2,
+      settledAttempts: 4,
+      independentlyVerifiedBilling: "UNKNOWN",
+      ownerIdentityVerified: true,
+      ownerMode: "HUMAN_HANDOFF",
+      clarificationUsed: false,
+      pendingTemplate: null,
+      pendingReplies: 0,
+      draftState: "EXPIRED_PURGED",
+      draftPurgeInvariantsVerified: true,
+      draftPendingReplies: 0,
+      pendingDeliveryClaims: 0,
+      deliveryInventoryVerified: true,
+      schemaObservationVerified: true,
+      schemaSnapshotSha256: "b".repeat(64),
+      observedAt: v19Now,
+    },
+    operation: {
+      status: "APPROVED_UNUSED",
+      used: 0,
+      maximum: 1,
+      remoteOutcome: "NOT_STARTED",
+      verifiedAt: v19Now,
+    },
+    containment: {
+      independentOfOldRuntime: true,
+      ownerNoLine: true,
+      noProviderPath: true,
+      additiveIdempotentSchemaVerified: true,
+      preservesLedgerHistoryConversation: true,
+      unexpectedEventProcedureVerified: true,
+      failClosedFixForward: true,
+      automaticRollback: false,
+      newAuthorityBoundariesRecorded: true,
+      failureCases: [
+        "BEFORE_REMOTE_MUTATION",
+        "REMOTE_MUTATION_REJECTED",
+        "REMOTE_OUTCOME_UNKNOWN",
+        "VERSION_CREATED_TRAFFIC_UNCHANGED",
+        "TRAFFIC_CHANGED_VERIFICATION_FAILED",
+        "SCHEMA_MIGRATION_FAILED",
+        "UNEXPECTED_EVENT_DURING_DEPLOYMENT",
+      ],
+    },
+  };
+}
+function assessV19(evidence: unknown = v19Evidence(), target = v19Target) {
+  return evaluateProjectAction(
+    roadmap,
+    currentWork,
+    "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS",
+    target,
+    evidence,
+  );
+}
+
+describe("v19 exact preparation-only authorization", () => {
+  it("records the Owner PR merge without self-authorizing acceptance or hiding full-history integration", () => {
+    const work = currentWork as {
+      wp8fExactDeploymentPreparation: {
+        integrationEvent: Record<string, unknown>;
+      };
+      conflicts: { code: string }[];
+    };
+    const event = work.wp8fExactDeploymentPreparation.integrationEvent;
+    expect(event.pullRequest).toBe(14);
+    expect(event.includesFullBranchHistory).toBe(true);
+    expect(event.status).toBe("INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW");
+    for (const key of Object.keys(event)) {
+      const changed = clone(currentWork) as typeof work;
+      changed.wp8fExactDeploymentPreparation.integrationEvent[key] =
+        "UNVERIFIED";
+      expect(validateProjectControl(roadmap, changed).errors, key).toContain(
+        "V19_INTEGRATIONEVENT_INVALID",
+      );
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          changed,
+          "DEPLOY_TEST",
+          v19Target,
+          v19Evidence(),
+        ).allowed,
+      ).toBe(false);
+    }
+    for (const changes of [
+      { testAcceptancePassed: true },
+      { finalSecurityReleaseReviewPassed: true },
+      { productionAcceptancePassed: true },
+      { deploymentOccurredByIntegration: true },
+      { additionalPrOrMergeAuthorized: true },
+      { includesFullBranchHistory: false },
+    ]) {
+      const changed = clone(currentWork) as typeof work;
+      Object.assign(
+        changed.wp8fExactDeploymentPreparation.integrationEvent,
+        changes,
+      );
+      expect(validateProjectControl(roadmap, changed).errors).toContain(
+        "V19_INTEGRATIONEVENT_INVALID",
+      );
+    }
+    const stale = clone(currentWork) as typeof work;
+    stale.conflicts[0]!.code = "DEFAULT_BRANCH_DRIFT";
+    expect(validateProjectControl(roadmap, stale).errors).toEqual(
+      expect.arrayContaining([
+        "STALE_PRE_INTEGRATION_CONFLICT",
+        "OWNER_INTEGRATION_EVENT_NOT_RECORDED",
+      ]),
+    );
+  });
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(v19Now);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("requires independent complete evidence and never turns readiness into remote execution", () => {
+    expect(assessV19()).toEqual({
+      allowed: true,
+      reason: "READY_FOR_EXACT_TEST_DEPLOYMENT",
+    });
+    for (const action of [
+      "DEPLOY_TEST",
+      "UPLOAD_TEST_VERSION",
+      "CREATE_TEST_VERSION",
+      "CHANGE_TEST_TRAFFIC",
+      "OPEN_CONTINUATION",
+      "TEST_ACCEPTANCE_COMPLETION_WP8F",
+      "RECOVER_CONVERSATION",
+      "ROLLBACK_TEST",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+    ])
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          currentWork,
+          action,
+          v19Target,
+          v19Evidence(),
+        ).allowed,
+        action,
+      ).toBe(false);
+  });
+  it("requires every candidate, observation, operation and containment field rather than manifest self-attestation", () => {
+    for (const group of [
+      "candidate",
+      "test",
+      "operation",
+      "containment",
+    ] as const) {
+      for (const field of Object.keys(v19Evidence()[group])) {
+        const evidence = v19Evidence();
+        Reflect.deleteProperty(evidence[group], field);
+        expect(assessV19(evidence).allowed, `${group}.${field}`).toBe(false);
+      }
+      const missing = v19Evidence();
+      Reflect.deleteProperty(missing, group);
+      expect(assessV19(missing).allowed, group).toBe(false);
+    }
+    for (const input of [
+      undefined,
+      null,
+      {},
+      currentWork,
+      { provenance: "CURRENT_WORK_MANIFEST", ...validCandidateEvidence() },
+      { ...v19Evidence(), provenance: "CURRENT_WORK_MANIFEST" },
+      { ...v19Evidence(), test: currentWork },
+    ])
+      expect(assessV19(input === undefined ? null : input).allowed).toBe(false);
+  });
+  it("pins exact source and artifact, never evidence HEAD or current/latest aliases", () => {
+    for (const field of ["sourceCommit", "artifactSha256", "worker"] as const)
+      for (const value of [
+        "latest",
+        "active",
+        "UNKNOWN",
+        "*",
+        "42026b22069e4299dfc8ff5f73b5077e3b0856fb",
+        "0".repeat(64),
+      ])
+        expect(
+          assessV19(v19Evidence(), { ...v19Target, [field]: value }).allowed,
+        ).toBe(false);
+  });
+  it("pins the original control-to-candidate-to-v19 lineage without pretending v19 precedes the frozen runtime", () => {
+    for (const changes of [
+      { originalControlCommit: "a".repeat(40) },
+      { v19ControlCommit: v19Target.sourceCommit },
+      { v19ControlCommit: "42026b22069e4299dfc8ff5f73b5077e3b0856fb" },
+      { v19ControlCommit: "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f" },
+      { v19ControlParent: "42026b22069e4299dfc8ff5f73b5077e3b0856fb" },
+      { v19ControlParent: "3db7738da3edc3da265ebb623190de03a629c0ff" },
+      { candidateIsV19ControlAncestor: false },
+      { originalControlIsCandidateAncestor: false },
+      { v19OwnerDecision: "SELF_APPROVED" },
+      { evidenceBaseline: v19Target.sourceCommit },
+      { noDeployAffectingChangesAfterCandidate: false },
+      { postCandidatePaths: ["worker/index.ts"] },
+      { postCandidatePaths: ["package.json"] },
+      { postCandidatePaths: ["wrangler.jsonc"] },
+      { postCandidatePaths: ["./src/project-control.ts"] },
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.candidate, changes);
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("requires all twenty original changed paths with no duplicates or unknown path", () => {
+    for (const paths of [
+      [],
+      ["*"],
+      v19Evidence().candidate.originalChangedPaths.slice(1),
+      [
+        ...v19Evidence().candidate.originalChangedPaths.slice(1),
+        "worker/index.ts",
+      ],
+      [
+        ...v19Evidence().candidate.originalChangedPaths.slice(1),
+        "worker/routing.ts",
+      ],
+    ]) {
+      const evidence = v19Evidence();
+      evidence.candidate.originalChangedPaths = paths;
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("rejects stale, future and nonnumeric observations at the controlled clock boundary", () => {
+    for (const value of [
+      v19Now - 120001,
+      v19Now + 1,
+      NaN,
+      Infinity,
+      "UNKNOWN",
+      null,
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.test, { observedAt: value });
+      Object.assign(evidence.operation, { verifiedAt: value });
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+    const boundary = v19Evidence();
+    boundary.test.observedAt = v19Now - 120000;
+    boundary.operation.verifiedAt = boundary.test.observedAt;
+    expect(assessV19(boundary).allowed).toBe(true);
+  });
+  it("rejects swapped/unknown triplets, artifact drift, rollback-pair misuse and wrong account/environment", () => {
+    for (const changes of [
+      { version: "latest" },
+      { version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072" },
+      { sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a" },
+      { artifactSha256: v19Target.artifactSha256 },
+      { sourceCommit: v19Target.sourceCommit },
+      { accountIdentity: "OTHER_ACCOUNT" },
+      { environment: "PRODUCTION" },
+      { worker: "malispang-lineoa" },
+      { trafficPercent: 99 },
+      { sourceArtifactAssociationVerified: false },
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.test, changes);
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("denies ledger drift, active work, pending claims and unknown schema instead of treating unknown as zero", () => {
+    for (const changes of [
+      { events: 5 },
+      { events: 7 },
+      { attempts: 7 },
+      { consumedMicroUsd: 34081 },
+      { reservedMicroUsd: 1 },
+      { inFlight: 1 },
+      { pendingAttempts: 1 },
+      { pendingDeliveryClaims: 1 },
+      { pendingDeliveryClaims: "UNKNOWN" },
+      { deliveryInventoryVerified: false },
+      { schemaObservationVerified: false },
+      { schemaSnapshotSha256: "UNKNOWN" },
+      { pilot: "ACTIVE" },
+      { aiAdmission: true },
+      { ownerIdentityVerified: false },
+      { ownerMode: "BOT_ACTIVE" },
+      { pendingTemplate: "T-C01" },
+      { clarificationUsed: true },
+      { draftPendingReplies: 1 },
+      { draftState: "ACTIVE" },
+      { pendingReplies: 1 },
+      { conservativeMicroUsd: 0 },
+      { reportedUsageMicroUsd: 34082 },
+      { usageUnknownAttempts: 0 },
+      { settledAttempts: 6 },
+      { independentlyVerifiedBilling: "VERIFIED" },
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.test, changes);
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("keeps outcome uncertainty consumed and blocked even when a mutable counter is reset to zero", () => {
+    for (const remoteOutcome of [
+      "UNKNOWN",
+      "REJECTED",
+      "VERSION_CREATED",
+      "TRAFFIC_CHANGED",
+      "SUCCEEDED",
+    ])
+      for (const used of [0, 1]) {
+        const evidence = v19Evidence();
+        Object.assign(evidence.operation, { remoteOutcome, used });
+        expect(assessV19(evidence).allowed).toBe(false);
+      }
+    for (const changes of [
+      { used: 1 },
+      { used: -1 },
+      { maximum: 2 },
+      { status: "APPROVED_USED" },
+      { verifiedAt: v19Now - 1 },
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.operation, changes);
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("requires independent containment, all seven failure branches and new-approval boundaries", () => {
+    for (const changes of [
+      { independentOfOldRuntime: false },
+      { automaticRollback: true },
+      { unexpectedEventProcedureVerified: false },
+      { additiveIdempotentSchemaVerified: false },
+      { preservesLedgerHistoryConversation: false },
+      { noProviderPath: false },
+      { ownerNoLine: false },
+      { failClosedFixForward: false },
+      { newAuthorityBoundariesRecorded: false },
+      { failureCases: v19Evidence().containment.failureCases.slice(1) },
+      { failureCases: Array(7).fill("BEFORE_REMOTE_MUTATION") },
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.containment, changes);
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("keeps exact tests, audit, toolchain and artifact evidence tied to the candidate", () => {
+    for (const changes of [
+      { testsPassed: 732 },
+      { testsFailed: 1 },
+      { testsSkipped: 1 },
+      { testsCancelled: 1 },
+      { auditAllLevelsZero: false },
+      { protectedChecksumsUnchanged: false },
+      { cleanFrozenCheckout: false },
+      { nodeVersion: "24.18.0" },
+      { pnpmVersion: "11.18.0" },
+      { reproducedArtifactSha256: "0".repeat(64) },
+      { committedPushedAndClean: false },
+      { v19ControlGatesPassed: false },
+      { exactDiffReviewed: false },
+      { readmeOnlyAdvanceVerified: false },
+      { ownerIntegrationVerified: false },
+      { integrationMergeCommit: "a".repeat(40) },
+      { integrationIncludesCandidateHistory: false },
+      { integrationIsReleaseAcceptance: true },
+    ]) {
+      const evidence = v19Evidence();
+      Object.assign(evidence.candidate, changes);
+      expect(assessV19(evidence).allowed).toBe(false);
+    }
+  });
+  it("closes the new preparation record and schema, preserving historical v18 invariants", () => {
+    const current = currentWork as {
+      wp8fExactDeploymentPreparation: Record<string, unknown>;
+    };
+    const schema = currentWorkSchema as {
+      required: string[];
+      properties: Record<string, { const: unknown }>;
+    };
+    expect(schema.required).toContain("wp8fExactDeploymentPreparation");
+    expect(schema.properties.wp8fExactDeploymentPreparation?.const).toEqual(
+      current.wp8fExactDeploymentPreparation,
+    );
+    expect(current.wp8fExactDeploymentPreparation.status).toBe(
+      "APPROVED_UNUSED",
+    );
+    expect(current.wp8fExactDeploymentPreparation.operationsUsed).toBe(0);
+    expect(
+      current.wp8fExactDeploymentPreparation.remoteMutationPermittedThisRound,
+    ).toBe(false);
+    for (const key of [
+      ...Object.keys(current.wp8fExactDeploymentPreparation),
+      "allowAll",
+      "currentWorkIsRemoteEvidence",
+    ]) {
+      const changed = clone(currentWork) as typeof current;
+      changed.wp8fExactDeploymentPreparation[key] = "UNREVIEWED";
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+        key,
+      ).toBeGreaterThan(0);
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          changed,
+          "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS",
+          v19Target,
+          v19Evidence(),
+        ).allowed,
+      ).toBe(false);
+    }
+    const missing = clone(currentWork) as Record<string, unknown>;
+    delete missing.wp8fExactDeploymentPreparation;
+    expect(validateProjectControl(roadmap, missing).errors).toContain(
+      "V19_PREPARATION_MISSING",
+    );
+    const changedSchema = clone(currentWorkSchema) as typeof schema;
+    delete changedSchema.properties.wp8fExactDeploymentPreparation;
+    expect(validateSchemaDocuments(roadmapSchema, changedSchema)).toContain(
+      "V19_PREPARATION_SCHEMA_NOT_CLOSED",
+    );
+  });
+  it("permits only the ten control paths and two control-evidence documents, never old runtime scopes", () => {
+    const work = currentWork as {
+      wp8fExecutionEnvelope: {
+        controlFiles: string[];
+        remediationFiles: string[];
+        dependencyFiles: string[];
+      };
+    };
+    expect(work.wp8fExecutionEnvelope.controlFiles).toHaveLength(10);
+    expect(
+      evaluateWp8fPaths(
+        roadmap,
+        currentWork,
+        "CONTROL_TRANSITION",
+        work.wp8fExecutionEnvelope.controlFiles,
+      ).allowed,
+    ).toBe(true);
+    for (const path of [
+      ...work.wp8fExecutionEnvelope.remediationFiles,
+      ...work.wp8fExecutionEnvelope.dependencyFiles,
+      "wrangler.jsonc",
+      "unknown.md",
+      "*",
+      "./PROJECT_CONTROL.md",
+      "../PROJECT_CONTROL.md",
+    ])
+      for (const phase of [
+        "CONTROL_TRANSITION",
+        "EVIDENCE",
+        "SECURITY_REMEDIATION",
+        "DEPENDENCY_REMEDIATION",
+      ])
+        expect(
+          evaluateWp8fPaths(roadmap, currentWork, phase, [path]).allowed,
+          `${phase}/${path}`,
+        ).toBe(false);
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "EVIDENCE", [
+        "docs/project/EXECUTION_GATES.md",
+        "docs/project/ROADMAP_CHANGELOG.md",
+      ]).allowed,
+    ).toBe(true);
+  });
+  it("requires the distinct append-only v19 Owner decision, not a copied old approval or self-approval", async () => {
+    const text = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    for (const marker of [
+      "MP-OD-2026-09-09-V19",
+      "supersedes 2026.09.09-v18",
+      v19Target.sourceCommit,
+      v19Target.artifactSha256,
+      "APPROVED_UNUSED, operations used0/maximum1",
+      "STOP_BEFORE_FIRST_REMOTE_MUTATION",
+      "ambiguous remote outcome consumes the single operation",
+      "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+      "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
+    ])
+      expect(
+        validateWp8fOwnerDecisionRecord(text.replaceAll(marker, "UNAPPROVED")),
+        marker,
+      ).toBe(false);
+    const r = clone(roadmap) as {
+      version: string;
+      ownerDecision: { decisionId: string };
+    };
+    r.version = "2026.09.09-v18";
+    r.ownerDecision.decisionId = "MP-OD-2026-09-09-V18";
+    expect(
+      evaluateProjectAction(r, currentWork, "PREPARE_EXACT_TEST_DEPLOYMENT")
+        .allowed,
+    ).toBe(false);
+  });
+});
 let roadmap: unknown;
 let currentWork: unknown;
 let roadmapSchema: unknown;
@@ -27,10 +626,10 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.09-v18 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.09-v19 preparation snapshot and records premature Owner integration", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
-      warnings: ["DEFAULT_BRANCH_DRIFT"],
+      warnings: ["INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW"],
     });
     expect(validateSchemaDocuments(roadmapSchema, currentWorkSchema)).toEqual(
       [],
@@ -67,7 +666,7 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
       "WP8F_TEST_ACCEPTANCE_COMPLETION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_LOCAL_DELIVERY_FENCING_WP8F_ONLY",
+      "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -409,10 +1008,10 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
     });
   });
 
-  it("authorizes scoped acceptance work while deployment and incomplete draft PR remain blocked", () => {
+  it("authorizes preparation only while operational acceptance, deployment and draft PR remain blocked", () => {
     const record = currentWork as { allowedScope: string[] };
     expect(record.allowedScope).toContain(
-      "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
+      "MP_06_WP8F_EXACT_TEST_DEPLOYMENT_PREPARATION",
     );
     expect(
       evaluateProjectAction(
@@ -473,6 +1072,16 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
         roadmap,
         currentWork,
         "TEST_ACCEPTANCE_COMPLETION_WP8F",
+      ),
+    ).toEqual({
+      allowed: false,
+      reason: "TEST_ACCEPTANCE_COMPLETION_WP8F_NOT_AUTHORIZED",
+    });
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "PREPARE_EXACT_TEST_DEPLOYMENT",
       ),
     ).toEqual({ allowed: true, reason: "AUTHORIZED_BY_CURRENT_WORK" });
     expect(evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST")).toEqual({
@@ -1071,7 +1680,7 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
     };
     missingAssessmentScope.allowedScope =
       missingAssessmentScope.allowedScope.filter(
-        (scope) => scope !== "MP_06_WP8F_TEST_ACCEPTANCE_COMPLETION",
+        (scope) => scope !== "MP_06_WP8F_EXACT_TEST_DEPLOYMENT_PREPARATION",
       );
     expect(
       validateProjectControl(roadmap, missingAssessmentScope).errors,
@@ -1913,7 +2522,7 @@ function validCandidateEvidence(
 }
 
 describe("v16 explicit Owner execution envelope", () => {
-  it("v18 permits only the three exact dependency-remediation paths under their own phase", () => {
+  it("v19 freezes all three historically approved v18 dependency paths instead of renewing write authority", () => {
     for (const path of [
       "package.json",
       "pnpm-workspace.yaml",
@@ -1923,7 +2532,7 @@ describe("v16 explicit Owner execution envelope", () => {
         evaluateWp8fPaths(roadmap, currentWork, "DEPENDENCY_REMEDIATION", [
           path,
         ]).allowed,
-      ).toBe(true);
+      ).toBe(false);
       expect(
         evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [path])
           .allowed,
@@ -2024,7 +2633,7 @@ describe("v16 explicit Owner execution envelope", () => {
       ).toBeGreaterThan(0);
     }
   });
-  it("v18 adds only the explicitly approved durable-state tests path", () => {
+  it("retains the v18 durable-state allowlist as history but does not permit its mutation in v19", () => {
     const envelope = (
       currentWork as { wp8fExecutionEnvelope: { remediationFiles: string[] } }
     ).wp8fExecutionEnvelope;
@@ -2033,7 +2642,7 @@ describe("v16 explicit Owner execution envelope", () => {
       evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [
         "worker-tests/durable-state.test.ts",
       ]).allowed,
-    ).toBe(true);
+    ).toBe(false);
     for (const path of [
       "worker-tests/draft-order-state.test.ts",
       "worker/draft-order-objects.ts",
@@ -2076,7 +2685,7 @@ describe("v16 explicit Owner execution envelope", () => {
       ).allowed,
     ).toBe(false);
   });
-  it("v18 retains local implementation but has zero operational grants", () => {
+  it("retains historical v18 zero operational grants and removes its local implementation permission in v19", () => {
     const envelope = (
       currentWork as { wp8fExecutionEnvelope: Record<string, unknown> }
     ).wp8fExecutionEnvelope;
@@ -2101,7 +2710,7 @@ describe("v16 explicit Owner execution envelope", () => {
         currentWork,
         "TEST_ACCEPTANCE_COMPLETION_WP8F",
       ).allowed,
-    ).toBe(true);
+    ).toBe(false);
   });
   it("v18 cannot weaken any delivery invariant or add compatibility fields", () => {
     const original = (
@@ -2229,7 +2838,7 @@ describe("v16 explicit Owner execution envelope", () => {
       ).toBe(false);
     }
   });
-  it("limits v16 runtime and evidence separately without retaining superseded diagnostics authority", () => {
+  it("does not reuse historical v16/v18 runtime or evidence paths as v19 write authority", () => {
     const envelope = (
       currentWork as {
         wp8fExecutionEnvelope: {
@@ -2242,7 +2851,7 @@ describe("v16 explicit Owner execution envelope", () => {
       expect(
         evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [path])
           .allowed,
-      ).toBe(true);
+      ).toBe(false);
     }
     for (const path of [
       "worker/routing.ts",
@@ -2267,7 +2876,7 @@ describe("v16 explicit Owner execution envelope", () => {
         "EVIDENCE",
         envelope.evidenceFiles,
       ).allowed,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       evaluateWp8fPaths(roadmap, currentWork, "EVIDENCE", ["worker/index.ts"])
         .allowed,
@@ -2374,12 +2983,12 @@ describe("v16 explicit Owner execution envelope", () => {
     sourceCommit: "1".repeat(40),
     artifactSha256: "2".repeat(64),
   };
-  it("rejects runtime paths outside the exact remediation files, aliases and unknown phases", () => {
+  it("rejects all runtime paths, including former remediation files, aliases and unknown phases in v19", () => {
     expect(
       evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [
         "worker/index.ts",
       ]).allowed,
-    ).toBe(true);
+    ).toBe(false);
     for (const paths of [
       ["worker/mp-06-pilot-control.ts"],
       ["src/mp-06/evaluator.ts"],

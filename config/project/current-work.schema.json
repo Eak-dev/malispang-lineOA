@@ -37,6 +37,7 @@
     "wp8fTestAcceptancePlan",
     "wp8fApprovedDeployment",
     "wp8fExecutionEnvelope",
+    "wp8fExactDeploymentPreparation",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -57,7 +58,7 @@
       "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
     },
     "status": {
-      "const": "AUTHORIZED_LOCAL_DELIVERY_FENCING_WP8F_ONLY"
+      "const": "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY"
     },
     "base": {
       "type": "object",
@@ -106,6 +107,7 @@
         "durableLifecycleDiagnosticsRemediationWp8d",
         "exactStateReconciliationControlledRetestWp8e",
         "testAcceptanceCompletionWp8f",
+        "testDeploymentPreparationWp8f",
         "policySnapshot",
         "policySnapshotReadOnly",
         "commit",
@@ -135,7 +137,8 @@
         "providerReconciliationControlledRetestWp8c": { "const": false },
         "durableLifecycleDiagnosticsRemediationWp8d": { "const": false },
         "exactStateReconciliationControlledRetestWp8e": { "const": false },
-        "testAcceptanceCompletionWp8f": { "const": true },
+        "testAcceptanceCompletionWp8f": { "const": false },
+        "testDeploymentPreparationWp8f": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
@@ -1785,6 +1788,69 @@
         "liveProviderAuthorization": { "const": false },
         "productionStatus": { "const": "NO_GO" },
         "issueMustRemainOpen": { "const": true }
+      }
+    },
+    "wp8fExactDeploymentPreparation": {
+      "const": {
+        "ownerDecision": "MP-OD-2026-09-09-V19",
+        "supersedes": "2026.09.09-v18",
+        "baseline": "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+        "previousEvidenceBaseline": "42026b22069e4299dfc8ff5f73b5077e3b0856fb",
+        "integrationEvent": {
+          "pullRequest": 14,
+          "status": "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
+          "performedBy": "OWNER",
+          "headCommit": "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+          "defaultBranch": "codex/phase-1a-foundation",
+          "mergeCommit": "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+          "mergedAt": "2026-09-09T02:40:20Z",
+          "includesFullBranchHistory": true,
+          "finalSecurityReleaseReviewPassed": false,
+          "testAcceptancePassed": false,
+          "productionAcceptancePassed": false,
+          "deploymentOccurredByIntegration": false,
+          "additionalPrOrMergeAuthorized": false
+        },
+        "originalRuntimeControl": "64d598183ea55c3b79e3f27aa9f9992bc318ac27",
+        "sourceCommit": "c59eb5e12bb96a34da38759a5585be67d8c2ab6e",
+        "artifactSha256": "2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308",
+        "artifactFile": "index.js",
+        "worker": "malispang-lineoa-test",
+        "environment": "TEST_ONLY",
+        "domain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
+        "historicalEnvelope": "V18_READ_ONLY_NOT_CURRENT_WRITE_AUTHORITY",
+        "status": "APPROVED_UNUSED",
+        "operationsUsed": 0,
+        "maximumOperations": 1,
+        "remoteMutationPermittedThisRound": false,
+        "firstRemoteMutation": "UPLOAD_OR_CREATE_VERSION_OR_CHANGE_TRAFFIC",
+        "executionGate": "FRESH_GATES_AND_NEW_OWNER_EXECUTE_CONFIRMATION",
+        "ambiguousOutcome": "CONSUME_OPERATION_NO_RETRY_OR_REISSUE",
+        "counterResetPermitted": false,
+        "automaticRollback": false,
+        "containment": "INDEPENDENT_FAIL_CLOSED_FIX_FORWARD_NOT_OLD_UNFENCED_RUNTIME",
+        "freshObservationMaximumAgeMs": 120000,
+        "missingEvidence": "DENY_NOT_UNKNOWN_AS_ZERO",
+        "requiredFullCandidateTests": 733,
+        "requiredAuditFindingsAllLevels": 0,
+        "runtimeDependencyChanges": false,
+        "sessionUatLineRecoveryRollbackPr": false,
+        "productionQueryOrMutation": false,
+        "issueClosure": false,
+        "merge": false,
+        "evidenceFiles": [
+          "docs/project/EXECUTION_GATES.md",
+          "docs/project/ROADMAP_CHANGELOG.md"
+        ],
+        "requiredFailureCases": [
+          "BEFORE_REMOTE_MUTATION",
+          "REMOTE_MUTATION_REJECTED",
+          "REMOTE_OUTCOME_UNKNOWN",
+          "VERSION_CREATED_TRAFFIC_UNCHANGED",
+          "TRAFFIC_CHANGED_VERIFICATION_FAILED",
+          "SCHEMA_MIGRATION_FAILED",
+          "UNEXPECTED_EVENT_DURING_DEPLOYMENT"
+        ]
       }
     },
     "wp8fExecutionEnvelope": {
