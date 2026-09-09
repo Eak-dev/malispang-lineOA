@@ -3,6 +3,8 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "resolveJsonModule": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -13,9 +15,11 @@
     "types": ["node", "vitest/globals"]
   },
   "include": [
+    "benchmark/**/*.ts",
     "src/**/*.ts",
     "tests/**/*.ts",
     "scripts/**/*.ts",
+    "scripts/**/*.mjs",
     "vitest.config.ts",
     "vitest.worker.config.ts",
     "eslint.config.js"

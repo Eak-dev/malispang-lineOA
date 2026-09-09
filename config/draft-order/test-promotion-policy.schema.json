@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://malispang.invalid/schemas/test-promotion-policy.schema.json",
+  "title": "MalisPang TEST promotion policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "environment",
+    "accountName",
+    "policyVersion",
+    "defaultEnabled",
+    "rule",
+    "activation"
+  ],
+  "properties": {
+    "environment": { "const": "TEST" },
+    "accountName": { "const": "มะลิปัง TEST" },
+    "policyVersion": { "type": "string", "minLength": 1 },
+    "defaultEnabled": { "const": false },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligibleProductSize",
+        "eligibleQuantity",
+        "bundlePriceSatang",
+        "remainderPriceSatang",
+        "mixEligibleFillings",
+        "excluded"
+      ],
+      "properties": {
+        "eligibleProductSize": { "const": "NORMAL" },
+        "eligibleQuantity": { "const": 3 },
+        "bundlePriceSatang": { "const": 10000 },
+        "remainderPriceSatang": { "const": 3900 },
+        "mixEligibleFillings": { "const": true },
+        "excluded": {
+          "type": "array",
+          "const": ["SMALL", "CHIFFON", "COOKIE", "OTHER"]
+        }
+      }
+    },
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiresTestAdminAuthentication",
+        "requiresSeparateOwnerAllowlist",
+        "requiresStartAndEndTime",
+        "timeZone",
+        "timestampPrecision",
+        "requiresSameCalendarDay",
+        "latestEndLocalTime",
+        "endMustBeAfterStart",
+        "autoDisableAtEnd",
+        "approvedOwnerAllowlist",
+        "appliesTo",
+        "ownerIdentifierStoredInRepository",
+        "rejectedChangesAreAuditedRedacted"
+      ],
+      "properties": {
+        "requiresTestAdminAuthentication": { "const": true },
+        "requiresSeparateOwnerAllowlist": { "const": true },
+        "requiresStartAndEndTime": { "const": true },
+        "timeZone": { "const": "Asia/Bangkok" },
+        "timestampPrecision": { "const": "WHOLE_SECOND" },
+        "requiresSameCalendarDay": { "const": true },
+        "latestEndLocalTime": { "const": "23:59:59" },
+        "endMustBeAfterStart": { "const": true },
+        "autoDisableAtEnd": { "const": true },
+        "approvedOwnerAllowlist": {
+          "type": "array",
+          "const": ["OWNER_TEST"]
+        },
+        "appliesTo": {
+          "type": "array",
+          "const": ["NEW_DRAFT", "STAFF_CREATED_REPRICING_REVISION"]
+        },
+        "ownerIdentifierStoredInRepository": { "const": true },
+        "rejectedChangesAreAuditedRedacted": { "const": true }
+      }
+    }
+  }
+}

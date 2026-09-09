@@ -14,6 +14,25 @@ const map = JSON.parse(
   ),
 ) as RichMenuActionMap;
 
+const apiPayload = JSON.parse(
+  readFileSync(
+    "config/rich-menu/malispang-test-rich-menu-postback-v2.json",
+    "utf8",
+  ),
+) as {
+  name: string;
+  selected: boolean;
+  areas: {
+    bounds: { x: number; y: number; width: number; height: number };
+    action: {
+      type: "postback" | "uri";
+      data?: string;
+      displayText?: string;
+      uri?: string;
+    };
+  }[];
+};
+
 describe("Test Rich Menu action map", () => {
   it("maps the original 2500x1686 six-area grid without gaps or overlaps", () => {
     expect(validateRichMenuActionMap(map)).toEqual({ valid: true, errors: [] });
@@ -28,14 +47,20 @@ describe("Test Rich Menu action map", () => {
     });
   });
 
-  it("uses safe native text actions and the exact approved public URLs", () => {
-    const textActions = map.areas
-      .filter((area) => area.action.type === "text")
-      .map((area) => area.action.text);
-    expect(textActions).toEqual([
-      "สะสมแต้มและโปรโมชั่น",
-      "Delivery",
-      "เมนูขนมปัง",
+  it("uses exact TEST postbacks and the approved public URLs", () => {
+    const postbackActions = map.areas
+      .filter((area) => area.action.type === "postback")
+      .map((area) => ({
+        data: area.action.data,
+        displayText: area.action.displayText,
+      }));
+    expect(postbackActions).toEqual([
+      {
+        data: "test:show_rewards",
+        displayText: "สะสมแต้มและโปรโมชั่น",
+      },
+      { data: "test:show_delivery", displayText: "Delivery" },
+      { data: "test:show_menu", displayText: "เมนูขนมปัง" },
     ]);
     expect(
       map.areas
@@ -48,6 +73,47 @@ describe("Test Rich Menu action map", () => {
     expect(
       map.areas.filter((area) => area.action.type === "none"),
     ).toHaveLength(1);
+  });
+
+  it("keeps the API-ready payload TEST-only and omits the no-action panel", () => {
+    expect(apiPayload).toMatchObject({
+      name: "MalisPang TEST RM 39-50 postback v2",
+      selected: true,
+    });
+    expect(apiPayload.areas).toHaveLength(5);
+    expect(
+      apiPayload.areas
+        .filter((area) => area.action.type === "postback")
+        .map((area) => area.action.data),
+    ).toEqual(["test:show_rewards", "test:show_delivery", "test:show_menu"]);
+    expect(JSON.stringify(apiPayload)).not.toMatch(/prod(uction)?[:_-]/i);
+    expect(JSON.stringify(apiPayload)).not.toMatch(
+      /token|secret|reward.?card.?url/i,
+    );
+    expect(
+      apiPayload.areas.some(
+        (area) =>
+          area.bounds.x === 0 &&
+          area.bounds.y === 843 &&
+          area.bounds.width === 833 &&
+          area.bounds.height === 843,
+      ),
+    ).toBe(false);
+
+    const intendedAreas = map.areas
+      .filter((area) => area.action.type !== "none")
+      .map((area) => ({
+        bounds: area.bounds,
+        action:
+          area.action.type === "postback"
+            ? {
+                type: area.action.type,
+                data: area.action.data,
+                displayText: area.action.displayText,
+              }
+            : { type: area.action.type, uri: area.action.uri },
+      }));
+    expect(apiPayload.areas).toEqual(intendedAreas);
   });
 
   it("rejects gaps, overlaps, unsafe URLs, and Production account names", () => {
@@ -80,6 +146,15 @@ describe("Test Rich Menu action map", () => {
 
     const production = { ...clone(), account: "มะลิปัง" };
     expect(validateRichMenuActionMap(production).valid).toBe(false);
+
+    const unsafePostback = clone() as unknown as {
+      areas: { action: { data?: string } }[];
+    };
+    unsafePostback.areas[0]!.action.data = "prod:show_rewards";
+    expect(
+      validateRichMenuActionMap(unsafePostback as unknown as RichMenuActionMap)
+        .valid,
+    ).toBe(false);
   });
 
   it("records the approved 39-baht price and 50-baht earning rule", () => {

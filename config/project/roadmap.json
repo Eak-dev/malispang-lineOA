@@ -1,0 +1,142 @@
+{
+  "$schema": "./roadmap.schema.json",
+  "schemaVersion": 1,
+  "roadmapId": "MP-ROADMAP",
+  "githubIssue": 9,
+  "repository": "Eak-dev/malispang-lineOA",
+  "version": "2026.09.09-v18",
+  "status": "ACTIVE",
+  "ownerDecision": {
+    "decisionId": "MP-OD-2026-09-09-V18",
+    "decidedAt": "2026-09-09",
+    "supersedes": "2026.09.08-v17"
+  },
+  "sourceOfTruthPrecedence": [
+    "OWNER_DECISION_REPOSITORY_RECORD",
+    "VERSIONED_ROADMAP_MANIFEST",
+    "CURRENT_WORK_MANIFEST",
+    "GITHUB_ROADMAP_AND_AUTHORIZED_ISSUE",
+    "PHASE_DOCUMENTS_AND_MANIFESTS",
+    "CHAT_CONTEXT_ONLY"
+  ],
+  "verifiedLatestBaseline": {
+    "commit": "3db7738da3edc3da265ebb623190de03a629c0ff",
+    "branch": "codex/mp-06-guardrailed-ai",
+    "verifiedAt": "2026-09-09",
+    "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05", "MP-06"]
+  },
+  "authorization": {
+    "testDeploymentAuthorization": false,
+    "testDeploymentOccurred": true,
+    "testDeployment": false,
+    "productionStatus": "NO_GO",
+    "productionAuthorizationReference": null
+  },
+  "items": [
+    {
+      "order": 1,
+      "id": "MP-01",
+      "githubIssue": 8,
+      "title": "Approved Knowledge Base",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 2,
+      "id": "MP-02",
+      "githubIssue": 6,
+      "title": "Conversation UX / Thai Intent Routing",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 3,
+      "id": "MP-03",
+      "githubIssue": 2,
+      "title": "Draft Order",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 4,
+      "id": "MP-04",
+      "githubIssue": 10,
+      "title": "Historical Question Taxonomy / Discovery",
+      "state": "COMPLETED_EVIDENCE"
+    },
+    {
+      "order": 5,
+      "id": "MP-05",
+      "githubIssue": 11,
+      "title": "Versioned Roadmap Governance",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 6,
+      "id": "MP-06",
+      "githubIssue": 12,
+      "title": "Guardrailed AI Answer Pilot — TEST",
+      "state": "CURRENT",
+      "benchmark": {
+        "piiFree": true,
+        "minimumTotal": 5000,
+        "minimumFunctional": 3000,
+        "minimumThaiLanguageVariation": 1000,
+        "minimumAdversarialSafety": 1000,
+        "meaningfullyDistinct": true,
+        "minimumAutoCorrectnessPercent": 98,
+        "riskyStaffOnlyOrFailClosedPercent": 100,
+        "maximumUnsupportedClaims": 0,
+        "maximumPiiOrRawChatLeakage": 0,
+        "authorityFailureFailClosedPercent": 100,
+        "confusionMatrixRequired": true,
+        "falseAutoReportRequired": true
+      }
+    },
+    {
+      "order": 7,
+      "id": "MP-07",
+      "githubIssue": 7,
+      "title": "Staff Stock Confirmation",
+      "state": "PLANNED"
+    },
+    {
+      "order": 8,
+      "id": "MP-08",
+      "githubIssue": 3,
+      "title": "Payment Review / Loyalty Isolation",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 9,
+      "id": "MP-09",
+      "githubIssue": 4,
+      "title": "Staff Operations / Auth / Observability",
+      "state": "PLANNED"
+    },
+    {
+      "order": 10,
+      "id": "MP-10",
+      "githubIssue": 1,
+      "title": "Rich Menu 39 บาท — TEST",
+      "state": "COMPLETED"
+    },
+    {
+      "order": 11,
+      "id": "MP-11",
+      "githubIssue": 13,
+      "title": "Admin Copilot & Conversation Context",
+      "state": "PLANNED_BLOCKED"
+    },
+    {
+      "order": 12,
+      "id": "MP-12",
+      "githubIssue": 5,
+      "title": "Production Readiness / Controlled Rollout",
+      "state": "FINAL_BLOCKED"
+    }
+  ],
+  "externalReferences": {
+    "roadmapIssue": 9,
+    "authorizedIssue": 12,
+    "nextIssue": 7,
+    "lastVerifiedAt": "2026-09-09"
+  }
+}

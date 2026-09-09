@@ -1,9 +1,30 @@
 export { buildFlexMenu, FLEX_MENU_ALT_TEXT } from "./flex-menu.js";
+export {
+  detectConversationIntent,
+  MENU_TEXT_LEXICON,
+  normalizeConversationText,
+} from "./conversation-intents.js";
+export type { ConversationIntent } from "./conversation-intents.js";
 export { validateFlexMenu } from "./flex-validation.js";
 export { RedactedAuditLog } from "./audit-log.js";
 export type { AuditOutcome, RedactedAuditEntry } from "./audit-log.js";
 export { ApprovedFaqKnowledgeBase } from "./faq.js";
-export type { ApprovedFaqRecord, FaqIntent, FaqLookupResult } from "./faq.js";
+export { FAQ_INTENTS } from "./faq.js";
+export type {
+  ApprovedFaqRecord,
+  FaqIntent,
+  FaqLookupResult,
+  FaqProvenance,
+} from "./faq.js";
+export {
+  approvedFaqRecordsFromManifest,
+  parseApprovedKnowledgeManifest,
+  validateApprovedKnowledgeManifest,
+} from "./approved-knowledge-manifest.js";
+export type {
+  ApprovedKnowledgeManifest,
+  KnowledgeManifestRecord,
+} from "./approved-knowledge-manifest.js";
 export { MemoryStore } from "./memory-store.js";
 export {
   MOCK_VALID_SIGNATURE,
@@ -13,8 +34,6 @@ export {
 export type { MockWebhookResult } from "./mock-webhook-pipeline.js";
 export {
   HANDOFF_ACKNOWLEDGEMENT,
-  MOCK_DRAFT_ORDER_NOTICE,
-  MOCK_REWARDS_NOTICE,
   Phase1AService,
   SAFE_FALLBACK,
 } from "./phase1a-service.js";

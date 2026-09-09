@@ -1,0 +1,283 @@
+{
+  "catalogVersion": "TEST-2026-09-01-v1",
+  "checksum": "sha256:a8d6412a49af300ed797a8981b458e534dd4cfc25abec6e1e2887c2c2edfbfb1",
+  "approval": {
+    "status": "APPROVED",
+    "ownerDecisionDate": "2026-09-01",
+    "effectiveFrom": "2026-09-01",
+    "effectiveUntil": null,
+    "source": "Owner decision for GitHub Issue #2"
+  },
+  "products": [
+    {
+      "sku": "BR-N-TRUFFLE-HAM-CHEESE",
+      "displayName": "ทรัฟเฟิลแฮมชีส",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-HAWAIIAN",
+      "displayName": "ฮาวายเอี้ยน",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-TUNA-CORN",
+      "displayName": "ทูน่าคอร์นสลัด",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-HAM-CHEESE",
+      "displayName": "แฮมชีส",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-BUTTER",
+      "displayName": "เนยสด",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-CUSTARD",
+      "displayName": "สังขยา",
+      "aliases": ["สังขยาใบเตย"],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-PORK-FLOSS",
+      "displayName": "หมูหยอง",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-PORK-FLOSS-SAUSAGE",
+      "displayName": "หมูหยองไส้กรอก",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-SAUSAGE",
+      "displayName": "ไส้กรอก",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-SAUSAGE-CHEESE",
+      "displayName": "ไส้กรอกชีส",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-PORK-FLOSS-CHILI",
+      "displayName": "หมูหยองพริกเผา",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-PORK-FLOSS-RAISIN",
+      "displayName": "หมูหยองลูกเกด",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-PORK-FLOSS-SALAD",
+      "displayName": "หมูหยองน้ำสลัด",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-HAM-SALAD",
+      "displayName": "แฮมสลัด",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-HAM-SAUSAGE",
+      "displayName": "แฮมไส้กรอก",
+      "aliases": ["ไส้กรอกแฮม", "แฮม+ไส้กรอก"],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-SAUSAGE-PIZZA",
+      "displayName": "ไส้กรอกพิซซ่า",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-FOI-THONG",
+      "displayName": "ฝอยทอง",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-TARO",
+      "displayName": "เผือก",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-RED-BEAN",
+      "displayName": "ถั่วแดง",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-RAISIN",
+      "displayName": "ลูกเกด",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-N-MIXED",
+      "displayName": "รวมมิตร",
+      "aliases": [],
+      "size": "NORMAL",
+      "unitPriceSatang": 3900,
+      "status": "APPROVED",
+      "promotionEligible": true
+    },
+    {
+      "sku": "BR-S-FOI-THONG",
+      "displayName": "ฝอยทอง",
+      "aliases": ["ฝอยทองเล็ก"],
+      "size": "SMALL",
+      "unitPriceSatang": 2000,
+      "status": "APPROVED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "BR-S-RED-BEAN",
+      "displayName": "ถั่วแดง",
+      "aliases": ["ถั่วแดงเล็ก"],
+      "size": "SMALL",
+      "unitPriceSatang": 2000,
+      "status": "APPROVED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "BR-S-TARO",
+      "displayName": "เผือก",
+      "aliases": ["เผือกเล็ก"],
+      "size": "SMALL",
+      "unitPriceSatang": 2000,
+      "status": "APPROVED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "BR-S-CUSTARD",
+      "displayName": "สังขยา",
+      "aliases": ["สังขยาเล็ก"],
+      "size": "SMALL",
+      "unitPriceSatang": 2000,
+      "status": "APPROVED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "BR-S-HAM-CHEESE",
+      "displayName": "แฮมชีส",
+      "aliases": ["แฮมชีสเล็ก"],
+      "size": "SMALL",
+      "unitPriceSatang": 2000,
+      "status": "APPROVED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "BR-S-BUTTER",
+      "displayName": "เนยสด",
+      "aliases": ["เนยสดเล็ก"],
+      "size": "SMALL",
+      "unitPriceSatang": 2000,
+      "status": "APPROVED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "CHIFFON-BLOCKED",
+      "displayName": "ชิฟฟ่อน",
+      "aliases": [],
+      "size": "OTHER",
+      "unitPriceSatang": null,
+      "status": "PRICE_BLOCKED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "COOKIE-BLOCKED",
+      "displayName": "คุกกี้",
+      "aliases": [],
+      "size": "OTHER",
+      "unitPriceSatang": null,
+      "status": "PRICE_BLOCKED",
+      "promotionEligible": false
+    },
+    {
+      "sku": "BUTTER-LEMON-BLOCKED",
+      "displayName": "บัตเตอร์เลมอน",
+      "aliases": [],
+      "size": "OTHER",
+      "unitPriceSatang": null,
+      "status": "PRICE_BLOCKED",
+      "promotionEligible": false
+    }
+  ]
+}

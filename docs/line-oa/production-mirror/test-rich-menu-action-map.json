@@ -1,10 +1,11 @@
 {
   "account": "มะลิปัง TEST",
-  "name": "MalisPang TEST RM 39-50 v1",
+  "name": "MalisPang TEST RM 39-50 postback v2",
   "chatBarLabel": "รู้จักมะลิปัง",
   "defaultDisplay": "shown",
   "imagePath": "assets/test/malispang-test-rich-menu-publishable.jpeg",
   "publicImagePath": "public/rich-menu/malispang-test-rich-menu.jpeg",
+  "apiPayloadPath": "config/rich-menu/malispang-test-rich-menu-postback-v2.json",
   "image": {
     "width": 2500,
     "height": 1686,
@@ -17,11 +18,12 @@
     "pointsEarned": 1
   },
   "publishable": true,
-  "publishMode": "REWARD_CARD_ENABLED_VIA_TEST_WORKER",
+  "publishMode": "TEST_POSTBACK_V2_READY_NOT_PUBLISHED",
   "publishBlockers": [],
   "knownLimitations": [
+    "Rich Menu v1 ที่เผยแพร่อยู่ใช้ native text actions และไม่สามารถแยกจาก typed message ระหว่าง handoff; v2 นี้ยังไม่ Publish จนกว่า Owner จะอนุมัติ external change แยก",
     "Owner อนุมัติ No expiration สำหรับ Reward Card TEST พร้อม action ให้ปิดบัตรด้วยตนเองภายใน 31 ธันวาคม 2026",
-    "พื้นที่สะสมแต้มใช้ native Text action เดิม แล้ว Worker ตอบปุ่มเปิดบัตรจาก encrypted TEST_REWARD_CARD_URL โดยไม่เก็บ URL จริงใน Git และไม่เชื่อมข้อมูล Production"
+    "พื้นที่สะสมแต้มใช้ TEST postback แล้ว Worker ตอบข้อมูลที่อนุมัติ โดยไม่เก็บ Reward Card URL จริงใน Git และไม่เชื่อมข้อมูล Production"
   ],
   "staffQuickReply": {
     "label": "คุยกับพนักงาน",
@@ -34,8 +36,9 @@
       "label": "สะสมแต้มและโปรโมชั่น",
       "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
       "action": {
-        "type": "text",
-        "text": "สะสมแต้มและโปรโมชั่น",
+        "type": "postback",
+        "data": "test:show_rewards",
+        "displayText": "สะสมแต้มและโปรโมชั่น",
         "enabled": true
       }
     },
@@ -54,8 +57,9 @@
       "label": "Delivery",
       "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
       "action": {
-        "type": "text",
-        "text": "Delivery",
+        "type": "postback",
+        "data": "test:show_delivery",
+        "displayText": "Delivery",
         "enabled": true
       }
     },
@@ -73,8 +77,9 @@
       "label": "เมนูของเรา",
       "bounds": { "x": 833, "y": 843, "width": 834, "height": 843 },
       "action": {
-        "type": "text",
-        "text": "เมนูขนมปัง",
+        "type": "postback",
+        "data": "test:show_menu",
+        "displayText": "เมนูขนมปัง",
         "enabled": true
       }
     },

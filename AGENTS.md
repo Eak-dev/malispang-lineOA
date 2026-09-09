@@ -1,0 +1,49 @@
+# Production Safety
+
+Production `มะลิปัง` เป็นระบบใช้งานจริง ห้ามแก้ไข เปิด API, Publish Rich Menu, Deploy, ส่งข้อความ หรือเปลี่ยน configuration โดยไม่มี Owner approval แยกเฉพาะขั้น Production
+
+# Roadmap Discipline
+
+`GitHub Issue #9 — Roadmap: MalisPang LINE OA — TEST-first customer service`
+และ Issues ที่เชื่อมโยง คือแผนงานหลักของโครงการ
+
+- ต้องทำงานตามลำดับ Phase และขอบเขตที่ระบุใน Roadmap เป็นหลัก
+- ห้ามเพิ่ม Phase, เปลี่ยนลำดับงาน, ขยายขอบเขต, เปลี่ยนกติกาธุรกิจ, หรือเริ่มงานจาก Issue อื่นเอง เพียงเพราะเห็นว่า “น่าจะดีกว่า”
+- งานนอก Roadmap ทำได้เฉพาะเมื่อจำเป็นต่อความปลอดภัย, แก้บั๊ก, ป้องกันข้อมูลสูญหาย, หรือเป็น blocker โดยตรงของ Issue ปัจจุบัน
+- หากพบว่า Roadmap ขัดกับสถานะจริงหรือมีข้อมูลล้าสมัย ให้บันทึกความขัดแย้งและรายงาน Owner ก่อน; ห้ามตีความใหม่หรือแก้ Roadmap เอง
+- ก่อนเริ่มงานทุกครั้ง ต้องระบุ Issue/Phase ปัจจุบัน, acceptance criteria และ Definition of Done ที่กำลังทำ
+- ปิด Issue ได้ต่อเมื่อ acceptance criteria ผ่านครบและมีหลักฐาน test/UAT จริงเท่านั้น
+- หากงานผ่านแล้ว ให้เริ่มได้เฉพาะ Issue ถัดไปตามลำดับใน Roadmap
+- Production `มะลิปัง` ยังคงอยู่ภายใต้กฎ Production Safety เสมอ แม้ Roadmap จะระบุงาน Production ในอนาคต
+
+# Versioned Project Control
+
+ก่อนเริ่มหรือทำงานต่อทุกครั้ง ต้องอ่านและตรวจให้ตรงกัน:
+
+1. `config/project/roadmap.json`
+2. `config/project/current-work.json`
+3. MP-ROADMAP (GitHub #9)
+4. GitHub Issue ของ `workId` ปัจจุบัน
+
+ต้องรัน `pnpm validate:project-control` และรายงาน Roadmap version, canonical work ID, GitHub Issue, base commit, scope, target environment, deploy/Production authorization, conflicts และ working-tree status ก่อนแก้ไฟล์
+
+- ใช้ `MP-01`–`MP-12` เป็น canonical IDs และเก็บหมายเลข GitHub Issue เป็น immutable external reference
+- ต้องมี `CURRENT` เพียงหนึ่งรายการ และต้องตรงกับ `current-work.json`
+- Roadmap/current-work หาย ล้าสมัย หรือขัดกับ GitHub/Owner decision ให้หยุดด้วย `ROADMAP_UNVERIFIED`
+- deployment ต้องเป็น `false` โดยปริยายจนมี Owner approval แยกเฉพาะขั้น
+- Production ต้องเป็น `NO_GO` จนมี Owner approval แยกเฉพาะ action และ safety gates ผ่าน
+- ห้ามเริ่ม `nextWork` อัตโนมัติหลังงานปัจจุบันเสร็จ ต้องรอ Owner/PO review และ Roadmap version ใหม่
+- การเปลี่ยน Roadmap ต้อง append Owner decision, ระบุ `supersedes`, bump version, reconcile GitHub #9 และผ่าน validator/tests ก่อนใช้เป็นฐานงานใหม่
+- สถานะ `CURRENT` ระบุลำดับ Roadmap แต่ไม่ให้สิทธิ์ implementation โดยอัตโนมัติ ต้องมี action-specific authorization flag เป็น `true` ตาม current-work และ Owner authorization แยกชัดเจนก่อนแก้ implementation
+- สถานะ `AUTHORIZED_POLICY_SNAPSHOT_ONLY` อนุญาตเฉพาะ specification/schema/validator/tests ที่ current-work ระบุ และไม่อนุญาต runtime, AI integration, provider call หรือ deployment
+- สถานะ `AUTHORIZED_RUNTIME_WP1_ONLY` อนุญาตเฉพาะ WP1 scopes ที่ current-work ระบุ โดย policy snapshot ต้อง read-only; ไม่อนุญาต T-C03 runtime, AI/provider, benchmark 5,000 cases หรือ deployment
+- สถานะ `AUTHORIZED_BENCHMARK_WP2_ONLY` อนุญาตเฉพาะ benchmark harness, ชุดกรณี PII-free, coverage/confusion-matrix/false-AUTO report และ tests/docs ตาม allowed scope; ไม่อนุญาตแก้ runtime/policy/KB/catalog, ใช้ข้อมูลแชตจริง, AI/provider หรือ deployment
+- สถานะ `AUTHORIZED_RUNTIME_REMEDIATION_WP3_ONLY` อนุญาตเฉพาะ scoped action `RUNTIME_REMEDIATION_WP3` สำหรับสามช่องว่างที่ WP2 ระบุ โดย policy และ WP2 dataset/harness/oracle เป็น read-only, ห้ามลดเกณฑ์, ห้าม deploy และห้ามแตะ Production
+- สถานะ `AUTHORIZED_BENCHMARK_COMPLETION_WP4_ONLY` อนุญาตเฉพาะ scoped action `BENCHMARK_COMPLETION_WP4` สำหรับ commit benchmark artifacts ที่ตรึงไว้และ additive report provenance remediation แบบแคบที่สุด โดย runtime, policy, dataset expected cases, oracle และ thresholds เป็น read-only; ห้าม deploy และห้ามแตะ Production
+- สถานะ `AUTHORIZED_LOCAL_CLOSURE_REMEDIATION_WP5_ONLY` อนุญาตเฉพาะ scoped action `LOCAL_CLOSURE_REMEDIATION_WP5` สำหรับ pin Node.js `24.19.0` และ pnpm `11.19.0`, เพิ่ม fail-fast toolchain validation, เอกสาร bootstrap และ clean-checkout verification ตาม current-work; runtime, benchmark semantics/dataset/oracle, policy, KB และ catalog เป็น read-only ห้าม deploy, สร้าง PR หรือแตะ Production
+- สถานะ `AUTHORIZED_TEST_READINESS_ASSESSMENT_WP6_ONLY` อนุญาตเฉพาะ scoped action `TEST_READINESS_ASSESSMENT_WP6` สำหรับประเมิน TEST แบบไม่ deploy โดยอ่านได้เฉพาะ repository configuration และ TEST metadata ที่ current-work ระบุ; secrets ตรวจได้เฉพาะชื่อ/presence, Production remote state ห้ามเปิดหรือ query และ runtime, policy, dataset/oracle/benchmark semantics, toolchain, KB และ catalog เป็น read-only
+- สถานะ `AUTHORIZED_TEST_READINESS_CONDITION_CLOSURE_WP6_ONLY` อนุญาตเฉพาะ scoped action `TEST_READINESS_CONDITION_CLOSURE_WP6` เพื่อปิดสี่ conditions ที่ current-work ระบุ: normalize benchmark watchdog metadata, freeze TEST-only alert/rate/stop controls, freeze rollback/runbook กับ synthetic fixtures และทำ validation chain ให้ byte-stable; runtime, policy, dataset/oracle/benchmark semantics, KB/catalog, dependencies และ deployment configuration เป็น read-only และยังห้าม AI/NLU, TEST deployment กับ Production
+- สถานะ `AWAITING_OWNER_NEXT_WORK_PACKAGE_AUTHORIZATION` หมายถึง WP6 readiness conditions ถูกบันทึกว่าปิดแล้ว แต่ไม่มี implementation action ใดได้รับอนุญาต; ต้องรอ Owner/PO เลือกและ authorize work package ถัดไปแยกระหว่าง AI/NLU กับ TEST deployment และยังห้าม PR, merge, TEST deployment กับ Production
+- สถานะ `AUTHORIZED_AI_NLU_IMPLEMENTATION_WP7_ONLY` อนุญาตเฉพาะ scoped action `AI_NLU_IMPLEMENTATION_WP7` สำหรับ OpenAI Responses API advisory parser/classifier, strict structured output, PII redaction, mock/failure tests และ synthetic PII-free live evaluation ภายใต้ request/cost caps; deterministic policy เป็นผู้ตัดสิน final route เสมอ, feature flag ต้อง default off และยังห้าม PR, merge, TEST deployment กับ Production
+- สถานะ `AWAITING_TEST_DEPLOYMENT_AUTHORIZATION` หมายถึง WP7 AI/NLU local acceptance ผ่านแบบมีข้อจำกัดและ implementation ถูก freeze แล้ว; action เป็น `NONE`, ห้ามแก้ implementation, ตั้ง remote secret, deploy TEST, สร้าง PR, merge หรือแตะ Production จนมี Owner/PO transition แยก
+- สถานะ `AUTHORIZED_RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A_ONLY` อนุญาตเฉพาะ scoped action `RUNTIME_PILOT_CONTROL_REMEDIATION_WP8A` เพื่อเพิ่ม TEST-only runtime admission, shared atomic session/rate/budget/concurrency controls และ readiness correction โดยคง model/prompt/schema, deterministic policy, KB/catalog และ benchmark evidence แบบ read-only; ยังห้าม remote mutation, TEST deployment, PR, merge และ Production

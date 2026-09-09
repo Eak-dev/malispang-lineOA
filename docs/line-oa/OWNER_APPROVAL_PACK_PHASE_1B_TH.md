@@ -1,0 +1,133 @@
+# Owner Approval Pack — Approved Knowledge Base (`Issue #8 / Phase 1B`)
+
+Owner approval date / effective date: `2026-08-30`
+
+Review date: `2026-09-30`
+
+สถานะ: `WORKER FIX DEPLOYED / RICH MENU V1 CONFIGURATION MISMATCH CONFIRMED / V2 LOCAL READY NOT PUBLISHED / OWNER RE-UAT PENDING`
+
+เอกสารนี้บันทึก Owner approval สำหรับ `มะลิปัง TEST` ตาม Roadmap Issue #9 และ Issue #8 เท่านั้น ข้อความที่อนุมัติถูกเก็บใน `config/approved-knowledge-base/test-knowledge-base.json` พร้อม version และ SHA-256 checksum ของ UTF-8 exact answer ทุก record ข้อมูลจะ fail closed ตั้งแต่เริ่มวันที่ทบทวนหากยังไม่มี manifest version ใหม่
+
+การอนุมัตินี้ไม่อนุญาต Issue #2, #4, #5 หรือ #6, deployment, การเปลี่ยน LINE OA `มะลิปัง TEST` หรือการเปิด/แก้ Production `มะลิปัง`
+
+## Owner decision amendment — 31 สิงหาคม 2026
+
+Live UAT ของ deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` พบว่า `ขอเมนูหน่อย` เข้า fallback และเริ่ม handoff จากนั้น Rich Menu postback ถูก handoff silence บล็อกทั้งหมด Owner จึงอนุมัติข้อยกเว้นต่อไปนี้สำหรับ local fix ของ Issue #8:
+
+- ข้อความที่ลูกค้าพิมพ์เองทุกข้อความยังคง silent ระหว่าง handoff รวมถึง location, Delivery และ loyalty wording
+- Rich Menu static postback ที่อนุมัติเท่านั้น ได้แก่ `test:main_menu`, `test:show_menu`, `test:show_price`, `test:show_location`, `test:show_hours`, `test:show_rewards` และ `test:show_delivery` ตอบจาก Approved Knowledge Base ได้ระหว่าง handoff
+- `test:show_wholesale` ตอบ approved wholesale guidance ได้ระหว่าง handoff
+- postback ข้างต้นห้ามส่ง acknowledgement ซ้ำ ห้ามปิด/reset handoff และห้ามเปลี่ยนเจ้าของ conversation จากพนักงานกลับเป็นบอต
+- `test:show_facebook`, unknown และ Production-like postback ไม่อยู่ใน allowlist และต้อง fail closed; ระหว่าง handoff ต้องไม่ตอบข้อมูลใหม่
+- menu lexicon เพิ่ม `ขอเมนู`, `ขอเมนูหน่อย`, `เมนูขนมปัง`, `มีอะไรบ้าง`, `มีไรบ้าง` และ `ขอดูเมนู`; manifest `MENU` เปลี่ยนเป็น version `2026-08-31-menu-v2` โดย exact answer/checksum เดิม
+
+Owner re-UAT หลัง deploy Worker fix พบ configuration mismatch เพิ่มเติม: Rich Menu v1 ส่งสามปุ่มตอบบอตเป็น native text/message action ไม่ใช่ postback จึงถูก handoff silence เช่นเดียวกับ typed message ตามที่ออกแบบไว้ Local v2 จึงเตรียม exact TEST postback `test:show_rewards`, `test:show_delivery` และ `test:show_menu` โดยยังไม่ Publish/set default และไม่ปิด active handoff จนกว่าจะได้รับ Owner approval แยก
+
+## Owner decision amendment — PREORDER reply 31 สิงหาคม 2026
+
+Owner อนุมัติให้เปลี่ยนเฉพาะ `ADVANCE_ORDER` เป็น version `2026-08-31-advance-order-v2` โดย `PICKUP` และหมวดอื่นคงเดิม ข้อความนี้เป็นแบบฟอร์มข้อความสำหรับให้ลูกค้าคัดลอกเท่านั้น บอตห้าม parse/จัดเก็บข้อมูล, สร้าง order, ตรวจหรือยืนยัน stock/ราคา/วันรับ/รอบอบ, รับชำระเงิน หรือยืนยันรายการแทนพนักงาน หลังส่งข้อความต้องส่ง acknowledgement OA-13 เป็นข้อความถัดไปเพียงครั้งเดียวและเข้าสู่ handoff silence
+
+```text
+🍞 ขนมปังอบใหม่ หอม นุ่ม ไส้แน่น เลือกความอร่อยได้ตามใจเลยค่ะ ✨
+
+🎉 ไส้ใหม่ ชวนลอง
+• ทรัฟเฟิลแฮมชีส
+• ฮาวายเอี้ยน
+• ทูน่าคอร์นสลัด
+
+⭐ ไส้ขายดี ลูกค้าสั่งซ้ำบ่อย
+• แฮมชีส
+• เนยสด
+• สังขยา
+• หมูหยอง
+• หมูหยองไส้กรอก
+• ไส้กรอก
+• ไส้กรอกชีส
+• หมูหยองพริกเผา
+
+🥖 ไส้อื่น ๆ ก็มีให้เลือกอีกมากมาย
+• หมูหยองลูกเกด
+• หมูหยองน้ำสลัด
+• แฮมสลัด
+• แฮมไส้กรอก
+• ไส้กรอกพิซซ่า
+• ฝอยทอง
+• เผือก
+• ถั่วแดง
+• ลูกเกด
+• รวมมิตร
+
+📌 อยากได้ไส้ไหน แนะนำให้สั่งจองล่วงหน้า เพราะบางไส้มีจำนวนจำกัดในแต่ละวันนะคะ
+
+🧾 วิธีสั่งซื้อ
+คัดลอกแบบฟอร์มด้านล่าง กรอกข้อมูล แล้วส่งกลับมาได้เลยค่ะ 😊
+
+👤 ชื่อผู้รับ:
+📞 เบอร์โทร:
+📅 วันรับ:
+⏰ รอบอบ: 08:00 / 11:00 / 14:00
+🚗 วิธีรับ: รับที่ร้าน / จัดส่ง
+
+🥖 รายการที่สั่ง
+ระบุชื่อไส้ + จำนวน
+ตัวอย่าง: แฮมชีส 2 / เนยสด 3
+
+📝 รายการที่ต้องการ:
+•
+•
+•
+•
+
+🗒️ หมายเหตุ:
+
+หลังได้รับข้อมูล พนักงานจะตรวจสอบสินค้าและสรุปให้ พร้อมแจ้งรายการ จำนวน ยอดชำระ และรอบอบที่ยืนยันค่ะ
+
+⏳ ไส้ขายดีมีจำนวนจำกัดในแต่ละวัน แนะนำสั่งจองล่วงหน้านะคะ 💕🍞
+```
+
+## ตาราง Owner approval 14 หมวด
+
+| ID / หมวด                                                                      | ค่า exact ที่อนุมัติให้บอตตอบหรือปฏิบัติ                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Source                                                                                                    | Effective date | วันหมดอายุ / รอบทบทวน                                  | Owner approval                   | Fallback เมื่อ record ใช้ไม่ได้                                                                      |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------ | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **OA-01 เมนูและราคาขายปลีก**<br>Manifest: `MENU`, `PRICE`, `STOCK`             | ส่งรูป `public/menu/bread-menu.jpeg` → `public/menu/chiffon-cookie-menu.jpeg` แล้วตอบ:<br><br>`เมนูตามรูปเป็นรายการอ้างอิง สินค้าหน้าร้านมีการขายออกตลอดวัน จึงอาจมีสินค้าไม่ครบหรือหมดได้ค่ะ หากต้องการเช็กสต๊อกสินค้าวันนี้ สอบถามโปรโมชั่นพิเศษประจำวัน หรือไส้พิเศษประจำวัน กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊`<br><br>ห้ามยืนยัน stock/ไส้ใดแบบ real-time                                                                                                                                                                            | Owner approval 2026-08-30; รูปเมนูที่ผ่าน TEST UAT; manifest version `2026-08-30-*-v1`                    | `2026-08-30`   | Fail closed `2026-09-30` หรือทันทีเมื่อรูป/ราคาเปลี่ยน | `[x] APPROVED`                   | ส่ง exact fallback OA-14 แล้วเข้า handoff                                                            |
+| **OA-02 โปรโมชั่นพิเศษรายวัน**<br>Manifest: `PROMOTION`                        | `โปรโมชั่นพิเศษและไส้พิเศษของแต่ละวันอาจเปลี่ยนแปลงได้ค่ะ กรุณากด “คุยกับพนักงาน” เพื่อสอบถามรายการและเงื่อนไขล่าสุดได้เลยนะคะ 😊`<br><br>ห้ามประกาศโปรตายตัว                                                                                                                                                                                                                                                                                                                                                                               | Owner approval 2026-08-30; manifest `2026-08-30-promotion-v1`                                             | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่งข้อความนี้ แล้ว acknowledgement OA-13 และเข้า handoff                                             |
+| **OA-03 ที่อยู่/สาขา**<br>Manifest: `LOCATION`                                 | `ขณะนี้มะลิปังมีสาขาที่ ตลาดยิ่งเจริญ สะพานใหม่ ค่ะ ดูแผนที่ได้ที่: https://maps.app.goo.gl/mLTyUC1891a4uu7D9?g_st=ic และกำลังเตรียมพบกับสาขาใหม่เร็ว ๆ นี้ ติดตามข่าวสารได้ทาง LINE นี้นะคะ 😊`<br><br>ห้ามอ้างเลขล็อก ชั้น โซน หรือวันเปิดสาขาใหม่                                                                                                                                                                                                                                                                                        | Owner approval 2026-08-30; Owner-approved Maps URL; manifest `2026-08-30-location-v1`                     | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่ง exact fallback OA-14 แล้วเข้า handoff                                                            |
+| **OA-04 เวลาเปิด**<br>Manifest: `OPENING_HOURS`                                | `ร้านมะลิปังเปิดทุกวัน เวลา 06:00–16:00 น. ค่ะ หากมีการเปลี่ยนแปลงในวันหยุด ทางร้านจะแจ้งล่วงหน้าผ่าน LINE นี้นะคะ 😊`<br><br>ห้ามตอบว่า “ตอนนี้ร้านเปิดอยู่”                                                                                                                                                                                                                                                                                                                                                                               | Owner approval 2026-08-30; manifest `2026-08-30-opening-hours-v1`                                         | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่ง exact fallback OA-14 แล้วเข้า handoff                                                            |
+| **OA-05 รับสินค้าที่ร้าน / พรีออเดอร์**<br>Manifest: `PICKUP`, `ADVANCE_ORDER` | **PICKUP:** ใช้ข้อความเดิมที่อนุมัติ 2026-08-30<br><br>**ADVANCE_ORDER:** ใช้ exact reply ใน amendment ด้านบน บอตแสดงแบบฟอร์มข้อความเท่านั้นและห้าม parse/สร้าง order/ยืนยันข้อมูลธุรกิจ                                                                                                                                                                                                                                                                                                                                                    | Owner approvals 2026-08-30 และ 2026-08-31; manifest `2026-08-30-pickup-v1`, `2026-08-31-advance-order-v2` | `2026-08-31`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่ง exact PREORDER reply → acknowledgement OA-13 หนึ่งครั้ง → handoff silence                        |
+| **OA-06 Delivery**<br>Manifest: `DELIVERY`                                     | `ขณะนี้ร้านมะลิปังยังไม่มีบริการ Delivery โดยตรงนะคะ หากต้องการสั่งล่วงหน้าหรือสอบถามทางเลือกในการรับสินค้า กรุณากด “คุยกับพนักงาน” ได้เลยค่ะ 😊`                                                                                                                                                                                                                                                                                                                                                                                           | Owner approval 2026-08-30; manifest `2026-08-30-delivery-v1`                                              | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่ง exact fallback OA-14 แล้วเข้า handoff                                                            |
+| **OA-07 กติกาพรีออเดอร์สำหรับพนักงาน**                                         | Reference-only: รับวันเดียวกันขึ้นกับ stock/คิว; มัดจำ 50%; ยกเลิกก่อนเริ่มเตรียม/ผลิตคืนเต็ม; หลังเริ่มไม่คืนเว้นแต่ร้านจัดไม่ได้; พนักงานตรวจ stock คิว ยอดรวมและเวลารับก่อนยืนยัน ห้ามทำ workflow อัตโนมัติใน Issue #8                                                                                                                                                                                                                                                                                                                   | [นโยบายพรีออเดอร์ Phase 1B](./PREORDER_STAFF_POLICY_PHASE_1B_TH.md)                                       | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED AS REFERENCE ONLY` | ส่งต่อพนักงาน; บอตไม่สร้างหรือยืนยันออเดอร์                                                          |
+| **OA-08 การเก็บรักษาและอายุสินค้า**<br>Manifest: `STORAGE`                     | `ขนมปังทั่วไปและชิฟฟ่อน เก็บนอกตู้เย็นได้ 2 วันนับจากวันที่ซื้อ หรือเก็บในตู้เย็นได้ 5 วันค่ะ ควรเก็บให้พ้นแสงแดดและความร้อน สินค้าที่มีครีมหรือไส้สดควรเก็บในตู้เย็นทันที หากต้องการทราบอายุสินค้าเฉพาะรายการ กรุณากด “คุยกับพนักงาน” นะคะ 😊`<br><br>ห้ามแนะนำให้อุ่นไส้ครีมหรือชิฟฟ่อนเป็นกฎทั่วไป                                                                                                                                                                                                                                       | Owner approval 2026-08-30; manifest `2026-08-30-storage-v1`                                               | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่ง exact fallback OA-14 แล้วเข้า handoff                                                            |
+| **OA-09 ภูมิแพ้/คำเตือนอาหาร**<br>Manifest: `ALLERGEN`                         | `สินค้าแต่ละรายการอาจมีส่วนประกอบหรือสัมผัสกับวัตถุดิบที่ก่อภูมิแพ้ได้ เช่น แป้งสาลี นม ไข่ ถั่ว หรือวัตถุดิบอื่น ๆ หากมีอาการแพ้อาหาร หรือจำเป็นต้องหลีกเลี่ยงส่วนผสมใด กรุณากด “คุยกับพนักงาน” เพื่อให้ตรวจสอบก่อนสั่งซื้อนะคะ 😊`<br><br>ห้ามอ้าง allergen-free หรือรับประกันไม่ปนเปื้อน                                                                                                                                                                                                                                                 | Owner approval 2026-08-30; manifest `2026-08-30-allergen-v1`                                              | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่งข้อความนี้ แล้ว acknowledgement OA-13 และเข้า handoff                                             |
+| **OA-10 ราคาส่งและเงื่อนไข**<br>Manifest: `WHOLESALE`                          | `สำหรับออเดอร์จำนวนมากหรือราคาส่ง กรุณากด “คุยกับพนักงาน” แล้วแจ้งชนิดสินค้า จำนวน วันที่ต้องการรับ และเวลารับสินค้า ทางร้านจะตรวจสอบราคา คิวผลิต และเงื่อนไขล่าสุดให้ก่อนยืนยันออเดอร์ค่ะ 😊`<br><br>ห้ามประกาศตารางราคาส่ง                                                                                                                                                                                                                                                                                                                | Owner approval 2026-08-30; manifest `2026-08-30-wholesale-v1`                                             | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่งข้อความนี้ แล้ว acknowledgement OA-13 และเข้า handoff                                             |
+| **OA-11 ช่องทางติดต่อ**<br>Manifest: `CONTACT`                                 | `สอบถามเพิ่มเติมได้ทาง LINE Official Account ของมะลิปังนี้ได้เลยค่ะ หากต้องการให้พนักงานช่วยดูแล กรุณากด “คุยกับพนักงาน” นะคะ 😊`<br><br>ห้ามเดาหรือใส่เบอร์โทร/ช่องทางอื่น                                                                                                                                                                                                                                                                                                                                                                 | Owner approval 2026-08-30; manifest `2026-08-30-contact-v1`                                               | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | ส่ง exact fallback OA-14 แล้วเข้า handoff                                                            |
+| **OA-12 แต้มและรางวัล**<br>Manifest: `LOYALTY`                                 | `กติกาสะสมแต้มมะลิปัง`<br>`ทุกยอดซื้อที่ชำระเงินแล้ว รับ 1 แต้มต่อทุก 50 บาท โดยปัดเศษลงค่ะ`<br><br>`🎁 สะสมครบ 30 แต้ม แลกคุกกี้ 1 ถุง มูลค่า 159 บาท เลือกรสชาติได้ตามสินค้าที่มีในวันแลก`<br>`🎁 สะสมครบ 50 แต้ม แลกตุ๊กตา 1 ตัว จากแบบที่ร่วมรายการและมีในวันแลก`<br><br>`บัตรและคะแนนเดิมยังใช้ได้ ไม่มีวันหมดอายุ`<br>`การแลกรางวัลต้องให้พนักงานตรวจสอบและยืนยันที่ร้านนะคะ 😊`<br><br>ยอดซื้อ = ยอดสุทธิหลังส่วนลดและปัดเศษลง บอตห้ามคำนวณ/เพิ่ม/ลด/ดูแต้มรายบุคคล แลกรางวัล หรือเปลี่ยน Reward Card                                | Owner approval 2026-08-30; manifest `2026-08-30-loyalty-v1`                                               | `2026-08-30`   | Fail closed `2026-09-30`                               | `[x] APPROVED`                   | คำถามกติกาตอบได้; การแลกรางวัลส่งข้อความนี้ แล้ว acknowledgement OA-13 และเข้า handoff               |
+| **OA-13 ข้อมูลที่ต้องส่งต่อพนักงาน / Handoff**                                 | Trigger: stock, โปร/ไส้พิเศษรายวัน, preorder, payment/slip/refund, allergen, wholesale, reward redemption, order problem, sensitive data หรือคำว่า/ปุ่ม `คุยกับพนักงาน`<br><br>Acknowledgement ครั้งเดียว: `รับเรื่องแล้วค่ะ พนักงานมะลิปังจะเข้ามาตอบโดยเร็วที่สุดนะคะ ระหว่างนี้สามารถพิมพ์รายละเอียดเพิ่มเติมไว้ได้เลยค่ะ 😊`<br><br>Typed messages เงียบจน authorized staff close ข้อยกเว้นเฉพาะ approved static TEST postback และ `test:show_wholesale` ตาม amendment 2026-08-31; ตอบได้โดยไม่ acknowledgement ซ้ำและไม่ reset handoff | Owner approvals 2026-08-30 และ 2026-08-31; `worker/routing.ts`; Durable Object handoff tests              | `2026-08-31`   | ทบทวน `2026-09-30`                                     | `[x] APPROVED`                   | Typed message เงียบ; non-allowlisted postback fail closed; approved static postback ตอบโดยคง handoff |
+| **OA-14 Fallback เมื่อข้อมูลไม่พร้อม**                                         | `ขออภัยค่ะ ตอนนี้น้องมะลิยังไม่มีข้อมูลที่ยืนยันสำหรับคำถามนี้ เพื่อไม่ให้ข้อมูลผิด กรุณากด “คุยกับพนักงาน” หรือพิมพ์ “คุยกับพนักงาน” ได้เลยนะคะ 😊`<br><br>Fallback ต้องเข้าสู่ handoff ตาม OA-13                                                                                                                                                                                                                                                                                                                                          | Owner approval 2026-08-30; `worker/routing.ts`; `src/phase1a-service.ts`                                  | `2026-08-30`   | ทบทวน `2026-09-30`                                     | `[x] APPROVED`                   | ส่ง fallback exact → acknowledgement exact หนึ่งครั้ง → handoff silence                              |
+
+## Guardrails ที่ยังบังคับใช้
+
+- รูปเมนูเป็นข้อมูลอ้างอิง ไม่ใช่ stock ปัจจุบัน
+- promo/ไส้พิเศษไม่มีค่าตายตัวใน manifest
+- เวลาเปิดเป็นตารางทั่วไป ไม่ใช่ real-time open status
+- บอตไม่เก็บชื่อ/เบอร์/รายละเอียด order ใน audit, ไม่รับเงินจริง และไม่ยืนยัน payment/deposit
+- แต้มเป็นข้อมูลกติกาทั่วไปเท่านั้น ไม่มี customer lookup, Reward Card URL หรือ operation ใน reply path ของ Phase 1B
+- record ทั้งหมดมีผลเฉพาะ `มะลิปัง TEST`; ห้ามนำไปใช้กับ Production โดยอัตโนมัติ
+
+## Acceptance status
+
+- [x] Owner exact values และ dates ครบ
+- [x] Manifest 14 categories เป็น `APPROVED` พร้อม provenance/version/checksum
+- [x] Missing/stale/conflicting data fail closed
+- [x] Dynamic/high-risk topics เข้า handoff และบอตเงียบหลัง acknowledgement
+- [x] Local automated tests ผ่าน
+- [x] Owner อนุมัติข้อยกเว้น static Rich Menu postback ระหว่าง handoff และ expanded menu lexicon
+- [x] Local full checks ของ amendment 2026-08-31 ผ่าน: 193 Node + 24 Worker tests
+- [x] Corrective Worker commit ถูก deploy เฉพาะ TEST และ health/security gates ผ่าน
+- [x] Local Rich Menu v2 payload/validator และ full suite ผ่าน: 194 Node + 24 Worker tests
+- [x] Owner อนุมัติและดำเนินการ Publish/set default Rich Menu postback v2 เฉพาะ TEST; เก็บ v1 เป็น rollback และปิด active TEST handoff จาก 1 เหลือ 0
+- [x] Owner re-UAT จาก Worker fix + Rich Menu v2 ผ่านเมื่อ `2026-08-31 09:36 +07:00`
+- [x] PREORDER amendment v2 ผ่าน local exact-reply/checksum/handoff regression; ยัง `NOT DEPLOYED` และรอ Owner อนุมัติ TEST deploy/UAT ใน Issue #6
+
+Issue #8 ผ่าน acceptance criteria และ Definition of Done ครบ จึงปิดได้ตาม Roadmap โดยยังห้ามเริ่ม Issue #2, #4, #5 หรือ #6 เองจนกว่าจะตรวจลำดับถัดไปใน Roadmap #9
+
+Rich Menu v2 ถูกสร้างและตั้งเป็น default เฉพาะ `มะลิปัง TEST` เมื่อ 31 สิงหาคม 2026 โดยไม่มี Worker deploy, Webhook/Reward Card/secret change หรือการส่งข้อความ ส่วน Production `มะลิปัง` ไม่ถูกเปิดหรือแก้ไข

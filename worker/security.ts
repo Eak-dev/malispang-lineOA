@@ -6,7 +6,7 @@ export function assertTestEnvironment(env: Env): void {
   if (
     env.ENVIRONMENT !== "TEST" ||
     env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
-    env.FAQ_SOURCE_STATUS !== "TEST_SEED"
+    env.FAQ_SOURCE_STATUS !== "APPROVED_ONLY"
   ) {
     throw new Error("FAIL_CLOSED_NON_TEST_ENVIRONMENT");
   }

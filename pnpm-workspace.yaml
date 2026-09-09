@@ -2,3 +2,6 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+overrides:
+  "miniflare@5.20260811.0-alpha>sharp": "0.35.4"
+  "@eslint/eslintrc@3.3.6>js-yaml": "4.3.2"

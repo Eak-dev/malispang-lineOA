@@ -1,0 +1,614 @@
+diff --git a/worker/draft-order-objects.ts b/worker/draft-order-objects.ts
+index f02c441..830fe2c 100644
+--- a/worker/draft-order-objects.ts
++++ b/worker/draft-order-objects.ts
+@@ -155,6 +155,41 @@ export class DraftOrderDO extends DurableObject<Env> {
+     return this.load(now).state;
+   }
+
++  ownerUatDraftObservation() {
++    try {
++      const row = this.ctx.storage.sql
++        .exec<{ state: string }>(
++          "SELECT json_extract(aggregate_json, '$.state') AS state FROM draft_current WHERE id = 1",
++        )
++        .toArray()[0];
++      const state = row ? row.state : "NO_DRAFT";
++      if (
++        ![
++          "NO_DRAFT",
++          "CONSENT_REQUIRED",
++          "COLLECTING",
++          "READY_FOR_REVIEW",
++          "AWAITING_STAFF_REVIEW",
++          "PRICE_BLOCKED",
++          "CANCELLED",
++          "EXPIRED_PURGED",
++          "FAILED_REVIEW",
++        ].includes(state)
++      )
++        throw new Error("READINESS_UNAVAILABLE");
++      const pendingReplies = Number(
++        this.ctx.storage.sql
++          .exec<{ count: number }>(
++            "SELECT COUNT(*) AS count FROM draft_processed_events WHERE delivered != 1",
++          )
++          .one().count,
++      );
++      return { state, pendingReplies };
++    } catch {
++      return null;
++    }
++  }
++
+   redactedAudit(): readonly {
+     outcome: string;
+     revision: number;
+diff --git a/worker/durable-objects.ts b/worker/durable-objects.ts
+index 9abd501..be66621 100644
+--- a/worker/durable-objects.ts
++++ b/worker/durable-objects.ts
+@@ -482,6 +482,142 @@ export class ConversationStateDO extends DurableObject<Env> {
+       : {};
+   }
+
++  // Observation only: never call expiry, cleanup, settlement or activation helpers.
++  ownerUatConversationObservation(expectedEventRef: string) {
++    try {
++      const sql = this.ctx.storage.sql;
++      if (
++        !isMp06PilotReference(expectedEventRef) ||
++        Number(
++          sql
++            .exec<{ count: number }>(
++              "SELECT COUNT(*) AS count FROM mp06_response_plans WHERE event_ref = ? AND delivered = 1",
++              expectedEventRef,
++            )
++            .one().count,
++        ) !== 1
++      )
++        throw new Error("READINESS_UNAVAILABLE");
++      const mode = sql
++        .exec<{ mode: string }>(
++          "SELECT mode FROM conversation_state WHERE id = 1",
++        )
++        .one().mode;
++      const context = sql
++        .exec<{
++          clarification_used: number;
++          pending_template_id: string | null;
++        }>(
++          "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
++        )
++        .one();
++      if (
++        !["BOT_ACTIVE", "HUMAN_HANDOFF"].includes(mode) ||
++        ![0, 1].includes(context.clarification_used) ||
++        ![null, "T-C01", "T-C04"].includes(context.pending_template_id)
++      )
++        throw new Error("READINESS_UNAVAILABLE");
++      const pendingReplies = Number(
++        sql
++          .exec<{ count: number }>(
++            "SELECT (SELECT COUNT(*) FROM processed_events WHERE delivered != 1) + (SELECT COUNT(*) FROM mp06_response_plans WHERE delivered != 1) AS count",
++          )
++          .one().count,
++      );
++      return {
++        mode,
++        clarificationUsed: context.clarification_used === 1,
++        pendingTemplate: context.pending_template_id,
++        pendingReplies,
++      };
++    } catch {
++      return null;
++    }
++  }
++
++  ownerUatPilotObservation() {
++    try {
++      const sql = this.ctx.storage.sql;
++      const session = this.mp06PilotSession();
++      if (
++        !session ||
++        !isMp06PilotReference(session.session_ref) ||
++        session.state !== "STOPPED" ||
++        session.stop_reason !== "OPERATOR_STOP" ||
++        session.admitted_events !== 3 ||
++        session.provider_attempts !== 3 ||
++        session.budget_consumed_micro_usd !== 27824 ||
++        session.budget_reserved_micro_usd !== 0 ||
++        session.in_flight !== 0
++      )
++        throw new Error("READINESS_UNAVAILABLE");
++      const totals = sql
++        .exec<{
++          total: number;
++          unknown_count: number;
++          settled_count: number;
++          conservative: number;
++          reported: number;
++        }>(
++          `SELECT COUNT(*) AS total,
++      SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN 1 ELSE 0 END) AS unknown_count,
++      SUM(CASE WHEN state = 'SETTLED' THEN 1 ELSE 0 END) AS settled_count,
++      SUM(CASE WHEN state = 'USAGE_UNKNOWN' THEN reserved_cost_micro_usd ELSE 0 END) AS conservative,
++      SUM(CASE WHEN state = 'SETTLED' THEN actual_cost_micro_usd ELSE 0 END) AS reported
++      FROM mp06_pilot_attempts`,
++        )
++        .one();
++      if (
++        totals.total !== 3 ||
++        totals.unknown_count !== 2 ||
++        totals.settled_count !== 1 ||
++        totals.conservative !== 25864 ||
++        totals.reported !== 1960
++      )
++        throw new Error("READINESS_UNAVAILABLE");
++      // Resolve only the retained, uniquely settled WP8E Owner event, not a caller-supplied identity.
++      const owners = sql
++        .exec<{ tester_ref: string; event_ref: string }>(
++          `SELECT e.tester_ref, e.event_ref FROM mp06_pilot_attempts a
++      JOIN mp06_pilot_events e ON e.session_ref = a.session_ref AND e.event_ref = a.event_ref
++      JOIN mp06_pilot_testers t ON t.session_ref = e.session_ref AND t.tester_ref = e.tester_ref
++      WHERE a.state = 'SETTLED' AND a.session_ref = ? AND a.actual_cost_micro_usd = 1960 AND e.result_authorized = 1`,
++          session.session_ref,
++        )
++        .toArray();
++      const testerCount = Number(
++        sql
++          .exec<{ count: number }>(
++            "SELECT COUNT(*) AS count FROM mp06_pilot_testers WHERE session_ref = ?",
++            session.session_ref,
++          )
++          .one().count,
++      );
++      if (
++        owners.length !== 1 ||
++        testerCount !== 1 ||
++        !isMp06PilotReference(owners[0]!.tester_ref) ||
++        !isMp06PilotReference(owners[0]!.event_ref)
++      )
++        throw new Error("READINESS_UNAVAILABLE");
++      return {
++        sessionRef: session.session_ref,
++        ownerRef: owners[0]!.tester_ref,
++        eventRef: owners[0]!.event_ref,
++        state: "STOPPED" as const,
++        events: 3,
++        attempts: 3,
++        consumedMicroUsd: 27824,
++        reservedMicroUsd: 0,
++        inFlight: 0,
++        conservativeMicroUsd: 25864,
++        reportedUsageMicroUsd: 1960,
++      };
++    } catch {
++      return null;
++    }
++  }
++
+   activateMp06Pilot(input: ActivateMp06PilotInput): Mp06PilotActivationResult {
+     const validTesters =
+       Array.isArray(input.testerRefs) &&
+diff --git a/worker/index.ts b/worker/index.ts
+index 88bf0dd..e0c6c4d 100644
+--- a/worker/index.ts
++++ b/worker/index.ts
+@@ -396,6 +396,90 @@ async function handleAdmin(
+     );
+     return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
+   }
++  if (url.pathname === "/admin/mp06-pilot/owner-uat-readiness") {
++    const receipt = {
++      actor: "AUTHENTICATED_TEST_ADMIN",
++      target: "RETAINED_WP8E_OWNER_CONVERSATION",
++      requestId: crypto.randomUUID(),
++      observedAt: new Date().toISOString(),
++    };
++    const result = (code: string, status: number, observation?: unknown) => {
++      const audit = { ...receipt, code };
++      console.info(
++        JSON.stringify({ outcome: "OWNER_READINESS_READ", ...audit }),
++      );
++      return Response.json(
++        { audit, ...(observation ? { observation } : {}) },
++        { status, headers: { "cache-control": "no-store" } },
++      );
++    };
++    if (
++      request.method !== "GET" ||
++      url.search !== "" ||
++      url.origin !==
++        "https://malispang-lineoa-test.eakkachai-dev.workers.dev" ||
++      env.MP06_PILOT_CONTROL_ENABLED !== "true"
++    )
++      return result("READINESS_TARGET_REJECTED", 403);
++    try {
++      const coordinator = env.CONVERSATION_STATE.getByName(
++        MP06_PILOT_CONTROL_OBJECT_NAME,
++      );
++      const before = await coordinator.ownerUatPilotObservation();
++      if (!before) return result("READINESS_UNAVAILABLE", 409);
++      const conversation = env.CONVERSATION_STATE.getByName(before.ownerRef);
++      const draft = env.DRAFT_ORDER.getByName(before.ownerRef);
++      const context = await conversation.ownerUatConversationObservation(
++        before.eventRef,
++      );
++      const draftContext = await draft.ownerUatDraftObservation();
++      if (!context || !draftContext)
++        return result("READINESS_UNAVAILABLE", 409);
++      // Cross-object observations are not a transaction or an activation capability.
++      if (
++        JSON.stringify(before) !==
++          JSON.stringify(await coordinator.ownerUatPilotObservation()) ||
++        JSON.stringify(context) !==
++          JSON.stringify(
++            await conversation.ownerUatConversationObservation(before.eventRef),
++          ) ||
++        JSON.stringify(draftContext) !==
++          JSON.stringify(await draft.ownerUatDraftObservation())
++      )
++        return result("READINESS_CHANGED_DURING_READ", 409);
++      const ready =
++        context.mode === "BOT_ACTIVE" &&
++        !context.clarificationUsed &&
++        context.pendingTemplate === null &&
++        context.pendingReplies === 0 &&
++        draftContext.state === "NO_DRAFT" &&
++        draftContext.pendingReplies === 0;
++      return result(
++        ready ? "READINESS_OBSERVED" : "CONVERSATION_RECOVERY_REVIEW_REQUIRED",
++        200,
++        {
++          readyAtObservation: ready,
++          activationAuthorizedByResponse: false,
++          ownerLink: "RETAINED_SETTLED_WP8E_EVENT_AND_SINGLE_PRIVATE_ALLOWLIST",
++          conversation: context,
++          draft: draftContext,
++          accounting: {
++            state: before.state,
++            events: before.events,
++            attempts: before.attempts,
++            consumedMicroUsd: before.consumedMicroUsd,
++            reservedMicroUsd: before.reservedMicroUsd,
++            inFlight: before.inFlight,
++            conservativeMicroUsd: before.conservativeMicroUsd,
++            reportedUsageMicroUsd: before.reportedUsageMicroUsd,
++            independentlyVerifiedBilling: "UNKNOWN",
++          },
++        },
++      );
++    } catch {
++      return result("READINESS_UNAVAILABLE", 409);
++    }
++  }
+   const registry = env.HANDOFF_REGISTRY.getByName("test-active-handoffs");
+   const promotion = env.PROMOTION_CONTROL.getByName("test-draft-promotion");
+   const pilot = env.CONVERSATION_STATE.getByName(
+diff --git a/worker-tests/mp-06-owner-readiness.test.ts b/worker-tests/mp-06-owner-readiness.test.ts
+new file mode 100644
+index 0000000..db37457
+--- /dev/null
++++ b/worker-tests/mp-06-owner-readiness.test.ts
+@@ -0,0 +1,320 @@
++import {
++  createExecutionContext,
++  evictDurableObject,
++  runInDurableObject,
++  waitOnExecutionContext,
++} from "cloudflare:test";
++import { env, exports } from "cloudflare:workers";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import worker from "../worker/index.js";
++import { MP06_PILOT_CONTROL_OBJECT_NAME } from "../worker/mp-06-pilot-control.js";
++
++const ref = (n: number) => n.toString(16).padStart(64, "0");
++const owner = ref(900);
++const session = ref(3);
++const event = ref(13);
++const coordinator = () =>
++  env.CONVERSATION_STATE.getByName(MP06_PILOT_CONTROL_OBJECT_NAME);
++const conversation = () => env.CONVERSATION_STATE.getByName(owner);
++const draft = () => env.DRAFT_ORDER.getByName(owner);
++const endpoint =
++  "https://malispang-lineoa-test.eakkachai-dev.workers.dev/admin/mp06-pilot/owner-uat-readiness";
++const request = (suffix = "", authorized = true, method = "GET") =>
++  new Request(endpoint + suffix, {
++    method,
++    headers: authorized ? { authorization: "Bearer unit-test-admin-key" } : {},
++  });
++
++async function snapshot() {
++  const pilot = await runInDurableObject(coordinator(), (_i, s) =>
++    [
++      "mp06_pilot_session",
++      "mp06_pilot_attempts",
++      "mp06_pilot_events",
++      "mp06_pilot_testers",
++    ].map((t) =>
++      s.storage.sql.exec(`SELECT * FROM ${t} ORDER BY rowid`).toArray(),
++    ),
++  );
++  const context = await runInDurableObject(conversation(), (_i, s) =>
++    [
++      "conversation_state",
++      "mp06_conversation_state",
++      "mp06_response_plans",
++      "processed_events",
++      "audit_events",
++    ].map((t) =>
++      s.storage.sql.exec(`SELECT * FROM ${t} ORDER BY rowid`).toArray(),
++    ),
++  );
++  const order = await runInDurableObject(draft(), async (_i, s) => ({
++    rows: [
++      "draft_current",
++      "draft_revisions",
++      "draft_processed_events",
++      "draft_audit",
++    ].map((t) =>
++      s.storage.sql.exec(`SELECT * FROM ${t} ORDER BY rowid`).toArray(),
++    ),
++    alarm: await s.storage.getAlarm(),
++  }));
++  return { pilot, context, order };
++}
++
++beforeEach(async () => {
++  // Only local synthetic SQLite fixtures; no real identifiers or remote storage.
++  await runInDurableObject(coordinator(), (_i, s) => {
++    for (const table of [
++      "mp06_pilot_session",
++      "mp06_pilot_attempts",
++      "mp06_pilot_events",
++      "mp06_pilot_testers",
++    ])
++      s.storage.sql.exec(`DELETE FROM ${table}`);
++    s.storage.sql.exec(
++      "INSERT INTO mp06_pilot_session VALUES (1, ?, 'STOPPED', 100, 3600100, 3, 3, 27824, 0, 0, 'OPERATOR_STOP')",
++      session,
++    );
++    s.storage.sql.exec(
++      "INSERT INTO mp06_pilot_testers VALUES (?, ?)",
++      session,
++      owner,
++    );
++    s.storage.sql.exec(
++      "INSERT INTO mp06_pilot_events VALUES (?, ?, ?, 100, 1)",
++      session,
++      event,
++      owner,
++    );
++    for (let i = 1; i <= 3; i++)
++      s.storage.sql.exec(
++        "INSERT INTO mp06_pilot_attempts VALUES (?, ?, ?, ?, 12932, ?, 100, 200, 150)",
++        ref(i),
++        ref(10 + i),
++        ref(20 + i),
++        i < 3 ? "USAGE_UNKNOWN" : "SETTLED",
++        i === 1 ? 12932 : i === 2 ? null : 1960,
++      );
++  });
++  await runInDurableObject(conversation(), (_i, s) => {
++    s.storage.sql.exec("UPDATE conversation_state SET mode = 'BOT_ACTIVE'");
++    s.storage.sql.exec(
++      "UPDATE mp06_conversation_state SET clarification_used = 0, pending_template_id = NULL",
++    );
++    s.storage.sql.exec("DELETE FROM mp06_response_plans");
++    s.storage.sql.exec(
++      "INSERT INTO mp06_response_plans VALUES (?, 'synthetic-fingerprint', 1, 100, 10000000000000)",
++      event,
++    );
++  });
++  await runInDurableObject(draft(), (_i, s) => {
++    for (const table of ["draft_current", "draft_processed_events"])
++      s.storage.sql.exec(`DELETE FROM ${table}`);
++  });
++});
++
++describe("local proposed read-only Owner readiness route", () => {
++  it("reconciles the typed historical subtotal without treating the legacy actual_cost column as billing", async () => {
++    const spy = vi
++      .spyOn(globalThis, "fetch")
++      .mockRejectedValue(new Error("NETWORK_FORBIDDEN"));
++    const logs = vi.spyOn(console, "info").mockImplementation(() => {});
++    try {
++      const before = await snapshot();
++      expect(await coordinator().ownerUatPilotObservation()).toMatchObject({
++        ownerRef: owner,
++      });
++      expect(
++        await conversation().ownerUatConversationObservation(event),
++      ).toMatchObject({ mode: "BOT_ACTIVE" });
++      expect(await draft().ownerUatDraftObservation()).toMatchObject({
++        state: "NO_DRAFT",
++      });
++      const r = await exports.default.fetch(request());
++      expect(r.status).toBe(200);
++      expect(r.headers.get("cache-control")).toBe("no-store");
++      const text = await r.text();
++      expect(JSON.parse(text)).toMatchObject({
++        observation: {
++          readyAtObservation: true,
++          activationAuthorizedByResponse: false,
++          accounting: {
++            consumedMicroUsd: 27824,
++            conservativeMicroUsd: 25864,
++            reportedUsageMicroUsd: 1960,
++            independentlyVerifiedBilling: "UNKNOWN",
++          },
++        },
++      });
++      for (const forbidden of [
++        owner,
++        session,
++        event,
++        "unit-test-admin-key",
++        "aggregate_json",
++      ])
++        expect(text).not.toContain(forbidden);
++      expect(await snapshot()).toEqual(before);
++      expect(spy).not.toHaveBeenCalled();
++    } finally {
++      spy.mockRestore();
++      logs.mockRestore();
++    }
++  });
++
++  it("rejects unauthorized, alternate target, query selector and mutation methods", async () => {
++    const before = await snapshot();
++    expect((await exports.default.fetch(request("", false))).status).toBe(401);
++    for (const r of [
++      request("?conversationRef=" + ref(999)),
++      request("", true, "POST"),
++      new Request(
++        "https://other.invalid/admin/mp06-pilot/owner-uat-readiness",
++        { headers: { authorization: "Bearer unit-test-admin-key" } },
++      ),
++    ])
++      expect((await exports.default.fetch(r)).status).toBe(403);
++    expect(await snapshot()).toEqual(before);
++  });
++
++  it("rejects non-TEST identity and disabled pilot controls", async () => {
++    const before = await snapshot();
++    for (const override of [
++      { ENVIRONMENT: "PRODUCTION" },
++      { LINE_OA_ACCOUNT_NAME: "other" },
++      { MP06_PILOT_CONTROL_ENABLED: "false" },
++    ]) {
++      const ctx = createExecutionContext();
++      const r = await worker.fetch(request(), { ...env, ...override }, ctx);
++      expect(r.status).toBeGreaterThanOrEqual(400);
++      await waitOnExecutionContext(ctx);
++    }
++    expect(await snapshot()).toEqual(before);
++  });
++
++  it("rejects missing/ambiguous private Owner linkage and unknown delivered-event provenance", async () => {
++    await runInDurableObject(
++      coordinator(),
++      (_i, s) =>
++        s.storage.sql.exec(
++          "INSERT INTO mp06_pilot_testers VALUES (?, ?)",
++          session,
++          ref(999),
++        ).rowsWritten,
++    );
++    let before = await snapshot();
++    expect((await exports.default.fetch(request())).status).toBe(409);
++    expect(await snapshot()).toEqual(before);
++    await runInDurableObject(
++      coordinator(),
++      (_i, s) =>
++        s.storage.sql.exec(
++          "DELETE FROM mp06_pilot_testers WHERE tester_ref = ?",
++          ref(999),
++        ).rowsWritten,
++    );
++    await runInDurableObject(
++      conversation(),
++      (_i, s) =>
++        s.storage.sql.exec("DELETE FROM mp06_response_plans").rowsWritten,
++    );
++    before = await snapshot();
++    expect((await exports.default.fetch(request())).status).toBe(409);
++    expect(await snapshot()).toEqual(before);
++  });
++
++  it("reports stale clarification, handoff and blocking draft without repairing or leaking content", async () => {
++    await runInDurableObject(conversation(), (_i, s) => {
++      s.storage.sql.exec(
++        "UPDATE mp06_conversation_state SET clarification_used = 1, pending_template_id = 'T-C01'",
++      );
++      s.storage.sql.exec(
++        "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF'",
++      );
++    });
++    await runInDurableObject(
++      draft(),
++      (_i, s) =>
++        s.storage.sql.exec(
++          "INSERT INTO draft_current VALUES (1, ?, 100, 200)",
++          JSON.stringify({
++            state: "COLLECTING",
++            privateFixture: "DO_NOT_OUTPUT_SYNTHETIC_CONTENT",
++          }),
++        ).rowsWritten,
++    );
++    const before = await snapshot();
++    const r = await exports.default.fetch(request());
++    const text = await r.text();
++    expect(JSON.parse(text)).toMatchObject({
++      audit: { code: "CONVERSATION_RECOVERY_REVIEW_REQUIRED" },
++      observation: {
++        readyAtObservation: false,
++        conversation: {
++          mode: "HUMAN_HANDOFF",
++          clarificationUsed: true,
++          pendingTemplate: "T-C01",
++        },
++        draft: { state: "COLLECTING" },
++      },
++    });
++    expect(text).not.toContain("DO_NOT_OUTPUT");
++    expect(await snapshot()).toEqual(before);
++  });
++
++  it("denies changed accounting and malformed state without hidden cleanup", async () => {
++    await runInDurableObject(
++      coordinator(),
++      (_i, s) =>
++        s.storage.sql.exec(
++          "UPDATE mp06_pilot_session SET state = 'ACTIVE', expires_at = 1, in_flight = 1, budget_reserved_micro_usd = 12932",
++        ).rowsWritten,
++    );
++    const before = await snapshot();
++    expect((await exports.default.fetch(request())).status).toBe(409);
++    expect(await snapshot()).toEqual(before);
++    // Reproduces the legacy GET's hidden state transition in local storage only.
++    await coordinator().mp06PilotStatus(Date.now());
++    expect(await snapshot()).not.toEqual(before);
++  });
++
++  it("survives restart and read replay without mutating accounting, state or audit tables", async () => {
++    const before = await snapshot();
++    await evictDurableObject(coordinator());
++    await evictDurableObject(conversation());
++    await evictDurableObject(draft());
++    for (let i = 0; i < 2; i++)
++      expect((await exports.default.fetch(request())).status).toBe(200);
++    expect(await snapshot()).toEqual(before);
++  });
++
++  it("fails closed on storage/parser errors with sanitized output", async () => {
++    await runInDurableObject(
++      draft(),
++      (_i, s) =>
++        s.storage.sql.exec(
++          "INSERT INTO draft_current VALUES (1, 'malformed synthetic private payload', 100, NULL)",
++        ).rowsWritten,
++    );
++    const before = await snapshot();
++    const r = await exports.default.fetch(request());
++    expect(r.status).toBe(409);
++    const text = await r.text();
++    expect(text).not.toContain("private payload");
++    expect(text).not.toContain(owner);
++    expect(await snapshot()).toEqual(before);
++  });
++
++  it("does not treat a stored draft with a missing state as NO_DRAFT", async () => {
++    await runInDurableObject(
++      draft(),
++      (_i, s) =>
++        s.storage.sql.exec(
++          "INSERT INTO draft_current VALUES (1, '{}', 100, NULL)",
++        ).rowsWritten,
++    );
++    const before = await snapshot();
++    expect((await exports.default.fetch(request())).status).toBe(409);
++    expect(await snapshot()).toEqual(before);
++  });
++});

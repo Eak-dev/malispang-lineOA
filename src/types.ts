@@ -7,6 +7,7 @@ export type CustomerAction =
   | "CHECK_TODAY"
   | "ADVANCE_ORDER"
   | "REWARDS_INFO"
+  | "DELIVERY"
   | "LOCATION"
   | "OPENING_HOURS"
   | "WHOLESALE"

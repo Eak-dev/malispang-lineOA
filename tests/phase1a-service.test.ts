@@ -4,8 +4,6 @@ import {
   ApprovedFaqKnowledgeBase,
   HANDOFF_ACKNOWLEDGEMENT,
   MemoryStore,
-  MOCK_DRAFT_ORDER_NOTICE,
-  MOCK_REWARDS_NOTICE,
   Phase1AService,
   RedactedAuditLog,
   SAFE_FALLBACK,
@@ -19,7 +17,13 @@ const approvedRecords: readonly ApprovedFaqRecord[] = [
   fixture("LOCATION", "ที่ตั้งทดสอบที่เจ้าของอนุมัติ"),
   fixture("OPENING_HOURS", "เวลาทำการทดสอบที่เจ้าของอนุมัติ"),
   fixture("STORAGE", "วิธีเก็บรักษาทดสอบที่เจ้าของอนุมัติ"),
+  fixture("ALLERGEN", "คำเตือนภูมิแพ้ที่เจ้าของอนุมัติ"),
   fixture("WHOLESALE", "ราคาส่งทดสอบที่เจ้าของอนุมัติ"),
+  fixture("ADVANCE_ORDER", "วิธีสั่งล่วงหน้าที่เจ้าของอนุมัติ"),
+  fixture("PROMOTION", "โปรรายวันที่ต้องให้พนักงานตรวจสอบ"),
+  fixture("LOYALTY", "กติกาแต้มที่เจ้าของอนุมัติ"),
+  fixture("STOCK", "สต๊อกต้องให้พนักงานตรวจสอบ"),
+  fixture("DELIVERY", "ยังไม่มี Delivery โดยตรง"),
 ];
 
 function fixture(
@@ -31,9 +35,21 @@ function fixture(
     intent,
     keywords: [],
     answer,
-    approvalStatus: "APPROVED",
-    approvedBy: "OWNER-MOCK",
+    status: "APPROVED",
+    source: {
+      classification: "OWNER_APPROVED_REPOSITORY_RECORD",
+      reference: "fixture-owner-decision-2026-08-14",
+    },
+    owner: "OWNER-MOCK",
+    approvedAt: "2026-08-01T00:00:00.000Z",
     effectiveFrom: "2026-01-01T00:00:00.000Z",
+    effectiveTo: "2026-12-31T00:00:00.000Z",
+    freshness: {
+      reviewAt: "2026-12-01T00:00:00.000Z",
+      maximumAgeDays: 180,
+    },
+    version: `fixture-${intent.toLocaleLowerCase()}`,
+    checksum: "a".repeat(64),
   };
 }
 
@@ -71,6 +87,11 @@ describe("Phase1AService", () => {
       customer("E1", { kind: "text", text: "สอบถามค่ะ" }),
     );
     expect(replies[0]?.message).toEqual({ type: "text", text: SAFE_FALLBACK });
+    expect(replies[1]?.message).toEqual({
+      type: "text",
+      text: HANDOFF_ACKNOWLEDGEMENT,
+    });
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
     expect(JSON.stringify(replies)).not.toContain("ชื่อ:");
   });
 
@@ -88,6 +109,21 @@ describe("Phase1AService", () => {
     ).toEqual({ type: "text", text: answer });
   });
 
+  it.each([
+    "ขอเมนู",
+    "ขอเมนูหน่อย",
+    "เมนูขนมปัง",
+    "มีอะไรบ้าง",
+    "มีไรบ้าง",
+    "ขอดูเมนู",
+  ])("routes every Owner-approved menu phrase without handoff: %s", (text) => {
+    const test = setup();
+    expect(
+      test.service.process(customer("E1", { kind: "text", text }))[0]?.message,
+    ).toEqual({ type: "text", text: "เมนูทดสอบที่เจ้าของอนุมัติ" });
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("BOT_ACTIVE");
+  });
+
   it("fails closed when a business answer has no authoritative source", () => {
     const test = setup([]);
     expect(
@@ -95,15 +131,15 @@ describe("Phase1AService", () => {
         customer("E1", { kind: "text", text: "ราคาเท่าไหร่" }),
       )[0]?.message,
     ).toEqual({ type: "text", text: SAFE_FALLBACK });
-    expect(test.store.conversation("CUST-TEST-1").mode).toBe("BOT_ACTIVE");
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
   });
 
   it("fails closed for draft, revoked, future, and expired FAQ records", () => {
     const variants: ApprovedFaqRecord[] = [
-      { ...fixture("PRICE", "ห้ามส่งคำตอบ draft"), approvalStatus: "DRAFT" },
+      { ...fixture("PRICE", "ห้ามส่งคำตอบ draft"), status: "DRAFT" },
       {
         ...fixture("PRICE", "ห้ามส่งคำตอบ revoked"),
-        approvalStatus: "REVOKED",
+        status: "REVOKED",
       },
       {
         ...fixture("PRICE", "ห้ามส่งคำตอบอนาคต"),
@@ -111,7 +147,7 @@ describe("Phase1AService", () => {
       },
       {
         ...fixture("PRICE", "ห้ามส่งคำตอบหมดอายุ"),
-        expiresAt: "2026-08-13T00:00:00.000Z",
+        effectiveTo: "2026-08-13T00:00:00.000Z",
       },
     ];
     for (const [index, record] of variants.entries()) {
@@ -127,6 +163,63 @@ describe("Phase1AService", () => {
       expect(serialized).toContain(SAFE_FALLBACK);
       expect(serialized).not.toContain(record.answer);
     }
+  });
+
+  it("records provenance for every approved answer without customer data", () => {
+    const test = setup();
+    test.service.process(
+      customer("EVENT-TRACE-1", { kind: "text", text: "ราคาเท่าไหร่" }),
+    );
+    expect(test.auditLog.entries.at(-1)).toMatchObject({
+      outcome: "FAQ_ANSWERED",
+      knowledgeTrace: {
+        recordId: "FAQ-PRICE",
+        sourceReference: "fixture-owner-decision-2026-08-14",
+        approvedAt: "2026-08-01T00:00:00.000Z",
+        version: "fixture-price",
+        checksum: "a".repeat(64),
+      },
+    });
+    expect(JSON.stringify(test.auditLog.entries)).not.toContain(
+      "EVENT-TRACE-1",
+    );
+  });
+
+  it("fails closed for stale, malformed, and conflicting approved records", () => {
+    const stale = {
+      ...fixture("PRICE", "ห้ามส่งคำตอบ stale"),
+      freshness: {
+        reviewAt: "2026-08-13T00:00:00.000Z",
+        maximumAgeDays: 180,
+      },
+    };
+    const malformed = {
+      ...fixture("PRICE", "ห้ามส่งคำตอบ checksum ผิด"),
+      checksum: "not-a-checksum",
+    };
+    for (const record of [stale, malformed]) {
+      const test = setup([record]);
+      expect(
+        test.service.process(
+          customer(`E-${record.checksum}`, {
+            kind: "text",
+            text: "ราคาเท่าไหร่",
+          }),
+        )[0]?.message,
+      ).toEqual({ type: "text", text: SAFE_FALLBACK });
+    }
+
+    const test = setup([
+      fixture("PRICE", "คำตอบขัดกันหนึ่ง"),
+      { ...fixture("PRICE", "คำตอบขัดกันสอง"), id: "FAQ-PRICE-2" },
+    ]);
+    const serialized = JSON.stringify(
+      test.service.process(
+        customer("E-CONFLICT", { kind: "text", text: "ราคาเท่าไหร่" }),
+      ),
+    );
+    expect(serialized).toContain(SAFE_FALLBACK);
+    expect(serialized).not.toContain("คำตอบขัดกัน");
   });
 
   it("returns the branded Flex menu only for an explicit main-menu request", () => {
@@ -170,18 +263,85 @@ describe("Phase1AService", () => {
   });
 
   it.each([
-    "ส่งสลิปแล้วค่ะ",
-    "สอบถามการชำระเงิน",
-    "ขอร้องเรียนสินค้า",
-    "ลูกค้าแพ้อาหารค่ะ",
-    "ต้องการออเดอร์จำนวนมาก",
-    "มีสต๊อกวันนี้ไหม",
-    "มีโปรโมชั่นอะไร",
-  ])("routes a sensitive or dynamic topic to human review: %s", (text) => {
-    const test = setup();
+    ["OPEN_FLEX_MENU", "flex"],
+    ["SHOW_MENU", "text"],
+    ["MENU_PRICE", "text"],
+    ["LOCATION", "text"],
+    ["OPENING_HOURS", "text"],
+    ["REWARDS_INFO", "text"],
+    ["DELIVERY", "text"],
+    ["WHOLESALE", "text"],
+  ] as const)(
+    "allows approved static action %s during handoff without resetting it",
+    (action, messageType) => {
+      const test = setup();
+      test.service.process(
+        customer("E1", { kind: "action", action: "HUMAN_HANDOFF" }),
+      );
+      const replies = test.service.process(
+        customer("E2", { kind: "action", action }),
+      );
+      expect(replies).toHaveLength(1);
+      expect(replies[0]?.message.type).toBe(messageType);
+      expect(JSON.stringify(replies)).not.toContain(HANDOFF_ACKNOWLEDGEMENT);
+      expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
+      expect(test.store.conversation("CUST-TEST-1").handoffWindow).toBe(1);
+    },
+  );
+
+  it.each(["ร้านอยู่ไหน", "Delivery", "สะสมแต้มและโปรโมชั่น"])(
+    "keeps typed message silent during handoff: %s",
+    (text) => {
+      const test = setup();
+      test.service.process(
+        customer("E1", { kind: "action", action: "HUMAN_HANDOFF" }),
+      );
+      expect(
+        test.service.process(customer("E2", { kind: "text", text })),
+      ).toEqual([]);
+      expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
+    },
+  );
+
+  it("fails closed without a reply when approved static data is unavailable during handoff", () => {
+    const test = setup([]);
+    test.service.process(
+      customer("E1", { kind: "action", action: "HUMAN_HANDOFF" }),
+    );
     expect(
-      test.service.process(customer("E1", { kind: "text", text }))[0]?.message,
-    ).toEqual({ type: "text", text: HANDOFF_ACKNOWLEDGEMENT });
+      test.service.process(
+        customer("E2", { kind: "action", action: "SHOW_MENU" }),
+      ),
+    ).toEqual([]);
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
+  });
+
+  it.each(["ส่งสลิปแล้วค่ะ", "สอบถามการชำระเงิน", "ขอร้องเรียนสินค้า"])(
+    "routes a direct high-risk topic to human review: %s",
+    (text) => {
+      const test = setup();
+      expect(
+        test.service.process(customer("E1", { kind: "text", text }))[0]
+          ?.message,
+      ).toEqual({ type: "text", text: HANDOFF_ACKNOWLEDGEMENT });
+      expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
+    },
+  );
+
+  it.each([
+    ["ลูกค้าแพ้อาหารค่ะ", "คำเตือนภูมิแพ้ที่เจ้าของอนุมัติ"],
+    ["มีราคาส่งไหม", "ราคาส่งทดสอบที่เจ้าของอนุมัติ"],
+    ["มีสต๊อกวันนี้ไหม", "สต๊อกต้องให้พนักงานตรวจสอบ"],
+    ["มีโปรโมชั่นอะไร", "โปรรายวันที่ต้องให้พนักงานตรวจสอบ"],
+  ])("answers safe guidance then enters handoff: %s", (text, answer) => {
+    const test = setup();
+    const replies = test.service.process(
+      customer("E1", { kind: "text", text }),
+    );
+    expect(replies.map((reply) => reply.message)).toEqual([
+      { type: "text", text: answer },
+      { type: "text", text: HANDOFF_ACKNOWLEDGEMENT },
+    ]);
     expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
   });
 
@@ -262,31 +422,35 @@ describe("Phase1AService", () => {
 
   it("requires staff verification for current stock action", () => {
     const test = setup();
-    expect(
-      test.service.process(
-        customer("E1", { kind: "action", action: "CHECK_TODAY" }),
-      )[0]?.message,
-    ).toEqual({ type: "text", text: HANDOFF_ACKNOWLEDGEMENT });
+    const replies = test.service.process(
+      customer("E1", { kind: "action", action: "CHECK_TODAY" }),
+    );
+    expect(replies.map((reply) => reply.message)).toEqual([
+      { type: "text", text: "สต๊อกต้องให้พนักงานตรวจสอบ" },
+      { type: "text", text: HANDOFF_ACKNOWLEDGEMENT },
+    ]);
   });
 
-  it("creates only a clearly marked mock draft notice", () => {
+  it("keeps preorder as approved guidance plus staff handoff", () => {
     const test = setup();
-    expect(
-      test.service.process(
-        customer("E1", { kind: "action", action: "ADVANCE_ORDER" }),
-      )[0]?.message,
-    ).toEqual({ type: "text", text: MOCK_DRAFT_ORDER_NOTICE });
-    expect(test.store.conversation("CUST-TEST-1").mode).toBe("BOT_ACTIVE");
+    const replies = test.service.process(
+      customer("E1", { kind: "action", action: "ADVANCE_ORDER" }),
+    );
+    expect(replies.map((reply) => reply.message)).toEqual([
+      { type: "text", text: "วิธีสั่งล่วงหน้าที่เจ้าของอนุมัติ" },
+      { type: "text", text: HANDOFF_ACKNOWLEDGEMENT },
+    ]);
+    expect(test.store.conversation("CUST-TEST-1").mode).toBe("HUMAN_HANDOFF");
   });
 
-  it("keeps Test rewards isolated from Production", () => {
+  it("answers only general loyalty rules without a Reward Card operation", () => {
     const test = setup();
     const replies = test.service.process(
       customer("E1", { kind: "action", action: "REWARDS_INFO" }),
     );
     expect(replies[0]?.message).toEqual({
       type: "text",
-      text: MOCK_REWARDS_NOTICE,
+      text: "กติกาแต้มที่เจ้าของอนุมัติ",
     });
     expect(JSON.stringify(replies)).not.toContain("https://");
   });
@@ -306,8 +470,8 @@ describe("Phase1AService", () => {
     expect(serialized).not.toContain("0812345678");
     expect(serialized).not.toContain("ที่อยู่เต็ม");
     expect(test.auditLog.entries[0]).toMatchObject({
-      outcome: "SAFE_FALLBACK",
-      reasonCode: "QUESTION_NOT_IN_APPROVED_FAQ",
+      outcome: "HANDOFF_STARTED",
+      reasonCode: "SENSITIVE_OR_DYNAMIC_TOPIC",
     });
   });
 });

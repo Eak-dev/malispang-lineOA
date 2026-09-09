@@ -18,6 +18,13 @@ export interface RedactedAuditEntry {
   readonly conversationRef: string;
   readonly outcome: AuditOutcome;
   readonly reasonCode: string;
+  readonly knowledgeTrace?: {
+    readonly recordId: string;
+    readonly sourceReference: string;
+    readonly approvedAt: string;
+    readonly version: string;
+    readonly checksum: string;
+  };
 }
 
 export class RedactedAuditLog {
@@ -28,13 +35,18 @@ export class RedactedAuditLog {
     conversationId: string;
     outcome: AuditOutcome;
     reasonCode: string;
+    knowledgeTrace?: RedactedAuditEntry["knowledgeTrace"];
   }): void {
-    this.entries.push({
+    const entry: RedactedAuditEntry = {
       eventRef: reference(input.eventId),
       conversationRef: reference(input.conversationId),
       outcome: input.outcome,
       reasonCode: input.reasonCode,
-    });
+      ...(input.knowledgeTrace === undefined
+        ? {}
+        : { knowledgeTrace: input.knowledgeTrace }),
+    };
+    this.entries.push(entry);
   }
 }
 

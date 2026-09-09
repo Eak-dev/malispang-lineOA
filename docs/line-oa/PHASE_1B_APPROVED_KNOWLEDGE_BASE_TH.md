@@ -1,0 +1,103 @@
+# Phase 1B — Approved Knowledge Base (`Issue #8`)
+
+เริ่ม implementation: 29 สิงหาคม 2026
+
+Owner approval / effective date: `2026-08-30`
+
+Review date: `2026-09-30`
+
+สถานะ: `ISSUE #8 DEFINITION OF DONE COMPLETE / OWNER RE-UAT PASS`
+
+เอกสารนี้ทำตาม GitHub Issue #9 และ Issue #8 เท่านั้น งานรอบนี้ไม่อนุญาตให้ deploy เปลี่ยน LINE OA `มะลิปัง TEST` หรือเปิด/เปลี่ยน Production `มะลิปัง`
+
+## Acceptance criteria และ Definition of Done
+
+- schema มี source, owner, approvedAt, effectiveFrom/effectiveTo, reviewAt, maximumAgeDays, status, version และ checksum
+- lookup ส่งเฉพาะ record `APPROVED` ที่อยู่ในช่วงมีผล ยังไม่ถึง review/maximum age และไม่มี active record ขัดกัน
+- manifest exact answer ทั้ง 14 categories ตรง Owner approval และ SHA-256 checksum ของ UTF-8 answer
+- ข้อมูล missing, future, expired, stale, malformed, checksum mismatch ระหว่าง validation หรือ active conflict ต้อง fail closed
+- stock, daily promotion/filling, preorder, allergen, wholesale และ reward redemption ส่ง safe approved guidance แล้วเริ่ม handoff
+- fallback ส่ง exact fallback แล้ว acknowledgement หนึ่งครั้ง จากนั้นบอตเงียบจน authorized staff close
+- เมนูและราคาใช้รูป approved สองรูปตามลำดับ แล้วจึงส่งข้อความ stock disclaimer
+- typed messages ทุกข้อความยัง silent ระหว่าง handoff; ห้ามใช้ text intent เป็นทางเลี่ยง bot silence
+- เฉพาะ approved static TEST postback allowlist และ `test:show_wholesale` ตอบได้ระหว่าง handoff โดยไม่ acknowledgement ซ้ำและไม่เปลี่ยน handoff state
+- static postback ต้องผ่าน Approved Knowledge Base; missing/stale/conflict ต้อง silent ระหว่าง handoff ส่วน unknown, `test:show_facebook` และ Production-like postback ต้อง fail closed
+- แต้มตอบเฉพาะกติกาทั่วไป ไม่อ่าน/แก้ข้อมูลลูกค้า ไม่คำนวณแต้มรายบุคคล ไม่เรียก Reward Card URL และไม่แลกรางวัล
+- Definition of Done ของ Issue #8 จะผ่านสมบูรณ์เมื่อ local checks ผ่าน, ได้ approval สำหรับ TEST deployment แยก และ Owner UAT จาก frozen deployed commit ผ่าน
+
+## Implementation ที่เสร็จใน local branch
+
+1. `config/approved-knowledge-base/test-knowledge-base.json` เป็น source of truth แบบ versioned สำหรับ `มะลิปัง TEST`
+2. 14 categories เป็น `APPROVED`: Menu, Price, Location, Opening hours, Contact, Pickup, Storage, Allergen, Wholesale, Advance order, Delivery, Promotion, Loyalty และ Stock
+3. ทุก record ใช้ Owner `MALISPANG_OWNER`, approval/effective `2026-08-30`, review/effective-to `2026-09-30`, version แยกตาม intent และ SHA-256 exact-answer checksum
+4. validator ตรวจ schema และ checksum; lookup ปฏิเสธ stale/conflict และส่ง provenance เข้า redacted audit
+5. Worker local routing ส่งรูปเมนูสองรูปจาก fixed TEST asset origin และไม่ใช้ภาพเป็นหลักฐาน stock
+6. dynamic/high-risk intents ส่ง approved guidance พร้อม handoff acknowledgement หนึ่งครั้ง แล้ว Durable Object คง handoff silence
+7. generic fallback เข้า handoff เช่นเดียวกัน; duplicate event ยังคงไม่ตอบซ้ำ
+8. rich-menu reward route ใน local build ตอบกติกา `LOYALTY` จาก manifest โดยไม่สร้างปุ่ม/ใช้ Reward Card URL
+9. กติกาพรีออเดอร์สำหรับพนักงานอยู่ใน `PREORDER_STAFF_POLICY_PHASE_1B_TH.md` แบบ reference-only; ไม่เริ่ม workflow Issue #2
+10. `RouteDecision.allowDuringHandoff` เป็น capability ที่ตั้ง `true` ได้จาก static TEST postback allowlist เท่านั้น; typed classifier และ unsafe postback ตั้ง `false`
+11. Durable Object ตอบ approved static postback ระหว่าง handoff โดยบันทึก processed event ตามเดิม, ส่ง `enteredHandoff=false` และคง state `HUMAN_HANDOFF`
+12. menu lexicon version `2026-08-31-menu-v2` รองรับ `ขอเมนู`, `ขอเมนูหน่อย`, `เมนูขนมปัง`, `มีอะไรบ้าง`, `มีไรบ้าง` และ `ขอดูเมนู`
+
+## พฤติกรรมตอบและ escalation
+
+| กลุ่ม                                                | พฤติกรรม local ที่ตรวจ                                                  |
+| ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| Menu / price                                         | รูป bread menu → รูป chiffon/cookie → exact reference/stock disclaimer  |
+| Location / hours / contact / storage / Delivery      | exact approved answer จาก manifest; ไม่มี real-time claim               |
+| Stock / daily promo-filling                          | ไม่ยืนยันค่าปัจจุบัน; ส่ง exact guidance → acknowledgement → silence    |
+| Preorder / wholesale / allergen / reward redemption  | ส่ง exact limitations/requirements → acknowledgement → silence          |
+| Payment / slip / refund / complaint / sensitive data | ไม่พยายามตอบ FAQ; เข้า handoff โดยตรง                                   |
+| Unknown / unavailable / stale                        | exact fallback → acknowledgement หนึ่งครั้ง → silence                   |
+| Loyalty rules                                        | ตอบกติกาทั่วไป; ไม่มี URL, customer lookup หรือ Reward Card operation   |
+| Typed text ระหว่าง handoff                           | เงียบทั้งหมด แม้ข้อความจะตรง static FAQ                                 |
+| Approved static TEST postback ระหว่าง handoff        | ตอบ approved content; ไม่ acknowledgement ซ้ำ; handoff state ไม่เปลี่ยน |
+| Unknown / Production-like / Facebook postback        | Fail closed; ระหว่าง handoff ไม่ตอบข้อมูลใหม่                           |
+
+## Live UAT failure และ corrective scope — 31 สิงหาคม 2026
+
+Deployed commit `4fdd54d5f8d98ea977602b570ab9d6976009042f` ไม่รองรับข้อความ `ขอเมนูหน่อย` จึงส่ง fallback และเริ่ม handoff หลังจากนั้น `test:show_menu` ถูก Durable Object ตัดเป็น `HANDOFF_SILENCE` แม้เป็น Rich Menu postback ที่ Owner อนุมัติ การแก้ local รอบนี้แยก event capability ชัดเจน: typed text ไม่มีสิทธิ์ bypass silence ส่วน static TEST postback allowlist ตอบได้โดยไม่ปิด handoff
+
+Corrective Worker commit `60bfe05caa5ac4d4763a4fb5d2c7c218f1e88735` ถูก deploy เฉพาะ `malispang-lineoa-test` แล้ว แต่ Owner re-UAT พบว่า Rich Menu v1 ที่เผยแพร่อยู่ส่ง `Delivery`, `เมนูขนมปัง` และ `สะสมแต้มและโปรโมชั่น` เป็น native text/message events จึงยังถูก typed-message silence ระหว่าง handoff นี่เป็น configuration mismatch ไม่ใช่ Worker routing regression
+
+Local Rich Menu v2 เปลี่ยนสาม action เป็น `test:show_delivery`, `test:show_menu` และ `test:show_rewards` postback ตามลำดับ โดยคง Maps/Facebook เป็น URI และพื้นที่ตกแต่งเป็น no action
+
+Owner อนุมัติให้สร้าง/Publish/set default v2 และปิด active TEST handoff เมื่อ 31 สิงหาคม 2026 กระบวนการยืนยันชื่อบัญชี `มะลิปัง TEST`, payload, action map และ image hash ผ่านทั้งหมด v2 เป็น default แล้ว, v1 ถูกเก็บไว้สำหรับ rollback และ active handoff เปลี่ยนจาก `1` เป็น `0` โดยไม่ส่งข้อความหรือเปิด customer conversation
+
+Owner ยืนยัน re-UAT Issue #8 เป็น `PASS` เมื่อ 31 สิงหาคม 2026 เวลา 09:36 น. (Asia/Bangkok) ครอบคลุม menu lexicon ขณะ bot active, acknowledgement ครั้งเดียว, static Rich Menu postback ระหว่าง handoff, typed-message silence และ Maps/Facebook ตาม acceptance ที่ตกลงไว้ จึงครบ Definition of Done ของ Issue #8
+
+## Fail-closed date policy
+
+record version นี้มีผลตั้งแต่ `2026-08-30T00:00:00+07:00` และ lookup ต้องปฏิเสธตั้งแต่ `2026-09-30T00:00:00+07:00` หากยังไม่มี Owner-reviewed version ใหม่ การทบทวนต้องสร้าง version/checksum ใหม่ ห้ามแก้ record ที่เคยใช้ย้อนหลัง
+
+## Test evidence
+
+- exact content/provenance/checksum ครบ 14 categories
+- approved-only Thai lookup ครบทุก intent
+- stale boundary `2026-09-30` และ conflict rejection
+- daily stock/promotion/filling ไม่ถูกยืนยัน
+- fallback/handoff acknowledgement ครั้งเดียว, duplicate protection และ bot silence
+- expanded menu lexicon เข้า `MENU` โดยไม่เริ่ม handoff
+- static allowlist ทั้งเจ็ดรายการและ wholesale guidance ตอบระหว่าง handoff โดย state ไม่เปลี่ยนและไม่มี acknowledgement ซ้ำ
+- typed location/Delivery/loyalty wording, Facebook, unknown และ Production-like postback ยังคง silent/fail closed ระหว่าง handoff
+- authorized/unauthorized staff close และ persistence fail-closed
+- loyalty response ไม่มี customer/Reward Card operation
+- Production credential/account safety guards
+- full local suite หลังเพิ่ม Rich Menu v2: 194 Node tests + 24 Worker runtime tests = 218 ผ่าน
+- formatting, ESLint, TypeScript, build, Flex/Rich Menu/manifest validation และ Worker dry-run ผ่าน
+- Owner re-UAT จาก Worker corrective commit และ Rich Menu postback v2: `PASS` เมื่อ `2026-08-31 09:36 +07:00`
+
+ผล command ชุดเต็ม, corrective commits, activation evidence และ Owner re-UAT ถูกบันทึกใน GitHub Issue #8
+
+## Rollback
+
+Worker ไม่มีการ deploy ใหม่ในรอบ Rich Menu v2 หาก v2 re-UAT ไม่ผ่าน ให้ยกเลิก Messaging API default ของ v2 เพื่อคืนการควบคุม default ให้ OA Manager v1 ที่เก็บไว้ ห้ามลบ resource ใดโดยไม่มี approval แยก ส่วน code rollback ใช้ stable TEST Worker version เดิมตาม deployment record
+
+## Completion status
+
+Acceptance criteria และ Definition of Done ผ่านครบแล้ว Issue #8 จึงได้รับอนุญาตให้ปิด โดยไม่เริ่ม Issue ถัดไปอัตโนมัติ
+
+Security follow-up แยกจาก acceptance criteria: LINE Developers Console แสดง long-lived TEST token ใน DOM ที่ระบบอัตโนมัติใช้ตรวจบัญชี ค่าไม่ถูกทำซ้ำหรือบันทึกใน repository/Issue และยังไม่มีการหมุน token เพราะต้องได้รับ approval แยก
+
+ห้ามเริ่ม Issue #2, #4, #5 หรือ #6 และห้ามนำข้อมูล/credential/state ของ TEST ไป Production

@@ -1,0 +1,479 @@
+# MP-06 v16 security remediation — current gate and historical evidence
+
+## Current deployment preflight — control-transition approval gate (2026-09-09)
+
+Verdict: CONTROL_TRANSITION_APPROVAL_REQUIRED. Owner has explicitly approved one TEST deployment of the exact c59 candidate below. This is not a request to approve that deployment again. The separate editing safety reviewer rejected the proposed persistent control transition because the latest instruction did not explicitly authorize creating a new roadmap/control authorization. No alternative editing method, validator bypass, implicit grant or direct deployment was used. The rejected patch made no tracked change; current committed control remains v18 and still rejects deployment. This section is evidence and a proposal only, not an authorization record or an implemented v19 transition.
+
+### Source and artifact verification
+
+- Repository Eak-dev/malispang-lineOA, branch codex/mp-06-guardrailed-ai; origin fetched. At preflight local HEAD and remote HEAD both4650b199b96990fce2350bc72be73ab709fab9e6; working tree clean and index empty.
+- Original control64d598183ea55c3b79e3f27aa9f9992bc318ac27 is an ancestor of runtimec59eb5e12bb96a34da38759a5585be67d8c2ab6e, which is an ancestor of evidence4650b199b96990fce2350bc72be73ab709fab9e6. Both ancestry checks passed. Candidate-to-evidence changes only this Markdown report; no executable, dependency, Worker configuration, assets or deploy-affecting change.
+- All20 changed paths from3db7738da3edc3da265ebb623190de03a629c0ff through4650b199b96990fce2350bc72be73ab709fab9e6 belong to the committed exact control/runtime/test/dependency/evidence lists. Current control validation passes v18 with the recorded DEFAULT_BRANCH_DRIFT warning; it does not grant deployment.
+- Reconstructed from the clean detached checkout of exact runtimec59eb5e12bb96a34da38759a5585be67d8c2ab6e, not the evidence checkout. Node24.19.0/pnpm11.19.0, frozen lockfile, the previously isolated committed-candidate store, no copied key or private environment file. Only the tracked .dev.vars.example was present. This round's install reused that verified store; it is not claimed as another empty-store installation. The two prior empty-store full validations remain in the v18 candidate section.
+- Local-only Wrangler4.122.0 minified dry-run again produced231587 bytes, SHA-2562203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308. Candidate checkout remained clean. This is the index.js bundle hash, not a hash of every multipart-upload metadata field. No upload command ran.
+- Original733/733 full/clean validation evidence is retained for unchanged runtime, dependencies and tests. No repeated full-suite PASS is claimed for this evidence-only turn.
+
+### Fresh TEST-only observations
+
+Deployment metadata at2026-09-09T00:53:36.087Z and exact-version metadata at00:54:34.116Z resolve:
+
+- Worker malispang-lineoa-test; active version8486019d-9b62-4de9-ae15-6299909a23d9,100% traffic; deployment9ae16f15-c18f-435a-adc3-5befeeeb8edc, created2026-09-08T08:54:52.06282Z.
+- Version annotation identifies source8a5b6547b4713ff50ad6b08ee58682e129641b6a and artifact15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64. This confirms the retained source/build/upload/annotation association, not an independent download/hash of remote executable bytes. The platform etag is not substituted for the approved artifact hash.
+- Account-membership metadata at00:55:21.527Z matches the sole configured account, masked c395…407d. Only account identity was inspected; no Production Worker/resource was queried.
+- Environment TEST, account label มะลิปัง TEST, bot model gpt-5.6-terra. Four SQLite DO bindings/classes are present: CONVERSATION_STATE/ConversationStateDO, DRAFT_ORDER/DraftOrderDO, HANDOFF_REGISTRY/HandoffRegistryDO and PROMOTION_CONTROL/PromotionControlDO. Compatibility date2026-08-14 and nodejs_compat remain as recorded. No configuration, class lifecycle, namespace or binding mutation was performed.
+- Six secret names are present: LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, LINE_BOT_USER_ID, TEST_ADMIN_KEY, TEST_REWARD_CARD_URL and OPENAI_API_KEY. Remote secret values were neither retrieved nor changed. For the authorized readiness GET only, the specifically approved Keychain TEST_ADMIN_KEY was captured in temporary process memory; HTTPS destination was fixed and redirects forbidden. The process completed and exited; no secret was printed, written, committed or sent elsewhere.
+- Health at00:56:01.049Z: ok / TEST / มะลิปัง TEST / durable-object-sqlite.
+
+Authenticated SELECT-only readiness receipt77445a50-f52b-4b05-bf51-87f5aa977205 at2026-09-09T00:56:01.161Z returned HTTP200 / STATE_OBSERVED:
+
+| Field                                   | Fresh result                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Pilot / AI admission                    | STOPPED / false                                                                                      |
+| Retained Owner provenance               | Immutable previous/current session lineage; retained SETTLED WP8E event and single private allowlist |
+| Events / provider attempts              | 6 / 6                                                                                                |
+| Consumed / reserved micro-USD           | 34082 / 0                                                                                            |
+| Accounting classification               | 25864 conservative terminal UNKNOWN +8218 reported-usage estimates =34082                            |
+| Attempt terminal inventory              | 2 USAGE_UNKNOWN;4 SETTLED;0 pending attempts                                                         |
+| In-flight                               | 0                                                                                                    |
+| Conversation                            | HUMAN_HANDOFF; clarificationUsed false; pendingTemplate null; pending replies0                       |
+| Draft                                   | EXPIRED_PURGED; nonBlocking true; pending replies0                                                   |
+| Activation eligibility                  | false; expiredAtObservation true; observation grants no activation/dispatch/reply/recovery authority |
+| Independently verified provider billing | UNKNOWN                                                                                              |
+
+No accounting difference was observed against the expected6/6/34082/0 state. Expired-at-observation is a read-only temporal classification of an already STOPPED session, not a new session expiry mutation, reset or instruction to recover. HUMAN_HANDOFF is retained as requested; no handoff close occurred. Pending-reply counts cover the existing processed-event/response-plan and draft contracts. The current readiness HTTP response does not expose a delivery_claims inventory or SQL schema version. Thus no directly measured claim count or remote v18 migration success is claimed. The old deployed source has no v18 delivery-claim implementation; actual post-candidate schema/claim verification remains a required preplanned gate, not an inference from health.
+
+Final read-only receiptff57b7bc-2761-49b4-aad2-ea89f33dfdc9 at2026-09-09T01:01:36.406Z returned HTTP200 / STATE_OBSERVED and matched all expected state fields again: AI OFF/STOPPED,6/6,34082/0,in-flight/pending attempts0,HUMAN_HANDOFF,pending replies0, unchanged non-blocking EXPIRED_PURGED. Provider-attempt and consumed-cost deltas between the two reads are0. Both credential-holding processes exited. This is observation evidence, not an executed shutdown or a claim of continuous outbound telemetry.
+
+Evidence-only validation: Node24.19.0/pnpm11.19.0 declarations, project-control validator, all70 existing control tests, repository formatting check,213-file secret scan and diff-check PASS. No Worker or executable/control/dependency file changed. The historical733-test candidate evidence is reused without inflating the inventory or rerunning a full suite without code changes. Explicit review shows only this authorized evidence path changed; rejected control files remain byte-identical to4650b199b96990fce2350bc72be73ab709fab9e6.
+
+### Exact control transition proposed — NOT applied
+
+Request explicit authority for Roadmap2026.09.09-v19 / Owner decisionMP-OD-2026-09-09-V19, superseding2026.09.09-v18. Starting source/evidence anchor4650b199b96990fce2350bc72be73ab709fab9e6 and the eventual evidence-only successor must remain separately identified; neither becomes a new runtime candidate. Preserve v18 and every historical Owner decision unchanged.
+
+Maximum ten existing control paths, no Worker runtime/behavior-test, dependency or Worker configuration change: PROJECT_CONTROL.md; config/project/roadmap.json; config/project/current-work.json; config/project/current-work.schema.json; src/project-control.ts; src/project-control-cli.ts; tests/project-control.test.ts; docs/project/OWNER_DECISION_LOG.md; docs/project/ROADMAP_CHANGELOG.md; docs/project/EXECUTION_GATES.md. Leave unnecessary files unchanged. The planned semantic delta is:
+
+1. Record only the Owner's already-given exact deployment grant: original runtime control64d598183ea55c3b79e3f27aa9f9992bc318ac27, sourcec59eb5e12bb96a34da38759a5585be67d8c2ab6e, bundle2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308, existing malispang-lineoa-test, one deployment attempt. The later control commit is not deployed and need not be an ancestor of this frozen older runtime; the original control-to-runtime-to-evidence chain must be verified explicitly.
+2. Keep runtime/dependency edits, session/continuation, Owner LINE, recovery mutation, rollback rehearsal, second deployment, PR/merge/Issue closure and Production query/mutation denied. Evidence/control paths only; frozen bot/knowledge/policy/catalog/threshold/timeouts/retries and accounting remain unchanged.
+3. Deploy still denies without independently obtained fresh exact pre-version/source/artifact/account/Worker/traffic, clean committed/pushed source, reproducible artifact, existing validation, STOPPED/AI OFF, preserved6/6/34082 accounting, zero reserved/in-flight/pending provider work, proven delivery/schema observations and independent containment. No flags copied from current-work can substitute for those observations. No wildcard, latest alias, validation bypass or self-authorization.
+4. Add negative control tests for wrong source/artifact/account/Worker/triplet, stale/missing evidence, pending claim/provider work, accounting drift, already-used deployment attempt, evidence-HEAD deployment, candidate self-authorization and every forbidden operation. Retain historical v18 no-deploy tests/invariants. Validate exact control diff, formatting/lint/typecheck/build, all control tests, secret scan and clean explicit commit/push before using the new transition.
+
+The initial patch proposed changing roadmap/current-work and schema fields to represent that narrower grant. The safety reviewer rejected it before any file was changed. This report does not apply those changes or grant the proposed transition by documenting it. Owner's exact TEST deployment approval is acknowledged; the remaining request is the explicit persistent control-transition authority, not another generic deployment approval.
+
+### Containment, rollback and acceptance disposition
+
+No deployment, continuation, recovery, new provider request, outbound LINE request, live webhook smoke, rollback, PR or merge was initiated. No candidate migration ran remotely. The observed ledger and terminal inventory equal historical containment; this is not continuous platform-wide telemetry proving absence of every unrelated LINE dispatch or late reply. Direct post-deployment schema/claim/outbound observations remain NOT_PERFORMED and must be resolved before any future upload. The read-only route cannot be used as an activation or delivery capability.
+
+Keep AI OFF/pilot STOPPED and Owner silent. Never automatically restore8a5b6547b4713ff50ad6b08ee58682e129641b6a/version8486019d-9b62-4de9-ae15-6299909a23d9 or olderf986a478bc980f9e53748ed49cedd543f54cd64a: they do not enforce the new fence. Cloudflare rollback does not roll back bound storage, and class-lifecycle compatibility differs from application SQL compatibility ([official rollback documentation](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/)). The Durable Objects skill/review and [official concurrency guidance](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/) informed this separation between storage safety and external delivery guarantees.
+
+Before a future exact deployment, prepare accessible schema/claim/egress evidence and no-new-traffic containment. If candidate verification then fails, leave the candidate closed and propose fix-forward; no retry upload or automatic rollback. The Owner's exceptional return-to-pre-version conditions require proof of zero candidate events, zero delivery claims and no incompatible state transition plus committed compatibility evidence. Constructor-created legacy tombstones must not be silently treated as zero claims. Those exception conditions were not exercised or proven here, so no executable rollback/rehearsal is authorized by this report. Later continuation/UAT/recovery and rehearsal each remain separately approved actions.
+
+| Acceptance/gate                                               | Updated status                                                 |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| Exact branch/baseline/ancestry/20-path review                 | PASS at preflight                                              |
+| Exact candidate clean frozen artifact                         | PASS, approved hash reproduced                                 |
+| Local safety/precedence/fencing/dependency regression         | Prior733/733 evidence retained, no runtime change              |
+| TEST live version/identity/ledger/Owner observation           | PASS for reported fields at timestamp; no state drift          |
+| Persistent exact deployment control                           | BLOCKED, explicit v19 transition edit approval required        |
+| Candidate TEST deployment/post-deploy migration/claims/egress | NOT_PERFORMED; required observations not substituted by health |
+| WP8E location and historical F1/F2/F3                         | Historical evidence retained, not repeated                     |
+| Targeted F4 / F5 / F6, UAT kill switch                        | GAP; not authorized in this deployment-only round              |
+| Rollback/redeploy, final release review, integration/PR       | BLOCKED; no old unfenced traffic rollback                      |
+| Issue #12 / Production                                        | OPEN / NO_GO — NOT TOUCHED                                     |
+
+## Current v18 — authorized mixed-intent and four-advisory remediation
+
+Date: 2026-09-09. MP-06 / Issue #12 / WP8F / TEST_ONLY. Verdict: LOCAL_CANDIDATE_VERIFIED_AWAITING_EXACT_TEST_DEPLOYMENT_APPROVAL. Local remediation gates pass; this is NOT TEST acceptance, deployment, rollback or UAT approval. Historical sections preserve the earlier two failing tests and audit findings, not current unresolved requests for the same local scope.
+
+### Exact candidate and completed local validation
+
+- Control: 64d598183ea55c3b79e3f27aa9f9992bc318ac27, parent3db7738da3edc3da265ebb623190de03a629c0ff; exact ten control paths only.
+- Runtime candidate: c59eb5e12bb96a34da38759a5585be67d8c2ab6e, direct child of the control commit; nine runtime/test/dependency paths only. Evidence is a separate later commit, not a deployed source.
+- Exact TEST minified dry-run artifact SHA-256: 2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308, 231587 bytes. Unminified gate bundle: f88cb5f383d977b62a2d430f7d0f033a06ef9d17a5ea86d274debd05683cb719.
+- Lockfile SHA-256: e0a5a0f50cf38c1811e6777f82c01f40b7317687daee973e4090e6387b8edf62. This is an intentional authorized dependency change, not a protected benchmark/policy hash drift.
+
+Pre-commit verification used an isolated snapshot of exact tracked tree04618b96298714b76864ced62ff0d1387c4a7578 and a private temporary index; the real index stayed empty until explicit staging. Fresh frozen-lockfile install used an empty store,187 packages added/reused0, Node24.19.0/pnpm11.19.0, no copied node_modules, .env, .dev.vars or keys. All213 tracked bytes still matched after the complete pnpm check, including generated images, previews, reports and lockfile. Every staged executable/dependency blob was compared with this tested tree before the runtime commit.
+
+A second detached clean checkout of the exact runtime commit repeated frozen install with a second empty store (187 added/reused0), complete pnpm check, secret scan/audit and exact TEST minified dry-run. Candidate and tested snapshot differ only in the evidence document, not executable/config/dependency/test blobs. Verification completed by2026-09-09T00:05:17Z with candidate checkout tracked tree clean. Three builds (pre-commit clean snapshot, reviewed source worktree, committed clean checkout) produced byte-identical minified artifacts. Both full checks produced the same unminified artifact. The explicit artifact command was pnpm exec wrangler deploy --config wrangler.jsonc --name malispang-lineoa-test --minify --dry-run --outdir <isolated-artifact-directory>; no upload/deploy was performed. Sanitized results and hashes are recorded here so evidence does not depend on temporary log files.
+
+| Gate                      | Result / evidence                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node unit                 | 500/500 PASS,19 files, on both patched-dependency clean runs                                                                                                                                                                                                                                                                                                                                 |
+| Mandatory benchmark tests | 14/14 PASS, unchanged watchdog;25.24s and25.49s observed suite durations                                                                                                                                                                                                                                                                                                                     |
+| Real Worker/SQLite        | 219/219 PASS,5 files; includes pilot112 and durable-state39, signed concurrent delivery, restart and mandatory precedence                                                                                                                                                                                                                                                                    |
+| Unique total              | 733/733 PASS on each run; failed/skipped/cancelled/unhandled0. Do not double-count repeated runs. Previous709 inventory preserved, both failures fixed; +10 WP1 unit, +3 control, +11 Worker =24 added. Control70/70 includes all previous67.                                                                                                                                                |
+| Build gates               | Formatting, ESLint, both TypeScript projects, Node build and TEST-only local Worker dry-run PASS; no cast/suppression to hide missing delivery claims                                                                                                                                                                                                                                        |
+| Validators                | Toolchain, control, flex, rich-menu, approved KB/catalog, draft config, local Production-readiness NO_GO, policy, WP6 readiness and frozen WP7 PASS                                                                                                                                                                                                                                          |
+| 5000-case benchmark       | 3000 functional /1000 Thai /1000 adversarial; AUTO/risky/authority100%, false-AUTO/unsupported/leakage0; regenerated dataset/report/Markdown are byte-identical in check mode                                                                                                                                                                                                                |
+| Security/dependencies     | 213-file secret scan PASS; after audit high/moderate/critical/low/info0 on source and committed clean checkout; no accepted residual advisory                                                                                                                                                                                                                                                |
+| Diff/immutability         | Exact20 total allowed paths including evidence; no Worker routing, DraftDO lifecycle/schema, model/provider/prompt/policy/catalog, timeout/retry, secret permissions, LINE settings or deployment config change                                                                                                                                                                              |
+| Integration               | No PR, merge or CI workflow created. GitHub default remains codex/phase-1a-foundation at30b79f791e276fa5f420d08ffff208a231780281; candidate descends from it (0 default-only /78 candidate-only commits). Existing DEFAULT_BRANCH_DRIFT remains an integration warning, not an instruction to merge. No workflow file exists on this branch; local checks are not a claim of hosted CI PASS. |
+
+Full protected semantic hashes verified unchanged:
+
+- Policy: 504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0.
+- Deterministic dataset: 6d4b780a5b9e4b96f78737d869d42b600f8679934addcd25525dda4fdd59affa.
+- Deterministic result: f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6.
+- WP7 prompt: bb32a123d6671ac2167887ea8ba476bdebe28bc4b1cca23d53b9b6879cc8eeb6.
+- WP7 schema: 811436149e813ce6ece4baade44640c56b48edf5198433822e688c9994319793.
+- WP7 dataset: cbfb9d6030ded2ab3cb8237233313940f2df206efdd7ac91cc05c948fdcae11b.
+- WP7 result: 7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55.
+
+Byte hashes remain deterministic dataset ad6f1bc81a974d7cc2a4f67bc627a01b31ee2835d3c46f0099039cca3b477d05, deterministic report dd4ce92b2f531055f2662469fb7dcec5030aa5050c33ae8f3b80ccf0b452b5c8 and WP7 report11ba550100ebf3556069e1b54a8061188fbbf1b7393696a03c3228c56a2fdd73. No live WP7 evaluation was rerun and no historical UNKNOWN provider billing/root cause was reclassified.
+
+### Delivery evidence, schema and recovery assessment
+
+Signed simultaneous requests for the same stable webhookEventId, including both isRedelivery values and changed reply tokens, hold the first mocked LINE response open: exactly one outbound attempt wins. Replay before/after acknowledgement, worker eviction/restart and elapsed retention never mint a second grant. Exact real event/owner/revision acknowledgements are idempotent; missing/wrong/cross-event/cross-conversation/fenced/reordered acknowledgements reject. Controlled timeout, network error and400/503 retain ownership with no automatic retry. Provider call and accounting increments from mandatory/duplicate paths are zero. These are mock-network runtime observations, not real LINE evidence or an exactly-once delivery guarantee.
+
+All outbound reply paths converge on worker/index.ts sendOwnedLineReply: draft at267, deterministic at376 and MP06 plan at434. Its sole sendLineReply call at466 follows the authoritative SELECT-only ownership check; its sole ConversationStateDO acknowledgement at488 uses the same event and claim only after that dispatch succeeds. DraftOrderDO's separate existing acknowledgement at279 follows confirmed fenced success and is not a send capability. Repository-wide transport/ack searches found no alternate runtime reply/push/broadcast path. Exact line numbers apply to candidate c59eb5e12bb96a34da38759a5585be67d8c2ab6e.
+
+Storage additions are delivery_claims and the one-shot mp06_wp8f_v16_continuation marker/audit. Existing processed/plan/draft/pilot accounting schemas and values are preserved; no migration declaration, binding/resource or destructive action is added. Legacy reply-capable records receive non-dispatchable tombstones. Claims have no lease-expiry takeover; this intentionally retains tombstones and can grow storage, so automatic cleanup/recovery is not silently introduced. Continuation tests prove exact6/6 and34082/0 preconditions, atomic single winner, unchanged cumulative ledger/history, immutable original marker, replay without extension/reopening and restart/post-stop lineage. The runtime contains that previously approved local implementation, but v18 authorizes zero activations.
+
+Compatibility is additive at the encoding/unchanged stop/status-method level; these tests do not execute an old Worker revision with traffic. Old source8a5b6547b4713ff50ad6b08ee58682e129641b6a/version8486019d-9b62-4de9-ae15-6299909a23d9 has neither this mandatory fix nor delivery fencing. The even older recorded rollback sourcef986a478bc980f9e53748ed49cedd543f54cd64a/version83fab7f1-646a-4ed8-be4d-a5f38df3a072 is likewise not approved as safe for inbound traffic. AI OFF alone does not contain deterministic LINE replies. REMOTE_ROLLBACK_NOT_READY: before any separately approved rollback, independently contain TEST webhook ingress, prove no in-flight work, preserve/freeze exact accounting and claim snapshots, verify the selected revision/config/secret/storage compatibility, keep ingress closed on the old revision and redeploy the exact verified candidate before reopening anything. No old-source activation or retry is allowed. If independent containment cannot be established, do not roll back; retain the current runtime and stop for an exact recovery approval. Merely setting in-flight to0, waiting for a lease or receiving an uncertain LINE error is never evidence of non-delivery.
+
+Dependency changes are build/test-only patch resolutions: no Wrangler/Miniflare/workerd upgrade or Worker compatibility-date change, no storage encoder change caused by the packages. Native execution was verified on darwin/x64; other OS/architecture binaries are selected in the lockfile but were not executed here. Existing ESLint support/deprecation warning is not an ignored security advisory and does not authorize unrelated upgrades. External LINE outcome remains uncertain on transport/ACK loss; any recovery requires an exact event/claim, independent receipt evidence and separately approved audited operator action, not reassignment or blind retry.
+
+### Stop gate and remaining acceptance
+
+This round performed no TEST/Production query or remote action, Keychain read, deploy, session activation, handoff recovery, live provider request or Owner LINE event. Fresh TEST version/source/AI/pilot/accounting/handoff: UNKNOWN. Last verified state is the historical2026-09-08T12:19:09.432Z observation below: TEST source8a5b6547b4713ff50ad6b08ee58682e129641b6a, version8486019d-9b62-4de9-ae15-6299909a23d9, annotated artifact15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64, AI OFF/STOPPED, events/attempts6/6, consumed/reserved34082/0, in-flight0, HUMAN_HANDOFF. Candidate c59eb5e12bb96a34da38759a5585be67d8c2ab6e has NOT been deployed to TEST. Production NO_GO — NOT TOUCHED; Issue #12 OPEN.
+
+Next Owner decision is exact TEST deployment authority for this source/artifact to malispang-lineoa-test, plus a reviewed recovery/containment plan. A subsequent control transition must record the new authority; v18 cannot self-authorize it. Before any deployment, independently reverify the exact historical triplet/account/TEST identity, fresh AI OFF/STOPPED/reserved0/in-flight0 and unchanged6/6/34082 accounting; halt on unexplained drift. Deploy at most the explicitly approved candidate, check artifact association and read-only readiness, and do not infer session or LINE authority from deployment approval. Targeted F4, F5, F6/kill-switch, rollback rehearsal and final integration/release review remain GAP or approval-blocked. No TEST acceptance PASS, PR, merge, Issue closure or Production-ready verdict is asserted. Owner must not send LINE now.
+
+### Verified starting state and exact expanded authority
+
+Fetched origin in the existing worktree. Branch codex/mp-06-guardrailed-ai; starting local/remote/control HEAD 3db7738da3edc3da265ebb623190de03a629c0ff; seventeen expected unstaged paths, empty index, retained work and verified ancestry. At preflight v18 was an uncommitted addendum to v17, not an amended historical commit. Owner subsequently authorized existing mixed staff/redemption precedence in worker/mp-06-wp1.ts and exactly package.json, pnpm-workspace.yaml and pnpm-lock.yaml for the four advisory findings below. The final approved diff covers twenty paths. No added executable file, toolchain change or operational grant. Production query/deploy, TEST deploy/session/LINE/recovery/rollback, PR, merge, Issue closure and MP-07 remain blocked.
+
+### Sanitized dependency before-state and reachability
+
+Fresh before audit exit1: high2, moderate2, critical/low/info0; dependencies0, devDependencies291, optionalDependencies112, totalDependencies291. Four package findings correspond to three GHSA IDs; none was filtered out. Before lockfile SHA-256 e7ca5255384e4ee4b43b3eb46475c47788e0daa270f32729bff72c666433012f. pnpm why reported one installed version of each affected package.
+
+| Package / advisory                                                                 | Severity | Before / affected range  | Minimum fixed / selected | Dependency chain and local reachability                                                                                                                                                                |
+| ---------------------------------------------------------------------------------- | -------- | ------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| sharp / [GHSA-rgj7-g3m4-5g8c](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c)   | HIGH     | 0.35.2 / <0.35.4         | 0.35.4 / 0.35.4          | Direct dev renderer and Miniflare5.20260811.0-alpha under Wrangler4.122.0 / Cloudflare pool0.21.2; four audit paths. Untrusted image-decoder risk in the advisory; no exploit or untrusted input used. |
+| js-yaml / [GHSA-2883-xcg3-v3hh](https://github.com/advisories/GHSA-2883-xcg3-v3hh) | HIGH     | 4.3.1 / >=4.0.0 <4.3.2   | 4.3.2 / 4.3.2            | @eslint/eslintrc3.3.6 -> ESLint9.39.5, direct and typescript-eslint8.67.0 branches; twelve audit paths. Development configuration parsing, crafted merge CPU exhaustion.                               |
+| vitest / [GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9)  | MODERATE | 4.1.10 / >=2.1.0 <4.1.11 | 4.1.11 / 4.1.11          | Direct dev runner and Cloudflare pool0.21.2 peer; two paths. Test redirect-mock file-read boundary.                                                                                                    |
+| @vitest/mocker / same GHSA-82fw-gwwq-j7x9                                          | MODERATE | 4.1.10 / >=2.1.0 <4.1.11 | 4.1.11 / 4.1.11          | Exact Vitest internal, via both runner paths; two paths. Same advisory, separate installed-package finding.                                                                                            |
+
+All four are devDependencies, not imports in worker/src. This does not eliminate build/test supply-chain exposure and is not a Production vulnerability assessment; Production was not inspected. Official advisory records and installed parent metadata were checked before choosing patch versions.
+
+Root Sharp and Vitest are pinned to the selected patch versions. Exact parent-scoped resolutions are miniflare@5.20260811.0-alpha>sharp=0.35.4 and @eslint/eslintrc@3.3.6>js-yaml=4.3.2. The second remains inside its existing ^4.3.0 range: pnpm11.19.0's transitive version update did not change that retained lockfile entry, so the explicitly allowed narrow resolution makes selection reproducible. This replaces no parent, adds no direct dependency and changes no build policy, registry, workspace, script or toolchain. Lockfile generated by pnpm11.19.0, not edited manually. No force, peer-conflict bypass, suppression, patch/fork or major upgrade.
+
+After install, pnpm why shows only Sharp0.35.4, js-yaml4.3.2, Vitest/mocker4.1.11 through the same parents. Semantic lock review: thirty-six old package-version records replaced by thirty-six records only in the approved Sharp/native, matching Vitest internals and js-yaml chains; zero unrelated additions/removals and zero changes to existing package metadata. Package counts remain291 dev /112 optional. Fresh after audit exit0, zero vulnerabilities at every severity, no residual advisory accepted. Wrangler4.122.0, Miniflare5.20260811.0-alpha and Cloudflare pool0.21.2 remain unchanged; the pool's ^4.1.0 Vitest peer range accepts4.1.11.
+
+Native smoke on actual darwin/x64 with Node24.19.0 loaded Sharp0.35.4, libvips8.18.6 and libheif1.23.2. Direct and Miniflare resolution select the same Sharp module. In-memory synthetic2x2 PNG encode/decode succeeded. Platform optional binary@img/sharp-darwin-x64 is0.35.4 and its libvips package1.3.3. Other platform optional packages remain lockfile entries, not claims of execution on those platforms. Full Worker/SQLite, empty-store clean install and artifact gates are reported separately after completion.
+
+### Mixed-intent correction and regression scope
+
+The proven defect was an existing primary ADVANCE_ORDER match masking later explicit staff/redemption lexemes. WP1 now tests exactly those existing contains-phrase semantics when the primary intent is ADVANCE_ORDER, before draft eligibility; it does not change worker/routing.ts, generic UNKNOWN/AMBIGUOUS classification, a bare staff/reward keyword, business policy or the draft state machine. Mandatory results use the existing deterministic STAFF_ONLY plan, preempt draft/AI admission and retain all draft/history/accounting. Canonical preorder-only still enters consent/draft; existing staff-review draft commands retain their behavior.
+
+New unit fixtures cover both intent orders, punctuation/spacing, line breaks and zero-width normalization, plus closed-vocabulary non-matches. Real signed Worker/SQLite regressions retain the two original failing assertions and add reversed/variant messages, active-draft snapshots, held LINE response with duplicate redelivery flags, exact HUMAN_HANDOFF/registry/audit and unchanged provider/event/attempt/reserved/consumed counts. No provider call or draft mutation is allowed in these paths. F1/F2, ordinary preorder and delivery fencing regressions remain unchanged.
+
+Pre-dependency focused results: Node WP1 30/30, control70/70, Worker pilot112/112 plus durable-state39/39. These establish the local fix, not completion of validation on patched dependencies. No live provider, real LINE or new TEST observation was performed. Fresh TEST state remains UNKNOWN in this round; last independently verified state/version is preserved below. Owner must not send LINE.
+
+## Historical v18 — caller integration implemented; candidate gates blocked
+
+Date: 2026-09-09. Verdict: LOCAL_DELIVERY_INTEGRATION_VERIFIED_WITH_BLOCKING_PRECEDENCE_AND_DEPENDENCY_FINDINGS. This is NOT a release/deployment-ready candidate. The explicit Owner confirmation of worker/index.ts resolved the earlier editing-tool scope refusal; the approved integration has now been applied. This is a different blocker, not a repeat request for the same caller authorization.
+
+### Source and authority
+
+- Repository Eak-dev/malispang-lineOA, existing worktree malispang-lineOA-mp06, branch codex/mp-06-guardrailed-ai. Fetched origin; local/remote/control HEAD before committing v18 remains 3db7738da3edc3da265ebb623190de03a629c0ff. No staged files; all prior work retained.
+- Roadmap2026.09.09-v18 / MP-OD-2026-09-09-V18 addendum remains uncommitted. Its exact ten control paths include the explicit index integration confirmation; validator passes. MP-06 / Issue12 / WP8F / TEST_ONLY; no deployment/session/recovery/rollback/PR, merge/closure or Production grant. Existing DEFAULT_BRANCH_DRIFT warning retained, not resolved by rebase.
+- No v18 control commit, runtime candidate SHA or verified candidate artifact is claimed because full-suite and dependency-audit gates fail. No commit/push, clean-checkout acceptance, dry-run release artifact or TEST remote write is claimed for this follow-up. Source policy and the pre-existing WP1 precedence implementation were not changed in this follow-up. Append-only GitHub blocker reporting, when linked below, is evidence publication only, not candidate approval.
+
+### Implemented delivery boundary and call inventory
+
+The three prior ConversationStateDO acknowledgement callers were draft-handoff, ordinary deterministic routing and processMp06Plan (deterministic WP1/advisory-approved). They now pass the real processEvent result's required DeliveryClaim to one private sendOwnedLineReply helper. That helper requires a SELECT-only check of the current event, opaque owner token, revision, CLAIMED state and pending processed record before the sole sendLineReply call. Missing/forged/stale/unknown or storage-error ownership denies before LINE. Observation alone never mints or returns a capability. No claim is made from a reply token.
+
+| Path                                                | Authoritative ownership                                                                                                                           | Successful-dispatch acknowledgement                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| processLineEvent deterministic / mandatory handoff  | processEvent deliveryClaim                                                                                                                        | helper calls conversation.markDelivered(eventRef, exactClaim)                                           |
+| processMp06Plan safe AUTO/CLARIFY/advisory-approved | processEvent deliveryClaim                                                                                                                        | same helper and exact claim                                                                             |
+| Existing draft reply / draft-to-staff reply         | conversation.processEvent delivery claim after existing draft transition; deliveryOnly prevents consumption of WP1 context for normal draft reply | same fenced conversation ACK, then the existing draft.markDelivered(eventRef) only on confirmed success |
+
+Repository-wide search found one external reply transport, worker/line-api.ts sendLineReply -> POST https://api.line.me/v2/bot/message/reply. Its only runtime caller is the ownership-enforcing helper in worker/index.ts; the helper has three callers above. No other runtime push/broadcast/multicast/reply transport was found. ConversationStateDO.markDelivered has one runtime invocation in that helper after the same successful send. DraftOrderDO.markDelivered remains its separate existing record acknowledgement, not outbound authorization. Other callers are local tests. worker/line-api.ts, worker/draft-order-objects.ts and worker/routing.ts are byte-unchanged versus HEAD.
+
+Failures retain CLAIMED or DELIVERY_UNKNOWN, never reassign ownership or retry on network error, timeout, 400/503, missing ACK, restart or elapsed retention time. ACK accepts only the current event/owner/revision and is idempotent for the same confirmed success; response-plan drift fences stale acknowledgement without a replacement grant. A cross-DO draft ACK failure can leave a pending draft record even when LINE succeeded; it requires separately approved audited recovery, never replay to infer delivery.
+
+The Cloudflare skill review constrained storage work to synchronous atomic transactions and current RPC types. transactionSync cannot include external I/O, so this is at-most-one outbound dispatch attempt per canonical event under this runtime, NOT exactly-once visible delivery. References: [Cloudflare SQLite transaction semantics](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/#transactionsync), [Workers practices](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/), [LINE reply contract](https://developers.line.biz/en/reference/messaging-api/nojs/#send-reply-message). Installed types5.20260813.1 were used as the documented fallback when the npm executable was unavailable; dependencies were not changed.
+
+### Regression and validation results
+
+- Original pilot-control regression set, including the previous80PASS/1FAIL duplicate race, now passes81/81. The old policy-failure replay assertion was changed only to the explicitly approved NO_RETRY contract: after500, one dispatch, persistent claim, deterministic handoff, unchanged accounting and no provider.
+- Eight added delivery-focused real Worker/SQLite tests (durable-state39 total, prior31 retained) and eighteen signed-webhook integration cases (pilot99 total before the two new strict failing security cases) pass. Real processEvent tokens only. Signed concurrent/replay tests include isRedelivery true/false and changed reply token, held LINE response on deterministic/mandatory/CLARIFY/advisory/draft paths, draft-to-staff200/503, network/timeout/400/503, current-token checking, missing/wrong owner/event/revision, stale fence, storage/ACK failure, late matching ACK, restart/time, independent event, unchanged accounting and content-free logs. Timeout uses controlled timers at the existing5000ms, not a longer deadline.
+- Focused Node five files140/140 PASS, including control67/67 (the pre-v18 63 retained plus four v18 negatives). Worker focus138/138 PASS before adding the two newly discovered mandatory-precedence counterexamples below.
+- Final full pnpm test: Node unit487/487 PASS; mandatory benchmark14/14 PASS; Worker206PASS/2FAIL of208. Combined707PASS/2FAIL of709, zero skipped/cancelled. The two failures are deliberately retained security assertions, not skipped, weakened or relabelled PASS. All delivery cases pass; overall candidate does not.
+- Formatting, ESLint, full TypeScript (no caller suppression/cast), Node build, toolchain, project-control/policy/WP6-readiness validators, frozen WP7 check and213-file secret scan PASS. Initial new test-harness errors (registry method name and ES-lib Promise helper) were corrected without weakening assertions or changing runtime configuration.
+- pnpm audit --audit-level high FAIL: two high and two moderate installed-package findings; details below. This supersedes prior clean audit observations for the current advisory feed, not historical records.
+- Full clean-checkout/reproducible candidate gate and sequential pnpm check completion remain NOT PERFORMED / BLOCKED, not PASS. Do not generate a deploy request from a partially passing suite.
+
+### Blocker P1 — mixed mandatory staff intent intercepted by draft
+
+Pure local classification and actual signed webhook with real Worker/SQLite reproduce both cases. They are PII-free fixtures, not customer chat or live UAT. The hostile AUTO mock provider is never invoked, LINE mock accepts one reply and pilot accounting is unchanged.
+
+| Synthetic case ID      | Existing classification/plan                 | Expected mandatory contract                 | Observed real Worker state              |
+| ---------------------- | -------------------------------------------- | ------------------------------------------- | --------------------------------------- |
+| mixed-staff-draft      | ADVANCE_ORDER / WP1 undefined / DRAFT_INTAKE | HUMAN_HANDOFF, no draft creation, registry1 | BOT_ACTIVE, CONSENT_REQUIRED, registry0 |
+| mixed-redemption-draft | ADVANCE_ORDER / WP1 undefined / DRAFT_INTAKE | HUMAN_HANDOFF, no draft creation, registry1 | BOT_ACTIVE, CONSENT_REQUIRED, registry0 |
+
+Cause supported by code: detectConversationIntent returns the advance-order match before checking staff/loyalty-redemption lexemes. planMp06Wp1Text checks only the primary staff intent and currently returns undefined for ADVANCE_ORDER; the separate precedence function then chooses DRAFT_INTAKE. This is a missing mandatory secondary-intent check, NOT a new provider dispatch/settlement/accounting failure, nor proof of any new live failure. The index claim integration does not change this classification.
+
+The latest index-only authorization forbids changing routing/handoff precedence. Proposed exact additional purpose for Owner confirmation: worker/mp-06-wp1.ts only, recognize the already-defined explicit staff/loyalty-redemption paths independently of the ADVANCE_ORDER primary match before draft eligibility; reuse the closed existing vocabulary, no broad keyword/unknown reclassification, no worker/routing.ts or policy/catalog change. Preserve canonical advance-order intake and legitimate draft review commands. Add unit and signed Worker regressions in the already-allowed tests/mp-06-wp1.test.ts and worker-tests/mp-06-pilot-control.test.ts, including active-draft preservation and F1/F2. Keep the two existing failing assertions unchanged. No precedence fix is applied by this report.
+
+### Blocker S1 — unchanged dependency tree fails current audit
+
+| Installed package                               | Severity / findings                              | Patched target in advisory | Reference                                                                |
+| ----------------------------------------------- | ------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------ |
+| sharp0.35.2 (root and Miniflare/Wrangler paths) | high, one package finding                        | >=0.35.4                   | [GHSA-rgj7-g3m4-5g8c](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c) |
+| js-yaml4.3.1 (ESLint tree)                      | high, one package finding                        | >=4.3.2                    | [GHSA-2883-xcg3-v3hh](https://github.com/advisories/GHSA-2883-xcg3-v3hh) |
+| vitest4.1.10 and @vitest/mocker4.1.10           | moderate, two package findings from one advisory | >=4.1.11                   | [GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9) |
+
+All audit findings are marked devDependencies. This is a build/test supply-chain gate, not evidence that a Production Worker is exploitable; Production was not inspected. Sharp advisory concerns untrusted image decoding; js-yaml concerns resource exhaustion on crafted merge input; Vitest/mocker concerns its redirect-mock file access. No exploit was run and no untrusted image/YAML was processed to test the advisories. No audit-ignore/threshold downgrade is allowed.
+
+Installed parent metadata confirms miniflare5.20260811.0-alpha declares sharp exactly0.35.2, not a patch-compatible range. Updating only the root sharp does not resolve the transitive finding. The existing pnpm-workspace.yaml contains only allowBuilds; those settings must remain unchanged. Exact proposed additional file scope, NOT applied:
+
+1. package.json: pin root sharp0.35.4 and vitest4.1.11; preserve every other declared package, toolchain and script.
+2. pnpm-workspace.yaml: add only the parent-scoped override `"miniflare@5.20260811.0-alpha>sharp": "0.35.4"`. No unscoped override, build-permission expansion, audit ignore or release-age bypass. [pnpm's documented parent selector](https://pnpm.io/settings/dependency-resolution#overrides) limits this replacement to that exact parent; compatibility is still a test gate, not implied by override syntax.
+3. pnpm-lock.yaml: resolve those patched packages and the necessary matching Vitest internals, with js-yaml4.3.2 within its existing ESLint parent range. Inspect every changed resolution/integrity and reject unrelated upgrades. No package removal, patching node_modules or manual lockfile fabrication.
+
+Review package provenance and compatibility with unchanged Wrangler4.122.0 / Miniflare5.20260811.0-alpha / Cloudflare pool0.21.2. If the exact scoped override or peer ranges fail, stop with that evidence; do not upgrade those parents or add another override implicitly. The next Owner control addendum must explicitly permit these three paths and purposes instead of DEPENDENCY_GRAPH_READ_ONLY for these changes only; the current v18 remains read-only for dependencies. No Node/pnpm, Worker config, provider/model or business change. Rerun full gates, benchmark byte checks, secret/audit and empty-store/frozen-lockfile clean checkout before any candidate commit/push. This proposal is not a dependency compatibility PASS and requests neither deployment nor a new session.
+
+### Storage / recovery / final remote boundary
+
+delivery_claims is additive; original processed events, response plans, pilot tables/ledger and draft schema encoding are preserved. Legacy reply-capable rows become conservative tombstones, not new grants. Real restart tests preserve owner/revision and suppress replay; SELECT-only checks preserve rows, alarms and audit. Accounting and continuation lineage tests remain in the passing regression set. Cross-revision runtime rollback/redeploy proof is NOT completed by these tests.
+
+Old runtimes do not enforce the new claim fence. AI OFF alone does not stop deterministic LINE replies. Therefore the old rollback source must not run inbound traffic merely because the schema is additive: verified independent TEST ingress containment and cross-revision storage tests are required before proposing a remote rollback. No rollback, no state rewrite/deletion/refund, no new binding/migration/resource was performed. Recovery for any unresolved future LINE dispatch requires a separately approved exact event/claim audit, not lease expiry or blind replay.
+
+This follow-up made NO TEST query/write, keychain read, deployment, activation, handoff-close, provider call or real LINE action. Fresh TEST state/version/accounting: UNKNOWN this turn. Last independently verified observation remains2026-09-08T12:19:09.432Z, receipt9c9aa95b-6d1e-4987-afe3-9462cccd5047: source8a5b6547b4713ff50ad6b08ee58682e129641b6a / version8486019d-9b62-4de9-ae15-6299909a23d9 / annotated artifact15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64 / traffic100%; AI OFF / STOPPED,6/6, consumed34082/reserved0, in-flight0, HUMAN_HANDOFF. This is historical evidence only, not a new shutdown attestation. Historical actual billing remains UNKNOWN (25864 conservative +8218 reported estimates =34082).
+
+Issue12 OPEN; Production NO_GO — NOT TOUCHED. Owner must not send LINE. No draft PR, merge, Issue closure or MP07. Stop at the two exact local remediation authorization gates above; the separate TEST deployment approval remains required after a fully verified candidate exists.
+
+### Exact pending path inventory
+
+The working tree has seventeen modified paths, no staged files, and retains all original working changes. It is intentionally NOT clean; neither a new control SHA nor a runtime candidate exists.
+
+- Control: PROJECT_CONTROL.md; config/project/roadmap.json; config/project/current-work.json; config/project/current-work.schema.json; src/project-control.ts; src/project-control-cli.ts; tests/project-control.test.ts; docs/project/OWNER_DECISION_LOG.md; docs/project/ROADMAP_CHANGELOG.md; docs/project/EXECUTION_GATES.md.
+- Runtime/test WIP: worker/index.ts; worker/durable-objects.ts; worker/mp-06-wp1.ts; worker-tests/mp-06-pilot-control.test.ts; worker-tests/durable-state.test.ts; tests/mp-06-wp1.test.ts. The WP1 implementation/unit-test changes predate this index follow-up and are preserved, not a newly applied mixed-intent fix.
+- Evidence: docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md (this file).
+
+package.json, pnpm-workspace.yaml and pnpm-lock.yaml remain unchanged. They are only proposed additional scope, not authorized or modified by this report.
+
+Working runtime/test diff SHA-256 against HEAD for the six paths above: 3a6aaebc6569c48316b5a303152317b43cfacf475d5e1020d2a1ebb79fc47ba0. This is a local diff fingerprint, NOT a candidate source SHA or deploy artifact. Append-only durable blocker evidence was added to [Roadmap #9](https://github.com/Eak-dev/malispang-lineOA/issues/9#issuecomment-5593144218) and [Issue #12](https://github.com/Eak-dev/malispang-lineOA/issues/12#issuecomment-5593144588). Neither comment changes Issue state or authorizes the proposed extra scope.
+
+## Historical v18 — local delivery work; caller integration approval blocked
+
+Status: LOCAL_IMPLEMENTATION_INCOMPLETE — NOT A DEPLOYABLE CANDIDATE. Starting and current local/remote HEAD remain 3db7738da3edc3da265ebb623190de03a629c0ff on codex/mp-06-guardrailed-ai. Fetch/ancestry verified; original six working changes and empty index preserved. Roadmap2026.09.09-v18 / MP-OD-2026-09-09-V18 is an uncommitted control addendum, not a new control SHA. Ten control files record local-only authority, exact existing runtime paths and the one newly approved worker-tests/durable-state.test.ts path. No deploy/session/recovery/rollback/PR grant is usable in this round, even with valid candidate evidence. No commit/push is claimed while implementation/typecheck is incomplete.
+
+Implemented locally in the approved Durable Object path: synchronous transactionSync claims on canonical hashed event identity; unique persistent event ownership with server-generated opaque owner token and monotonically assigned revision; required exact-token acknowledgement without overload/default/bypass; duplicate suppression before ACK; idempotent matching ACK after success; no automatic lease/time/restart release. Changed/lost pending response plans preserve deterministic HUMAN_HANDOFF and audit but fence the original claim as DELIVERY_UNKNOWN, with no replacement dispatch and rejection of stale ACK. Additive delivery_claims keeps the original processed/plan/accounting/history encoding. Existing unfenced rows become non-dispatchable conservative tombstones without rewriting their original fields. SELECT-only observation returns state/revision only, never a capability.
+
+The existing durable-state tests preserve exact response/handoff/policy assertions and obtain all valid tokens from production processEvent. The three acknowledgement call sites use real grants; the two old pending-plan replay cases now assert DUPLICATE, no new grant, retained HUMAN_HANDOFF, current fencing state and rejected old ACK. Seven additional real Worker/SQLite tests cover twenty concurrent claims/one winner, malformed/cross-event/cross-conversation/reordered ACK, identical ACK idempotency, restart and beyond-retention suppression, no-message/no-claim, read-only observation/privacy and legacy-row preservation. These are DO-level tests, not evidence of completed signed-webhook outbound integration.
+
+### Actual tool approval conflict
+
+The editing safety reviewer rejected the worker/index.ts integration patch twice. Its reason was that the latest expansion was limited to worker/durable-objects.ts, despite worker/index.ts being present in the immutable v17 baseline remediationFiles. The baseline and current exact-path validator were checked before the second attempt. Both attempts used the same apply_patch channel; no alternate command or indirect write was used. The actual worker/index.ts remains byte-identical to its six-file preflight WIP content, not the proposed integration.
+
+Exact proposed integration requiring explicit Owner confirmation of the caller path: worker/index.ts only, processLineEvent/processMp06Plan outbound call sites and a local ownership-enforcing send helper. Pass the actual processEvent claim to all three ConversationStateDO.markDelivered callers; suppress already-owned events before draft/AI/provider work; require the one live claim/revision before LINE; retain CLAIMED on network/non-2xx and suppress retries; gate the existing draft reply path through the same ConversationStateDO claim without changing DraftOrderDO or draft business transitions; only the winning successful caller acknowledges the existing draft record. No model/prompt/policy, LINE API timeout/retry, channel setting, ledger, resource or remote change. No new runtime path is requested.
+
+Risk: changing outbound integration must not create a bypass on draft/handoff paths or acknowledge unknown delivery. The proposed patch is NOT applied. TypeScript currently identifies the three missing required claim arguments at worker/index.ts lines251,353,406. Do not make claim optional or manufacture a compatibility token to hide these errors. Owner confirmation is needed because the execution tool's safety gate still rejects this integration; the record does not claim that a mutable current-work manifest overrides that gate.
+
+### Validation actually completed
+
+- Node focused five files:140/140 PASS, including control67 (prior63 plus4 new negative control tests), WP1, WP7, WP8A and mock webhook pipeline.
+- worker-tests/durable-state.test.ts:38/38 PASS (31 prior tests retained,7 new); no skipped tests.
+- Formatting, ESLint, Node build, toolchain/control/policy/WP6-readiness validators, WP7 frozen-evidence check,213-file secret scan, dependency audit and diff-check PASS. Audit: no known vulnerabilities.
+- Deterministic check:5000 cases, buckets3000/1000/1000; AUTO/risk/authority1.0, falseAUTO/unsupported/leakage0; semantic hash f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6 unchanged. WP7 semantic hash7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55 unchanged. No live eval.
+- Full TypeScript FAIL: exactly the three missing claim arguments above. Full Worker/signed-webhook release validation, full combined suite, double check, release dry-run/artifact, clean checkout and cross-revision rollback acceptance remain NOT COMPLETED. The previous80/81 result remains historical; the new DO-only38/38 does not replace that integration gate. No full PASS/clean-checkout/candidate/source-artifact claim.
+
+### State and remaining gates
+
+No TEST or Production remote query/write was performed in this v18 local round; fresh remote state is UNKNOWN. Last verified TEST evidence remains the v17 receipt below: worker malispang-lineoa-test, version8486019d-9b62-4de9-ae15-6299909a23d9/source8a5b6547b4713ff50ad6b08ee58682e129641b6a/annotated artifact15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64; STOPPED/AI OFF,6/6, consumed/reserved34082/0,in-flight0, OwnerHUMAN_HANDOFF at2026-09-08T12:19:09.432Z. This is historical evidence, not a new shutdown verification. No new session/live provider/Owner LINE was requested or performed.
+
+Schema is additive in local tests; this is NOT proof that old-runtime rollback enforces the new fence. An older runtime can ignore claim state, so any future rollback requires exact cross-revision testing and independent containment before traffic, without clearing claims/history/accounting. No remote rollback permission here. Retained claim tombstones intentionally trade storage growth and possible lost replies for no automatic uncertain-outcome retry. External exactly-once delivery is not guaranteed.
+
+Next gates: explicit caller-integration confirmation; complete required signed concurrency/network/5xx/timeout/ACK-failure regressions and all validation; explicit control/runtime/evidence commits and push; clean source/artifact and recovery-plan handoff; separate exact TEST deployment approval. No PR, merge, Issue closure or MP-07. Issue #12 OPEN; Production NO_GO — NOT TOUCHED.
+
+## Historical v17 — local duplicate-dispatch finding; candidate withheld
+
+The v16 blanket-precedence conflict below is historical and resolved by Owner approval. Accepted starting branch/local/remote baseline was 7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037. The new authoritative v17 control commit is 3db7738da3edc3da265ebb623190de03a629c0ff, Roadmap 2026.09.08-v17 / MP-OD-2026-09-08-V17, superseding v16. Exactly the ten authorized control files were committed/pushed; 63 control tests passed. No file, session, budget, target, rollback or Production permission was added.
+
+Local, uncommitted runtime work implements the three-way precedence boundary and the already-authorized one-shot continuation. Signed Worker/SQLite tests preserve F1/F2 with approved catalog resolution, the retained location interpretation, deterministic draft consent, risk preemption without draft mutation, zero provider/accounting increments for mandatory paths, sequential redelivery and LINE-failure behavior. Continuation tests exercise exact state, concurrent activation, replay, stop, retained accounting and malformed lineage. These are local mock results, not proof of a deployed repair or completed rollback compatibility review. Further full candidate gates remain outstanding.
+
+### Reproduced delivery ordering gap
+
+The whole pilot-control Worker file passed 80/80 before adding a concurrent duplicate-delivery regression. With that regression retained, the latest whole-file result is **80 passed / 1 failed / 0 skipped**, 81 tests total. No assertion was weakened and no timeout/retry/skip was added. The failing test is `does not dispatch a second mandatory reply while the first delivery is unresolved` in worker-tests/mp-06-pilot-control.test.ts.
+
+Follow-up checks: Node project-control/WP1/WP7/WP8A files pass 131/131; ESLint, TypeScript, build, project-control validator, 213-file secret scan, dependency audit and diff-check pass. Test-harness serialization/proxy typing errors were corrected without changing assertions. Deterministic evidence check passes 5000 cases with semantic hash f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6; WP7 hash remains 7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55. No live evaluation ran. These results do not replace the failing Worker regression, full combined suite, double check, dry-run or clean-checkout gates. No known dependency vulnerabilities were reported; dependencies, lockfile and frozen policy/catalog/AI evidence files are unchanged.
+
+The five-path local runtime/test diff against control HEAD has SHA-256 567a30ba04453ac7d73a3fae563c14916987e1e4e8225cb98bf00d8e68ee7c7b. This is a working-diff fingerprint, not a committed source or deployable artifact. The local evidence document is outside that fingerprint. Preserve all six modified files; no reset/stash/discard was performed. With the runtime gate failing, neither this pending evidence file nor the runtime changes are represented as a validated candidate commit. An append-only GitHub blocker comment provides durable visibility.
+
+The test uses two actual signed webhook handlers, one synthetic event and reply token, a real SQLite conversation object, and a deferred mock LINE response. The first handler reaches outbound reply and waits; the second handler receives the same event before the first delivery is acknowledged. No sleep or external request is used. The second handler also calls LINE: expected one outbound invocation, observed two. Provider calls remain zero, pilot counters/cost remain unchanged and conversation state is HUMAN_HANDOFF. The failure is isolated to the outbound-delivery assertion, not an observed authority downgrade or accounting drift.
+
+Code path: `ConversationStateDO.processEvent()` returns RESPOND for an existing processed_events row when delivered is zero. `worker/index.ts` awaits LINE outside that RPC, then calls `markDelivered()`. There is no durable delivery-owner claim covering that interval; a second RPC can return RESPOND before the acknowledgement. Sequential duplicate tests alone do not cover this ordering.
+
+**Evidence limitation:** this proves duplicate outbound dispatch, not two user-visible messages. The mock accepts both requests; it does not implement LINE's one-use reply-token guarantee. [LINE's official reply-token contract](https://developers.line.biz/en/reference/messaging-api/nojs/#send-reply-message) says a token can only be used once and a redelivered token cannot be used after the original was used. No live LINE duplicate experiment was performed, and no visible double reply is claimed. This finding must not be mislabeled as a proven live duplicate-message vulnerability or evidence that the provider failed. It nevertheless prevents claiming application-level once-only dispatch under an unresolved concurrent delivery.
+
+### Exact scope decision / proposed diff boundary
+
+The existing worker/durable-objects.ts permission is specifically limited to atomic continuation and immutable lineage, not conversation delivery ownership. No delivery-state implementation has been made under that limited permission. The requested additional purpose, without adding a file, is limited to `ConversationStateDO.processEvent()` / `markDelivered()` and an additive event-scoped delivery claim, with matching call-site changes in the already-allowed worker/index.ts and regression coverage in the already-allowed Worker test file.
+
+Proposed invariants for review before implementation:
+
+1. Atomically claim one delivery owner for an existing event before outbound LINE dispatch; concurrent duplicates cannot obtain a second claim. Persist a sanitized event/attempt reference, never a reply token or message body.
+2. Fence acknowledgement/failure by the exact claim identity; duplicate or late settlement cannot release another claim or mark a different delivery complete.
+3. Preserve existing definite-failure retry semantics where non-acceptance is actually supported by evidence. Do not infer non-delivery from an HTTP abort, missing acknowledgement or lease expiry. Unknown outcomes remain fail closed; do not add retries/timeouts or an automatic lease takeover.
+4. Preserve mandatory handoff, approved replies, draft/history, all pilot accounting, Owner lineage and stop behavior. No broad reset, refund, new binding or destructive migration. Additive state requires exact rollback/redeploy compatibility tests before any deployment.
+5. Extend real Worker/SQLite signed-webhook regressions for concurrent duplicate, crash/restart while claimed, late acknowledgement, repeated settlement and definite/unknown LINE failure. Do not replace the failing evidence with a test that silently accepts duplicate dispatch.
+
+This is a proposal, not authority to implement the delivery change or a completed design/security review. The continuation/precedence edits and failing regression are preserved in the working tree. Runtime commit, clean-checkout release artifact, deployment, continuation, handoff recovery, targeted F4/F5/F6, rollback and PR are withheld. No clean-tree or candidate PASS is claimed.
+
+### Fresh containment observation
+
+Authenticated SELECT-only readiness at 2026-09-08T12:19:09.432Z returned HTTP 200, receipt 9c9aa95b-6d1e-4987-afe3-9462cccd5047: AI admission OFF, pilot STOPPED, events/attempts 6/6, consumed/reserved 34082/0 micro-USD, in-flight/pending attempts zero, Owner HUMAN_HANDOFF, pending clarification/replies absent, EXPIRED_PURGED draft non-blocking. No activation, handoff-close, accounting mutation or live provider/LINE request was made. The temporary approved TEST_ADMIN_KEY process exited; no key was printed, written or sent to any other destination.
+
+Consumption remains 25864 conservative terminal USAGE_UNKNOWN plus 8218 reported-usage estimates = 34082. Two attempts remain USAGE_UNKNOWN; four are SETTLED. Independently verified historical billing remains UNKNOWN. The last independently verified deployed triplet is still 8486019d-9b62-4de9-ae15-6299909a23d9 / 8a5b6547b4713ff50ad6b08ee58682e129641b6a / 15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64, at 100% traffic. The readiness read is a fresh state observation, not a fresh executable-download verification; retained build/upload/annotation association limitations remain.
+
+| Gate                                                   | Current result                                             |
+| ------------------------------------------------------ | ---------------------------------------------------------- |
+| v17 control transition                                 | PASS, committed/pushed                                     |
+| Local mandatory precedence and continuation subset     | 80 passing Worker tests; not full candidate acceptance     |
+| Concurrent unresolved LINE delivery                    | GAP: two outbound dispatches; visible duplicate not proven |
+| Delivery-owner remediation authority                   | BLOCKED: existing DO purpose is continuation/lineage only  |
+| Full validation / clean checkout / deployable artifact | NOT COMPLETE                                               |
+| New TEST deploy / continuation / F4-F6 / rollback / PR | NOT STARTED                                                |
+| TEST containment                                       | Verified OFF / STOPPED at timestamp above                  |
+| Issue #12 / Production                                 | OPEN / NO_GO — NOT TOUCHED                                 |
+
+## Current v16 — PRECEDENCE_CONTRACT_CONFLICT
+
+The additional worker/durable-objects.ts scope is approved. The old file-scope blocker below is historical and resolved; no repeat approval is requested. Accepted starting local/remote baseline: a1e0ca03f88e0d17e3627c5bd8cd7dfedf386cb0. Control transition 222182bbf3c3fb794a4e5a64f4f75b53916e0d99 is committed/pushed on codex/mp-06-guardrailed-ai and is the automatically accepted v16 control baseline. Roadmap 2026.09.08-v16 / MP-OD-2026-09-08-V16 supersedes v15, MP-06 / Issue #12 / WP8F / TEST_ONLY.
+
+Exactly the ten authorized control files changed. The envelope adds only the approved eighth executable/test path, freezes 6/6 and 34082/0 with STOPPED / OPERATOR_STOP / no pending/in-flight, one immutable continuation, three scoped handoff closes, exact v15 pre-deploy triplet and all candidate/rollback/PR/Production restrictions. There is no new runtime candidate yet. Control authorization is not proof of a repaired vulnerability, completed continuation or deployment readiness.
+
+### New compatibility conflict, proven locally
+
+The blanket requirement that every existing deterministic decision with handoff:true must immediately win conflicts with the separate requirement to preserve existing safe AUTO/CLARIFY and business behavior. This is a different gate from the resolved Durable Object file allowlist.
+
+| Synthetic case / existing path                       | Existing deterministic evidence                                                                                                            | Consequence of a blanket legacy handoff guard                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| F1 ambiguous catalog-price question                  | Primary PRICE; legacy handoff false; WP1 CLARIFY T-C01                                                                                     | Remains CLARIFY                                                                                         |
+| F2 catalog product/size follow-up with pending T-C01 | Primary UNKNOWN; legacy SAFE_FALLBACK / NO_AUTHORITATIVE_ANSWER / handoff true; WP1 resolves approved catalog AUTO / PRICE / handoff false | Skips deterministic catalog resolution and changes the retained safe F2 result to HUMAN_HANDOFF         |
+| WP8E location wording variant                        | Primary UNKNOWN; legacy SAFE_FALLBACK / handoff true; WP1 undefined                                                                        | Removes the existing guarded semantic interpretation path; no new live retest was performed             |
+| F4 synthetic authority/refund request                | Primary HIGH_RISK; legacy HANDOFF_ACK / handoff true; WP1 undefined                                                                        | Must be blocked before AI; this original vulnerability remains unfixed                                  |
+| Existing canonical advance-order intake              | ADVANCE_ORDER / handoff true; existing deterministic draft transition is CONSENT_REQUIRED, enterHandoff false                              | Immediate forced handoff also conflicts with preserving the already approved deterministic draft intake |
+
+Reproduction used pure local functions with network disabled and a new signed HTTP webhook regression through the real Worker/SQLite runtime. The regression sends synthetic catalog clarification then a synthetic product/size follow-up, checks pending T-C01, catalog price response, BOT_ACTIVE, cleared pending template and exactly two mocked LINE replies. It explicitly checks that the legacy classifier returns handoff:true for that follow-up. No real customer data, OpenAI call or LINE request was used.
+
+Experiment: adding only `&& !decision.handoff` to the text WP1/AI entry condition in worker/index.ts made that same regression fail: expected BOT_ACTIVE, actual HUMAN_HANDOFF, with NO_AUTHORITATIVE_ANSWER. This experimentally demonstrates the F2 compatibility conflict, not a completed security fix. The experimental one-line guard was removed with an exact inverse patch; runtime source is byte-unchanged. Assertions were not weakened. The targeted experiment selected one test and deselected 29; it is not a zero-skipped full-suite claim. The final whole pilot-control file passes 30/30 with no failed/skipped/cancelled tests.
+
+The advance-order compatibility observation is a separate pure-function/source-path finding, not a new signed-webhook or live UAT result. An exploratory phrase that did not match ADVANCE_ORDER was excluded; the canonical intake matched ADVANCE_ORDER and produced the state above. Do not use the UNKNOWN exploratory result as draft evidence.
+
+### Exact Owner decision required before runtime implementation
+
+Proposed boundary clarification, not implemented or implicitly authorized:
+
+1. Mandatory known risk/authority/staff decisions, and deterministic WP1 STAFF_ONLY or policy-integrity/protected-risk decisions, always prevail before draft interception, AI admission, reservation, construction and dispatch. No advisory downgrade, provider attempt or AI cost increment; retain approved deterministic handoff replies, duplicate handling and audit.
+2. Treat only the two closed legacy unresolved-fallback reasons NO_AUTHORITATIVE_ANSWER and AMBIGUOUS_CUSTOMER_TEXT as unresolved interpretation, not a business authorization. Preserve existing context-aware deterministic catalog resolution and guarded advisory interpretation, with the unchanged deterministic policy retaining final authority. No exception for known risk, missing/stale/conflicting knowledge, or explicit staff/authority decisions.
+3. Explicitly preserve the existing deterministic ADVANCE_ORDER consent/draft intake, without any provider access or business confirmation; its existing staff-review boundary remains mandatory. Alternatively, changing that intake to immediate handoff is a business-behavior change that needs a distinct Owner decision and affected acceptance review.
+
+This clarification is necessary because the currently literal every-handoff:true requirement cannot simultaneously preserve the observed F2 and draft behavior. Do not silently add these exceptions, reclassify unknowns in worker/routing.ts, weaken assertions, change policy/model/thresholds or count the vulnerability as repaired. The atomic continuation implementation remains authorized in worker/durable-objects.ts, but no session should be enabled or deployed while this security/behavior conflict is unresolved.
+
+### Fresh TEST containment and validation
+
+At 2026-09-08T10:54:26.460Z, authenticated SELECT-only receipt 396b62e4-5b21-487d-aa8b-d422374b47e5 confirmed retained Owner linkage, AI admission OFF / pilot STOPPED, events/attempts 6/6, consumed/reserved 34082/0 micro-USD, pending/in-flight zero, Owner HUMAN_HANDOFF, no pending clarification/reply, and EXPIRED_PURGED draft with every purge invariant true. Activation eligibility remains false. No activation, handoff-close, accounting write or remote mutation was performed. The temporary process holding only the approved TEST_ADMIN_KEY exited; no secret value was printed, written or transmitted outside the exact TEST HTTPS endpoint.
+
+Independently queried TEST deployment metadata still resolves version 8486019d-9b62-4de9-ae15-6299909a23d9 at 100%, source 8a5b6547b4713ff50ad6b08ee58682e129641b6a and annotated reproduced artifact 15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64. TEST health returned 200 / TEST / correct TEST account name / durable-object-sqlite. This retains the build/upload/annotation association limitation described below; it is not a new independent remote executable download.
+
+Accounting remains 25864 conservative terminal USAGE_UNKNOWN plus 8218 reported-usage estimates = 34082, with two UNKNOWN and four SETTLED attempts. Historical independently verified billing remains UNKNOWN. No new attempt is shown between the prior stop observations and this receipt; no claim is made about future activity or absolute provider execution completion from counters alone.
+
+Validation: control tests 62/62 (59 retained, three new), full pilot-control Worker file 30/30 (29 retained, one new compatibility regression), formatting/ESLint/TypeScript/build, control validator, secret scan and diff-check pass. Initial test-harness lint errors were corrected with a typed serialized mock-reply capture; expectations were retained. Prior full candidate evidence remains 619 unique tests; current inventory is 623 after four additions, not a claim of a new 623-test full run. No runtime candidate, full candidate validation, new clean-checkout artifact or deployment PASS is claimed. Deterministic check passes all 5000 cases with semantic checksum f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6 unchanged. WP7 frozen evidence check passes with semantic checksum 7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55 unchanged; no live evaluation rerun. Dependency audit reports no known vulnerabilities; dependencies, lockfile, Worker runtime, model/prompt/policy and reports are unchanged.
+
+| Acceptance gate                                                    | Current verdict                                                        |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| v16 exact control / additional DO file authority                   | PASS, committed/pushed control                                         |
+| Existing F1/F2 / F3 button UAT                                     | Historical evidence retained; F2 compatibility regression PASS         |
+| Deterministic precedence security repair                           | BLOCKED — new exact contract conflict; original vulnerability retained |
+| Atomic one-shot continuation / lineage / rollback compatibility    | GAP — authorized, not implemented or validated                         |
+| Targeted F4, F5, F6 / new-session kill switch                      | NOT_STARTED                                                            |
+| TEST containment and unchanged accounting                          | PASS at the timestamped read above                                     |
+| New runtime deployment / rollback rehearsal / final release review | BLOCKED                                                                |
+| Draft PR / integration / Issue closure                             | BLOCKED; Issue #12 OPEN                                                |
+| Production                                                         | NO_GO — NOT TOUCHED                                                    |
+
+## Historical preflight — prior file-scope blocker, now resolved
+
+Status: BLOCKED_PENDING_EXACT_CONTINUATION_FILE_SCOPE. This is evidence only, not a v16 control transition, implemented fix, deployment authorization bypass or completed acceptance. Current committed control remains Roadmap 2026.09.08-v15. Owner has approved the v16 objective, but its exact runtime file allowlist does not include the coordinator required for continuation.
+
+## Provenance and exact preflight
+
+This permanent sanitized record captures the prior operator evidence and fresh verification. It intentionally excludes raw chat, screenshots, customer identifiers, private conversation references, secret values, tokens and raw provider bodies. The Owner's subsequent v16 instruction explicitly authorizes committing this sanitized evidence; the earlier detailed-publication restriction is retained as history, not bypassed by copying its payload verbatim.
+
+- Repository: Eak-dev/malispang-lineOA; branch: codex/mp-06-guardrailed-ai.
+- Starting evidence/local/remote HEAD: cbced781f8e06f078b079f4e06f1c181872167ff; fetch origin completed; tracked tree clean, no staged files.
+- Control ancestor: 4aa1cba94a74442fab6608196211cabd5e6df0b3.
+- Deployed runtime ancestor: 8a5b6547b4713ff50ad6b08ee58682e129641b6a.
+- Exact TEST Worker: malispang-lineoa-test.
+- Independently resolved active version: 8486019d-9b62-4de9-ae15-6299909a23d9; traffic 100%.
+- Artifact SHA-256: 15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64.
+- Remote version annotation matches the runtime SHA and the previously reproduced/uploaded minified artifact; the retained local bundle hashes identically. This is source/build/upload/annotation association, not an independent download and hash of the remote executable.
+- Health: TEST / correct TEST account name / durable-object-sqlite / ok.
+- Fresh SELECT-only observation: 2026-09-08T09:45:06.848Z, receipt 5b0efd53-552c-4f3c-9d52-34811b6ae9e6.
+- AI admission OFF / pilot STOPPED; events/attempts 6/6; consumed/reserved 34082/0 micro-USD; in-flight/pending attempts zero; Owner HUMAN_HANDOFF.
+- Node 24.19.0, pnpm 11.19.0; project-control validator PASS with the previously documented default-branch-drift warning. GitHub #9/#12 remain OPEN; v15 follow-up comments align with current control.
+
+No remote mutation, activation, recovery, provider request, LINE message or deployment occurred in this v16 preflight.
+
+## Historical Owner UAT and containment evidence
+
+The one v15 session activated at 2026-09-08T08:59:00.434Z with expiry 09:59:00.434Z. Actual Owner-mobile screenshots corroborate the visible results below; no transcript or screenshot is committed. F1/F2/F4 each have all eight durable phases from dispatch authorization through response headers, body, parsing and successful settlement. A pre-fetch checkpoint alone is not evidence that OpenAI received a request.
+
+| Case | Actual observed result                                                                    | Backend evidence                                                                          | Cumulative accounting after case                             |
+| ---- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| F1   | Clarification asks product/size; no price assertion                                       | CLARIFY T-C01; HTTP 200; settlement complete; pending reply zero                          | events/attempts 4/4; consumed 29898; reserved/in-flight zero |
+| F2   | Approved catalog price with required disclaimer; shortened input variant retained as such | AUTO; pending T-C01 resolved; HTTP 200; settlement complete                               | 5/5; consumed 32024; reserved/in-flight zero                 |
+| F3   | Staff-button postback produces one handoff acknowledgement                                | CUSTOMER_REQUESTED_STAFF; retained Owner HUMAN_HANDOFF; no provider increment             | 5/5; consumed 32024; reserved/in-flight zero                 |
+| F4   | Refund request safely handed to staff; no refund approved                                 | MP06_AI_NLU_RISK_PAYMENT_OR_REFUND; HTTP 200; settlement complete; one provider increment | 6/6; consumed 34082; reserved/in-flight zero                 |
+
+F3 proves the button/postback path, not natural-language staff classification. F4 had a safe actual response; it is not evidence of an unsafe live AUTO. Its additional provider attempt exposed the separate code-level authority gap described below. F5/F6 were not run. Existing WP8E location evidence remains separate and is not retested or counted again.
+
+F1/F2/F4 observed header durations were 3594/2607/3225 ms; body durations 75/74/73 ms; parsing 0/0/0 ms. These instrumented measurements are not product performance guarantees. All recorded HTTP statuses were 200; no provider error or Retry-After was recorded for these cases. Their reported-usage cost increments were 2074/2126/2058 micro-USD.
+
+After F3, one existing authenticated exact-Owner handoff-close operation was verified with before/after observations and HANDOFF_CLOSED / AUTHORIZED_TEST_STAFF audit at 1788859043474. Accounting and draft remained unchanged, prior audit records retained, Owner returned BOT_ACTIVE. No recovery was performed after F4; the Owner remains HUMAN_HANDOFF.
+
+Containment was requested at 2026-09-08T09:27:24.592Z. Receipt 3a7bc973-6c85-4471-b93e-c8f8d603da4e at 09:27:24.952Z confirmed STOPPED / AI OFF, reserved/in-flight zero. Receipt 462de4f8-fab3-4e59-af4d-12d88fc1e275 at 09:30:08.844Z confirmed unchanged accounting and no new lifecycle checkpoint after stop. This is incident containment, not completed F6 Owner kill-switch acceptance or an indefinite no-call guarantee.
+
+Accounting reconciliation: 25864 conservative historical USAGE_UNKNOWN charges + 8218 reported-usage estimates = 34082 micro-USD. The latter includes the historical settled location cost 1960 and the three new successful calls. Two attempts remain terminal USAGE_UNKNOWN, four SETTLED. Historical independently verified provider billing and the causes of the two original unknown attempts remain UNKNOWN. No refund, ledger reset or audit deletion occurred.
+
+## Proven security counterexample — not fixed
+
+The existing deterministic classifier correctly produces a handoff decision for the synthetic F4 risk request. However, worker/mp-06-wp1.ts returns undefined when a staff-only primary intent has no AUTO-intent match. worker/index.ts then admits AI for an undefined plan. A schema-valid mock advisory selecting a benign intent with HIGH confidence and no risk signal can produce AUTO through planMp06WithAdvisoryNlu; the original legacy handoff decision is not retained on that path.
+
+The local counterexample used no network and no code change. The corrected mock passed validateMp06AiNluOutput and produced: legacy handoff true, WP1 baseline undefined, one mock invocation, final AUTO. An initial exploratory mock had empty reason codes and failed schema validation; it is not used as proof. This is a planner-level counterexample plus source-path analysis, not a completed signed-webhook regression. Real F4 was safely handed off because the actual advisory recognized the risk.
+
+Required fix remains the Owner-approved early deterministic precedence before admission/reservation/provider construction, with zero provider/attempt/cost increment and real signed-webhook regression. No model, prompt, policy, catalog, timeout or retry change is proposed.
+
+## Exact continuation scope conflict and proposed additional file
+
+Add only worker/durable-objects.ts to the v16 executable allowlist, limited to the following reviewed design. No broad file scope or permission is requested. Existing approved worker/index.ts and worker-tests/mp-06-pilot-control.test.ts can contain the route wiring and real Worker/SQLite/HTTP regression coverage.
+
+Evidence of necessity:
+
+1. resumeMp06Acceptance() stores a single immutable mp06_wp8f_activation row with CHECK(id = 1). Once applied, only the exact original operation is idempotently acknowledged; it cannot reopen STOPPED state. A different continuation operation is denied.
+2. Its first-use precondition pins 3/3 events/attempts and 27824 consumed, not the current 6/6 and 34082.
+3. ownerUatPilotObservation() validates only the original previous/current session pair and its activation timestamp. A new session without a corresponding supported immutable lineage extension makes readiness unavailable.
+4. The generic activation method is not a safe substitute: it replaces session/tester rows without extending that retained one-shot lineage. Do not route around the one-shot guard or edit/delete its marker. The historical reconciliation route is also pinned to the older 2/2 state and is not applicable.
+
+Proposed diff boundary (not applied):
+
+- Add one separately identified v16 continuation transaction with immutable audit/lineage, exact prior session and operation preconditions, STOPPED / OPERATOR_STOP, 6/6, consumed/reserved 34082/0, no pending attempt or in-flight work, and verified retained Owner linkage.
+- Atomically carry forward all accounting/history, limits and the same Owner; authorize only one new session of at most 60 minutes. Same-operation replay must not extend expiry or reopen stopped state; a third activation must fail closed.
+- Preserve the original v15 marker and all events/attempts. Update SELECT-only observation to validate the explicit old-to-v15-to-v16 chain and cumulative ledger; missing/ambiguous lineage denies. Do not make a read response an activation or reply capability.
+- Test wrong prior identity/state, duplicate/concurrent operation, stop/restart/replay, immutable expiry, old-attempt isolation, ledger agreement and pre/active/post-stop observation using real Worker/SQLite storage. Test the already approved precedence fix separately through signed webhook entry points.
+- Review storage/rollback compatibility before any deployment. Additive local storage representation is not permission for a new remote resource, binding or broad migration. If another file/resource is necessary, stop with its exact diff proposal.
+
+Changing only the route in worker/index.ts cannot safely bypass or replace coordinator persistence. Owner approval of the continuation objective does not implicitly override the exact file allowlist. Therefore no v16 control/runtime implementation or new deployment has been performed; stop at this additional-file approval gate rather than weakening fail-closed behavior.
+
+## Validation and acceptance status
+
+Fresh unchanged-source local Worker/SQLite acceptance-resume tests: 9/9 PASS, including concurrent idempotency, restart, refusal to reopen after stop and denial of a different operation. No live provider calls. Project-control validator PASS. These tests prove the existing one-shot contract; they do not claim v16 remediation or continuation acceptance.
+
+Prior candidate evidence remains 619 unique tests and clean-checkout reproducibility, as recorded in MP_06_V15_DIAGNOSTICS_VALIDATION_TH.md. No full-suite rerun is claimed for this documentation-only change, and test counts do not override the newly discovered security gap. Runtime, model/prompt/policy, benchmark reports/checksums, dependencies, lockfile and deployment configuration remain unchanged.
+
+F1/F2 and F3-button evidence is retained. Deterministic precedence security remediation, targeted F4 rerun, F5/F6, continuation, rollback/redeploy, final security/release review and PR/integration remain GAP or BLOCKED. No PR, merge, Issue closure or MP-07. Issue #12 OPEN. Production NO_GO — NOT TOUCHED.

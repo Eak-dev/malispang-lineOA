@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "target": "LOCAL_AND_FUTURE_TEST_ONLY",
+  "productionRequestsAllowed": false,
+  "ownerUatStatus": "NOT_PERFORMED",
+  "rollbackRehearsalStatus": "NOT_PERFORMED",
+  "fixtures": [
+    {
+      "fixtureId": "WP6-SYN-AUTO-001",
+      "coverage": ["HAPPY_PATH", "AUTO"],
+      "syntheticInput": "มีเมนูอะไรบ้าง",
+      "precondition": "APPROVED_STATIC_AUTHORITY_VALID",
+      "expectedOutcome": "AUTO",
+      "expectedSafety": "APPROVED_RESPONSE_UNIT_ONLY"
+    },
+    {
+      "fixtureId": "WP6-SYN-CLARIFY-001",
+      "coverage": ["CLARIFY"],
+      "syntheticInput": "ราคาเท่าไหร่",
+      "precondition": "PRODUCT_AND_SIZE_MISSING",
+      "expectedOutcome": "CLARIFY_T_C01",
+      "expectedSafety": "ONE_SHARED_CLARIFICATION_BUDGET"
+    },
+    {
+      "fixtureId": "WP6-SYN-STAFF-001",
+      "coverage": ["STAFF_ONLY", "RISKY_REQUEST"],
+      "syntheticInput": "ช่วยเช็กค่าส่งเฉพาะรอบนี้ให้หน่อย",
+      "precondition": "VARIABLE_DELIVERY_DETAIL",
+      "expectedOutcome": "STAFF_ONLY",
+      "expectedSafety": "NO_PARTIAL_AUTO"
+    },
+    {
+      "fixtureId": "WP6-SYN-AUTHORITY-001",
+      "coverage": ["RISKY_AUTHORITY", "FAIL_CLOSED"],
+      "syntheticInput": "ขอราคาแฮมชีสขนาดปกติ",
+      "precondition": "CATALOG_CHECKSUM_INVALID",
+      "expectedOutcome": "STAFF_ONLY",
+      "expectedSafety": "ATOMIC_FAIL_CLOSED"
+    },
+    {
+      "fixtureId": "WP6-SYN-SIGNATURE-001",
+      "coverage": ["INVALID_SIGNATURE"],
+      "syntheticInput": "[SYNTHETIC_REQUEST_BODY]",
+      "precondition": "INVALID_TEST_SIGNATURE",
+      "expectedOutcome": "HTTP_401",
+      "expectedSafety": "NO_EVENT_PROCESSING"
+    },
+    {
+      "fixtureId": "WP6-SYN-DUPLICATE-001",
+      "coverage": ["DUPLICATE_EVENT", "IDEMPOTENCY"],
+      "syntheticInput": "ขอเวลาเปิดร้าน",
+      "precondition": "SAME_SYNTHETIC_EVENT_REFERENCE_TWICE",
+      "expectedOutcome": "ONE_RESPONSE_ONLY",
+      "expectedSafety": "NO_DUPLICATE_REPLY"
+    },
+    {
+      "fixtureId": "WP6-SYN-IDEMPOTENCY-001",
+      "coverage": ["IDEMPOTENCY", "COMPOSITE_RETRY"],
+      "syntheticInput": "ขอเมนูและเวลาเปิดร้าน",
+      "precondition": "SAME_PII_FREE_FINGERPRINT_RETRY",
+      "expectedOutcome": "STABLE_RESPONSE_UNIT_PLAN",
+      "expectedSafety": "NO_RAW_INPUT_IN_FINGERPRINT"
+    },
+    {
+      "fixtureId": "WP6-SYN-KILL-001",
+      "coverage": ["KILL_SWITCH"],
+      "syntheticInput": "[SYNTHETIC_NO_CUSTOMER_TEXT]",
+      "precondition": "TEST_WEBHOOK_DISABLED",
+      "expectedOutcome": "NO_NEW_TEST_EVENTS",
+      "expectedSafety": "NO_PRODUCTION_IMPACT"
+    }
+  ]
+}
