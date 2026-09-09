@@ -57,7 +57,7 @@
       "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
     },
     "status": {
-      "const": "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY"
+      "const": "AUTHORIZED_LOCAL_DELIVERY_FENCING_WP8F_ONLY"
     },
     "base": {
       "type": "object",
@@ -141,7 +141,7 @@
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": true },
+        "testDeploymentAuthorization": { "const": false },
         "testDeploymentOccurred": { "const": true },
         "testDeployment": { "const": false },
         "production": { "type": "boolean" }
@@ -1789,8 +1789,8 @@
     },
     "wp8fExecutionEnvelope": {
       "const": {
-        "ownerDecision": "MP-OD-2026-09-08-V17",
-        "baseline": "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
+        "ownerDecision": "MP-OD-2026-09-09-V18",
+        "baseline": "3db7738da3edc3da265ebb623190de03a629c0ff",
         "controlFiles": [
           "config/project/roadmap.json",
           "config/project/current-work.json",
@@ -1805,22 +1805,22 @@
         ],
         "worker": "malispang-lineoa-test",
         "targetEnvironment": "TEST_ONLY",
-        "candidateGate": "VALIDATED_COMMITTED_PUSHED_EXACT_SOURCE_ARTIFACT_AND_FRESH_STOPPED_TEST",
+        "candidateGate": "LOCAL_VALIDATED_COMMITTED_PUSHED_REPRODUCIBLE_CANDIDATE_REQUIRES_SEPARATE_DEPLOY_APPROVAL",
         "followUpVersion": "8486019d-9b62-4de9-ae15-6299909a23d9",
         "followUpSource": "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
         "followUpArtifact": "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
-        "recovery": "EXISTING_AUDITED_RETAINED_OWNER_CONVERSATION_ONLY",
-        "maximumNewSessions": 1,
+        "recovery": "NOT_AUTHORIZED_IN_V18",
+        "maximumNewSessions": 0,
         "maximumSessionMinutes": 60,
         "maximumCumulativeCostMicroUsd": 5000000,
         "maximumCumulativeEvents": 200,
         "maximumCumulativeAttempts": 200,
         "rollbackVersion": "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
         "rollbackSource": "f986a478bc980f9e53748ed49cedd543f54cd64a",
-        "maximumRollbackRehearsals": 1,
-        "maximumRecoveryRedeployments": 1,
-        "rollbackGate": "UAT_KILL_SWITCH_COMPATIBILITY_AND_CONTAINMENT_PASS",
-        "draftPrGate": "TEST_ACCEPTANCE_AND_FINAL_REVIEW_PASS",
+        "maximumRollbackRehearsals": 0,
+        "maximumRecoveryRedeployments": 0,
+        "rollbackGate": "SEPARATE_OWNER_APPROVAL_AFTER_COMPATIBILITY",
+        "draftPrGate": "NOT_AUTHORIZED_IN_V18",
         "legacyMutatingGet": false,
         "newRecoveryMechanism": false,
         "accountingResetOrRefund": false,
@@ -1835,13 +1835,74 @@
           "tests/mp-06-wp7-ai-nlu.test.ts",
           "tests/mp-06-wp8a-pilot-control.test.ts",
           "tests/mock-webhook-pipeline.test.ts",
-          "worker/durable-objects.ts"
+          "worker/durable-objects.ts",
+          "worker-tests/durable-state.test.ts"
         ],
         "evidenceFiles": [
           "docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md"
         ],
-        "purpose": "DETERMINISTIC_HANDOFF_PRECEDENCE_AND_ONE_ATOMIC_CONTINUATION",
-        "maximumHandoffCloses": 3,
+        "purpose": "V17_PRECEDENCE_AND_ATOMIC_DELIVERY_FENCING_LOCAL_ONLY",
+        "dependencyFiles": [
+          "package.json",
+          "pnpm-workspace.yaml",
+          "pnpm-lock.yaml"
+        ],
+        "dependencyRemediation": {
+          "purpose": "FOUR_APPROVED_ADVISORY_FINDINGS_LOCAL_ONLY",
+          "baselineHigh": 2,
+          "baselineModerate": 2,
+          "fixes": [
+            {
+              "package": "sharp",
+              "from": "0.35.2",
+              "to": "0.35.4",
+              "advisory": "GHSA-rgj7-g3m4-5g8c",
+              "severity": "high"
+            },
+            {
+              "package": "js-yaml",
+              "from": "4.3.1",
+              "to": "4.3.2",
+              "advisory": "GHSA-2883-xcg3-v3hh",
+              "severity": "high"
+            },
+            {
+              "package": "vitest",
+              "from": "4.1.10",
+              "to": "4.1.11",
+              "advisory": "GHSA-82fw-gwwq-j7x9",
+              "severity": "moderate"
+            },
+            {
+              "package": "@vitest/mocker",
+              "from": "4.1.10",
+              "to": "4.1.11",
+              "advisory": "GHSA-82fw-gwwq-j7x9",
+              "severity": "moderate"
+            }
+          ],
+          "sharpOverride": {
+            "miniflare@5.20260811.0-alpha>sharp": "0.35.4"
+          },
+          "jsYamlOverride": {
+            "@eslint/eslintrc@3.3.6>js-yaml": "4.3.2"
+          },
+          "allowedTransitiveChanges": "MATCHING_VITEST_INTERNALS_SHARP_NATIVE_AND_EXISTING_AFFECTED_CHAINS_ONLY",
+          "majorUpgrade": false,
+          "peerConflict": false,
+          "newDirectDependency": false,
+          "registryChange": false,
+          "packagePatchOrFork": false,
+          "force": false,
+          "broadUpgrade": false,
+          "auditSuppression": false,
+          "workspaceOrBuildPolicyChange": false,
+          "toolchainChange": false,
+          "residualScopedAdvisory": "STOP_FOR_OWNER_DECISION",
+          "verification": "FULL_TESTS_REAL_WORKER_SQLITE_SHARP_NATIVE_FROZEN_EMPTY_STORE_REPRODUCIBLE_ARTIFACT",
+          "deploymentAuthorization": false
+        },
+        "maximumHandoffCloses": 0,
         "continuation": "ONE_IMMUTABLE_V16_CONTINUATION_NO_REOPEN_OR_ACCOUNTING_RESET",
         "baselineEvents": 6,
         "baselineAttempts": 6,
@@ -1852,6 +1913,7 @@
         "originalActivationMarkerImmutable": true,
         "precedenceContract": {
           "mandatoryBeforeDraftAndAi": true,
+          "mixedStaffRedemption": "EXISTING_EXPLICIT_STAFF_REDEMPTION_PREEMPTS_PREORDER_NO_NEW_KEYWORD_OR_DRAFT_MUTATION",
           "unresolvedLegacyReasons": [
             "NO_AUTHORITATIVE_ANSWER",
             "AMBIGUOUS_CUSTOMER_TEXT"
@@ -1861,6 +1923,23 @@
           "activeDraftRisk": "PREEMPT_WITHOUT_DRAFT_OR_HISTORY_MUTATION",
           "f1F2": "PRESERVE_APPROVED_CATALOG_CLARIFY_AUTO_AI_ON_AND_OFF",
           "handoffBooleanAloneIsSecurityPredicate": false
+        },
+        "deliveryContract": {
+          "canonicalIdentity": "VERIFIED_WEBHOOK_EVENT_ID_NOT_REPLY_TOKEN",
+          "claim": "ATOMIC_PERSISTENT_EVENT_OWNER_AND_REVISION_FENCE",
+          "acknowledgement": "REQUIRED_EXACT_CLAIM_NO_OPTIONAL_OR_COMPATIBILITY_TOKEN",
+          "indexIntegration": "REAL_CLAIM_PRE_SEND_OWNER_EVENT_REVISION_AND_SAME_DISPATCH_ACK_NO_DRAFT_LIFECYCLE_CHANGE",
+          "duplicate": "NO_NEW_OUTBOUND_OWNERSHIP_OR_PROVIDER_ACCOUNTING",
+          "uncertainOutcome": "RETAIN_CLAIM_NO_AUTOMATIC_RETRY_REASSIGN_OR_REFUND",
+          "non2xx": "NO_AUTOMATIC_RETRY",
+          "restartOrExpiry": "NEVER_RELEASE_OR_REOPEN_CLAIM",
+          "noMessage": "NO_DELIVERY_CLAIM",
+          "recovery": "SEPARATE_AUDITED_OPERATOR_APPROVAL_REQUIRED",
+          "externalExactlyOnce": false,
+          "preserveV17PrecedenceDraftHistoryAndAccounting": true,
+          "durableStateTests": "REAL_PROCESS_EVENT_TOKENS_FENCED_ACK_DUPLICATE_SUPPRESSION_PRESERVE_HANDOFF_POLICY",
+          "newRuntimeFiles": false,
+          "deploymentAuthorization": false
         }
       }
     },

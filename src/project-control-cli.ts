@@ -17,7 +17,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     )
   ) {
     throw new Error(
-      "ROADMAP_UNVERIFIED: explicit v17 Owner decision record missing or inconsistent",
+      "ROADMAP_UNVERIFIED: explicit v18 Owner decision record missing or inconsistent",
     );
   }
   const [roadmap, currentWork, roadmapSchema, currentWorkSchema] =
@@ -106,7 +106,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.08-v17, MP-06 (GitHub #12), exact precedence remediation and one continuation authorized; deployment requires independent candidate/state evidence; PR requires TEST acceptance/final review; merge and Production blocked, ${warningSuffix}`,
+    `Project control validation passed: 2026.09.09-v18, MP-06 (GitHub #12), local delivery fencing, existing mixed staff/redemption precedence and exact four-advisory dependency remediation authorized; TEST deployment/session/recovery/rollback/PR require separate Owner approval; merge and Production blocked, ${warningSuffix}`,
   );
 }
 

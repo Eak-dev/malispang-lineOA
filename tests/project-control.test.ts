@@ -27,7 +27,7 @@ beforeAll(async () => {
 });
 
 describe("MP-06 WP8F TEST acceptance completion", () => {
-  it("accepts the 2026.09.08-v17 control snapshot and records default-branch drift", () => {
+  it("accepts the 2026.09.09-v18 control snapshot and records default-branch drift", () => {
     expect(validateProjectControl(roadmap, currentWork)).toEqual({
       errors: [],
       warnings: ["DEFAULT_BRANCH_DRIFT"],
@@ -67,7 +67,7 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
       "WP8F_TEST_ACCEPTANCE_COMPLETION",
     );
     expect(schema.properties.status.const).toBe(
-      "AUTHORIZED_TEST_ACCEPTANCE_COMPLETION_WP8F_ONLY",
+      "AUTHORIZED_LOCAL_DELIVERY_FENCING_WP8F_ONLY",
     );
     expect(schema.properties.authorization.properties.benchmarkWp2.const).toBe(
       false,
@@ -1150,10 +1150,10 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
     const changed = clone(currentWork) as { forbiddenScope: string[] };
     changed.forbiddenScope = changed.forbiddenScope.filter(
       (scope) =>
-        scope !== "CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_V16_REMEDIATION",
+        scope !== "CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_V18_REMEDIATION",
     );
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "FORBIDDEN_SCOPE_MISSING_CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_V16_REMEDIATION",
+      "FORBIDDEN_SCOPE_MISSING_CHANGE_RUNTIME_OUTSIDE_EXACT_APPROVED_V18_REMEDIATION",
     );
   });
 
@@ -1737,7 +1737,7 @@ function clone<T>(value: T): T {
 }
 
 describe("WP8F scoped acceptance safety gates", () => {
-  it("authorizes only the exact approved TEST worker, source and artifact", () => {
+  it("retains exact candidate checks but denies TEST deployment even with valid evidence in v18", () => {
     const target = {
       worker: "malispang-lineoa-test",
       sourceCommit: "1".repeat(40),
@@ -1752,7 +1752,7 @@ describe("WP8F scoped acceptance safety gates", () => {
         target,
         validCandidateEvidence(target),
       ).allowed,
-    ).toBe(true);
+    ).toBe(false);
     for (const field of ["worker", "sourceCommit", "artifactSha256"] as const) {
       expect(
         evaluateProjectAction(roadmap, currentWork, "DEPLOY_TEST", {
@@ -1859,8 +1859,8 @@ function validCandidateEvidence(
 ) {
   return {
     candidate: {
-      ownerDecision: "MP-OD-2026-09-08-V17",
-      baseline: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
+      ownerDecision: "MP-OD-2026-09-09-V18",
+      baseline: "3db7738da3edc3da265ebb623190de03a629c0ff",
       precedenceTestsPassed: true,
       continuationStorageTestsPassed: true,
       rollbackAdditiveCompatibilityPassed: true,
@@ -1872,8 +1872,8 @@ function validCandidateEvidence(
       committed: true,
       baselineAncestryVerified: true,
       controlCommit: "3".repeat(40),
-      controlParentCommit: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037",
-      controlOwnerDecision: "MP-OD-2026-09-08-V17",
+      controlParentCommit: "3db7738da3edc3da265ebb623190de03a629c0ff",
+      controlOwnerDecision: "MP-OD-2026-09-09-V18",
       controlAncestryVerified: true,
       cleanCheckoutPassed: true,
       validationPassed: true,
@@ -1913,6 +1913,217 @@ function validCandidateEvidence(
 }
 
 describe("v16 explicit Owner execution envelope", () => {
+  it("v18 permits only the three exact dependency-remediation paths under their own phase", () => {
+    for (const path of [
+      "package.json",
+      "pnpm-workspace.yaml",
+      "pnpm-lock.yaml",
+    ]) {
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "DEPENDENCY_REMEDIATION", [
+          path,
+        ]).allowed,
+      ).toBe(true);
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [path])
+          .allowed,
+      ).toBe(false);
+    }
+    for (const path of [
+      ".npmrc",
+      "pnpmfile.cjs",
+      "worker/routing.ts",
+      "worker/new.ts",
+      "package-lock.json",
+      "**",
+      "../package.json",
+      "./package.json",
+    ]) {
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "DEPENDENCY_REMEDIATION", [
+          path,
+        ]).allowed,
+      ).toBe(false);
+    }
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "DEPENDENCY_REMEDIATION", [
+        "package.json",
+        "worker/index.ts",
+      ]).allowed,
+    ).toBe(false);
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "UNKNOWN_DEPENDENCY_PHASE", [
+        "package.json",
+      ]).allowed,
+    ).toBe(false);
+  });
+  it("v18 cannot broaden any dependency condition, replace an advisory, or self-approve residual risk", () => {
+    const original = (
+      currentWork as {
+        wp8fExecutionEnvelope: {
+          dependencyRemediation: Record<string, unknown>;
+        };
+      }
+    ).wp8fExecutionEnvelope.dependencyRemediation;
+    expect(original.baselineHigh).toBe(2);
+    expect(original.baselineModerate).toBe(2);
+    expect(original.sharpOverride).toEqual({
+      "miniflare@5.20260811.0-alpha>sharp": "0.35.4",
+    });
+    expect(original.jsYamlOverride).toEqual({
+      "@eslint/eslintrc@3.3.6>js-yaml": "4.3.2",
+    });
+    for (const key of [
+      ...Object.keys(original),
+      "allowAll",
+      "ignoreAdvisories",
+      "newRegistry",
+    ]) {
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: {
+          dependencyRemediation: Record<string, unknown>;
+        };
+      };
+      changed.wp8fExecutionEnvelope.dependencyRemediation[key] = "UNREVIEWED";
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+    for (const files of [
+      ["package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml", ".npmrc"],
+      ["*"],
+    ]) {
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: { dependencyFiles: string[] };
+      };
+      changed.wp8fExecutionEnvelope.dependencyFiles = files;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+  });
+  it("v18 cannot turn mixed-intent repair into a broad handoff or a draft-mutation permission", () => {
+    const changed = clone(currentWork) as {
+      wp8fExecutionEnvelope: { precedenceContract: Record<string, unknown> };
+    };
+    expect(
+      changed.wp8fExecutionEnvelope.precedenceContract.mixedStaffRedemption,
+    ).toBe(
+      "EXISTING_EXPLICIT_STAFF_REDEMPTION_PREEMPTS_PREORDER_NO_NEW_KEYWORD_OR_DRAFT_MUTATION",
+    );
+    for (const value of [
+      "ALL_UNKNOWN_IS_STAFF",
+      "ANY_STAFF_OR_REWARD_WORD",
+      "DRAFT_FIRST",
+      "CHANGE_ROUTING",
+    ]) {
+      changed.wp8fExecutionEnvelope.precedenceContract.mixedStaffRedemption =
+        value;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+  });
+  it("v18 adds only the explicitly approved durable-state tests path", () => {
+    const envelope = (
+      currentWork as { wp8fExecutionEnvelope: { remediationFiles: string[] } }
+    ).wp8fExecutionEnvelope;
+    expect(envelope.remediationFiles).toHaveLength(9);
+    expect(
+      evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [
+        "worker-tests/durable-state.test.ts",
+      ]).allowed,
+    ).toBe(true);
+    for (const path of [
+      "worker-tests/draft-order-state.test.ts",
+      "worker/draft-order-objects.ts",
+      "worker/line-api.ts",
+      "worker/*",
+      "../worker/index.ts",
+    ]) {
+      expect(
+        evaluateWp8fPaths(roadmap, currentWork, "SECURITY_REMEDIATION", [path])
+          .allowed,
+      ).toBe(false);
+    }
+  });
+  it("v18 cannot self-authorize deployment by changing both manifest flags", () => {
+    const r = clone(roadmap) as {
+      authorization: { testDeploymentAuthorization: boolean };
+    };
+    const w = clone(currentWork) as {
+      authorization: { testDeploymentAuthorization: boolean };
+    };
+    r.authorization.testDeploymentAuthorization = true;
+    w.authorization.testDeploymentAuthorization = true;
+    expect(validateProjectControl(r, w).errors).toContain(
+      "NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
+    );
+    expect(validateProjectControl(r, w).errors).toContain(
+      "CURRENT_NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
+    );
+    expect(
+      evaluateProjectAction(
+        r,
+        w,
+        "DEPLOY_TEST",
+        {
+          worker: "malispang-lineoa-test",
+          sourceCommit: "1".repeat(40),
+          artifactSha256: "2".repeat(64),
+        },
+        validCandidateEvidence(),
+      ).allowed,
+    ).toBe(false);
+  });
+  it("v18 retains local implementation but has zero operational grants", () => {
+    const envelope = (
+      currentWork as { wp8fExecutionEnvelope: Record<string, unknown> }
+    ).wp8fExecutionEnvelope;
+    for (const key of [
+      "maximumNewSessions",
+      "maximumHandoffCloses",
+      "maximumRollbackRehearsals",
+      "maximumRecoveryRedeployments",
+    ]) {
+      expect(envelope[key]).toBe(0);
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: Record<string, unknown>;
+      };
+      changed.wp8fExecutionEnvelope[key] = 1;
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+    expect(
+      evaluateProjectAction(
+        roadmap,
+        currentWork,
+        "TEST_ACCEPTANCE_COMPLETION_WP8F",
+      ).allowed,
+    ).toBe(true);
+  });
+  it("v18 cannot weaken any delivery invariant or add compatibility fields", () => {
+    const original = (
+      currentWork as {
+        wp8fExecutionEnvelope: { deliveryContract: Record<string, unknown> };
+      }
+    ).wp8fExecutionEnvelope.deliveryContract;
+    for (const key of [
+      ...Object.keys(original),
+      "allowAll",
+      "optionalToken",
+      "retryAfterLease",
+    ]) {
+      const changed = clone(currentWork) as {
+        wp8fExecutionEnvelope: { deliveryContract: Record<string, unknown> };
+      };
+      changed.wp8fExecutionEnvelope.deliveryContract[key] = "UNREVIEWED";
+      expect(
+        validateProjectControl(roadmap, changed).errors.length,
+      ).toBeGreaterThan(0);
+    }
+  });
   it("v17 closes precedence exceptions without expanding the inherited v16 grant", () => {
     const original = (
       currentWork as {
@@ -2076,7 +2287,7 @@ describe("v16 explicit Owner execution envelope", () => {
         target,
         validCandidateEvidence(target),
       ).allowed,
-    ).toBe(true);
+    ).toBe(false);
     for (const change of [
       { version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072" },
       { sourceCommit: "f986a478bc980f9e53748ed49cedd543f54cd64a" },
@@ -2117,7 +2328,7 @@ describe("v16 explicit Owner execution envelope", () => {
     };
     for (const change of [
       { controlCommit: target.sourceCommit },
-      { controlCommit: "7ed6bd927b786634bcadcaf9c0cdd6b64f1a1037" },
+      { controlCommit: "3db7738da3edc3da265ebb623190de03a629c0ff" },
       { controlCommit: "latest" },
       { controlAncestryVerified: false },
       { controlParentCommit: "4".repeat(40) },
@@ -2152,8 +2363,8 @@ describe("v16 explicit Owner execution envelope", () => {
       undefined,
       "",
       JSON.stringify(currentWork),
-      record.replaceAll("MP-OD-2026-09-08-V17", "SELF_APPROVED"),
-      record.replaceAll("superseding v16", "superseding v13"),
+      record.replaceAll("MP-OD-2026-09-09-V18", "SELF_APPROVED"),
+      record.replaceAll("superseding v17", "superseding v13"),
     ]) {
       expect(validateWp8fOwnerDecisionRecord(missing)).toBe(false);
     }
@@ -2411,12 +2622,12 @@ describe("v16 explicit Owner execution envelope", () => {
     );
     delete changed.wp8fExecutionEnvelope;
     expect(validateProjectControl(roadmap, changed).errors).toContain(
-      "WP8F_V17_ENVELOPE_MISSING",
+      "WP8F_V18_ENVELOPE_MISSING",
     );
   });
-  it("denies draft PR until every TEST, rollback, source association and final review gate passes", () => {
+  it("denies draft PR in v18 even when every historical acceptance/review gate passes", () => {
     const review = {
-      ownerDecision: "MP-OD-2026-09-08-V17",
+      ownerDecision: "MP-OD-2026-09-09-V18",
       sourceCommit: "1".repeat(40),
       reviewedSourceCommit: "1".repeat(40),
       testAcceptedSourceCommit: "1".repeat(40),
@@ -2441,7 +2652,7 @@ describe("v16 explicit Owner execution envelope", () => {
         undefined,
         { review },
       ).allowed,
-    ).toBe(true);
+    ).toBe(false);
     for (const key of Object.keys(review)) {
       const missing = structuredClone(review);
       Reflect.deleteProperty(missing, key);
