@@ -1,4 +1,8 @@
-import { ConversationStateDO, HandoffRegistryDO } from "./durable-objects.js";
+import {
+  ConversationStateDO,
+  HandoffRegistryDO,
+  type DeliveryClaim,
+} from "./durable-objects.js";
 import { DraftOrderDO, PromotionControlDO } from "./draft-order-objects.js";
 import { authorizeTestPromotionChange } from "../src/test-promotion-control.js";
 import {
@@ -22,12 +26,17 @@ import {
   verifiedMp06PilotSender,
   type Mp06PilotAdmissionCode,
 } from "./mp-06-pilot-control.js";
-import { planMp06Wp1Text, type Mp06Wp1Plan } from "./mp-06-wp1.js";
+import {
+  mp06DeterministicPrecedence,
+  planMp06Wp1Text,
+  type Mp06Wp1Plan,
+} from "./mp-06-wp1.js";
 import {
   classifyPostback,
   classifyText,
   replyMessage,
   replyMessages,
+  type LineReplyMessage,
   type RouteDecision,
 } from "./routing.js";
 import {
@@ -151,10 +160,48 @@ async function processLineEvent(
     sha256Reference(event.eventId),
     sha256Reference(event.conversationId),
   ]);
-  const decision = enforceApprovedKnowledge(eventDecision(event));
+  const routerDecision = eventDecision(event);
+  let decision = enforceApprovedKnowledge(routerDecision);
   const now = Date.now();
   const conversation = env.CONVERSATION_STATE.getByName(conversationRef);
-  if (event.kind === "text" && (await conversation.state()) === "BOT_ACTIVE") {
+  // Observation never grants ownership. A prior event must not reach draft,
+  // advisory admission or an external dispatch again, even after a restart.
+  if ((await conversation.deliveryObservation(eventRef)).state !== "UNSEEN") {
+    logOutcome(eventRef, "DUPLICATE", "DELIVERY_OWNERSHIP_ALREADY_CONSUMED");
+    return;
+  }
+  const mp06Context =
+    event.kind === "text" ? await conversation.mp06Context() : {};
+  let plan =
+    event.kind === "text"
+      ? await planMp06Wp1Text(
+          event.text,
+          env.PUBLIC_ASSET_BASE_URL,
+          now,
+          mp06Context,
+        )
+      : undefined;
+  const precedence = mp06DeterministicPrecedence(routerDecision, plan);
+  if (precedence === "MANDATORY_HANDOFF") {
+    // Preserve approved reply-and-handoff categories. WP1 integrity/protected
+    // risk failures instead use its fail-closed acknowledgement. No draft RPC,
+    // pilot admission, reservation or provider construction may precede this.
+    if (
+      plan?.classification === "STAFF_ONLY" &&
+      !plan.decision.reasonCode.startsWith("MP06_STAFF_PRECEDENCE_")
+    )
+      decision = plan.decision;
+    decision = {
+      ...decision,
+      handoff: true,
+      reasonCode: "MP06_MANDATORY_DETERMINISTIC_PRECEDENCE",
+    };
+  }
+  if (
+    event.kind === "text" &&
+    precedence !== "MANDATORY_HANDOFF" &&
+    (await conversation.state()) === "BOT_ACTIVE"
+  ) {
     const decisionForStart = classifyText(event.text);
     const draft = env.DRAFT_ORDER.getByName(conversationRef);
     const draftResult = await draft.processText({
@@ -172,28 +219,6 @@ async function processLineEvent(
         logOutcome(eventRef, "DUPLICATE", "DRAFT_EVENT_ALREADY_DELIVERED");
         return;
       }
-      if (draftResult.enterHandoff) {
-        const handoffResult = await conversation.processEvent({
-          eventRef,
-          decision: {
-            replyKind: "HANDOFF_ACK",
-            reasonCode: "DRAFT_REQUIRES_STAFF_REVIEW",
-            handoff: true,
-            allowDuringHandoff: false,
-          },
-          now,
-          processedRetentionSeconds: positiveInteger(
-            env.PROCESSED_EVENT_RETENTION_SECONDS,
-          ),
-          auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
-        });
-        if (handoffResult.enteredHandoff) {
-          await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
-            conversationRef,
-            now,
-          );
-        }
-      }
       const draftMessages = draftResult.messages.map((text) => ({
         type: "text" as const,
         text,
@@ -204,28 +229,63 @@ async function processLineEvent(
           text: "รับเรื่องแล้วค่ะ พนักงานมะลิปังจะเข้ามาตอบโดยเร็วที่สุดนะคะ ระหว่างนี้สามารถพิมพ์รายละเอียดเพิ่มเติมไว้ได้เลยค่ะ 😊",
         });
       }
-      if (draftMessages.length > 0) {
-        await sendLineReply(
-          event.replyToken,
-          draftMessages,
-          env.LINE_CHANNEL_ACCESS_TOKEN,
-        );
-        await draft.markDelivered(eventRef);
-        if (draftResult.enterHandoff)
-          await conversation.markDelivered(eventRef);
+      if (draftMessages.length === 0) return;
+      // DraftOrderDO still owns intake/state/history. ConversationStateDO
+      // owns only this event's outbound dispatch; never reuse a reply token
+      // or the draft's unfenced delivered bit as send authorization.
+      const delivery = await conversation.processEvent({
+        eventRef,
+        decision: {
+          replyKind: draftResult.enterHandoff ? "HANDOFF_ACK" : "NONE",
+          reasonCode: draftResult.enterHandoff
+            ? "DRAFT_REQUIRES_STAFF_REVIEW"
+            : "DRAFT_RESPONSE",
+          handoff: draftResult.enterHandoff,
+          allowDuringHandoff: false,
+        },
+        ...(!draftResult.enterHandoff ? { deliveryOnly: true as const } : {}),
+        responseFingerprint: await sha256Reference(
+          JSON.stringify(draftMessages),
+        ),
+        now,
+        processedRetentionSeconds: positiveInteger(
+          env.PROCESSED_EVENT_RETENTION_SECONDS,
+        ),
+        auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
+      });
+      if (delivery.status !== "RESPOND") {
+        logOutcome(eventRef, delivery.status, "DRAFT_NO_DELIVERY_OWNERSHIP");
+        return;
       }
+      if (delivery.enteredHandoff) {
+        await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
+          conversationRef,
+          now,
+        );
+      }
+      if (
+        !(await sendOwnedLineReply(
+          conversation,
+          event,
+          eventRef,
+          delivery.deliveryClaim,
+          draftMessages,
+          env,
+        ))
+      )
+        return;
+      // This existing draft acknowledgement follows only this owner's
+      // successful dispatch and fenced conversation acknowledgement.
+      await draft.markDelivered(eventRef);
       logOutcome(eventRef, "REPLIED", `DRAFT_${draftResult.state}`);
       return;
     }
   }
-  if (event.kind === "text") {
-    const mp06Context = await conversation.mp06Context();
-    let plan = await planMp06Wp1Text(
-      event.text,
-      env.PUBLIC_ASSET_BASE_URL,
-      now,
-      mp06Context,
-    );
+  if (
+    event.kind === "text" &&
+    precedence !== "MANDATORY_HANDOFF" &&
+    precedence !== "DRAFT_INTAKE"
+  ) {
     const aiEnv = env as Env & Mp06AiNluEnvironment;
     if (!plan || plan.classification !== "STAFF_ONLY") {
       const pilot = await admitMp06PilotAiEvent(event, eventRef, env, now);
@@ -295,7 +355,7 @@ async function processLineEvent(
     auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
   });
 
-  if (result.status === "DUPLICATE" || result.status === "SILENT") {
+  if (result.status !== "RESPOND") {
     logOutcome(eventRef, result.status, "NO_REPLY");
     return;
   }
@@ -312,12 +372,17 @@ async function processLineEvent(
     result.enteredHandoff,
   );
   if (messages.length === 0) return;
-  await sendLineReply(
-    event.replyToken,
-    messages,
-    env.LINE_CHANNEL_ACCESS_TOKEN,
-  );
-  await conversation.markDelivered(eventRef);
+  if (
+    !(await sendOwnedLineReply(
+      conversation,
+      event,
+      eventRef,
+      result.deliveryClaim,
+      messages,
+      env,
+    ))
+  )
+    return;
   logOutcome(eventRef, "REPLIED", decision.reasonCode);
 }
 
@@ -345,7 +410,7 @@ async function processMp06Plan(
     ),
     auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
   });
-  if (result.status === "DUPLICATE" || result.status === "SILENT") {
+  if (result.status !== "RESPOND") {
     logOutcome(eventRef, result.status, "MP06_NO_REPLY");
     return;
   }
@@ -365,13 +430,74 @@ async function processMp06Plan(
         )
       : plan.messages;
   if (messages.length === 0) return;
-  await sendLineReply(
-    event.replyToken,
-    messages,
-    env.LINE_CHANNEL_ACCESS_TOKEN,
-  );
-  await conversation.markDelivered(eventRef);
+  if (
+    !(await sendOwnedLineReply(
+      conversation,
+      event,
+      eventRef,
+      result.deliveryClaim,
+      messages,
+      env,
+    ))
+  )
+    return;
   logOutcome(eventRef, "REPLIED", `MP06_${plan.classification}`);
+}
+
+async function sendOwnedLineReply(
+  conversation: DurableObjectStub<ConversationStateDO>,
+  event: ParsedLineEvent,
+  eventRef: string,
+  claim: DeliveryClaim,
+  messages: readonly LineReplyMessage[],
+  env: Env,
+): Promise<boolean> {
+  // Only the processEvent winner receives this opaque grant. This SELECT-only
+  // check cannot mint/reassign ownership; missing, forged or fenced claims deny.
+  if (
+    !claim ||
+    claim.eventRef !== eventRef ||
+    !(await conversation.checkDeliveryClaim(claim))
+  ) {
+    logOutcome(eventRef, "SILENT", "DELIVERY_OWNERSHIP_REJECTED");
+    return false;
+  }
+  try {
+    await sendLineReply(
+      event.replyToken,
+      messages,
+      env.LINE_CHANNEL_ACCESS_TOKEN,
+    );
+  } catch (error) {
+    // A failed/aborted response does not prove non-delivery. Keep the durable
+    // claim; do not retry, release, reassign, or serialize an arbitrary error.
+    const status =
+      error instanceof Error
+        ? /^LINE_REPLY_FAILED_([1-5]\d\d)$/u.exec(error.message)?.[1]
+        : undefined;
+    logOutcome(
+      eventRef,
+      "DELIVERY_UNKNOWN",
+      status
+        ? `LINE_HTTP_${status}_NO_RETRY`
+        : "LINE_TRANSPORT_UNKNOWN_NO_RETRY",
+    );
+    return false;
+  }
+  try {
+    const acknowledgement = await conversation.markDelivered(eventRef, claim);
+    if (
+      acknowledgement !== "ACKNOWLEDGED" &&
+      acknowledgement !== "ALREADY_ACKNOWLEDGED"
+    ) {
+      logOutcome(eventRef, "DELIVERY_UNKNOWN", "DELIVERY_ACK_REJECTED");
+      return false;
+    }
+    return true;
+  } catch {
+    logOutcome(eventRef, "DELIVERY_UNKNOWN", "DELIVERY_ACK_UNCONFIRMED");
+    return false;
+  }
 }
 
 function eventDecision(event: ParsedLineEvent): RouteDecision {
@@ -860,6 +986,106 @@ async function handleAdmin(
   if (request.method === "POST" && url.pathname === "/admin/mp06-pilot/stop") {
     const result = await pilot.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
     return Response.json({ pilot: result.status, outcome: result.code });
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/admin/mp06-pilot/continue-acceptance-v16"
+  ) {
+    // Defense in depth: handleAdmin already authenticates before routing. This
+    // mutation also independently requires nonempty TEST admin credentials.
+    if (
+      typeof env.TEST_ADMIN_KEY !== "string" ||
+      env.TEST_ADMIN_KEY.length === 0 ||
+      !(await secureTextEqual(bearerToken(request), env.TEST_ADMIN_KEY)) ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      url.origin !==
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev" ||
+      url.search !== ""
+    )
+      return Response.json(
+        { error: "TEST_ADMIN_AND_EXACT_TARGET_REQUIRED" },
+        { status: 403 },
+      );
+    const limits = mp06PilotLimitsFromEnvironment(env);
+    const aiEnv = env as Env & Mp06AiNluEnvironment;
+    if (
+      !limits ||
+      aiEnv.MP06_AI_NLU_MODEL !== MP06_AI_NLU_MODEL ||
+      typeof aiEnv.OPENAI_API_KEY !== "string" ||
+      aiEnv.OPENAI_API_KEY.length < 20
+    )
+      return Response.json(
+        { error: "CONTINUATION_CONFIGURATION_INVALID" },
+        { status: 403 },
+      );
+    const input = parseAcceptanceResume(
+      decoder.decode(await readBoundedBody(request, MAX_ADMIN_BYTES)),
+    );
+    if (!input)
+      return Response.json({ error: "INVALID_CONTINUATION" }, { status: 400 });
+    const before = await pilot.ownerUatPilotObservation();
+    if (!before)
+      return Response.json(
+        { error: "CONTINUATION_READINESS_UNAVAILABLE" },
+        { status: 409 },
+      );
+    const conversation = env.CONVERSATION_STATE.getByName(before.ownerRef);
+    const draft = env.DRAFT_ORDER.getByName(before.ownerRef);
+    const context = await conversation.ownerUatConversationObservation(
+      before.eventRef,
+    );
+    const order = await draft.ownerUatDraftObservation();
+    if (
+      !context ||
+      !order ||
+      context.mode !== "BOT_ACTIVE" ||
+      context.clarificationUsed ||
+      context.pendingTemplate !== null ||
+      context.pendingReplies !== 0 ||
+      !order.nonBlocking ||
+      order.pendingReplies !== 0 ||
+      JSON.stringify(context) !==
+        JSON.stringify(
+          await conversation.ownerUatConversationObservation(before.eventRef),
+        ) ||
+      JSON.stringify(order) !==
+        JSON.stringify(await draft.ownerUatDraftObservation()) ||
+      JSON.stringify(before) !==
+        JSON.stringify(await pilot.ownerUatPilotObservation())
+    )
+      return Response.json(
+        { error: "CONTINUATION_READINESS_UNAVAILABLE" },
+        { status: 409 },
+      );
+    const result = await pilot.continueMp06AcceptanceV16({
+      ...input,
+      sessionRef: await sha256Reference(`mp06-wp8f-v16:${input.operationRef}`),
+      now: Date.now(),
+      limits,
+    });
+    const audit = {
+      actor: "AUTHENTICATED_TEST_ADMIN",
+      target: "RETAINED_WP8E_OWNER_CONVERSATION",
+      requestId: crypto.randomUUID(),
+      observedAt: new Date().toISOString(),
+      code: result.code,
+    };
+    console.info(
+      JSON.stringify({ outcome: "V16_CONTINUATION_CONTROL", ...audit }),
+    );
+    return Response.json(
+      { outcome: result.code, pilot: result.status, audit },
+      {
+        status: result.activated
+          ? result.code === "ACTIVATED_IDEMPOTENT"
+            ? 200
+            : 201
+          : 409,
+        headers: { "cache-control": "no-store" },
+      },
+    );
   }
   if (request.method === "GET" && url.pathname === "/admin/handoffs") {
     return Response.json({ active: await registry.listActive() });

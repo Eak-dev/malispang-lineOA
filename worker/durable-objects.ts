@@ -43,15 +43,37 @@ export interface ProcessEventInput {
   readonly decision: RouteDecision;
   readonly responseFingerprint?: string;
   readonly clarificationTemplateId?: "T-C01" | "T-C04";
+  /** Delivery ownership only; never consumes draft text or WP1 context. */
+  readonly deliveryOnly?: true;
   readonly now: number;
   readonly processedRetentionSeconds: number;
   readonly auditRetentionSeconds: number;
 }
 
-export interface ProcessEventResult {
-  readonly status: "RESPOND" | "SILENT" | "DUPLICATE";
-  readonly replyKind: ReplyKind;
-  readonly enteredHandoff: boolean;
+export interface DeliveryClaim {
+  readonly eventRef: string;
+  readonly revision: number;
+  readonly ownerToken: string;
+}
+
+export type ProcessEventResult =
+  | {
+      readonly status: "RESPOND";
+      readonly replyKind: ReplyKind;
+      readonly enteredHandoff: boolean;
+      readonly deliveryClaim: DeliveryClaim;
+    }
+  | {
+      readonly status: "SILENT" | "DUPLICATE";
+      readonly replyKind: "NONE";
+      readonly enteredHandoff: boolean;
+    };
+
+interface DeliveryClaimRow extends Record<string, SqlStorageValue> {
+  revision: number;
+  owner_token: string | null;
+  state: "CLAIMED" | "DELIVERED" | "LEGACY_UNKNOWN" | "DELIVERY_UNKNOWN";
+  contract_version: number;
 }
 
 interface ProcessedRow extends Record<string, SqlStorageValue> {
@@ -93,6 +115,20 @@ interface Mp06PilotAttemptRow extends Record<string, SqlStorageValue> {
   state: "RESERVED" | "DISPATCHED" | "SETTLED" | "USAGE_UNKNOWN";
   reserved_cost_micro_usd: number;
   actual_cost_micro_usd: number | null;
+}
+
+interface Mp06ContinuationRow extends Record<string, SqlStorageValue> {
+  id: number;
+  previous_session_ref: string;
+  operation_ref: string;
+  session_ref: string;
+  activated_at: number;
+  owner_ref: string;
+  baseline_events: number;
+  baseline_attempts: number;
+  baseline_consumed_micro_usd: number;
+  baseline_reserved_micro_usd: number;
+  prior_stop_reason: string;
 }
 
 interface Mp06PilotLifecycleRow extends Record<string, SqlStorageValue> {
@@ -175,6 +211,26 @@ export class ConversationStateDO extends DurableObject<Env> {
           expires_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_mp06_plan_expiry ON mp06_response_plans(expires_at);
+        CREATE TABLE IF NOT EXISTS delivery_claims (
+          revision INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_ref TEXT NOT NULL UNIQUE,
+          owner_token TEXT,
+          contract_version INTEGER NOT NULL CHECK (contract_version = 1),
+          state TEXT NOT NULL CHECK (state IN ('CLAIMED', 'DELIVERED', 'LEGACY_UNKNOWN', 'DELIVERY_UNKNOWN')),
+          claimed_at INTEGER NOT NULL,
+          acknowledged_at INTEGER
+        );
+        -- Existing unfenced records are tombstones, never a new dispatch grant.
+        -- Keep every old processed/plan field and accounting/history unchanged.
+        INSERT OR IGNORE INTO delivery_claims
+          (event_ref, owner_token, contract_version, state, claimed_at, acknowledged_at)
+        SELECT e.event_ref, NULL, 1,
+          CASE WHEN e.delivered = 1 THEN 'DELIVERED' ELSE 'LEGACY_UNKNOWN' END,
+          e.created_at, NULL
+        FROM processed_events e
+        LEFT JOIN mp06_response_plans p ON p.event_ref = e.event_ref
+        WHERE (e.reply_kind != 'NONE' OR p.response_fingerprint IS NOT NULL)
+          AND NOT EXISTS (SELECT 1 FROM delivery_claims c WHERE c.event_ref = e.event_ref);
         CREATE TABLE IF NOT EXISTS mp06_pilot_session (
           id INTEGER PRIMARY KEY CHECK (id = 1),
           session_ref TEXT NOT NULL,
@@ -254,187 +310,388 @@ export class ConversationStateDO extends DurableObject<Env> {
   }
 
   processEvent(input: ProcessEventInput): ProcessEventResult {
-    const sql = this.ctx.storage.sql;
-    sql.exec("DELETE FROM processed_events WHERE expires_at <= ?", input.now);
-    sql.exec("DELETE FROM audit_events WHERE expires_at <= ?", input.now);
-    sql.exec(
-      "DELETE FROM mp06_response_plans WHERE expires_at <= ?",
-      input.now,
-    );
+    if (
+      !isMp06PilotReference(input.eventRef) ||
+      (input.deliveryOnly &&
+        (input.decision.replyKind !== "NONE" ||
+          input.decision.handoff ||
+          input.decision.allowDuringHandoff ||
+          input.decision.reasonCode !== "DRAFT_RESPONSE" ||
+          input.clarificationTemplateId !== undefined ||
+          !isMp06PilotReference(input.responseFingerprint)))
+    )
+      throw new Error("DELIVERY_INPUT_INVALID");
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const respond = (
+        replyKind: ReplyKind,
+        enteredHandoff: boolean,
+        hasMessages = replyKind !== "NONE",
+      ): ProcessEventResult => {
+        if (!hasMessages) {
+          sql.exec(
+            "UPDATE processed_events SET delivered = 1 WHERE event_ref = ?",
+            input.eventRef,
+          );
+          return { status: "SILENT", replyKind: "NONE", enteredHandoff };
+        }
+        const ownerToken = crypto.randomUUID();
+        const row = sql
+          .exec<{ revision: number }>(
+            "INSERT INTO delivery_claims (event_ref, owner_token, contract_version, state, claimed_at) VALUES (?, ?, 1, 'CLAIMED', ?) RETURNING revision",
+            input.eventRef,
+            ownerToken,
+            input.now,
+          )
+          .one();
+        if (!Number.isSafeInteger(row.revision) || row.revision < 1)
+          throw new Error("DELIVERY_REVISION_INVALID");
+        this.audit(input, "DELIVERY_CLAIMED", "AT_MOST_ONE_OUTBOUND_ATTEMPT");
+        return {
+          status: "RESPOND",
+          replyKind,
+          enteredHandoff,
+          deliveryClaim: {
+            eventRef: input.eventRef,
+            revision: row.revision,
+            ownerToken,
+          },
+        };
+      };
+      sql.exec(
+        "DELETE FROM processed_events WHERE expires_at <= ? AND NOT EXISTS (SELECT 1 FROM delivery_claims c WHERE c.event_ref = processed_events.event_ref)",
+        input.now,
+      );
+      sql.exec("DELETE FROM audit_events WHERE expires_at <= ?", input.now);
+      sql.exec(
+        "DELETE FROM mp06_response_plans WHERE expires_at <= ? AND NOT EXISTS (SELECT 1 FROM delivery_claims c WHERE c.event_ref = mp06_response_plans.event_ref)",
+        input.now,
+      );
 
-    const existing = sql
-      .exec<ProcessedRow>(
-        "SELECT reply_kind, delivered, entered_handoff FROM processed_events WHERE event_ref = ?",
-        input.eventRef,
-      )
-      .toArray()[0];
-    if (existing) {
-      const storedPlan = sql
-        .exec<Wp1PlanRow>(
-          "SELECT response_fingerprint, delivered FROM mp06_response_plans WHERE event_ref = ?",
+      const existing = sql
+        .exec<ProcessedRow>(
+          "SELECT reply_kind, delivered, entered_handoff FROM processed_events WHERE event_ref = ?",
           input.eventRef,
         )
         .toArray()[0];
-      if (existing.delivered === 1) {
-        this.audit(input, "DUPLICATE_IGNORED", "EVENT_ALREADY_DELIVERED");
+      const claimed = sql
+        .exec<DeliveryClaimRow>(
+          "SELECT revision, owner_token, state, contract_version FROM delivery_claims WHERE event_ref = ?",
+          input.eventRef,
+        )
+        .toArray()[0];
+      if (claimed && !existing) {
+        this.audit(input, "DUPLICATE_IGNORED", "DELIVERY_TOMBSTONE_RETAINED");
         return {
           status: "DUPLICATE",
           replyKind: "NONE",
           enteredHandoff: false,
         };
       }
-      if (
-        (storedPlan &&
-          storedPlan.response_fingerprint !== input.responseFingerprint) ||
-        (!storedPlan && input.responseFingerprint !== undefined)
-      ) {
-        sql.exec(
-          "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
-          input.now,
-        );
-        sql.exec(
-          "UPDATE processed_events SET reply_kind = 'HANDOFF_ACK', entered_handoff = 1 WHERE event_ref = ?",
-          input.eventRef,
-        );
-        this.audit(input, "HANDOFF_STARTED", "MP06_RETRY_PLAN_MISMATCH");
-        return {
-          status: "RESPOND",
-          replyKind: "HANDOFF_ACK",
-          enteredHandoff: true,
-        };
-      }
-      return {
-        status: "RESPOND",
-        replyKind: existing.reply_kind,
-        enteredHandoff: existing.entered_handoff === 1,
-      };
-    }
-
-    const state = sql
-      .exec<StateRow>("SELECT mode FROM conversation_state WHERE id = 1")
-      .one();
-    const processedExpiry = input.now + input.processedRetentionSeconds * 1000;
-    if (state.mode === "HUMAN_HANDOFF") {
-      if (input.decision.allowDuringHandoff) {
-        sql.exec(
-          "INSERT INTO processed_events VALUES (?, ?, 0, 0, ?, ?)",
-          input.eventRef,
-          input.decision.replyKind,
-          input.now,
-          processedExpiry,
-        );
+      if (existing) {
+        const storedPlan = sql
+          .exec<Wp1PlanRow>(
+            "SELECT response_fingerprint, delivered FROM mp06_response_plans WHERE event_ref = ?",
+            input.eventRef,
+          )
+          .toArray()[0];
+        if (existing.delivered === 1) {
+          this.audit(input, "DUPLICATE_IGNORED", "EVENT_ALREADY_DELIVERED");
+          return {
+            status: "DUPLICATE",
+            replyKind: "NONE",
+            enteredHandoff: false,
+          };
+        }
+        if (
+          (storedPlan &&
+            storedPlan.response_fingerprint !== input.responseFingerprint) ||
+          (!storedPlan && input.responseFingerprint !== undefined)
+        ) {
+          sql.exec(
+            "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
+            input.now,
+          );
+          sql.exec(
+            "UPDATE processed_events SET reply_kind = 'HANDOFF_ACK', entered_handoff = 1 WHERE event_ref = ?",
+            input.eventRef,
+          );
+          // Fence the original owner without granting any replacement. Its
+          // external outcome may already be unknown; a later ACK is not current.
+          sql.exec(
+            "UPDATE delivery_claims SET state = 'DELIVERY_UNKNOWN' WHERE event_ref = ? AND state = 'CLAIMED'",
+            input.eventRef,
+          );
+          this.audit(input, "HANDOFF_STARTED", "MP06_RETRY_PLAN_MISMATCH");
+          return {
+            status: "DUPLICATE",
+            replyKind: "NONE",
+            enteredHandoff: true,
+          };
+        }
         this.audit(
           input,
-          "HANDOFF_APPROVED_STATIC_RESPONSE",
-          input.decision.reasonCode,
+          "DUPLICATE_IGNORED",
+          "DELIVERY_OWNERSHIP_ALREADY_CONSUMED",
         );
         return {
-          status: "RESPOND",
-          replyKind: input.decision.replyKind,
+          status: "DUPLICATE",
+          replyKind: "NONE",
           enteredHandoff: false,
         };
       }
-      sql.exec(
-        "INSERT INTO processed_events VALUES (?, 'NONE', 1, 0, ?, ?)",
-        input.eventRef,
-        input.now,
-        processedExpiry,
-      );
-      this.audit(input, "HANDOFF_SILENCE", "STAFF_OWNS_CONVERSATION");
-      return { status: "SILENT", replyKind: "NONE", enteredHandoff: false };
-    }
 
-    let decision = input.decision;
-    let responseFingerprint = input.responseFingerprint;
-    if (
-      responseFingerprint !== undefined &&
-      !/^[a-f0-9]{64}$/.test(responseFingerprint)
-    ) {
-      decision = {
-        replyKind: "HANDOFF_ACK",
-        reasonCode: "MP06_RESPONSE_FINGERPRINT_INVALID",
-        handoff: true,
-        allowDuringHandoff: false,
-      };
-      responseFingerprint = undefined;
-    }
-    if (input.clarificationTemplateId) {
-      const clarification = sql
-        .exec<Wp1StateRow>(
-          "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
-        )
+      const state = sql
+        .exec<StateRow>("SELECT mode FROM conversation_state WHERE id = 1")
         .one();
-      if (clarification.clarification_used === 1) {
+      const processedExpiry =
+        input.now + input.processedRetentionSeconds * 1000;
+      if (state.mode === "HUMAN_HANDOFF") {
+        if (input.decision.allowDuringHandoff) {
+          sql.exec(
+            "INSERT INTO processed_events VALUES (?, ?, 0, 0, ?, ?)",
+            input.eventRef,
+            input.decision.replyKind,
+            input.now,
+            processedExpiry,
+          );
+          this.audit(
+            input,
+            "HANDOFF_APPROVED_STATIC_RESPONSE",
+            input.decision.reasonCode,
+          );
+          return respond(input.decision.replyKind, false);
+        }
+        sql.exec(
+          "INSERT INTO processed_events VALUES (?, 'NONE', 1, 0, ?, ?)",
+          input.eventRef,
+          input.now,
+          processedExpiry,
+        );
+        this.audit(input, "HANDOFF_SILENCE", "STAFF_OWNS_CONVERSATION");
+        return { status: "SILENT", replyKind: "NONE", enteredHandoff: false };
+      }
+
+      let decision = input.decision;
+      let responseFingerprint = input.responseFingerprint;
+      if (
+        responseFingerprint !== undefined &&
+        !/^[a-f0-9]{64}$/.test(responseFingerprint)
+      ) {
         decision = {
           replyKind: "HANDOFF_ACK",
-          reasonCode: "MP06_I22_CLARIFICATION_BUDGET_EXHAUSTED",
+          reasonCode: "MP06_RESPONSE_FINGERPRINT_INVALID",
           handoff: true,
           allowDuringHandoff: false,
         };
         responseFingerprint = undefined;
+      }
+      if (!input.deliveryOnly && input.clarificationTemplateId) {
+        const clarification = sql
+          .exec<Wp1StateRow>(
+            "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
+          )
+          .one();
+        if (clarification.clarification_used === 1) {
+          decision = {
+            replyKind: "HANDOFF_ACK",
+            reasonCode: "MP06_I22_CLARIFICATION_BUDGET_EXHAUSTED",
+            handoff: true,
+            allowDuringHandoff: false,
+          };
+          responseFingerprint = undefined;
+          sql.exec(
+            "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
+          );
+        } else {
+          sql.exec(
+            "UPDATE mp06_conversation_state SET clarification_used = 1, pending_template_id = ? WHERE id = 1",
+            input.clarificationTemplateId,
+          );
+        }
+      } else if (!input.deliveryOnly && responseFingerprint) {
         sql.exec(
           "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
         );
-      } else {
+      }
+
+      const { replyKind } = decision;
+      if (decision.handoff) {
         sql.exec(
-          "UPDATE mp06_conversation_state SET clarification_used = 1, pending_template_id = ? WHERE id = 1",
-          input.clarificationTemplateId,
+          "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
+        );
+        sql.exec(
+          "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
+          input.now,
         );
       }
-    } else if (responseFingerprint) {
       sql.exec(
-        "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
-      );
-    }
-
-    const { replyKind } = decision;
-    if (decision.handoff) {
-      sql.exec(
-        "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
-      );
-      sql.exec(
-        "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
-        input.now,
-      );
-    }
-    sql.exec(
-      "INSERT INTO processed_events VALUES (?, ?, 0, ?, ?, ?)",
-      input.eventRef,
-      replyKind,
-      decision.handoff ? 1 : 0,
-      input.now,
-      processedExpiry,
-    );
-    if (responseFingerprint) {
-      sql.exec(
-        "INSERT INTO mp06_response_plans (event_ref, response_fingerprint, delivered, created_at, expires_at) VALUES (?, ?, 0, ?, ?)",
+        "INSERT INTO processed_events VALUES (?, ?, 0, ?, ?, ?)",
         input.eventRef,
-        responseFingerprint,
+        replyKind,
+        decision.handoff ? 1 : 0,
         input.now,
         processedExpiry,
       );
-    }
-    this.audit(
-      input,
-      decision.handoff ? "HANDOFF_STARTED" : "RESPONSE_SELECTED",
-      decision.reasonCode,
-    );
-    return {
-      status: "RESPOND",
-      replyKind,
-      enteredHandoff: decision.handoff,
-    };
+      if (responseFingerprint) {
+        sql.exec(
+          "INSERT INTO mp06_response_plans (event_ref, response_fingerprint, delivered, created_at, expires_at) VALUES (?, ?, 0, ?, ?)",
+          input.eventRef,
+          responseFingerprint,
+          input.now,
+          processedExpiry,
+        );
+      }
+      this.audit(
+        input,
+        decision.handoff ? "HANDOFF_STARTED" : "RESPONSE_SELECTED",
+        decision.reasonCode,
+      );
+      return respond(
+        replyKind,
+        decision.handoff,
+        replyKind !== "NONE" || responseFingerprint !== undefined,
+      );
+    });
   }
 
-  markDelivered(eventRef: string): void {
-    this.ctx.storage.sql.exec(
-      "UPDATE processed_events SET delivered = 1 WHERE event_ref = ?",
-      eventRef,
+  /** Only the winning owner can acknowledge; no token overload/default/recovery. */
+  markDelivered(
+    eventRef: string,
+    claim: DeliveryClaim,
+  ): "ACKNOWLEDGED" | "ALREADY_ACKNOWLEDGED" | "REJECTED" {
+    if (
+      !isMp06PilotReference(eventRef) ||
+      !claim ||
+      claim.eventRef !== eventRef ||
+      !Number.isSafeInteger(claim.revision) ||
+      claim.revision < 1 ||
+      typeof claim.ownerToken !== "string" ||
+      !/^[a-f0-9-]{36}$/u.test(claim.ownerToken)
+    )
+      return "REJECTED";
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const row = sql
+        .exec<DeliveryClaimRow>(
+          "SELECT revision, owner_token, state, contract_version FROM delivery_claims WHERE event_ref = ?",
+          eventRef,
+        )
+        .toArray()[0];
+      if (
+        !row ||
+        row.contract_version !== 1 ||
+        row.revision !== claim.revision ||
+        row.owner_token !== claim.ownerToken
+      )
+        return "REJECTED";
+      const processed = sql
+        .exec<{ delivered: number }>(
+          "SELECT delivered FROM processed_events WHERE event_ref = ?",
+          eventRef,
+        )
+        .toArray()[0];
+      if (!processed) return "REJECTED";
+      if (row.state === "DELIVERED")
+        return processed.delivered === 1 ? "ALREADY_ACKNOWLEDGED" : "REJECTED";
+      if (row.state !== "CLAIMED" || processed.delivered !== 0)
+        return "REJECTED";
+      const changed = sql
+        .exec<{ revision: number }>(
+          "UPDATE delivery_claims SET state = 'DELIVERED', acknowledged_at = ? WHERE event_ref = ? AND revision = ? AND owner_token = ? AND contract_version = 1 AND state = 'CLAIMED' RETURNING revision",
+          Date.now(),
+          eventRef,
+          claim.revision,
+          claim.ownerToken,
+        )
+        .toArray();
+      if (changed.length !== 1) throw new Error("DELIVERY_ACK_CONFLICT");
+      sql.exec(
+        "UPDATE processed_events SET delivered = 1 WHERE event_ref = ?",
+        eventRef,
+      );
+      sql.exec(
+        "UPDATE mp06_response_plans SET delivered = 1 WHERE event_ref = ?",
+        eventRef,
+      );
+      return "ACKNOWLEDGED";
+    });
+  }
+
+  /** SELECT-only ownership evidence; never creates or reissues a grant. */
+  checkDeliveryClaim(claim: DeliveryClaim): boolean {
+    if (
+      !claim ||
+      !isMp06PilotReference(claim.eventRef) ||
+      !Number.isSafeInteger(claim.revision) ||
+      claim.revision < 1 ||
+      typeof claim.ownerToken !== "string" ||
+      !/^[a-f0-9-]{36}$/u.test(claim.ownerToken)
+    )
+      return false;
+    const row = this.ctx.storage.sql
+      .exec<DeliveryClaimRow & { delivered: number }>(
+        "SELECT c.revision, c.owner_token, c.state, c.contract_version, e.delivered FROM delivery_claims c JOIN processed_events e ON e.event_ref = c.event_ref WHERE c.event_ref = ?",
+        claim.eventRef,
+      )
+      .toArray()[0];
+    return (
+      row !== undefined &&
+      row.contract_version === 1 &&
+      row.state === "CLAIMED" &&
+      row.delivered === 0 &&
+      row.revision === claim.revision &&
+      row.owner_token === claim.ownerToken
     );
-    this.ctx.storage.sql.exec(
-      "UPDATE mp06_response_plans SET delivered = 1 WHERE event_ref = ?",
-      eventRef,
-    );
+  }
+
+  /** SELECT-only: no token, cleanup, acknowledgement, lease or dispatch grant. */
+  deliveryObservation(eventRef: string): {
+    state:
+      | "UNSEEN"
+      | "NO_DELIVERY"
+      | "CLAIMED"
+      | "DELIVERED"
+      | "LEGACY_UNKNOWN"
+      | "DELIVERY_UNKNOWN";
+    revision: number | null;
+  } {
+    if (!isMp06PilotReference(eventRef))
+      throw new Error("DELIVERY_REFERENCE_INVALID");
+    const row = this.ctx.storage.sql
+      .exec<DeliveryClaimRow>(
+        "SELECT revision, owner_token, state, contract_version FROM delivery_claims WHERE event_ref = ?",
+        eventRef,
+      )
+      .toArray()[0];
+    if (row) {
+      if (
+        row.contract_version !== 1 ||
+        !Number.isSafeInteger(row.revision) ||
+        row.revision < 1 ||
+        ![
+          "CLAIMED",
+          "DELIVERED",
+          "LEGACY_UNKNOWN",
+          "DELIVERY_UNKNOWN",
+        ].includes(row.state)
+      )
+        throw new Error("DELIVERY_STATE_INVALID");
+      return { state: row.state, revision: row.revision };
+    }
+    const legacy = this.ctx.storage.sql
+      .exec<{ delivered: number; reply_kind: string }>(
+        "SELECT delivered, reply_kind FROM processed_events WHERE event_ref = ?",
+        eventRef,
+      )
+      .toArray()[0];
+    // Covers an old in-flight invocation that wrote after new schema initialization.
+    if (legacy)
+      return {
+        state: legacy.delivered === 1 ? "NO_DELIVERY" : "LEGACY_UNKNOWN",
+        revision: null,
+      };
+    return { state: "UNSEEN", revision: null };
   }
 
   closeHandoff(
@@ -586,6 +843,17 @@ export class ConversationStateDO extends DurableObject<Env> {
           : [];
       if (markers.length > 1) return null;
       const lineage = markers[0];
+      const continuation = this.mp06ContinuationMarker();
+      if (
+        continuation &&
+        (!lineage ||
+          continuation.previous_session_ref !== lineage.session_ref ||
+          continuation.session_ref !== session.session_ref ||
+          continuation.activated_at !== session.started_at ||
+          continuation.activated_at < lineage.activated_at ||
+          continuation.session_ref === lineage.previous_session_ref)
+      )
+        return null;
       if (
         lineage &&
         (lineage.id !== 1 ||
@@ -593,8 +861,9 @@ export class ConversationStateDO extends DurableObject<Env> {
           !isMp06PilotReference(lineage.operation_ref) ||
           !isMp06PilotReference(lineage.session_ref) ||
           lineage.previous_session_ref === lineage.session_ref ||
-          lineage.session_ref !== session.session_ref ||
-          lineage.activated_at !== session.started_at)
+          lineage.session_ref !==
+            (continuation?.previous_session_ref ?? session.session_ref) ||
+          (!continuation && lineage.activated_at !== session.started_at))
       )
         return null;
       if (
@@ -618,7 +887,8 @@ export class ConversationStateDO extends DurableObject<Env> {
       if (
         testers.length !== 1 ||
         testers[0]!.session_ref !== session.session_ref ||
-        !isMp06PilotReference(testers[0]!.tester_ref)
+        !isMp06PilotReference(testers[0]!.tester_ref) ||
+        (continuation && continuation.owner_ref !== testers[0]!.tester_ref)
       )
         return null;
       // Immutable old event stays in the previous session; private allowlist moves to current.
@@ -701,7 +971,10 @@ export class ConversationStateDO extends DurableObject<Env> {
       )
         return null;
       const historical = attempts.filter(
-        (a) => !lineage || a.session_ref !== session.session_ref,
+        (a) =>
+          !lineage ||
+          (a.session_ref !== lineage.session_ref &&
+            a.session_ref !== continuation?.session_ref),
       );
       if (
         historical.length !== 3 ||
@@ -719,16 +992,41 @@ export class ConversationStateDO extends DurableObject<Env> {
       const currentEvents = lineage
         ? events.filter((e) => e.session_ref === session.session_ref)
         : [];
+      if (continuation && lineage) {
+        const priorEvents = events.filter(
+          (e) => e.session_ref === lineage.session_ref,
+        );
+        const priorAttempts = attempts.filter(
+          (a) => a.session_ref === lineage.session_ref,
+        );
+        if (
+          priorEvents.length !== 3 ||
+          priorAttempts.length !== 3 ||
+          priorAttempts.some((a) => a.state !== "SETTLED") ||
+          priorAttempts.reduce((n, a) => n + a.actual_cost_micro_usd!, 0) !==
+            6258 ||
+          priorEvents.some(
+            (e) =>
+              e.tester_ref !== owners[0]!.tester_ref ||
+              e.result_authorized !== 1 ||
+              e.admitted_at < lineage.activated_at ||
+              e.admitted_at >=
+                lineage.activated_at + MP06_PILOT_SESSION_DURATION_MS,
+          )
+        )
+          return null;
+      }
       if (
         lineage &&
-        (session.admitted_events !== 3 + currentEvents.length ||
+        (session.admitted_events !==
+          (continuation ? 6 : 3) + currentEvents.length ||
           currentEvents.some(
             (e) =>
               e.tester_ref !== owners[0]!.tester_ref ||
               !isMp06PilotReference(e.event_ref) ||
               ![0, 1].includes(e.result_authorized) ||
               !isMp06PilotTimestamp(e.admitted_at) ||
-              e.admitted_at < lineage.activated_at ||
+              e.admitted_at < (continuation ?? lineage).activated_at ||
               e.admitted_at >= session.expires_at,
           ) ||
           attempts
@@ -776,6 +1074,7 @@ export class ConversationStateDO extends DurableObject<Env> {
       const snapshot = JSON.stringify({
         session,
         markers,
+        continuation,
         testers,
         attempts,
         events,
@@ -798,6 +1097,12 @@ export class ConversationStateDO extends DurableObject<Env> {
         )
           return null;
       }
+      if (
+        continuation &&
+        (await mp06ContinuationSessionRef(continuation.operation_ref)) !==
+          continuation.session_ref
+      )
+        return null;
       return {
         sessionRef: session.session_ref,
         ownerRef: owners[0]!.tester_ref,
@@ -806,10 +1111,22 @@ export class ConversationStateDO extends DurableObject<Env> {
         observationFingerprint: Array.from(new Uint8Array(fingerprint), (b) =>
           b.toString(16).padStart(2, "0"),
         ).join(""),
-        lineage: lineage
-          ? ("IMMUTABLE_PREVIOUS_CURRENT_SESSION" as const)
-          : ("RETAINED_PRE_ACTIVATION_SESSION" as const),
-        activationEligible: !lineage,
+        lineage: continuation
+          ? ("IMMUTABLE_V16_CONTINUATION" as const)
+          : lineage
+            ? ("IMMUTABLE_PREVIOUS_CURRENT_SESSION" as const)
+            : ("RETAINED_PRE_ACTIVATION_SESSION" as const),
+        activationEligible:
+          !lineage ||
+          (!continuation &&
+            session.state === "STOPPED" &&
+            session.stop_reason === "OPERATOR_STOP" &&
+            session.admitted_events === 6 &&
+            session.provider_attempts === 6 &&
+            session.budget_consumed_micro_usd === 34082 &&
+            session.budget_reserved_micro_usd === 0 &&
+            session.in_flight === 0 &&
+            pending.length === 0),
         state: session.state,
         expiredAtObservation: expired,
         aiAdmission: session.state === "ACTIVE" && !expired,
@@ -852,6 +1169,22 @@ export class ConversationStateDO extends DurableObject<Env> {
     }
     return this.ctx.storage.transactionSync(() => {
       const current = this.mp06PilotSession();
+      // Once acceptance lineage exists, only its exact one-shot transaction
+      // may change sessions. Generic activation must not erase/bypass lineage.
+      if (
+        this.ctx.storage.sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM sqlite_master WHERE name IN ('mp06_wp8f_activation', 'mp06_wp8f_v16_continuation')",
+          )
+          .one().count > 0
+      )
+        return {
+          activated: false,
+          code: "INVALID_ACTIVATION",
+          status: current
+            ? pilotStatus(current, input.now)
+            : inactivePilotStatus(),
+        };
       if (
         current &&
         (current.in_flight !== 0 || current.budget_reserved_micro_usd !== 0)
@@ -1069,6 +1402,192 @@ export class ConversationStateDO extends DurableObject<Env> {
           input.now,
           input.now + input.limits.sessionDurationMs,
         );
+        return {
+          activated: true,
+          code: "ACTIVATED",
+          status: pilotStatus(this.mp06PilotSession()!, input.now),
+        };
+      });
+    } catch {
+      return { ...denied(), code: "ACTIVATION_STORAGE_UNAVAILABLE" };
+    }
+  }
+
+  /** SELECT-only, including absence checks. A present but empty/malformed
+   * continuation table is evidence loss, never a fresh activation opportunity. */
+  private mp06ContinuationMarker(): Mp06ContinuationRow | undefined {
+    const sql = this.ctx.storage.sql;
+    const present = sql
+      .exec<{ count: number }>(
+        "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'mp06_wp8f_v16_continuation'",
+      )
+      .one().count;
+    if (present === 0) return undefined;
+    const rows = sql
+      .exec<Mp06ContinuationRow>(
+        "SELECT * FROM mp06_wp8f_v16_continuation ORDER BY id",
+      )
+      .toArray();
+    const row = rows[0];
+    if (
+      present !== 1 ||
+      rows.length !== 1 ||
+      !row ||
+      Object.keys(row).length !== 11 ||
+      row.id !== 1 ||
+      !isMp06PilotReference(row.previous_session_ref) ||
+      !isMp06PilotReference(row.operation_ref) ||
+      !isMp06PilotReference(row.session_ref) ||
+      !isMp06PilotReference(row.owner_ref) ||
+      row.session_ref === row.previous_session_ref ||
+      !isMp06PilotTimestamp(row.activated_at) ||
+      row.baseline_events !== 6 ||
+      row.baseline_attempts !== 6 ||
+      row.baseline_consumed_micro_usd !== 34082 ||
+      row.baseline_reserved_micro_usd !== 0 ||
+      row.prior_stop_reason !== "OPERATOR_STOP"
+    )
+      throw new Error("CONTINUATION_LINEAGE_INVALID");
+    return row;
+  }
+
+  private mp06ContinuationSnapshot(): string {
+    const sql = this.ctx.storage.sql;
+    return JSON.stringify({
+      session: this.mp06PilotSession(),
+      marker: this.mp06ContinuationMarker(),
+      original: sql
+        .exec("SELECT * FROM mp06_wp8f_activation ORDER BY id")
+        .toArray(),
+      testers: sql
+        .exec(
+          "SELECT * FROM mp06_pilot_testers ORDER BY session_ref, tester_ref",
+        )
+        .toArray(),
+      events: sql
+        .exec("SELECT * FROM mp06_pilot_events ORDER BY session_ref, event_ref")
+        .toArray(),
+      attempts: sql
+        .exec("SELECT * FROM mp06_pilot_attempts ORDER BY attempt_ref")
+        .toArray(),
+    });
+  }
+
+  async continueMp06AcceptanceV16(
+    input: ResumeMp06AcceptanceInput,
+  ): Promise<Mp06PilotActivationResult> {
+    const denied = (): Mp06PilotActivationResult => {
+      const current = this.mp06PilotSession();
+      return {
+        activated: false,
+        code: "INVALID_ACTIVATION",
+        status: current
+          ? pilotStatus(current, input.now)
+          : inactivePilotStatus(),
+      };
+    };
+    if (
+      this.env.ENVIRONMENT !== "TEST" ||
+      this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      !validMp06PilotLimits(input.limits) ||
+      !isMp06PilotReference(input.expectedSessionRef) ||
+      !isMp06PilotReference(input.operationRef) ||
+      !isMp06PilotReference(input.sessionRef) ||
+      !isMp06PilotTimestamp(input.now)
+    )
+      return denied();
+    try {
+      const before = this.mp06ContinuationSnapshot();
+      const observed = await this.ownerUatPilotObservation();
+      if (
+        !observed ||
+        input.sessionRef !==
+          (await mp06ContinuationSessionRef(input.operationRef))
+      )
+        return denied();
+      // Crypto/RPC observation is not atomic authority. Recompare every captured
+      // lineage/ledger row inside the synchronous write transaction, with no await.
+      return this.ctx.storage.transactionSync(() => {
+        if (before !== this.mp06ContinuationSnapshot()) return denied();
+        const applied = this.mp06ContinuationMarker();
+        const current = this.mp06PilotSession();
+        if (applied) {
+          if (
+            applied.previous_session_ref !== input.expectedSessionRef ||
+            applied.operation_ref !== input.operationRef ||
+            applied.session_ref !== input.sessionRef ||
+            current?.session_ref !== input.sessionRef
+          )
+            return denied();
+          return {
+            activated: true,
+            code: "ACTIVATED_IDEMPOTENT",
+            status: pilotStatus(current, input.now),
+          };
+        }
+        if (
+          !current ||
+          !observed.activationEligible ||
+          observed.lineage !== "IMMUTABLE_PREVIOUS_CURRENT_SESSION" ||
+          current.session_ref !== input.expectedSessionRef ||
+          current.state !== "STOPPED" ||
+          current.stop_reason !== "OPERATOR_STOP" ||
+          input.now < current.started_at ||
+          current.admitted_events !== 6 ||
+          current.provider_attempts !== 6 ||
+          current.budget_consumed_micro_usd !== 34082 ||
+          current.budget_reserved_micro_usd !== 0 ||
+          current.in_flight !== 0 ||
+          observed.pendingAttempts !== 0 ||
+          observed.usageUnknownAttempts !== 2 ||
+          observed.settledAttempts !== 4
+        )
+          return denied();
+        const sql = this.ctx.storage.sql;
+        sql.exec(`CREATE TABLE mp06_wp8f_v16_continuation (
+          id INTEGER PRIMARY KEY CHECK (id = 1), previous_session_ref TEXT NOT NULL,
+          operation_ref TEXT NOT NULL, session_ref TEXT NOT NULL, activated_at INTEGER NOT NULL,
+          owner_ref TEXT NOT NULL, baseline_events INTEGER NOT NULL CHECK (baseline_events = 6),
+          baseline_attempts INTEGER NOT NULL CHECK (baseline_attempts = 6),
+          baseline_consumed_micro_usd INTEGER NOT NULL CHECK (baseline_consumed_micro_usd = 34082),
+          baseline_reserved_micro_usd INTEGER NOT NULL CHECK (baseline_reserved_micro_usd = 0),
+          prior_stop_reason TEXT NOT NULL CHECK (prior_stop_reason = 'OPERATOR_STOP')
+        )`);
+        sql.exec(
+          "INSERT INTO mp06_wp8f_v16_continuation VALUES (1, ?, ?, ?, ?, ?, 6, 6, 34082, 0, 'OPERATOR_STOP')",
+          current.session_ref,
+          input.operationRef,
+          input.sessionRef,
+          input.now,
+          observed.ownerRef,
+        );
+        // rowsWritten includes index maintenance, not logical affected rows.
+        // RETURNING identifies the exact rows inside the same transaction.
+        const testersChanged = sql
+          .exec<{ tester_ref: string }>(
+            "UPDATE mp06_pilot_testers SET session_ref = ? WHERE session_ref = ? AND tester_ref = ? RETURNING tester_ref",
+            input.sessionRef,
+            current.session_ref,
+            observed.ownerRef,
+          )
+          .toArray();
+        const changed = sql
+          .exec<{ session_ref: string }>(
+            "UPDATE mp06_pilot_session SET session_ref = ?, state = 'ACTIVE', started_at = ?, expires_at = ?, stop_reason = NULL WHERE id = 1 AND session_ref = ? AND state = 'STOPPED' AND stop_reason = 'OPERATOR_STOP' RETURNING session_ref",
+            input.sessionRef,
+            input.now,
+            input.now + MP06_PILOT_SESSION_DURATION_MS,
+            current.session_ref,
+          )
+          .toArray();
+        if (
+          testersChanged.length !== 1 ||
+          testersChanged[0]?.tester_ref !== observed.ownerRef ||
+          changed.length !== 1 ||
+          changed[0]?.session_ref !== input.sessionRef
+        )
+          throw new Error("CONTINUATION_CONFLICT");
         return {
           activated: true,
           code: "ACTIVATED",
@@ -2136,6 +2655,18 @@ export class ConversationStateDO extends DurableObject<Env> {
       input.now + input.auditRetentionSeconds * 1000,
     );
   }
+}
+
+async function mp06ContinuationSessionRef(
+  operationRef: string,
+): Promise<string> {
+  const bytes = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`malispang-test:mp06-wp8f-v16:${operationRef}`),
+  );
+  return Array.from(new Uint8Array(bytes), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 function validMp06ProviderLifecycleDiagnostics(

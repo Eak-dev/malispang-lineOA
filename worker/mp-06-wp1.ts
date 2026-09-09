@@ -82,13 +82,15 @@ const STAFF_ONLY_INTENTS = new Set<ConversationIntent>([
   "STOCK",
   "PROMOTION",
   "WHOLESALE",
-  "ADVANCE_ORDER",
   "LOYALTY_REDEMPTION",
   "STAFF",
 ]);
 
 type Mp06ProtectedRisk =
-  "DELIVERY_VARIABLE_STATE" | "INDIVIDUAL_LOYALTY_STATE" | "PRICE_SPECULATION";
+  | "DELIVERY_VARIABLE_STATE"
+  | "INDIVIDUAL_LOYALTY_STATE"
+  | "PRICE_SPECULATION"
+  | "AUTHORITY_OVERRIDE";
 
 const DELIVERY_VARIABLE_MARKERS = [
   "ค่าส่ง",
@@ -320,10 +322,32 @@ export async function planMp06Wp1Text(
       : detectedMatches;
   const primaryIntent = detectConversationIntent(text);
   if (STAFF_ONLY_INTENTS.has(primaryIntent)) {
-    return matches.length > 0
-      ? staffOnlyPlan(`MP06_STAFF_PRECEDENCE_${primaryIntent}`)
-      : undefined;
+    return staffOnlyPlan(`MP06_STAFF_PRECEDENCE_${primaryIntent}`);
   }
+  // The legacy primary classifier checks preorder before these two existing
+  // mandatory intents. Reuse only its contains-phrase semantics, not bare
+  // "staff"/"reward" words or a new UNKNOWN/AMBIGUOUS handoff rule. This check
+  // runs before draft interception and never consumes draft input/history.
+  if (primaryIntent === "ADVANCE_ORDER") {
+    const normalized = normalizeConversationText(text);
+    if (includesAny(normalized, ["แลกรางวัล", "แลกแต้ม", "ใช้แต้ม"])) {
+      return staffOnlyPlan("MP06_STAFF_PRECEDENCE_LOYALTY_REDEMPTION");
+    }
+    if (
+      includesAny(normalized, [
+        "คุยกับพนักงาน",
+        "ขอคุยกับพนักงาน",
+        "คุยกับคน",
+        "ขอคุยกับคน",
+        "พนักงงาน",
+      ])
+    ) {
+      return staffOnlyPlan("MP06_STAFF_PRECEDENCE_STAFF");
+    }
+  }
+  // Consent/draft intake is a separate deterministic workflow, not advisory AI
+  // or immediate staff handoff. Integrity/protected-risk checks above still win.
+  if (primaryIntent === "ADVANCE_ORDER") return undefined;
   if (primaryIntent === "FLEX_MENU") return undefined;
 
   if (matches.length === 0) return undefined;
@@ -377,6 +401,19 @@ export async function planMp06Wp1Text(
 
 function detectMp06ProtectedRisk(text: string): Mp06ProtectedRisk | undefined {
   const normalized = normalizeConversationText(text);
+  if (
+    /(?:ลืม|ละเลย|ข้าม|ไม่ต้องทำตาม|เปลี่ยน)\s*(?:กฎ|คำสั่ง|นโยบาย)/u.test(
+      normalized,
+    ) ||
+    /(?:ignore|override|disregard)\s+(?:all\s+|previous\s+|system\s+)*(?:instructions|rules|policy)/u.test(
+      normalized,
+    ) ||
+    /(?:ตอนนี้|ให้คุณ|คุณ|ฉัน|ผม)\s*(?:เป็น|คือ)\s*(?:เจ้าของร้าน|ผู้อนุมัติ|system|developer)/u.test(
+      normalized,
+    ) ||
+    /อนุมัติ\s*(?:คืนเงิน|ขาย|ราคา|ชำระ|เปลี่ยนกฎ)/u.test(normalized)
+  )
+    return "AUTHORITY_OVERRIDE";
   if (includesAny(normalized, DELIVERY_VARIABLE_MARKERS)) {
     return "DELIVERY_VARIABLE_STATE";
   }
@@ -667,6 +704,29 @@ export function failClosedMp06Plan(reasonCode: string): Mp06Wp1Plan {
     responseUnits: [],
     messages: [],
   };
+}
+
+/** The two legacy interpretation exceptions are closed; handoff alone is not
+ * a security classification. Pass the original router decision, before KB
+ * binding: WP1 independently validates catalog/knowledge authority. */
+export function mp06DeterministicPrecedence(
+  decision: RouteDecision,
+  plan: Mp06Wp1Plan | undefined,
+): "MANDATORY_HANDOFF" | "UNRESOLVED" | "DRAFT_INTAKE" | "STANDARD" {
+  if (plan?.classification === "STAFF_ONLY") return "MANDATORY_HANDOFF";
+  if (
+    decision.replyKind === "ADVANCE_ORDER" &&
+    decision.reasonCode === "ADVANCE_ORDER_REQUIRES_STAFF_REVIEW"
+  )
+    return "DRAFT_INTAKE";
+  if (
+    decision.replyKind === "SAFE_FALLBACK" &&
+    (decision.reasonCode === "NO_AUTHORITATIVE_ANSWER" ||
+      decision.reasonCode === "AMBIGUOUS_CUSTOMER_TEXT")
+  )
+    return "UNRESOLVED";
+  // All other handoff reasons, including future unknown reasons, are closed.
+  return decision.handoff ? "MANDATORY_HANDOFF" : "STANDARD";
 }
 
 const staffOnlyPlan = failClosedMp06Plan;

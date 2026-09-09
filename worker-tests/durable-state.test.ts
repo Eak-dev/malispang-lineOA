@@ -1,7 +1,11 @@
+import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { env, exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-import type { ProcessEventInput } from "../worker/durable-objects.js";
+import type {
+  ProcessEventInput,
+  ProcessEventResult,
+} from "../worker/durable-objects.js";
 import {
   approvedAnswerForReplyKind,
   enforceApprovedKnowledge,
@@ -31,11 +35,18 @@ describe("Durable Object persistence and webhook security", () => {
     const stub = env.CONVERSATION_STATE.getByName("conversation-a");
     const first = await stub.processEvent(baseInput);
     expect(first).toEqual({
+      deliveryClaim: actualClaim(first),
       status: "RESPOND",
       replyKind: "HANDOFF_ACK",
       enteredHandoff: true,
     });
-    await stub.markDelivered(baseInput.eventRef);
+    const claim = actualClaim(first);
+    expect(await stub.markDelivered(baseInput.eventRef, claim)).toBe(
+      "ACKNOWLEDGED",
+    );
+    expect(await stub.markDelivered(baseInput.eventRef, claim)).toBe(
+      "ALREADY_ACKNOWLEDGED",
+    );
     expect(await stub.processEvent(baseInput)).toMatchObject({
       status: "DUPLICATE",
     });
@@ -82,6 +93,7 @@ describe("Durable Object persistence and webhook security", () => {
         decision,
       });
       expect(result).toEqual({
+        deliveryClaim: actualClaim(result),
         status: "RESPOND",
         replyKind,
         enteredHandoff: false,
@@ -138,6 +150,7 @@ describe("Durable Object persistence and webhook security", () => {
       decision,
     });
     expect(result).toEqual({
+      deliveryClaim: actualClaim(result),
       status: "RESPOND",
       replyKind: "WHOLESALE",
       enteredHandoff: false,
@@ -194,6 +207,7 @@ describe("Durable Object persistence and webhook security", () => {
       decision: firstDecision,
     });
     expect(first).toEqual({
+      deliveryClaim: actualClaim(first),
       status: "RESPOND",
       replyKind: "SAFE_FALLBACK",
       enteredHandoff: true,
@@ -229,6 +243,7 @@ describe("Durable Object persistence and webhook security", () => {
       decision,
     });
     expect(first).toEqual({
+      deliveryClaim: actualClaim(first),
       status: "RESPOND",
       replyKind: "ADVANCE_ORDER",
       enteredHandoff: true,
@@ -314,11 +329,14 @@ describe("Durable Object persistence and webhook security", () => {
       },
       responseFingerprint: "9".repeat(64),
     };
-    expect(await stub.processEvent(input)).toMatchObject({
+    const first = await stub.processEvent(input);
+    expect(first).toMatchObject({
       status: "RESPOND",
       enteredHandoff: false,
     });
-    await stub.markDelivered(input.eventRef);
+    expect(await stub.markDelivered(input.eventRef, actualClaim(first))).toBe(
+      "ACKNOWLEDGED",
+    );
     expect(await stub.processEvent(input)).toMatchObject({
       status: "DUPLICATE",
       replyKind: "NONE",
@@ -339,22 +357,31 @@ describe("Durable Object persistence and webhook security", () => {
       },
       responseFingerprint: "b1".repeat(32),
     };
-    await stub.processEvent(input);
+    const first = await stub.processEvent(input);
+    const originalClaim = actualClaim(first);
     const changed = await stub.processEvent({
       ...input,
       responseFingerprint: "c1".repeat(32),
     });
     expect(changed).toEqual({
-      status: "RESPOND",
-      replyKind: "HANDOFF_ACK",
+      status: "DUPLICATE",
+      replyKind: "NONE",
       enteredHandoff: true,
     });
+    expect(await stub.deliveryObservation(input.eventRef)).toEqual({
+      state: "DELIVERY_UNKNOWN",
+      revision: originalClaim.revision,
+    });
+    expect("deliveryClaim" in changed).toBe(false);
+    expect(await stub.markDelivered(input.eventRef, originalClaim)).toBe(
+      "REJECTED",
+    );
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
   it("fails closed when an undelivered AUTO retry loses its authoritative plan", async () => {
     const stub = env.CONVERSATION_STATE.getByName("mp06-plan-lost");
-    await stub.processEvent({
+    const first = await stub.processEvent({
       ...baseInput,
       eventRef: "b3".repeat(32),
       decision: {
@@ -376,10 +403,18 @@ describe("Durable Object persistence and webhook security", () => {
       },
     });
     expect(retry).toEqual({
-      status: "RESPOND",
-      replyKind: "HANDOFF_ACK",
+      status: "DUPLICATE",
+      replyKind: "NONE",
       enteredHandoff: true,
     });
+    expect(await stub.deliveryObservation("b3".repeat(32))).toEqual({
+      state: "DELIVERY_UNKNOWN",
+      revision: actualClaim(first).revision,
+    });
+    expect("deliveryClaim" in retry).toBe(false);
+    expect(await stub.markDelivered("b3".repeat(32), actualClaim(first))).toBe(
+      "REJECTED",
+    );
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
@@ -398,11 +433,14 @@ describe("Durable Object persistence and webhook security", () => {
       clarificationTemplateId: "T-C01",
     });
     expect(first).toEqual({
+      deliveryClaim: actualClaim(first),
       status: "RESPOND",
       replyKind: "NONE",
       enteredHandoff: false,
     });
-    await stub.markDelivered("d1".repeat(32));
+    expect(await stub.markDelivered("d1".repeat(32), actualClaim(first))).toBe(
+      "ACKNOWLEDGED",
+    );
 
     const second = await stub.processEvent({
       ...baseInput,
@@ -417,6 +455,7 @@ describe("Durable Object persistence and webhook security", () => {
       clarificationTemplateId: "T-C04",
     });
     expect(second).toEqual({
+      deliveryClaim: actualClaim(second),
       status: "RESPOND",
       replyKind: "HANDOFF_ACK",
       enteredHandoff: true,
@@ -499,6 +538,7 @@ describe("Durable Object persistence and webhook security", () => {
       clarificationTemplateId: "T-C01",
     });
     expect(afterClose).toEqual({
+      deliveryClaim: actualClaim(afterClose),
       status: "RESPOND",
       replyKind: "NONE",
       enteredHandoff: false,
@@ -558,3 +598,297 @@ describe("Durable Object persistence and webhook security", () => {
     }
   });
 });
+
+/** Validate a real production grant while preserving exact response assertions. */
+function actualClaim(result: ProcessEventResult) {
+  expect(result.status).toBe("RESPOND");
+  if (result.status !== "RESPOND")
+    throw new Error("EXPECTED_REAL_DELIVERY_GRANT");
+  expect(Object.keys(result.deliveryClaim).sort()).toEqual([
+    "eventRef",
+    "ownerToken",
+    "revision",
+  ]);
+  expect(result.deliveryClaim.eventRef).toMatch(/^[a-f0-9]{64}$/u);
+  expect(result.deliveryClaim.ownerToken).toMatch(
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u,
+  );
+  expect(typeof result.deliveryClaim.revision).toBe("number");
+  expect(Number.isSafeInteger(result.deliveryClaim.revision)).toBe(true);
+  expect(result.deliveryClaim.revision).toBeGreaterThan(0);
+  return result.deliveryClaim;
+}
+
+describe("v18 persistent delivery ownership and fenced acknowledgement", () => {
+  const responseInput: ProcessEventInput = {
+    ...baseInput,
+    decision: {
+      replyKind: "LOCATION",
+      reasonCode: "KB_LOCATION",
+      handoff: false,
+      allowDuringHandoff: false,
+    },
+  };
+
+  it("atomically grants only one owner to concurrent same-event invocations", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-atomic-claim");
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () => stub.processEvent(responseInput)),
+    );
+    const winners = results.filter((r) => r.status === "RESPOND");
+    expect(winners).toHaveLength(1);
+    expect(results.filter((r) => r.status === "DUPLICATE")).toHaveLength(19);
+    for (const r of results.filter((r) => r.status === "DUPLICATE"))
+      expect("deliveryClaim" in r).toBe(false);
+    const winner = winners[0];
+    if (!winner) throw new Error("EXPECTED_ONE_WINNER");
+    const claim = actualClaim(winner);
+    expect(await stub.deliveryObservation(responseInput.eventRef)).toEqual({
+      state: "CLAIMED",
+      revision: claim.revision,
+    });
+    await runInDurableObject(stub, (_instance, state) => {
+      expect(
+        state.storage.sql
+          .exec<{ n: number }>("SELECT COUNT(*) AS n FROM delivery_claims")
+          .one().n,
+      ).toBe(1);
+      expect(
+        state.storage.sql
+          .exec<{ n: number }>(
+            "SELECT COUNT(*) AS n FROM audit_events WHERE outcome = 'DELIVERY_CLAIMED'",
+          )
+          .one().n,
+      ).toBe(1);
+    });
+    expect(await stub.state()).toBe("BOT_ACTIVE");
+  });
+
+  it("rejects missing, forged, cross-event and reordered acknowledgements using real owners", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-ack-fences");
+    const first = actualClaim(await stub.processEvent(responseInput));
+    const secondEvent = "b".repeat(64);
+    const second = actualClaim(
+      await stub.processEvent({ ...responseInput, eventRef: secondEvent }),
+    );
+    expect(second.revision).toBeGreaterThan(first.revision);
+    expect(second.ownerToken).not.toBe(first.ownerToken);
+    // Invalid shapes deliberately use the JS invocation boundary, not a runtime
+    // overload or optional token. Valid tokens only originate from processEvent.
+    expect(
+      await Reflect.apply(stub.markDelivered, stub, [first.eventRef]),
+    ).toBe("REJECTED");
+    expect(await stub.markDelivered(first.eventRef, second)).toBe("REJECTED");
+    expect(
+      await stub.markDelivered(first.eventRef, {
+        ...first,
+        ownerToken: second.ownerToken,
+      }),
+    ).toBe("REJECTED");
+    expect(
+      await stub.markDelivered(second.eventRef, {
+        ...second,
+        revision: first.revision,
+      }),
+    ).toBe("REJECTED");
+    expect(await stub.markDelivered(second.eventRef, second)).toBe(
+      "ACKNOWLEDGED",
+    );
+    expect(
+      await stub.markDelivered(second.eventRef, {
+        ...first,
+        eventRef: second.eventRef,
+      }),
+    ).toBe("REJECTED");
+    expect(await stub.deliveryObservation(first.eventRef)).toEqual({
+      state: "CLAIMED",
+      revision: first.revision,
+    });
+    expect(await stub.markDelivered(first.eventRef, first)).toBe(
+      "ACKNOWLEDGED",
+    );
+    const before = await deliverySnapshot(stub);
+    expect(await stub.markDelivered(first.eventRef, first)).toBe(
+      "ALREADY_ACKNOWLEDGED",
+    );
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    const replay = await stub.processEvent(responseInput);
+    expect(replay.status).toBe("DUPLICATE");
+    expect("deliveryClaim" in replay).toBe(false);
+  });
+
+  it("retains unknown ownership after restart and long beyond retention without lease takeover", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-restart");
+    const claim = actualClaim(await stub.processEvent(responseInput));
+    await evictDurableObject(stub);
+    expect(await stub.deliveryObservation(claim.eventRef)).toEqual({
+      state: "CLAIMED",
+      revision: claim.revision,
+    });
+    const late = await stub.processEvent({
+      ...responseInput,
+      now: baseInput.now + 365 * 86_400_000,
+    });
+    expect(late.status).toBe("DUPLICATE");
+    expect("deliveryClaim" in late).toBe(false);
+    expect(await stub.deliveryObservation(claim.eventRef)).toEqual({
+      state: "CLAIMED",
+      revision: claim.revision,
+    });
+    await evictDurableObject(stub);
+    expect(await stub.markDelivered(claim.eventRef, claim)).toBe(
+      "ACKNOWLEDGED",
+    );
+    await evictDurableObject(stub);
+    expect(await stub.processEvent(responseInput)).toMatchObject({
+      status: "DUPLICATE",
+    });
+    expect(await stub.markDelivered(claim.eventRef, claim)).toBe(
+      "ALREADY_ACKNOWLEDGED",
+    );
+  });
+
+  it("keeps SELECT-only delivery observations free of state writes and capability leakage", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-read-only");
+    const claim = actualClaim(await stub.processEvent(responseInput));
+    const before = await deliverySnapshot(stub);
+    const one = await stub.deliveryObservation(claim.eventRef);
+    const two = await stub.deliveryObservation(claim.eventRef);
+    expect(await stub.checkDeliveryClaim(claim)).toBe(true);
+    expect(
+      await stub.checkDeliveryClaim({ ...claim, revision: claim.revision + 1 }),
+    ).toBe(false);
+    expect(await Reflect.apply(stub.checkDeliveryClaim, stub, [])).toBe(false);
+    expect(two).toEqual(one);
+    expect(Object.keys(one).sort()).toEqual(["revision", "state"]);
+    expect(JSON.stringify(one)).not.toContain(claim.ownerToken);
+    expect(await deliverySnapshot(stub)).toEqual(before);
+  });
+
+  it("validates current ownership read-only and denies other owners or terminal claims", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-pre-dispatch-check");
+    const a = actualClaim(await stub.processEvent(responseInput));
+    const b = actualClaim(
+      await stub.processEvent({ ...responseInput, eventRef: "c".repeat(64) }),
+    );
+    const before = await deliverySnapshot(stub);
+    expect(await stub.checkDeliveryClaim(a)).toBe(true);
+    expect(
+      await stub.checkDeliveryClaim({ ...a, ownerToken: b.ownerToken }),
+    ).toBe(false);
+    expect(await stub.checkDeliveryClaim({ ...a, eventRef: b.eventRef })).toBe(
+      false,
+    );
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    expect(await stub.markDelivered(a.eventRef, a)).toBe("ACKNOWLEDGED");
+    expect(await stub.checkDeliveryClaim(a)).toBe(false);
+    expect(await stub.checkDeliveryClaim(b)).toBe(true);
+    await runInDurableObject(stub, (_i, s) => {
+      s.storage.sql.exec(
+        "UPDATE delivery_claims SET state = 'DELIVERY_UNKNOWN' WHERE event_ref = ?",
+        b.eventRef,
+      );
+    });
+    expect(await stub.checkDeliveryClaim(b)).toBe(false);
+    expect(await stub.markDelivered(b.eventRef, b)).toBe("REJECTED");
+  });
+
+  it("does not create outbound ownership for a no-message event", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-no-message");
+    const result = await stub.processEvent({
+      ...responseInput,
+      decision: { ...responseInput.decision, replyKind: "NONE" },
+    });
+    expect(result).toEqual({
+      status: "SILENT",
+      replyKind: "NONE",
+      enteredHandoff: false,
+    });
+    await runInDurableObject(stub, (_instance, state) => {
+      expect(
+        state.storage.sql
+          .exec<{ n: number }>("SELECT COUNT(*) AS n FROM delivery_claims")
+          .one().n,
+      ).toBe(0);
+    });
+    expect(await stub.processEvent(responseInput)).toMatchObject({
+      status: "DUPLICATE",
+    });
+  });
+
+  it("does not allow a real claim from another conversation to acknowledge this conversation", async () => {
+    const a = env.CONVERSATION_STATE.getByName("v18-isolated-a"),
+      b = env.CONVERSATION_STATE.getByName("v18-isolated-b");
+    const ownerA = actualClaim(await a.processEvent(responseInput));
+    const ownerB = actualClaim(await b.processEvent(responseInput));
+    expect(await b.markDelivered(ownerA.eventRef, ownerA)).toBe("REJECTED");
+    expect(await a.markDelivered(ownerB.eventRef, ownerB)).toBe("REJECTED");
+    expect(await a.markDelivered(ownerA.eventRef, ownerA)).toBe("ACKNOWLEDGED");
+    expect(await b.deliveryObservation(ownerB.eventRef)).toEqual({
+      state: "CLAIMED",
+      revision: ownerB.revision,
+    });
+  });
+
+  it("conservatively fences existing unfenced rows without rewriting old schema or history", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v18-legacy");
+    await runInDurableObject(stub, (_instance, state) => {
+      // An old runtime row has no claim; this is not a synthetic ownership token.
+      state.storage.sql.exec(
+        "INSERT INTO processed_events VALUES (?, 'HANDOFF_ACK', 0, 1, ?, ?)",
+        responseInput.eventRef,
+        baseInput.now,
+        baseInput.now + 1,
+      );
+    });
+    await evictDurableObject(stub);
+    expect(
+      await stub.deliveryObservation(responseInput.eventRef),
+    ).toMatchObject({ state: "LEGACY_UNKNOWN" });
+    expect(await stub.processEvent(responseInput)).toMatchObject({
+      status: "DUPLICATE",
+    });
+    await runInDurableObject(stub, (_instance, state) => {
+      const row = state.storage.sql
+        .exec(
+          "SELECT * FROM processed_events WHERE event_ref = ?",
+          responseInput.eventRef,
+        )
+        .one();
+      expect(row).toEqual({
+        event_ref: responseInput.eventRef,
+        reply_kind: "HANDOFF_ACK",
+        delivered: 0,
+        entered_handoff: 1,
+        created_at: baseInput.now,
+        expires_at: baseInput.now + 1,
+      });
+    });
+    const before = await deliverySnapshot(stub);
+    await evictDurableObject(stub);
+    expect(await deliverySnapshot(stub)).toEqual(before);
+  });
+});
+
+async function deliverySnapshot(
+  stub: ReturnType<typeof env.CONVERSATION_STATE.getByName>,
+) {
+  return runInDurableObject(stub, async (_instance, state) => ({
+    claims: state.storage.sql
+      .exec("SELECT * FROM delivery_claims ORDER BY revision")
+      .toArray(),
+    processed: state.storage.sql
+      .exec("SELECT * FROM processed_events ORDER BY event_ref")
+      .toArray(),
+    plans: state.storage.sql
+      .exec("SELECT * FROM mp06_response_plans ORDER BY event_ref")
+      .toArray(),
+    audit: state.storage.sql
+      .exec("SELECT * FROM audit_events ORDER BY id")
+      .toArray(),
+    sequence: state.storage.sql
+      .exec("SELECT * FROM sqlite_sequence ORDER BY name")
+      .toArray(),
+    alarm: await state.storage.getAlarm(),
+  }));
+}
