@@ -1,5 +1,85 @@
 # MP-06 v16 security remediation — current gate and historical evidence
 
+## Current deployment preflight — control-transition approval gate (2026-09-09)
+
+Verdict: CONTROL_TRANSITION_APPROVAL_REQUIRED. Owner has explicitly approved one TEST deployment of the exact c59 candidate below. This is not a request to approve that deployment again. The separate editing safety reviewer rejected the proposed persistent control transition because the latest instruction did not explicitly authorize creating a new roadmap/control authorization. No alternative editing method, validator bypass, implicit grant or direct deployment was used. The rejected patch made no tracked change; current committed control remains v18 and still rejects deployment. This section is evidence and a proposal only, not an authorization record or an implemented v19 transition.
+
+### Source and artifact verification
+
+- Repository Eak-dev/malispang-lineOA, branch codex/mp-06-guardrailed-ai; origin fetched. At preflight local HEAD and remote HEAD both4650b199b96990fce2350bc72be73ab709fab9e6; working tree clean and index empty.
+- Original control64d598183ea55c3b79e3f27aa9f9992bc318ac27 is an ancestor of runtimec59eb5e12bb96a34da38759a5585be67d8c2ab6e, which is an ancestor of evidence4650b199b96990fce2350bc72be73ab709fab9e6. Both ancestry checks passed. Candidate-to-evidence changes only this Markdown report; no executable, dependency, Worker configuration, assets or deploy-affecting change.
+- All20 changed paths from3db7738da3edc3da265ebb623190de03a629c0ff through4650b199b96990fce2350bc72be73ab709fab9e6 belong to the committed exact control/runtime/test/dependency/evidence lists. Current control validation passes v18 with the recorded DEFAULT_BRANCH_DRIFT warning; it does not grant deployment.
+- Reconstructed from the clean detached checkout of exact runtimec59eb5e12bb96a34da38759a5585be67d8c2ab6e, not the evidence checkout. Node24.19.0/pnpm11.19.0, frozen lockfile, the previously isolated committed-candidate store, no copied key or private environment file. Only the tracked .dev.vars.example was present. This round's install reused that verified store; it is not claimed as another empty-store installation. The two prior empty-store full validations remain in the v18 candidate section.
+- Local-only Wrangler4.122.0 minified dry-run again produced231587 bytes, SHA-2562203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308. Candidate checkout remained clean. This is the index.js bundle hash, not a hash of every multipart-upload metadata field. No upload command ran.
+- Original733/733 full/clean validation evidence is retained for unchanged runtime, dependencies and tests. No repeated full-suite PASS is claimed for this evidence-only turn.
+
+### Fresh TEST-only observations
+
+Deployment metadata at2026-09-09T00:53:36.087Z and exact-version metadata at00:54:34.116Z resolve:
+
+- Worker malispang-lineoa-test; active version8486019d-9b62-4de9-ae15-6299909a23d9,100% traffic; deployment9ae16f15-c18f-435a-adc3-5befeeeb8edc, created2026-09-08T08:54:52.06282Z.
+- Version annotation identifies source8a5b6547b4713ff50ad6b08ee58682e129641b6a and artifact15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64. This confirms the retained source/build/upload/annotation association, not an independent download/hash of remote executable bytes. The platform etag is not substituted for the approved artifact hash.
+- Account-membership metadata at00:55:21.527Z matches the sole configured account, masked c395…407d. Only account identity was inspected; no Production Worker/resource was queried.
+- Environment TEST, account label มะลิปัง TEST, bot model gpt-5.6-terra. Four SQLite DO bindings/classes are present: CONVERSATION_STATE/ConversationStateDO, DRAFT_ORDER/DraftOrderDO, HANDOFF_REGISTRY/HandoffRegistryDO and PROMOTION_CONTROL/PromotionControlDO. Compatibility date2026-08-14 and nodejs_compat remain as recorded. No configuration, class lifecycle, namespace or binding mutation was performed.
+- Six secret names are present: LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, LINE_BOT_USER_ID, TEST_ADMIN_KEY, TEST_REWARD_CARD_URL and OPENAI_API_KEY. Remote secret values were neither retrieved nor changed. For the authorized readiness GET only, the specifically approved Keychain TEST_ADMIN_KEY was captured in temporary process memory; HTTPS destination was fixed and redirects forbidden. The process completed and exited; no secret was printed, written, committed or sent elsewhere.
+- Health at00:56:01.049Z: ok / TEST / มะลิปัง TEST / durable-object-sqlite.
+
+Authenticated SELECT-only readiness receipt77445a50-f52b-4b05-bf51-87f5aa977205 at2026-09-09T00:56:01.161Z returned HTTP200 / STATE_OBSERVED:
+
+| Field                                   | Fresh result                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Pilot / AI admission                    | STOPPED / false                                                                                      |
+| Retained Owner provenance               | Immutable previous/current session lineage; retained SETTLED WP8E event and single private allowlist |
+| Events / provider attempts              | 6 / 6                                                                                                |
+| Consumed / reserved micro-USD           | 34082 / 0                                                                                            |
+| Accounting classification               | 25864 conservative terminal UNKNOWN +8218 reported-usage estimates =34082                            |
+| Attempt terminal inventory              | 2 USAGE_UNKNOWN;4 SETTLED;0 pending attempts                                                         |
+| In-flight                               | 0                                                                                                    |
+| Conversation                            | HUMAN_HANDOFF; clarificationUsed false; pendingTemplate null; pending replies0                       |
+| Draft                                   | EXPIRED_PURGED; nonBlocking true; pending replies0                                                   |
+| Activation eligibility                  | false; expiredAtObservation true; observation grants no activation/dispatch/reply/recovery authority |
+| Independently verified provider billing | UNKNOWN                                                                                              |
+
+No accounting difference was observed against the expected6/6/34082/0 state. Expired-at-observation is a read-only temporal classification of an already STOPPED session, not a new session expiry mutation, reset or instruction to recover. HUMAN_HANDOFF is retained as requested; no handoff close occurred. Pending-reply counts cover the existing processed-event/response-plan and draft contracts. The current readiness HTTP response does not expose a delivery_claims inventory or SQL schema version. Thus no directly measured claim count or remote v18 migration success is claimed. The old deployed source has no v18 delivery-claim implementation; actual post-candidate schema/claim verification remains a required preplanned gate, not an inference from health.
+
+Final read-only receiptff57b7bc-2761-49b4-aad2-ea89f33dfdc9 at2026-09-09T01:01:36.406Z returned HTTP200 / STATE_OBSERVED and matched all expected state fields again: AI OFF/STOPPED,6/6,34082/0,in-flight/pending attempts0,HUMAN_HANDOFF,pending replies0, unchanged non-blocking EXPIRED_PURGED. Provider-attempt and consumed-cost deltas between the two reads are0. Both credential-holding processes exited. This is observation evidence, not an executed shutdown or a claim of continuous outbound telemetry.
+
+Evidence-only validation: Node24.19.0/pnpm11.19.0 declarations, project-control validator, all70 existing control tests, repository formatting check,213-file secret scan and diff-check PASS. No Worker or executable/control/dependency file changed. The historical733-test candidate evidence is reused without inflating the inventory or rerunning a full suite without code changes. Explicit review shows only this authorized evidence path changed; rejected control files remain byte-identical to4650b199b96990fce2350bc72be73ab709fab9e6.
+
+### Exact control transition proposed — NOT applied
+
+Request explicit authority for Roadmap2026.09.09-v19 / Owner decisionMP-OD-2026-09-09-V19, superseding2026.09.09-v18. Starting source/evidence anchor4650b199b96990fce2350bc72be73ab709fab9e6 and the eventual evidence-only successor must remain separately identified; neither becomes a new runtime candidate. Preserve v18 and every historical Owner decision unchanged.
+
+Maximum ten existing control paths, no Worker runtime/behavior-test, dependency or Worker configuration change: PROJECT_CONTROL.md; config/project/roadmap.json; config/project/current-work.json; config/project/current-work.schema.json; src/project-control.ts; src/project-control-cli.ts; tests/project-control.test.ts; docs/project/OWNER_DECISION_LOG.md; docs/project/ROADMAP_CHANGELOG.md; docs/project/EXECUTION_GATES.md. Leave unnecessary files unchanged. The planned semantic delta is:
+
+1. Record only the Owner's already-given exact deployment grant: original runtime control64d598183ea55c3b79e3f27aa9f9992bc318ac27, sourcec59eb5e12bb96a34da38759a5585be67d8c2ab6e, bundle2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308, existing malispang-lineoa-test, one deployment attempt. The later control commit is not deployed and need not be an ancestor of this frozen older runtime; the original control-to-runtime-to-evidence chain must be verified explicitly.
+2. Keep runtime/dependency edits, session/continuation, Owner LINE, recovery mutation, rollback rehearsal, second deployment, PR/merge/Issue closure and Production query/mutation denied. Evidence/control paths only; frozen bot/knowledge/policy/catalog/threshold/timeouts/retries and accounting remain unchanged.
+3. Deploy still denies without independently obtained fresh exact pre-version/source/artifact/account/Worker/traffic, clean committed/pushed source, reproducible artifact, existing validation, STOPPED/AI OFF, preserved6/6/34082 accounting, zero reserved/in-flight/pending provider work, proven delivery/schema observations and independent containment. No flags copied from current-work can substitute for those observations. No wildcard, latest alias, validation bypass or self-authorization.
+4. Add negative control tests for wrong source/artifact/account/Worker/triplet, stale/missing evidence, pending claim/provider work, accounting drift, already-used deployment attempt, evidence-HEAD deployment, candidate self-authorization and every forbidden operation. Retain historical v18 no-deploy tests/invariants. Validate exact control diff, formatting/lint/typecheck/build, all control tests, secret scan and clean explicit commit/push before using the new transition.
+
+The initial patch proposed changing roadmap/current-work and schema fields to represent that narrower grant. The safety reviewer rejected it before any file was changed. This report does not apply those changes or grant the proposed transition by documenting it. Owner's exact TEST deployment approval is acknowledged; the remaining request is the explicit persistent control-transition authority, not another generic deployment approval.
+
+### Containment, rollback and acceptance disposition
+
+No deployment, continuation, recovery, new provider request, outbound LINE request, live webhook smoke, rollback, PR or merge was initiated. No candidate migration ran remotely. The observed ledger and terminal inventory equal historical containment; this is not continuous platform-wide telemetry proving absence of every unrelated LINE dispatch or late reply. Direct post-deployment schema/claim/outbound observations remain NOT_PERFORMED and must be resolved before any future upload. The read-only route cannot be used as an activation or delivery capability.
+
+Keep AI OFF/pilot STOPPED and Owner silent. Never automatically restore8a5b6547b4713ff50ad6b08ee58682e129641b6a/version8486019d-9b62-4de9-ae15-6299909a23d9 or olderf986a478bc980f9e53748ed49cedd543f54cd64a: they do not enforce the new fence. Cloudflare rollback does not roll back bound storage, and class-lifecycle compatibility differs from application SQL compatibility ([official rollback documentation](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/)). The Durable Objects skill/review and [official concurrency guidance](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/) informed this separation between storage safety and external delivery guarantees.
+
+Before a future exact deployment, prepare accessible schema/claim/egress evidence and no-new-traffic containment. If candidate verification then fails, leave the candidate closed and propose fix-forward; no retry upload or automatic rollback. The Owner's exceptional return-to-pre-version conditions require proof of zero candidate events, zero delivery claims and no incompatible state transition plus committed compatibility evidence. Constructor-created legacy tombstones must not be silently treated as zero claims. Those exception conditions were not exercised or proven here, so no executable rollback/rehearsal is authorized by this report. Later continuation/UAT/recovery and rehearsal each remain separately approved actions.
+
+| Acceptance/gate                                               | Updated status                                                 |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| Exact branch/baseline/ancestry/20-path review                 | PASS at preflight                                              |
+| Exact candidate clean frozen artifact                         | PASS, approved hash reproduced                                 |
+| Local safety/precedence/fencing/dependency regression         | Prior733/733 evidence retained, no runtime change              |
+| TEST live version/identity/ledger/Owner observation           | PASS for reported fields at timestamp; no state drift          |
+| Persistent exact deployment control                           | BLOCKED, explicit v19 transition edit approval required        |
+| Candidate TEST deployment/post-deploy migration/claims/egress | NOT_PERFORMED; required observations not substituted by health |
+| WP8E location and historical F1/F2/F3                         | Historical evidence retained, not repeated                     |
+| Targeted F4 / F5 / F6, UAT kill switch                        | GAP; not authorized in this deployment-only round              |
+| Rollback/redeploy, final release review, integration/PR       | BLOCKED; no old unfenced traffic rollback                      |
+| Issue #12 / Production                                        | OPEN / NO_GO — NOT TOUCHED                                     |
+
 ## Current v18 — authorized mixed-intent and four-advisory remediation
 
 Date: 2026-09-09. MP-06 / Issue #12 / WP8F / TEST_ONLY. Verdict: LOCAL_CANDIDATE_VERIFIED_AWAITING_EXACT_TEST_DEPLOYMENT_APPROVAL. Local remediation gates pass; this is NOT TEST acceptance, deployment, rollback or UAT approval. Historical sections preserve the earlier two failing tests and audit findings, not current unresolved requests for the same local scope.
