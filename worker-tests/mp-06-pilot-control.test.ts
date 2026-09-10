@@ -257,16 +257,99 @@ describe("v22 exact successor continuation and multi-generation readiness", () =
     }
   });
 
-  it("blocks a malformed or pending-delivery draft without normalizing or deleting it", async () => {
-    const f = await v22Fixture("draft-blocker");
-    await runInDurableObject(f.draft, (_i, s) => {
-      s.storage.sql.exec(
-        "UPDATE draft_current SET aggregate_json = json_set(aggregate_json, '$.fields.items', json('[{}]'))",
-      );
+  it.each(["malformed", "pending-delivery"] as const)(
+    "blocks a %s draft without normalizing or deleting it",
+    async (condition) => {
+      const f = await v22Fixture(`draft-blocker-${condition}`);
+      await runInDurableObject(f.draft, (_i, s) => {
+        if (condition === "malformed")
+          s.storage.sql.exec(
+            "UPDATE draft_current SET aggregate_json = json_set(aggregate_json, '$.fields.items', json('[{}]'))",
+          );
+        else
+          s.storage.sql.exec(
+            "INSERT INTO draft_processed_events VALUES (?, '{}', 0, ?, ?)",
+            hexRef(8998),
+            Date.now(),
+            Date.now() + 86400000,
+          );
+      });
+      const before = await v22Snapshot(f);
+      expect((await f.call()).status).toBe(409);
+      expect(await v22Snapshot(f)).toEqual(before);
+    },
+  );
+
+  it("recovers a lost post-commit RPC response only by replaying the immutable receipt, without an automatic retry", async () => {
+    let calls = 0;
+    let receipt: unknown;
+    const f = await v22Fixture("lost-successor-response", async (invoke) => {
+      const result = await invoke(); // Actual RPC and actual committed SQLite transaction.
+      calls += 1;
+      if (result.accepted && result.code === "ACTIVATED") {
+        receipt = result.receipt;
+        throw new Error("SYNTHETIC_LOST_RESPONSE_PRIVATE_DETAIL");
+      }
+      return result;
     });
+    const untouched = await v22Fixture("isolated-successor-owner");
+    const isolatedBefore = await v22Snapshot(untouched);
     const before = await v22Snapshot(f);
-    expect((await f.call()).status).toBe(409);
-    expect(await v22Snapshot(f)).toEqual(before);
+    const network = vi.fn<typeof fetch>(() => {
+      throw new Error("NO_NETWORK_ALLOWED");
+    });
+    const logs: unknown[][] = [];
+    const logger = vi.spyOn(console, "info").mockImplementation((...values) => {
+      logs.push(values);
+    });
+    vi.stubGlobal("fetch", network);
+    try {
+      const failed = await f.call();
+      expect(failed.status).toBe(503);
+      const failedBody: unknown = await failed.json();
+      expect(failedBody).toMatchObject({
+        outcome: "SUCCESSOR_OUTCOME_UNRESOLVED",
+      });
+      expect(calls).toBe(1);
+      expect(receipt).toBeDefined();
+      const committed = await v22Snapshot(f);
+      expect(committed.coordinator.rows.mp06_wp8f_v22_successor).toHaveLength(
+        1,
+      );
+      expect(committed.owner).toEqual(before.owner);
+      expect(committed.draft).toEqual(before.draft);
+      await evictDurableObject(f.stub);
+      const replay = await f.call(); // Explicit operator replay, not an automatic request.
+      expect(replay.status).toBe(200);
+      expect(await replay.json()).toMatchObject({
+        outcome: "ACTIVATED_IDEMPOTENT",
+        receipt,
+      });
+      expect(calls).toBe(2);
+      expect(await v22Snapshot(f)).toEqual(committed);
+      expect(await v22Snapshot(untouched)).toEqual(isolatedBefore);
+      expect(await f.stub.ownerUatPilotObservation()).toMatchObject({
+        events: 6,
+        attempts: 6,
+        consumedMicroUsd: 34082,
+        reservedMicroUsd: 0,
+        inFlight: 0,
+      });
+      expect(network).not.toHaveBeenCalled();
+      const publicOutput = JSON.stringify({ failedBody, logs });
+      for (const privateValue of [
+        f.owner,
+        untouched.owner,
+        env.TEST_ADMIN_KEY,
+        env.OPENAI_API_KEY,
+        "SYNTHETIC_LOST_RESPONSE_PRIVATE_DETAIL",
+      ])
+        expect(publicOutput).not.toContain(privateValue);
+      expect(logs).toHaveLength(2);
+    } finally {
+      logger.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
   it("preserves every ledger/history/claim and retained T-C01 across activation, replay, restart and STOP", async () => {
     const f = await v22Fixture("success");
@@ -671,7 +754,12 @@ describe("v22 exact successor continuation and multi-generation readiness", () =
   });
 });
 
-async function v22Fixture(label: string) {
+async function v22Fixture(
+  label: string,
+  afterContinuation?: (
+    invoke: () => ReturnType<ConversationStateDO["continueMp06AcceptanceV22"]>,
+  ) => ReturnType<ConversationStateDO["continueMp06AcceptanceV22"]>,
+) {
   const f = await v16ContinuationFixture(`v22-${label}`);
   const oldInput = {
     ...f.input,
@@ -760,6 +848,24 @@ async function v22Fixture(label: string) {
     await s.storage.setAlarm(now + 60000);
   });
   expect(await runDurableObjectAlarm(draft)).toBe(true);
+  const coordinator = afterContinuation
+    ? new Proxy(f.stub, {
+        get(target, key) {
+          if (key === "continueMp06AcceptanceV22")
+            return (
+              input: Parameters<
+                ConversationStateDO["continueMp06AcceptanceV22"]
+              >[0],
+            ) =>
+              afterContinuation(() => target.continueMp06AcceptanceV22(input));
+          const value: unknown = Reflect.get(target, key);
+          return typeof value === "function"
+            ? (...args: unknown[]): unknown =>
+                Reflect.apply(value, target, args) as unknown
+            : value;
+        },
+      })
+    : f.stub;
   const localEnv = {
     ...env,
     CONVERSATION_STATE: new Proxy(env.CONVERSATION_STATE, {
@@ -767,7 +873,7 @@ async function v22Fixture(label: string) {
         if (key === "getByName")
           return (name: string) =>
             name === MP06_PILOT_CONTROL_OBJECT_NAME
-              ? f.stub
+              ? coordinator
               : target.getByName(name);
         const value: unknown = Reflect.get(target, key);
         return typeof value === "function"
@@ -2879,31 +2985,58 @@ describe("MP-06 WP8A persistent atomic pilot coordinator", () => {
     const stub = await activePilot("attempt-cap", [testerA]);
     const eventRef = hexRef(170);
     await admit(stub, eventRef, baseNow);
-    for (let attempt = 1; attempt <= 200; attempt += 1) {
-      const attemptRef = hexRef(attempt + 200);
+    // Keep all 600 production method invocations, transactions and assertions.
+    // This sequential accounting boundary is not a transport/concurrency test:
+    // execute its loop in the real SQLite DO instead of 600 test-harness RPCs.
+    // Admission and the post-restart 201st attempt still cross the actual RPC
+    // boundary; simultaneous reserve/dispatch races remain separate tests.
+    await runInDurableObject(stub, (instance, s) => {
+      for (let attempt = 1; attempt <= 200; attempt += 1) {
+        const attemptRef = hexRef(attempt + 200);
+        expect(
+          instance.reserveMp06PilotAttempt({
+            sessionRef,
+            eventRef,
+            attemptRef,
+            now: baseNow + attempt,
+            upperBoundCostMicroUsd: 1,
+          }),
+        ).toMatchObject({ accepted: true });
+        expect(
+          instance.authorizeMp06PilotDispatch({
+            sessionRef,
+            eventRef,
+            attemptRef,
+            clientRequestId: `client-loop-${attempt}`,
+            now: baseNow + attempt,
+          }),
+        ).toMatchObject({ accepted: true });
+        expect(
+          instance.settleMp06PilotAttempt({
+            sessionRef,
+            eventRef,
+            attemptRef,
+            now: baseNow + attempt,
+            outcome: "KNOWN",
+            actualCostMicroUsd: 1,
+          }),
+        ).toMatchObject({ accepted: true });
+        expect(instance.mp06PilotStatus(baseNow + attempt)).toMatchObject({
+          providerAttempts: attempt,
+          budgetConsumedMicroUsd: attempt,
+          budgetReservedMicroUsd: 0,
+          inFlight: 0,
+        });
+      }
       expect(
-        await reserve(stub, eventRef, attemptRef, baseNow + attempt, 1),
-      ).toMatchObject({ accepted: true });
-      expect(
-        await stub.authorizeMp06PilotDispatch({
-          sessionRef,
-          eventRef,
-          attemptRef,
-          clientRequestId: `client-loop-${attempt}`,
-          now: baseNow + attempt,
-        }),
-      ).toMatchObject({ accepted: true });
-      expect(
-        await stub.settleMp06PilotAttempt({
-          sessionRef,
-          eventRef,
-          attemptRef,
-          now: baseNow + attempt,
-          outcome: "KNOWN",
-          actualCostMicroUsd: 1,
-        }),
-      ).toMatchObject({ accepted: true });
-    }
+        s.storage.sql
+          .exec(
+            "SELECT COUNT(*) AS total, SUM(actual_cost_micro_usd) AS cost FROM mp06_pilot_attempts WHERE state = 'SETTLED'",
+          )
+          .one(),
+      ).toEqual({ total: 200, cost: 200 });
+    });
+    await evictDurableObject(stub);
     expect(
       await reserve(stub, eventRef, hexRef(500), baseNow + 201, 1),
     ).toMatchObject({ accepted: false, code: "ATTEMPT_LIMIT_REACHED" });
