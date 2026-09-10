@@ -1230,6 +1230,13 @@
       "attempt": 1,
       "startedAt": "2026-09-10T07:39:09.358Z",
       "evidenceSha256": "4585e21b861cce845f01b2b11325b814f0089beeecb339c2b9a528422fe684f0"
+    },
+    {
+      "action": "CLOSE_OWNER_HANDOFF",
+      "operationRef": "feaa5f7f-9547-4ea5-b52f-811413c2e010",
+      "attempt": 1,
+      "startedAt": "2026-09-10T08:37:47.000Z",
+      "evidenceSha256": "fb97fc3ff711d860acd7ae6188367a9e353701c58e7f253954fcdef4be986382"
     }
   ]
 }
