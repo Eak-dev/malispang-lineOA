@@ -1237,6 +1237,13 @@
       "attempt": 1,
       "startedAt": "2026-09-10T08:37:47.000Z",
       "evidenceSha256": "fb97fc3ff711d860acd7ae6188367a9e353701c58e7f253954fcdef4be986382"
+    },
+    {
+      "action": "OPEN_CONTINUATION",
+      "operationRef": "ccf39f0b-e433-471d-9699-43cd3ff04124",
+      "attempt": 1,
+      "startedAt": "2026-09-10T09:01:40.000Z",
+      "evidenceSha256": "762001adce6f9471666e54e70ab5b9e367dd6abe4f1b156e0df6d000d7f05203"
     }
   ]
 }
