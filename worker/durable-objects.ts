@@ -1916,17 +1916,30 @@ export class ConversationStateDO extends DurableObject<Env> {
       attempts: sql
         .exec("SELECT * FROM mp06_pilot_attempts ORDER BY attempt_ref")
         .toArray(),
+      audit: sql.exec("SELECT * FROM audit_events ORDER BY id").toArray(),
+      lifecycle: sql
+        .exec(
+          "SELECT * FROM mp06_pilot_lifecycle_diagnostics ORDER BY attempt_ref",
+        )
+        .toArray(),
+      checkpoints: sql
+        .exec(
+          "SELECT * FROM mp06_pilot_lifecycle_checkpoints ORDER BY attempt_ref, sequence",
+        )
+        .toArray(),
     });
   }
 
   private mp06SuccessorMarker(): Mp06SuccessorRow | undefined {
     const sql = this.ctx.storage.sql;
-    const present = sql
-      .exec<{ count: number }>(
-        "SELECT COUNT(*) AS count FROM sqlite_master WHERE name = 'mp06_wp8f_v22_successor'",
+    const schema = sql
+      .exec<{ type: string }>(
+        "SELECT type FROM sqlite_schema WHERE name = 'mp06_wp8f_v22_successor'",
       )
-      .one().count;
-    if (present === 0) return undefined;
+      .toArray();
+    if (schema.length === 0) return undefined;
+    if (schema.length !== 1 || schema[0]?.type !== "table")
+      throw new Error("SUCCESSOR_SCHEMA_INVALID");
     const rows = sql
       .exec<Mp06SuccessorRow>(
         "SELECT * FROM mp06_wp8f_v22_successor ORDER BY id",
@@ -1934,7 +1947,6 @@ export class ConversationStateDO extends DurableObject<Env> {
       .toArray();
     const row = rows[0];
     if (
-      present !== 1 ||
       rows.length !== 1 ||
       !row ||
       Object.keys(row).length !== 15 ||

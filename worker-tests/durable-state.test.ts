@@ -642,6 +642,154 @@ function actualClaim(result: ProcessEventResult) {
   return result.deliveryClaim;
 }
 
+describe("v22 read-only retained clarification and delivery inventory", () => {
+  const fixture = async (name: string) => {
+    const stub = env.CONVERSATION_STATE.getByName(`v22-observation:${name}`);
+    const now = Date.now();
+    const anchor = "a9".repeat(32),
+      pending = "b9".repeat(32);
+    const safe: ProcessEventInput = {
+      ...baseInput,
+      now,
+      eventRef: anchor,
+      decision: {
+        replyKind: "LOCATION",
+        reasonCode: "MP06_AUTO",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "c9".repeat(32),
+    };
+    const first = await stub.processEvent(safe);
+    expect(await stub.markDelivered(anchor, actualClaim(first))).toBe(
+      "ACKNOWLEDGED",
+    );
+    const clarify = await stub.processEvent({
+      ...safe,
+      eventRef: pending,
+      decision: {
+        ...safe.decision,
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C01",
+      },
+      clarificationTemplateId: "T-C01",
+    });
+    expect(await stub.markDelivered(pending, actualClaim(clarify))).toBe(
+      "ACKNOWLEDGED",
+    );
+    return { stub, anchor, pending, safe };
+  };
+
+  it("never clears clarification, writes rows/alarms/audit or grants delivery during reads/restart", async () => {
+    const f = await fixture("preserve");
+    const before = await deliverySnapshot(f.stub);
+    const observed = await f.stub.ownerUatSuccessorConversationObservation(
+      f.anchor,
+    );
+    expect(observed).toMatchObject({
+      context: {
+        mode: "BOT_ACTIVE",
+        clarificationUsed: true,
+        pendingTemplate: "T-C01",
+        pendingReplies: 0,
+      },
+      delivery: {
+        claims: 2,
+        deliveredClaims: 2,
+        pendingOrUnknownClaims: 0,
+        malformedClaims: 0,
+        inconsistentLinks: 0,
+      },
+      retainedClarificationReady: false,
+    });
+    // An observation of a different history is not the exact approved activation baseline.
+    expect(
+      await f.stub.ownerUatSuccessorConversationObservation(f.anchor),
+    ).toEqual(observed);
+    await evictDurableObject(f.stub);
+    expect(
+      await f.stub.ownerUatSuccessorConversationObservation(f.anchor),
+    ).toEqual(observed);
+    expect(await f.stub.mp06Context()).toEqual({
+      pendingClarificationTemplateId: "T-C01",
+    });
+    expect(await deliverySnapshot(f.stub)).toEqual(before);
+    expect(observed && "deliveryClaim" in observed).toBe(false);
+    const safeFollowUp = await f.stub.processEvent({
+      ...f.safe,
+      eventRef: "d9".repeat(32),
+    });
+    expect(safeFollowUp.status).toBe("RESPOND");
+    expect(
+      await f.stub.markDelivered("d9".repeat(32), actualClaim(safeFollowUp)),
+    ).toBe("ACKNOWLEDGED");
+    expect(
+      await f.stub.ownerUatConversationObservation(f.anchor),
+    ).toMatchObject({ clarificationUsed: true, pendingTemplate: null });
+    const secondClarification = await f.stub.processEvent({
+      ...f.safe,
+      eventRef: "e9".repeat(32),
+      clarificationTemplateId: "T-C01",
+    });
+    expect(secondClarification).toMatchObject({
+      status: "RESPOND",
+      replyKind: "HANDOFF_ACK",
+      enteredHandoff: true,
+    });
+    expect(await f.stub.state()).toBe("HUMAN_HANDOFF");
+  });
+
+  it.each([
+    "UPDATE delivery_claims SET owner_token = 'malformed' WHERE revision = 1",
+    "UPDATE delivery_claims SET acknowledged_at = NULL WHERE revision = 1",
+    "UPDATE delivery_claims SET state = 'DELIVERY_UNKNOWN' WHERE revision = 1",
+    "DELETE FROM processed_events WHERE event_ref = (SELECT event_ref FROM delivery_claims WHERE revision = 1)",
+    "UPDATE mp06_response_plans SET delivered = 0",
+  ])(
+    "never repairs malformed/unknown/orphan delivery state during observation (%#)",
+    async (mutation) => {
+      const f = await fixture(mutation);
+      await runInDurableObject(f.stub, (_i, s) => {
+        s.storage.sql.exec(mutation);
+      });
+      const before = await deliverySnapshot(f.stub);
+      const observed = await f.stub.ownerUatSuccessorConversationObservation(
+        f.anchor,
+      );
+      expect(observed?.retainedClarificationReady ?? false).toBe(false);
+      if (observed)
+        expect(
+          observed.delivery.malformedClaims +
+            observed.delivery.pendingOrUnknownClaims +
+            observed.delivery.inconsistentLinks +
+            observed.context.pendingReplies,
+        ).toBeGreaterThan(0);
+      expect(await deliverySnapshot(f.stub)).toEqual(before);
+    },
+  );
+
+  it("empty-state deployment/restart/readiness never creates a successor marker or an activation capability", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v22-empty-readiness");
+    const before = await deliverySnapshot(stub);
+    expect(await stub.ownerUatPilotObservation()).toBeNull();
+    expect(
+      await stub.ownerUatSuccessorConversationObservation("1".repeat(64)),
+    ).toBeNull();
+    await evictDurableObject(stub);
+    expect(await stub.ownerUatPilotObservation()).toBeNull();
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql
+          .exec(
+            "SELECT name FROM sqlite_schema WHERE name = 'mp06_wp8f_v22_successor'",
+          )
+          .toArray(),
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe("v18 persistent delivery ownership and fenced acknowledgement", () => {
   const responseInput: ProcessEventInput = {
     ...baseInput,
