@@ -2,30 +2,30 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.10-v21",
+  "roadmapVersion": "2026.09.10-v22",
   "workId": "MP-06",
   "githubIssue": 12,
   "currentPhase": "WP8F_TEST_ACCEPTANCE_COMPLETION",
-  "status": "AUTHORIZED_EXACT_SUCCESSOR_TEST_COMPLETION_AND_GATED_INTEGRATION",
+  "status": "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
   "base": {
-    "commit": "bfff1a553868b85e5f66144e4741a51627f4a9be",
+    "commit": "1790da58635edcee154b60d76730248e8130c2d3",
     "branch": "codex/mp-06-guardrailed-ai"
   },
   "implementationBranch": "codex/mp-06-guardrailed-ai",
   "targetEnvironment": "TEST_ONLY",
   "authorizedWorkPackage": "WP8F",
   "allowedScope": [
-    "MP_06_WP8F_TEST_ACCEPTANCE_AND_INTEGRATION_ONLY",
-    "EXACT_V21_SUCCESSOR_CONTROL",
-    "EXACT_FROZEN_SUCCESSOR_TEST_DEPLOYMENT_ONCE",
+    "MP_06_WP8F_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
+    "TEN_EXACT_CONTROL_PATHS_ONLY",
+    "EXACT_FROZEN_V22_CANDIDATE_DEPLOYMENT_ONCE",
     "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
-    "OWNER_SCOPED_DURABLE_HANDOFF_CLOSE_ONE_LOGICAL_THREE_TECHNICAL_ATTEMPTS",
-    "ONE_ATOMIC_CONTINUATION_AND_OWNER_MOBILE_UAT",
-    "KILL_SWITCH_AND_FENCED_RECOVERY_VERIFICATION",
-    "FINAL_SECURITY_REVIEW_HOSTED_CI_AND_CONDITIONAL_REMEDIATION_INTEGRATION",
-    "ISSUE12_CLOSURE_ONLY_AFTER_ALL_TEST_AND_INTEGRATION_GATES",
+    "ONE_FIXED_SUCCESSOR_ACTIVATION_AFTER_POST_DEPLOY_AND_OWNER_AVAILABILITY",
+    "U2_THEN_U3_THEN_STOP_THEN_U4_OWNER_MOBILE_ONLY",
+    "PRESERVE_PRIMARY_U1_GAP_AND_A1_A3_UNRESOLVED",
+    "PRESERVE_ACCOUNTING_HISTORY_CLAIMS_MARKERS_AND_USED_CLARIFICATION",
+    "AUTHENTICATED_STOP_ON_FAILURE_OR_SILENCE",
+    "COMMIT_PUSH_CHECKPOINTS_AND_APPEND_ISSUE9_ISSUE12",
     "RUNTIME_DEPENDENCIES_MODEL_PROMPT_POLICY_CATALOG_CHECKSUMS_READ_ONLY",
-    "COMMIT_PUSH_EVERY_CHECKPOINT_AND_APPEND_ISSUE12",
     "PRODUCTION_NO_GO_MP12_SEPARATE"
   ],
   "forbiddenScope": [
@@ -97,7 +97,16 @@
     "MERGE_OR_CLOSE_BEFORE_ALL_TEST_REVIEW_CI_INTEGRATION_GATES",
     "CHANGE_FROZEN_SUCCESSOR_RUNTIME_OR_DEPENDENCIES",
     "RESET_OR_REWRITE_OPERATION_JOURNAL",
-    "SECOND_LOGICAL_HANDOFF_CLOSE_OR_REPLACEMENT_SESSION"
+    "SECOND_LOGICAL_HANDOFF_CLOSE_OR_REPLACEMENT_SESSION",
+    "MERGE_DEFAULT_BRANCH",
+    "CREATE_READY_PULL_REQUEST",
+    "CHANGE_DEFAULT_BRANCH",
+    "RESOLVE_DEFAULT_BRANCH_DRIFT",
+    "CLOSE_MP_06_ISSUE",
+    "ALL_PR_MERGE_CLOSURE_IN_V22",
+    "HANDOFF_CLOSE_RESET_ROLLBACK_IN_V22",
+    "REPEAT_PRIMARY_U1_OR_PROMOTE_AUDIT_GAP",
+    "RETRY_OR_REPLACE_V22_DEPLOYMENT_OR_ACTIVATION"
   ],
   "authorization": {
     "localImplementation": false,
@@ -1133,7 +1142,7 @@
       "code": "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
       "blocking": false,
       "detail": "Owner merged PR #14 with the full feature history into aad8c5e0ef41c5e47df3d93ae462b9122368c15d before final security/release review; this is not deployment or acceptance.",
-      "resolution": "Owner execution order authorizes the exact frozen successor and conditional new remediation integration only after all TEST/UAT/kill-switch/recovery/CI/review gates. PR #14 was earlier integration, not acceptance. Production remains NO_GO; MP-07 remains blocked."
+      "resolution": "V22 authorizes only exact TEST deployment and successor U2/U3/STOP/U4 after independent gates. No new PR/merge/closure in this round. PR #14 was earlier integration, not acceptance. Primary U1 GAP and A1-A3 UNRESOLVED remain. Production NO_GO; MP-07 blocked."
     }
   ],
   "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES",
@@ -1223,6 +1232,76 @@
       "docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md"
     ]
   },
+  "wp8fV22Authorization": {
+    "version": "2026.09.10-v22",
+    "ownerDecision": "MP-OD-2026-09-10-V22",
+    "supersedes": "2026.09.10-v21",
+    "executionBaseline": "7faf727e36d13f5f83be4c904522ef0fa494ce1b",
+    "previousControl": "44da479f133e96cbcd9290a7a77e337270780bb7",
+    "sourceCommit": "1790da58635edcee154b60d76730248e8130c2d3",
+    "artifactSha256": "adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657",
+    "artifactFile": "index.js",
+    "artifactBytes": 252715,
+    "candidateCiRun": 34478262489,
+    "candidateTestsPassed": 842,
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "environment": "TEST_ONLY",
+    "oa": "มะลิปัง TEST",
+    "domain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "predecessorVersion": "e72862e2-e538-47ee-93ea-7efcf719188b",
+    "predecessorSource": "bfff1a553868b85e5f66144e4741a51627f4a9be",
+    "predecessorArtifact": "8eabcc6a1628bfa776fa5768db49e2faa586ceaaaa6915510afec74835f2d2b5",
+    "deployment": {
+      "maximumOperations": 1,
+      "operation": "39c5d097-72e9-4658-b087-a5545626060d",
+      "statusAtTransition": "APPROVED_UNUSED",
+      "usage": "DERIVED_FROM_APPEND_ONLY_V22_JOURNAL",
+      "outcomeUnknownOrRejected": "CONSUMED_NO_RETRY"
+    },
+    "activation": {
+      "maximumOperations": 1,
+      "operation": "e7dbdaa5-01aa-454c-b8c9-e1838594662e",
+      "statusAtTransition": "APPROVED_UNUSED",
+      "usage": "DERIVED_FROM_APPEND_ONLY_V22_JOURNAL",
+      "method": "POST",
+      "path": "/admin/mp06-pilot/continue-acceptance-v22",
+      "body": {
+        "expectedSessionRef": "0af18b7d44468ca89d3d6a762892bda6cb812e6c2c7c41178bbd43b38bec7a8c",
+        "operationRef": "e26e1a51fc1f55e7472e5aa33b0f740f4188ed3ed31a29d3a758d8862fdbb25a"
+      },
+      "successorSession": "9fbc9737f1b4a2a3eeed3addb79105b6867f1e22bd34863881124d3cfcfb3603",
+      "outcomeUnknownOrRejected": "CONSUMED_READ_ONLY_RECONCILIATION_NO_RETRY",
+      "requiresPostDeploymentEvidencePushed": true,
+      "requiresOwnerAvailable": true
+    },
+    "maximumSessionMinutes": 60,
+    "ownerSilenceStopMinutes": 10,
+    "cumulativeCostMicroUsd": 5000000,
+    "cumulativeEvents": 200,
+    "cumulativeProviderAttempts": 200,
+    "maximumConcurrency": 1,
+    "freshObservationMaximumAgeMs": 120000,
+    "primaryU1": "GAP_DO_NOT_REPEAT_OR_RESET",
+    "historicalAuditA1A3": "UNRESOLVED_AUDIT_RETENTION_RECONCILIATION_GAP_OWNER_ACCEPTED_FOR_TEST_UAT_ONLY",
+    "historicalActualProviderBilling": "UNKNOWN",
+    "uatSequence": ["U2", "U3", "STOP", "U4"],
+    "handoffClose": false,
+    "rollback": false,
+    "pr": false,
+    "merge": false,
+    "issueClosure": false,
+    "productionQueryOrMutation": false,
+    "runtimeFrozen": true,
+    "accountingHistoryClarificationReset": false,
+    "containment": "STOP_FAIL_CLOSED_FIX_FORWARD_NO_AUTOMATIC_ROLLBACK_NO_GLOBAL_EGRESS_CLAIM",
+    "evidenceFiles": [
+      "docs/project/EXECUTION_GATES.md",
+      "docs/project/ROADMAP_CHANGELOG.md",
+      "docs/project/OWNER_DECISION_LOG.md"
+    ]
+  },
+  "wp8fV22OperationJournal": [],
   "wp8fSuccessorOperationJournal": [
     {
       "action": "DEPLOY_TEST",

@@ -1,6 +1,16 @@
 # MalisPang Project Control
 
-## Current v21 — frozen successor TEST completion and conditional integration
+## Current v22 — exact TEST deployment and retained-Owner successor UAT only
+
+Roadmap2026.09.10-v22 / MP-OD-2026-09-10-V22 supersedes v21. MP-06/Issue12/WP8F/TEST_ONLY. Approved baseline7faf727e36d13f5f83be4c904522ef0fa494ce1b, frozen candidate1790da58635edcee154b60d76730248e8130c2d3, minified index.js252715bytes/SHA256adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657. Only ten control paths may change. No runtime/dependency/config/model/prompt/policy change. Current authority is wp8fV22Authorization, with independent append-only wp8fV22OperationJournal grants for one exact TEST deploy and one fixed successor activation. Historical v21 journal and its consumed grants remain unchanged, not reusable.
+
+Deploy only malispang-lineoa-test/accountc395a1bc15b7c95267173de5ccd6407d/OAมะลิปัง TEST after candidate/control CI, exact artifact and independently refreshed120second state gates. Preserve6/6/34082/0, pending/inflight0, OwnerBOT_ACTIVE/T-C01/clarificationUsedtrue, closeCOMPLETE/gen1/technical1, validEXPIRED_PURGED and6DELIVEREDclaims. No state repair to make gates pass. One command only; rejected/unknown outcome consumes its grant. Post-deploy verify zero retained-state/ledger/claim/outbound delta and V22 marker still absent, then push evidence before activation. Owner must be currently available; use only fixed continue-acceptance-v22 operation/body. No handoff-close is included.
+
+U2→U3→authenticatedSTOP→U4 only, one Owner-mobile message at a time with backend/visible/claim/settlement proof. Max60minutes, stop10minutes silence or safety failure, no replacement. Primary AI-ON U1 remains GAP and must not be repeated/reset; A1–A3 remain UNRESOLVED/AUDIT_RETENTION_RECONCILIATION_GAP under Owner's TEST-only continuation decision, not PASS/EXPLAINED. Preserve cumulativeUSD5/200events/200attempts and history/clarification. AI OFF is not global LINE-egress disable; Owner silence/no probes/immediate delta verification are compensating gates. No cross-DO atomicity or exactly-once external delivery claim.
+
+No rollback/PR/merge/Issue closure/MP07 or Production query/action in v22, even if historical v21 completion gates pass. Prior PR14 is INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW. End OFF/STOPPED with zero reserved/inflight/pending. Every checkpoint explicit-path commit/push and #9/#12 receipt; incomplete work WIP — NOT_DEPLOYABLE. No amend/squash/rebase/reset/stash/force. Issue12 OPEN; Production NO_GO — NOT TOUCHED. Current operation usage is derived from the v22 journal, initially deployment0/1 and activation0/1; this is not remote-state evidence.
+
+## Historical v21 — frozen successor TEST completion and conditional integration
 
 Roadmap 2026.09.10-v21 / MP-OD-2026-09-10-V21 supersedes the executable v19 control. The separately approved v20 was never materialized; it does not provide a second grant for the superseded c59 candidate. Owner execution directives are Issue #12 comments5611740903/5611756729 and Roadmap #9 comments5611740789/5611756596, reconciled from baseline47934a41aeebea9cf17a1cf3d3b98819179b4b97. Current work remains MP-06 / Issue #12 / WP8F / TEST_ONLY. Production readiness and controlled rollout belong to MP-12 / Issue #5, not this acceptance.
 

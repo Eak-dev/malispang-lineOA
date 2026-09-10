@@ -40,6 +40,8 @@
     "wp8fExactDeploymentPreparation",
     "wp8fSuccessorCompletion",
     "wp8fSuccessorOperationJournal",
+    "wp8fV22Authorization",
+    "wp8fV22OperationJournal",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -47,6 +49,114 @@
     "failureMode"
   ],
   "properties": {
+    "wp8fV22Authorization": {
+      "const": {
+        "version": "2026.09.10-v22",
+        "ownerDecision": "MP-OD-2026-09-10-V22",
+        "supersedes": "2026.09.10-v21",
+        "executionBaseline": "7faf727e36d13f5f83be4c904522ef0fa494ce1b",
+        "previousControl": "44da479f133e96cbcd9290a7a77e337270780bb7",
+        "sourceCommit": "1790da58635edcee154b60d76730248e8130c2d3",
+        "artifactSha256": "adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657",
+        "artifactFile": "index.js",
+        "artifactBytes": 252715,
+        "candidateCiRun": 34478262489,
+        "candidateTestsPassed": 842,
+        "account": "c395a1bc15b7c95267173de5ccd6407d",
+        "worker": "malispang-lineoa-test",
+        "environment": "TEST_ONLY",
+        "oa": "มะลิปัง TEST",
+        "domain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
+        "predecessorVersion": "e72862e2-e538-47ee-93ea-7efcf719188b",
+        "predecessorSource": "bfff1a553868b85e5f66144e4741a51627f4a9be",
+        "predecessorArtifact": "8eabcc6a1628bfa776fa5768db49e2faa586ceaaaa6915510afec74835f2d2b5",
+        "deployment": {
+          "maximumOperations": 1,
+          "operation": "39c5d097-72e9-4658-b087-a5545626060d",
+          "statusAtTransition": "APPROVED_UNUSED",
+          "usage": "DERIVED_FROM_APPEND_ONLY_V22_JOURNAL",
+          "outcomeUnknownOrRejected": "CONSUMED_NO_RETRY"
+        },
+        "activation": {
+          "maximumOperations": 1,
+          "operation": "e7dbdaa5-01aa-454c-b8c9-e1838594662e",
+          "statusAtTransition": "APPROVED_UNUSED",
+          "usage": "DERIVED_FROM_APPEND_ONLY_V22_JOURNAL",
+          "method": "POST",
+          "path": "/admin/mp06-pilot/continue-acceptance-v22",
+          "body": {
+            "expectedSessionRef": "0af18b7d44468ca89d3d6a762892bda6cb812e6c2c7c41178bbd43b38bec7a8c",
+            "operationRef": "e26e1a51fc1f55e7472e5aa33b0f740f4188ed3ed31a29d3a758d8862fdbb25a"
+          },
+          "successorSession": "9fbc9737f1b4a2a3eeed3addb79105b6867f1e22bd34863881124d3cfcfb3603",
+          "outcomeUnknownOrRejected": "CONSUMED_READ_ONLY_RECONCILIATION_NO_RETRY",
+          "requiresPostDeploymentEvidencePushed": true,
+          "requiresOwnerAvailable": true
+        },
+        "maximumSessionMinutes": 60,
+        "ownerSilenceStopMinutes": 10,
+        "cumulativeCostMicroUsd": 5000000,
+        "cumulativeEvents": 200,
+        "cumulativeProviderAttempts": 200,
+        "maximumConcurrency": 1,
+        "freshObservationMaximumAgeMs": 120000,
+        "primaryU1": "GAP_DO_NOT_REPEAT_OR_RESET",
+        "historicalAuditA1A3": "UNRESOLVED_AUDIT_RETENTION_RECONCILIATION_GAP_OWNER_ACCEPTED_FOR_TEST_UAT_ONLY",
+        "historicalActualProviderBilling": "UNKNOWN",
+        "uatSequence": ["U2", "U3", "STOP", "U4"],
+        "handoffClose": false,
+        "rollback": false,
+        "pr": false,
+        "merge": false,
+        "issueClosure": false,
+        "productionQueryOrMutation": false,
+        "runtimeFrozen": true,
+        "accountingHistoryClarificationReset": false,
+        "containment": "STOP_FAIL_CLOSED_FIX_FORWARD_NO_AUTOMATIC_ROLLBACK_NO_GLOBAL_EGRESS_CLAIM",
+        "evidenceFiles": [
+          "docs/project/EXECUTION_GATES.md",
+          "docs/project/ROADMAP_CHANGELOG.md",
+          "docs/project/OWNER_DECISION_LOG.md"
+        ]
+      }
+    },
+    "wp8fV22OperationJournal": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "operationRef",
+          "attempt",
+          "startedAt",
+          "evidenceSha256"
+        ],
+        "properties": {
+          "action": {
+            "enum": ["DEPLOY_TEST", "ACTIVATE_SUCCESSOR_V22"]
+          },
+          "operationRef": {
+            "enum": [
+              "39c5d097-72e9-4658-b087-a5545626060d",
+              "e7dbdaa5-01aa-454c-b8c9-e1838594662e"
+            ]
+          },
+          "attempt": {
+            "const": 1
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenceSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
     "wp8fSuccessorCompletion": {
       "const": {
         "version": "2026.09.10-v21",
@@ -142,14 +252,14 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.10-v21" },
+    "roadmapVersion": { "const": "2026.09.10-v22" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {
       "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
     },
     "status": {
-      "const": "AUTHORIZED_EXACT_SUCCESSOR_TEST_COMPLETION_AND_GATED_INTEGRATION"
+      "const": "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY"
     },
     "base": {
       "type": "object",

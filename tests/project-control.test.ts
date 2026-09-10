@@ -20,6 +20,7 @@ import {
   validateProjectControl,
   validateSchemaDocuments,
   validateSuccessorOperationJournal,
+  validateV22OperationJournal,
 } from "../src/project-control.js";
 
 const root = new URL("../", import.meta.url);
@@ -3569,12 +3570,18 @@ function assessV21(
   return evaluateProjectAction(v21Roadmap, work, action, target, evidence);
 }
 describe("v21 frozen successor TEST and gated integration", () => {
-  beforeAll(async () => {
-    const readCurrent = async (
-      path: string,
-    ): Promise<Record<string, unknown>> => {
+  beforeAll(() => {
+    const readCurrent = (path: string): Record<string, unknown> => {
       const parsed: unknown = JSON.parse(
-        await readFile(new URL(path, root), "utf8"),
+        execFileSync(
+          "git",
+          ["show", "1790da58635edcee154b60d76730248e8130c2d3:" + path],
+          {
+            cwd: fileURLToPath(root),
+            encoding: "utf8",
+            maxBuffer: 1024 * 1024,
+          },
+        ),
       );
       if (
         typeof parsed !== "object" ||
@@ -3584,11 +3591,11 @@ describe("v21 frozen successor TEST and gated integration", () => {
         throw new Error("INVALID_CURRENT_CONTROL_FIXTURE");
       return parsed as Record<string, unknown>;
     };
-    [v21Roadmap, actualV21Work, v21Schema] = await Promise.all([
+    [v21Roadmap, actualV21Work, v21Schema] = [
       readCurrent("config/project/roadmap.json"),
       readCurrent("config/project/current-work.json"),
       readCurrent("config/project/current-work.schema.json"),
-    ]);
+    ];
     // Model the originally unused grant for the scenario matrix, not a live reset.
     // The actual committed journal is validated separately and by CLI history checks.
     v21Work = clone(actualV21Work);
@@ -3600,7 +3607,7 @@ describe("v21 frozen successor TEST and gated integration", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
-  it("accepts the actual current v21 snapshot without changing any historical criteria", () => {
+  it("accepts the frozen actual v21 snapshot without changing any historical criteria", () => {
     expect(validateProjectControl(v21Roadmap, actualV21Work).errors).toEqual(
       [],
     );
@@ -4173,5 +4180,772 @@ describe("v21 frozen successor TEST and gated integration", () => {
       Reflect.set(e.integration, key, value);
       expect(assessV21("CLOSE_ISSUE", e, work).allowed, key).toBe(false);
     }
+  });
+});
+
+const v22Version = "2026.09.10-v22";
+const v22Target = {
+  worker: "malispang-lineoa-test",
+  sourceCommit: "1790da58635edcee154b60d76730248e8130c2d3",
+  artifactSha256:
+    "adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657",
+};
+const v22Operations = [
+  "39c5d097-72e9-4658-b087-a5545626060d",
+  "e7dbdaa5-01aa-454c-b8c9-e1838594662e",
+];
+const v22Body = {
+  expectedSessionRef:
+    "0af18b7d44468ca89d3d6a762892bda6cb812e6c2c7c41178bbd43b38bec7a8c",
+  operationRef:
+    "e26e1a51fc1f55e7472e5aa33b0f740f4188ed3ed31a29d3a758d8862fdbb25a",
+};
+const v22Session =
+  "9fbc9737f1b4a2a3eeed3addb79105b6867f1e22bd34863881124d3cfcfb3603";
+let v22Roadmap: Record<string, unknown>,
+  v22Work: Record<string, unknown>,
+  actualV22Work: Record<string, unknown>,
+  v22Schema: unknown;
+function record(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new Error("INVALID_SYNTHETIC_RECORD");
+  return value as Record<string, unknown>;
+}
+function v22Journal(index: number) {
+  return {
+    action: index === 0 ? "DEPLOY_TEST" : "ACTIVATE_SUCCESSOR_V22",
+    operationRef: v22Operations[index],
+    attempt: 1,
+    startedAt: new Date(v21Now).toISOString(),
+    evidenceSha256: "e".repeat(64),
+  };
+}
+function v22Evidence(): Record<string, unknown> {
+  const old = v21Evidence();
+  return {
+    ...old,
+    ownerDecision: "MP-OD-2026-09-10-V22",
+    primaryU1: "GAP",
+    auditA1A3: "UNRESOLVED_AUDIT_RETENTION_RECONCILIATION_GAP",
+    acceptanceCriteriaUnchanged: true,
+    candidate: {
+      ...old.candidate,
+      ...v22Target,
+      ciHead: v22Target.sourceCommit,
+      ciRun: 34478262489,
+      testsPassed: 842,
+      executionBaseline: "7faf727e36d13f5f83be4c904522ef0fa494ce1b",
+      controlOwnerDecision: "MP-OD-2026-09-10-V22",
+      reproducedArtifacts: [v22Target.artifactSha256, v22Target.artifactSha256],
+    },
+    test: {
+      ...old.test,
+      oa: "มะลิปัง TEST",
+      version: "e72862e2-e538-47ee-93ea-7efcf719188b",
+      sourceCommit: v21Target.sourceCommit,
+      artifactSha256: v21Target.artifactSha256,
+      ownerMode: "BOT_ACTIVE",
+      handoffRegistryActive: 0,
+      pendingTemplate: "T-C01",
+      clarificationUsed: true,
+      handoffCloseState: "COMPLETE",
+      handoffGeneration: 1,
+      handoffTechnicalAttempts: 1,
+      pendingHandoffClose: false,
+      deliverySchema: "PRESENT_FENCED",
+      pendingDeliveryClaims: 0,
+      unknownDeliveryClaims: 0,
+      malformedDeliveryClaims: 0,
+      inconsistentDeliveryLinks: 0,
+      processedEvents: 6,
+      responsePlans: 4,
+      auditRows: 18,
+      deliveryClaims: 6,
+      deliveredClaims: 6,
+      originalMarkers: 1,
+      oldContinuationMarkers: 1,
+      successorMarkers: 0,
+      successorMarkerTablePresent: false,
+      sessionRef: v22Body.expectedSessionRef,
+      lineage: "IMMUTABLE_V16_CONTINUATION",
+      lineageStorageVerified: true,
+      successorEligibility: true,
+    },
+    operation: {
+      ...old.operation,
+      operationRef: v22Operations[0],
+      observedJournal: [],
+    },
+    postDeployment: {
+      ...old.postDeployment,
+      sourceCommit: v22Target.sourceCommit,
+      artifactSha256: v22Target.artifactSha256,
+      existingSchemaUnchanged: true,
+      allRetainedRowsUnchanged: true,
+      ownerDraftAndHistoryUnchanged: true,
+      successorMarkerAbsent: true,
+      responsePlanDelta: 0,
+      claimDelta: 0,
+      auditDelta: 0,
+      evidenceCommittedPushed: true,
+      evidenceCommit: "d".repeat(40),
+    },
+    activation: {
+      method: "POST",
+      path: "/admin/mp06-pilot/continue-acceptance-v22",
+      body: v22Body,
+      expectedSuccessorSession: v22Session,
+      ownerAvailable: true,
+      ownerReadyConfirmedAt: v21Now,
+      noInterveningOwnerMessage: true,
+      noClarificationOrHistoryReset: true,
+    },
+    session: {
+      ...old.session,
+      operation: v22Operations[1],
+      activationZeroAccountingDelta: true,
+      originalMarkersAndHistoryUnchanged: true,
+      maximumCostMicroUsd: 5000000,
+      maximumEvents: 200,
+      maximumAttempts: 200,
+    },
+    uat: {
+      caseId: "U2",
+      completedCases: [],
+      exactOwnerChatVerified: true,
+      expectedRouteAndReplyRecorded: true,
+      ownerSendsOneMessage: true,
+      noStopCondition: true,
+      noRetryOrReplacementSession: true,
+      primaryU1NotRepeated: true,
+      casePreviouslySent: false,
+      expectedRoute: "AUTO_APPROVED_CATALOG_39",
+    },
+  };
+}
+function assessV22(
+  action = "DEPLOY_TEST",
+  evidence: unknown = v22Evidence(),
+  work: unknown = v22Work,
+  target = v22Target,
+) {
+  return evaluateProjectAction(v22Roadmap, work, action, target, evidence);
+}
+function v22Deployed() {
+  const work = clone(v22Work),
+    e = v22Evidence(),
+    journal = [v22Journal(0)];
+  work.wp8fV22OperationJournal = journal;
+  Object.assign(record(e.operation), {
+    action: "ACTIVATE_SUCCESSOR_V22",
+    operationRef: v22Operations[1],
+    observedJournal: journal,
+  });
+  Object.assign(record(e.test), {
+    sourceCommit: v22Target.sourceCommit,
+    artifactSha256: v22Target.artifactSha256,
+    version: record(e.postDeployment).version,
+  });
+  return { work, e, journal };
+}
+function v22Active() {
+  const f = v22Deployed();
+  f.journal.push(v22Journal(1));
+  Object.assign(record(f.e.test), {
+    pilot: "ACTIVE",
+    aiAdmission: true,
+    stopReason: null,
+    sessionRef: v22Session,
+    lineage: "IMMUTABLE_V22_SUCCESSOR",
+    successorMarkers: 1,
+    successorMarkerTablePresent: true,
+    successorEligibility: false,
+  });
+  return f;
+}
+function v22AfterU2() {
+  const f = v22Active();
+  Object.assign(record(f.e.test), {
+    pendingTemplate: null,
+    processedEvents: 7,
+    responsePlans: 5,
+    deliveryClaims: 7,
+    deliveredClaims: 7,
+    events: 7,
+    attempts: 7,
+    consumedMicroUsd: 35000,
+  });
+  Object.assign(record(f.e.uat), {
+    caseId: "U3",
+    completedCases: ["U2"],
+    priorVisibleAndBackendVerified: true,
+    priorClaimAcknowledged: true,
+    priorProviderSettlementClassified: true,
+    expectedRoute: "MANDATORY_DETERMINISTIC_HUMAN_HANDOFF",
+  });
+  return f;
+}
+function v22Stopped() {
+  const f = v22AfterU2();
+  Object.assign(record(f.e.test), {
+    pilot: "STOPPED",
+    aiAdmission: false,
+    ownerMode: "HUMAN_HANDOFF",
+    handoffRegistryActive: 1,
+    processedEvents: 8,
+    deliveryClaims: 8,
+    deliveredClaims: 8,
+  });
+  Object.assign(record(f.e.session), { activeSessions: 0 });
+  Object.assign(record(f.e.uat), {
+    caseId: "U4",
+    completedCases: ["U2", "U3"],
+    expectedRoute: "SILENT_HUMAN_HANDOFF",
+    mandatoryProviderAttemptDelta: 0,
+    mandatoryReservationDelta: 0,
+    mandatoryCostDelta: 0,
+  });
+  f.e.stop = {
+    aiDisabledAt: v21Now - 2000,
+    pilotStoppedAt: v21Now - 1000,
+    authenticatedReceiptsVerified: true,
+    providerAttemptsSinceStop: 0,
+    lineOutboundSinceStop: 0,
+    lateReplies: 0,
+  };
+  return f;
+}
+describe("v22 exact one-use TEST deployment and retained-Owner successor UAT", () => {
+  beforeAll(async () => {
+    const [r, w, s] = await Promise.all(
+      [
+        "config/project/roadmap.json",
+        "config/project/current-work.json",
+        "config/project/current-work.schema.json",
+      ].map(
+        async (path) =>
+          JSON.parse(await readFile(new URL(path, root), "utf8")) as unknown,
+      ),
+    );
+    v22Roadmap = record(r);
+    actualV22Work = record(w);
+    v22Schema = s;
+    v22Work = clone(actualV22Work);
+    // Only synthetic scenario state; current committed journal is checked independently.
+    v22Work.wp8fV22OperationJournal = [];
+  });
+  beforeEach(() => vi.spyOn(Date, "now").mockReturnValue(v21Now));
+  afterEach(() => vi.restoreAllMocks());
+  it("validates actual current v22 and retains exact historical grants and unchanged criteria", () => {
+    expect(validateProjectControl(v22Roadmap, actualV22Work).errors).toEqual(
+      [],
+    );
+    expect(
+      validateSchemaDocuments(roadmapSchema, v22Schema, v22Version),
+    ).toEqual([]);
+    expect(v22Work.wp8fSuccessorOperationJournal).toEqual(
+      actualV21Work.wp8fSuccessorOperationJournal,
+    );
+    expect(v22Work.wp8fSuccessorCompletion).toEqual(
+      actualV21Work.wp8fSuccessorCompletion,
+    );
+    expect(v22Work.benchmarkAcceptanceCriteria).toEqual(
+      actualV21Work.benchmarkAcceptanceCriteria,
+    );
+    expect(assessV22().allowed).toBe(true);
+  });
+  it("requires the exact separate Owner record and unresolved classifications", async () => {
+    const log = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(log, v22Version)).toBe(true);
+    for (const text of [
+      v22Target.sourceCommit,
+      v22Target.artifactSha256,
+      v22Operations[1]!,
+      "supersedes 2026.09.10-v21",
+      "primary AI-ON U1 remains GAP",
+      "A1–A3 remain UNRESOLVED / AUDIT_RETENTION_RECONCILIATION_GAP",
+    ])
+      expect(
+        validateWp8fOwnerDecisionRecord(
+          log.replaceAll(text, "REMOVED"),
+          v22Version,
+        ),
+        text,
+      ).toBe(false);
+    expect(
+      validateWp8fOwnerDecisionRecord(JSON.stringify(v22Work), v22Version),
+    ).toBe(false);
+    for (const [key, value] of Object.entries({
+      primaryU1: "PASS",
+      auditA1A3: "EXPLAINED",
+      acceptanceCriteriaUnchanged: false,
+    })) {
+      const e = v22Evidence();
+      e[key] = value;
+      expect(assessV22("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+  });
+  it("rejects modified version, decision, supersedes, baseline, scope, issue and self-authorization", () => {
+    for (const [key, value] of Object.entries({
+      roadmapVersion: v21Version,
+      workId: "MP-07",
+      githubIssue: 5,
+      targetEnvironment: "PRODUCTION",
+      status: "APPROVED",
+      allowAll: true,
+      allowedScope: ["*"],
+      wp8fV22OperationJournal: [v22Journal(1)],
+      wp8fSuccessorOperationJournal: [],
+    })) {
+      const w = clone(v22Work);
+      w[key] = value;
+      expect(
+        validateProjectControl(v22Roadmap, w).errors.length,
+        key,
+      ).toBeGreaterThan(0);
+    }
+    for (const field of [
+      "sourceCommit",
+      "artifactSha256",
+      "ownerDecision",
+      "supersedes",
+      "account",
+      "maximumSessionMinutes",
+      "primaryU1",
+      "handoffClose",
+      "productionQueryOrMutation",
+    ]) {
+      const w = clone(v22Work);
+      record(w.wp8fV22Authorization)[field] = "SELF";
+      expect(
+        validateProjectControl(v22Roadmap, w).errors.length,
+        field,
+      ).toBeGreaterThan(0);
+    }
+    for (const field of [
+      "localImplementation",
+      "testDeployment",
+      "production",
+    ]) {
+      const w = clone(v22Work);
+      record(w.authorization)[field] = true;
+      expect(
+        validateProjectControl(v22Roadmap, w).errors.length,
+        field,
+      ).toBeGreaterThan(0);
+    }
+    const r = clone(v22Roadmap);
+    record(r.ownerDecision).supersedes = "2026.09.09-v19";
+    expect(validateProjectControl(r, v22Work).errors).toContain(
+      "OWNER_DECISION_SUPERSEDES_INVALID",
+    );
+    const w = clone(v22Work);
+    record(w.benchmarkAcceptanceCriteria).minimumAutoCorrectnessPercent = 97;
+    expect(validateProjectControl(v22Roadmap, w).errors.length).toBeGreaterThan(
+      0,
+    );
+  });
+  it("limits writes to exact control/evidence paths and closes schema additions", () => {
+    expect(
+      evaluateWp8fPaths(v22Roadmap, v22Work, "CONTROL_TRANSITION", [
+        "src/project-control.ts",
+        "tests/project-control.test.ts",
+      ]).allowed,
+    ).toBe(true);
+    expect(
+      evaluateWp8fPaths(v22Roadmap, v22Work, "EVIDENCE", [
+        "docs/project/EXECUTION_GATES.md",
+      ]).allowed,
+    ).toBe(true);
+    for (const phase of [
+      "CONTROL_TRANSITION",
+      "EVIDENCE",
+      "RUNTIME",
+      "UNKNOWN",
+    ])
+      for (const path of [
+        "worker/index.ts",
+        "package.json",
+        "*",
+        "../PROJECT_CONTROL.md",
+        "docs/project/EXECUTION_GATES.md/../secret",
+        "unknown",
+      ])
+        expect(
+          evaluateWp8fPaths(v22Roadmap, v22Work, phase, [path]).allowed,
+          phase + path,
+        ).toBe(false);
+    const schema = clone(record(v22Schema));
+    record(schema.properties).wp8fV22Authorization = { type: "object" };
+    expect(
+      validateSchemaDocuments(roadmapSchema, schema, v22Version),
+    ).toContain("V22_SCHEMA_NOT_CLOSED");
+  });
+  it("requires every independently verified candidate and TEST observation field", () => {
+    const base = v22Evidence();
+    for (const group of ["candidate", "test"])
+      for (const key of Object.keys(record(base[group]))) {
+        // Historical fields and candidate-only eligibility do not describe the active predecessor.
+        // Eligibility is independently required AFTER deployment in the activation regression.
+        if (
+          group === "test" &&
+          [
+            "activationEligibility",
+            "continuationMarkers",
+            "legacyInventoryVerified",
+            "successorEligibility",
+          ].includes(key)
+        )
+          continue;
+        if (group === "candidate" && key === "worker") continue;
+        const e = v22Evidence();
+        delete record(e[group])[key];
+        expect(assessV22("DEPLOY_TEST", e).allowed, group + "." + key).toBe(
+          false,
+        );
+      }
+    for (const e of [
+      null,
+      {},
+      v22Work,
+      { ...v22Evidence(), provenance: "CURRENT_WORK" },
+    ])
+      expect(assessV22("DEPLOY_TEST", e).allowed).toBe(false);
+    for (const field of Object.keys(v22Target))
+      expect(
+        assessV22("DEPLOY_TEST", v22Evidence(), v22Work, {
+          ...v22Target,
+          [field]: "wrong",
+        }).allowed,
+      ).toBe(false);
+  });
+  it("rejects each fresh-state/accounting/schema/retained-clarification mismatch without normalization", () => {
+    const values = {
+      version: "8486019d-9b62-4de9-ae15-6299909a23d9",
+      sourceCommit: v22Target.sourceCommit,
+      artifactSha256: v22Target.artifactSha256,
+      oa: "มะลิปัง",
+      events: 5,
+      attempts: 7,
+      consumedMicroUsd: 25864,
+      reservedMicroUsd: 1,
+      inFlight: 1,
+      pendingAttempts: 1,
+      ownerMode: "HUMAN_HANDOFF",
+      handoffRegistryActive: 1,
+      pendingTemplate: null,
+      clarificationUsed: false,
+      handoffCloseState: "CONVERSATION_CLOSED",
+      handoffGeneration: 2,
+      handoffTechnicalAttempts: 2,
+      pendingHandoffClose: true,
+      draftState: "ACTIVE",
+      draftPurgeInvariantsVerified: false,
+      draftPendingReplies: 1,
+      deliveryClaims: 5,
+      deliveredClaims: 5,
+      activeDeliveryClaims: 1,
+      pendingDeliveryClaims: 1,
+      orphanDeliveryClaims: 1,
+      unknownDeliveryClaims: 1,
+      malformedDeliveryClaims: 1,
+      inconsistentDeliveryLinks: 1,
+      processedEvents: 7,
+      responsePlans: 5,
+      auditRows: 19,
+      originalMarkers: 0,
+      oldContinuationMarkers: 0,
+      successorMarkers: 1,
+      successorMarkerTablePresent: true,
+      lineage: "UNKNOWN",
+      sessionRef: v22Session,
+      actualHistoricalBilling: "KNOWN",
+      conservativeMicroUsd: 34082,
+      usageUnknownAttempts: 0,
+      settledAttempts: 6,
+      pilot: "ACTIVE",
+      aiAdmission: true,
+    };
+    for (const [key, value] of Object.entries(values)) {
+      const e = v22Evidence();
+      record(e.test)[key] = value;
+      expect(assessV22("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+  });
+  it("requires fresh observation at the120second boundary and complete independent containment", () => {
+    for (const offset of [-120001, 1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const e = v22Evidence();
+      record(e.test).observedAt = v21Now + offset;
+      expect(assessV22("DEPLOY_TEST", e).allowed).toBe(false);
+    }
+    const e = v22Evidence();
+    record(e.test).observedAt = v21Now - 120000;
+    expect(assessV22("DEPLOY_TEST", e).allowed).toBe(true);
+    for (const key of Object.keys(record(e.containment))) {
+      const changed = v22Evidence();
+      delete record(changed.containment)[key];
+      expect(assessV22("DEPLOY_TEST", changed).allowed, key).toBe(false);
+    }
+    const changed = v22Evidence();
+    record(changed.containment).globalLineEgressDisabled = true;
+    expect(assessV22("DEPLOY_TEST", changed).allowed).toBe(false);
+  });
+  it("preserves separate one-use starts, strict order, prefix history and ambiguous consumption", () => {
+    const d = v22Journal(0),
+      a = v22Journal(1);
+    expect(validateV22OperationJournal([])).toBe(true);
+    expect(validateV22OperationJournal([d])).toBe(true);
+    expect(validateV22OperationJournal([d, a], [d])).toBe(true);
+    for (const j of [
+      [a],
+      [a, d],
+      [d, d],
+      [d, a, a],
+      [{ ...d, operationRef: v21Ids[0] }],
+      [{ ...d, attempt: 2 }],
+      [{ ...d, status: "REJECTED_UNUSED" }],
+      [d, { ...a, operationRef: v22Operations[0] }],
+    ])
+      expect(validateV22OperationJournal(j)).toBe(false);
+    expect(validateV22OperationJournal([], [d])).toBe(false);
+    expect(
+      validateV22OperationJournal(
+        [{ ...d, evidenceSha256: "f".repeat(64) }],
+        [d],
+      ),
+    ).toBe(false);
+    const f = v22Deployed();
+    expect(assessV22("DEPLOY_TEST", f.e, f.work).allowed).toBe(false);
+    const active = v22Active();
+    expect(
+      assessV22("ACTIVATE_SUCCESSOR_V22", active.e, active.work).allowed,
+    ).toBe(false);
+    for (const key of [
+      "persistedAttemptsVerified",
+      "noPriorUnrecordedInvocation",
+      "evidenceSha256",
+      "observedJournal",
+    ]) {
+      const e = v22Evidence();
+      delete record(e.operation)[key];
+      expect(assessV22("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+  });
+  it("requires complete pushed post-deploy zero-delta proof before exact activation", () => {
+    const f = v22Deployed();
+    expect(assessV22("ACTIVATE_SUCCESSOR_V22", f.e, f.work).allowed).toBe(true);
+    for (const key of [
+      "existingSchemaUnchanged",
+      "migrationAdditiveIdempotent",
+      "allRetainedRowsUnchanged",
+      "accountingUnchanged",
+      "ownerDraftAndHistoryUnchanged",
+      "successorMarkerAbsent",
+      "unexpectedEventDelta",
+      "responsePlanDelta",
+      "claimDelta",
+      "auditDelta",
+      "providerAttemptDelta",
+      "lineOutboundDelta",
+      "lateReplies",
+      "beforeSnapshotSha256",
+      "afterSnapshotSha256",
+      "evidenceCommittedPushed",
+      "evidenceCommit",
+    ]) {
+      const e = clone(f.e);
+      delete record(e.postDeployment)[key];
+      expect(assessV22("ACTIVATE_SUCCESSOR_V22", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const key of [
+      "unexpectedEventDelta",
+      "claimDelta",
+      "auditDelta",
+      "providerAttemptDelta",
+      "lineOutboundDelta",
+      "lateReplies",
+    ]) {
+      const e = clone(f.e);
+      record(e.postDeployment)[key] = 1;
+      expect(assessV22("ACTIVATE_SUCCESSOR_V22", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+  });
+  it("rejects different activation key/body/endpoint, absent Owner or stale confirmation", () => {
+    const f = v22Deployed();
+    for (const [key, value] of Object.entries({
+      method: "GET",
+      path: "/admin/mp06-pilot/continue-acceptance-v16",
+      body: { ...v22Body, reset: true },
+      expectedSuccessorSession: "x",
+      ownerAvailable: false,
+      ownerReadyConfirmedAt: v21Now - 120001,
+      noInterveningOwnerMessage: false,
+      noClarificationOrHistoryReset: false,
+    })) {
+      const e = clone(f.e);
+      record(e.activation)[key] = value;
+      expect(assessV22("ACTIVATE_SUCCESSOR_V22", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    const e = clone(f.e);
+    record(e.test).successorEligibility = false;
+    expect(assessV22("ACTIVATE_SUCCESSOR_V22", e, f.work).allowed).toBe(false);
+    delete record(e.test).successorEligibility;
+    expect(assessV22("ACTIVATE_SUCCESSOR_V22", e, f.work).allowed).toBe(false);
+  });
+  it("allows only U2 from preserved T-C01 after independently verified zero-delta activation", () => {
+    const f = v22Active();
+    expect(assessV22("OWNER_UAT_NEXT_CASE", f.e, f.work).allowed).toBe(true);
+    for (const [key, value] of Object.entries({
+      caseId: "U1",
+      completedCases: ["U2"],
+      primaryU1NotRepeated: false,
+      casePreviouslySent: true,
+      expectedRoute: "CLARIFY",
+    })) {
+      const e = clone(f.e);
+      record(e.uat)[key] = value;
+      expect(assessV22("OWNER_UAT_NEXT_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const [key, value] of Object.entries({
+      pendingTemplate: null,
+      clarificationUsed: false,
+      successorMarkers: 0,
+      lineage: "IMMUTABLE_CONTINUATION",
+      ownerMode: "HUMAN_HANDOFF",
+      pendingDeliveryClaims: 1,
+      inFlight: 1,
+      events: 7,
+      attempts: 7,
+      consumedMicroUsd: 35000,
+    })) {
+      const e = clone(f.e);
+      record(e.test)[key] = value;
+      expect(assessV22("OWNER_UAT_NEXT_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+  });
+  it("requires U2 visible/backend/claim/provider evidence before U3, never AI authority downgrade", () => {
+    const f = v22AfterU2();
+    expect(assessV22("OWNER_UAT_NEXT_CASE", f.e, f.work).allowed).toBe(true);
+    for (const key of [
+      "priorVisibleAndBackendVerified",
+      "priorClaimAcknowledged",
+      "priorProviderSettlementClassified",
+    ]) {
+      const e = clone(f.e);
+      record(e.uat)[key] = false;
+      expect(assessV22("OWNER_UAT_NEXT_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    const e = clone(f.e);
+    record(e.uat).expectedRoute = "AUTO";
+    expect(assessV22("OWNER_UAT_NEXT_CASE", e, f.work).allowed).toBe(false);
+  });
+  it("rejects active-session expiration, replacement, budget/concurrency increase and dirty settlement", () => {
+    const f = v22AfterU2();
+    for (const [key, value] of Object.entries({
+      activeSessions: 2,
+      maximumConcurrency: 2,
+      maximumCostMicroUsd: 5000001,
+      maximumEvents: 201,
+      maximumAttempts: 201,
+      expiresAt: v21Now,
+      startedAt: v21Now - 3600001,
+      activationZeroAccountingDelta: false,
+      originalMarkersAndHistoryUnchanged: false,
+    })) {
+      const e = clone(f.e);
+      record(e.session)[key] = value;
+      expect(assessV22("OWNER_UAT_NEXT_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const [key, value] of Object.entries({
+      events: 200,
+      attempts: 200,
+      consumedMicroUsd: 5000000,
+      reservedMicroUsd: 1,
+      pendingAttempts: 1,
+      unknownDeliveryClaims: 1,
+    })) {
+      const e = clone(f.e);
+      record(e.test)[key] = value;
+      expect(assessV22("OWNER_UAT_NEXT_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+  });
+  it("allows U4 only SILENT after verified STOP and zero-provider/cost mandatory U3", () => {
+    const f = v22Stopped();
+    expect(assessV22("OWNER_KILL_SWITCH_CASE", f.e, f.work).allowed).toBe(true);
+    for (const [key, value] of Object.entries({
+      authenticatedReceiptsVerified: false,
+      providerAttemptsSinceStop: 1,
+      lineOutboundSinceStop: 1,
+      lateReplies: 1,
+      pilotStoppedAt: v21Now + 1,
+      aiDisabledAt: v21Now,
+    })) {
+      const e = clone(f.e);
+      record(e.stop)[key] = value;
+      expect(assessV22("OWNER_KILL_SWITCH_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const key of [
+      "mandatoryProviderAttemptDelta",
+      "mandatoryReservationDelta",
+      "mandatoryCostDelta",
+    ]) {
+      const e = clone(f.e);
+      record(e.uat)[key] = 1;
+      expect(assessV22("OWNER_KILL_SWITCH_CASE", e, f.work).allowed, key).toBe(
+        false,
+      );
+    }
+    const e = clone(f.e);
+    record(e.test).ownerMode = "BOT_ACTIVE";
+    expect(assessV22("OWNER_KILL_SWITCH_CASE", e, f.work).allowed).toBe(false);
+  });
+  it("denies historical integration/recovery grants and all unspecified remote actions, but permits identified containment", () => {
+    const f = v22Stopped();
+    for (const action of [
+      "CREATE_PR",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+      "CLOSE_OWNER_HANDOFF",
+      "OPEN_CONTINUATION",
+      "ROLLBACK_TEST",
+      "RECOVER_CONVERSATION",
+      "UPLOAD_TEST_VERSION",
+      "CREATE_TEST_VERSION",
+      "CHANGE_TEST_TRAFFIC",
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "LOCAL_IMPLEMENTATION",
+      "ALL",
+      "unknown",
+    ])
+      expect(assessV22(action, f.e, f.work).allowed, action).toBe(false);
+    record(f.e.test).health = "FAIL";
+    record(f.e.test).inFlight = 1;
+    delete f.e.candidate;
+    expect(assessV22("STOP_TEST", f.e, f.work).allowed).toBe(true);
+    record(f.e.test).account = "other";
+    expect(assessV22("STOP_TEST", f.e, f.work).allowed).toBe(false);
   });
 });

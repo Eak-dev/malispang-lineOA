@@ -287,7 +287,9 @@ export function validateProjectControl(
 
   const roadmap = roadmapInput;
   const currentWork = currentWorkInput;
-  const successor = roadmap.version === WP8F_V21_COMPLETION.version;
+  const v22 = roadmap.version === WP8F_V22_AUTHORIZATION.version;
+  const successor = v22 || roadmap.version === WP8F_V21_COMPLETION.version;
+  const completion = v22 ? WP8F_V22_AUTHORIZATION : WP8F_V21_COMPLETION;
 
   expectEqual(
     errors,
@@ -300,7 +302,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    successor ? WP8F_V21_COMPLETION.version : "2026.09.09-v19",
+    successor ? completion.version : "2026.09.09-v19",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -311,7 +313,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      successor ? WP8F_V21_COMPLETION.ownerDecision : "MP-OD-2026-09-09-V19",
+      successor ? completion.ownerDecision : "MP-OD-2026-09-09-V19",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
@@ -323,7 +325,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      successor ? WP8F_V21_COMPLETION.supersedes : "2026.09.09-v18",
+      successor ? completion.supersedes : "2026.09.09-v18",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -341,7 +343,7 @@ export function validateProjectControl(
       errors,
       roadmap.verifiedLatestBaseline.commit,
       successor
-        ? WP8F_V21_COMPLETION.sourceCommit
+        ? completion.sourceCommit
         : "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
@@ -532,9 +534,11 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.status,
-    successor
-      ? "AUTHORIZED_EXACT_SUCCESSOR_TEST_COMPLETION_AND_GATED_INTEGRATION"
-      : "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
+    v22
+      ? "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY"
+      : successor
+        ? "AUTHORIZED_EXACT_SUCCESSOR_TEST_COMPLETION_AND_GATED_INTEGRATION"
+        : "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -753,7 +757,11 @@ export function validateProjectControl(
   const allowedScope = Array.isArray(currentWork.allowedScope)
     ? currentWork.allowedScope
     : [];
-  const requiredScope = successor ? WP8F_V21_SCOPE : REQUIRED_WP8F_SCOPE;
+  const requiredScope = v22
+    ? WP8F_V22_SCOPE
+    : successor
+      ? WP8F_V21_SCOPE
+      : REQUIRED_WP8F_SCOPE;
   if (
     allowedScope.length !== requiredScope.length ||
     requiredScope.some((scope) => !allowedScope.includes(scope))
@@ -891,16 +899,18 @@ export function validateProjectControl(
     )
   )
     errors.push("WP8F_ALL_PR_MUST_REMAIN_BLOCKED");
-  const requiredForbidden = successor
-    ? WP8F_V21_FORBIDDEN
-    : REQUIRED_FORBIDDEN_SCOPE;
+  const requiredForbidden = v22
+    ? WP8F_V22_FORBIDDEN
+    : successor
+      ? WP8F_V21_FORBIDDEN
+      : REQUIRED_FORBIDDEN_SCOPE;
   for (const required of requiredForbidden) {
     if (!forbiddenScope.includes(required)) {
       errors.push(`FORBIDDEN_SCOPE_MISSING_${required}`);
     }
   }
 
-  if (successor) validateWp8fSuccessor(errors, currentWork);
+  if (successor) validateWp8fSuccessor(errors, currentWork, v22);
 
   const conflicts = Array.isArray(currentWork.conflicts)
     ? currentWork.conflicts
@@ -949,6 +959,14 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
+  if (isRecord(roadmap) && roadmap.version === WP8F_V22_AUTHORIZATION.version) {
+    return evaluateWp8fV22Action(
+      currentWork,
+      action,
+      deploymentTarget,
+      executionEvidence,
+    );
+  }
   if (isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version) {
     return evaluateWp8fSuccessorAction(
       currentWork,
@@ -1076,7 +1094,10 @@ export function validateSchemaDocuments(
     )
       errors.push("V19_PREPARATION_SCHEMA_NOT_CLOSED");
   }
-  if (expectedVersion === WP8F_V21_COMPLETION.version) {
+  if (
+    expectedVersion === WP8F_V21_COMPLETION.version ||
+    expectedVersion === WP8F_V22_AUTHORIZATION.version
+  ) {
     if (
       !isRecord(currentWorkSchema) ||
       !isRecord(currentWorkSchema.properties) ||
@@ -1090,6 +1111,19 @@ export function validateSchemaDocuments(
       ) !== JSON.stringify(WP8F_V21_JOURNAL_SCHEMA)
     )
       errors.push("V21_SCHEMA_NOT_CLOSED");
+    if (
+      expectedVersion === WP8F_V22_AUTHORIZATION.version &&
+      (!isRecord(currentWorkSchema) ||
+        !isRecord(currentWorkSchema.properties) ||
+        !Array.isArray(currentWorkSchema.required) ||
+        !currentWorkSchema.required.includes("wp8fV22Authorization") ||
+        !currentWorkSchema.required.includes("wp8fV22OperationJournal") ||
+        JSON.stringify(currentWorkSchema.properties.wp8fV22Authorization) !==
+          JSON.stringify({ const: WP8F_V22_AUTHORIZATION }) ||
+        JSON.stringify(currentWorkSchema.properties.wp8fV22OperationJournal) !==
+          JSON.stringify(WP8F_V22_JOURNAL_SCHEMA))
+    )
+      errors.push("V22_SCHEMA_NOT_CLOSED");
   } else if (expectedVersion !== "2026.09.09-v19")
     errors.push("UNKNOWN_SCHEMA_VERSION");
   return uniqueSorted(errors);
@@ -3335,6 +3369,26 @@ export function validateWp8fOwnerDecisionRecord(
   version = "2026.09.09-v19",
 ): boolean {
   if (typeof record !== "string") return false;
+  if (version === WP8F_V22_AUTHORIZATION.version) {
+    const current = record
+      .split("## MP-OD-2026-09-10-V22 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof current === "string" &&
+      validateWp8fOwnerDecisionRecord(record, WP8F_V21_COMPLETION.version) &&
+      [
+        WP8F_V22_AUTHORIZATION.sourceCommit,
+        WP8F_V22_AUTHORIZATION.artifactSha256,
+        "supersedes 2026.09.10-v21",
+        "independent one-use deployment and successor activation grants",
+        WP8F_V22_AUTHORIZATION.activation.operation,
+        "primary AI-ON U1 remains GAP",
+        "A1–A3 remain UNRESOLVED / AUDIT_RETENTION_RECONCILIATION_GAP",
+        "No handoff-close, reset, rollback, PR, merge or Issue closure",
+        "Production NO_GO — NOT TOUCHED",
+      ].every((value) => current.includes(value))
+    );
+  }
   if (version === WP8F_V21_COMPLETION.version) {
     const current = record
       .split("## MP-OD-2026-09-10-V21 —")[1]
@@ -3426,9 +3480,12 @@ export function evaluateWp8fPaths(
     phase === "CONTROL_TRANSITION"
       ? WP8F_V18_ENVELOPE.controlFiles
       : phase === "EVIDENCE"
-        ? isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version
-          ? WP8F_V21_COMPLETION.evidenceFiles
-          : WP8F_V19_PREPARATION.evidenceFiles
+        ? isRecord(roadmap) &&
+          roadmap.version === WP8F_V22_AUTHORIZATION.version
+          ? WP8F_V22_AUTHORIZATION.evidenceFiles
+          : isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version
+            ? WP8F_V21_COMPLETION.evidenceFiles
+            : WP8F_V19_PREPARATION.evidenceFiles
         : [];
   return exactPaths(paths, allowed)
     ? { allowed: true, reason: "EXACT_OWNER_APPROVED_PATHS" }
@@ -3975,6 +4032,175 @@ const WP8F_V21_JOURNAL_SCHEMA = {
   },
 } as const;
 
+/** Closed Owner authorization; not runtime configuration or a self-issued capability. */
+const WP8F_V22_AUTHORIZATION = {
+  version: "2026.09.10-v22",
+  ownerDecision: "MP-OD-2026-09-10-V22",
+  supersedes: "2026.09.10-v21",
+  executionBaseline: "7faf727e36d13f5f83be4c904522ef0fa494ce1b",
+  previousControl: "44da479f133e96cbcd9290a7a77e337270780bb7",
+  sourceCommit: "1790da58635edcee154b60d76730248e8130c2d3",
+  artifactSha256:
+    "adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657",
+  artifactFile: "index.js",
+  artifactBytes: 252715,
+  candidateCiRun: 34478262489,
+  candidateTestsPassed: 842,
+  account: "c395a1bc15b7c95267173de5ccd6407d",
+  worker: "malispang-lineoa-test",
+  environment: "TEST_ONLY",
+  oa: "มะลิปัง TEST",
+  domain: "malispang-lineoa-test.eakkachai-dev.workers.dev",
+  predecessorVersion: "e72862e2-e538-47ee-93ea-7efcf719188b",
+  predecessorSource: "bfff1a553868b85e5f66144e4741a51627f4a9be",
+  predecessorArtifact:
+    "8eabcc6a1628bfa776fa5768db49e2faa586ceaaaa6915510afec74835f2d2b5",
+  deployment: {
+    maximumOperations: 1,
+    operation: "39c5d097-72e9-4658-b087-a5545626060d",
+    statusAtTransition: "APPROVED_UNUSED",
+    usage: "DERIVED_FROM_APPEND_ONLY_V22_JOURNAL",
+    outcomeUnknownOrRejected: "CONSUMED_NO_RETRY",
+  },
+  activation: {
+    maximumOperations: 1,
+    operation: "e7dbdaa5-01aa-454c-b8c9-e1838594662e",
+    statusAtTransition: "APPROVED_UNUSED",
+    usage: "DERIVED_FROM_APPEND_ONLY_V22_JOURNAL",
+    method: "POST",
+    path: "/admin/mp06-pilot/continue-acceptance-v22",
+    body: {
+      expectedSessionRef:
+        "0af18b7d44468ca89d3d6a762892bda6cb812e6c2c7c41178bbd43b38bec7a8c",
+      operationRef:
+        "e26e1a51fc1f55e7472e5aa33b0f740f4188ed3ed31a29d3a758d8862fdbb25a",
+    },
+    successorSession:
+      "9fbc9737f1b4a2a3eeed3addb79105b6867f1e22bd34863881124d3cfcfb3603",
+    outcomeUnknownOrRejected: "CONSUMED_READ_ONLY_RECONCILIATION_NO_RETRY",
+    requiresPostDeploymentEvidencePushed: true,
+    requiresOwnerAvailable: true,
+  },
+  maximumSessionMinutes: 60,
+  ownerSilenceStopMinutes: 10,
+  cumulativeCostMicroUsd: 5000000,
+  cumulativeEvents: 200,
+  cumulativeProviderAttempts: 200,
+  maximumConcurrency: 1,
+  freshObservationMaximumAgeMs: 120000,
+  primaryU1: "GAP_DO_NOT_REPEAT_OR_RESET",
+  historicalAuditA1A3:
+    "UNRESOLVED_AUDIT_RETENTION_RECONCILIATION_GAP_OWNER_ACCEPTED_FOR_TEST_UAT_ONLY",
+  historicalActualProviderBilling: "UNKNOWN",
+  uatSequence: ["U2", "U3", "STOP", "U4"],
+  handoffClose: false,
+  rollback: false,
+  pr: false,
+  merge: false,
+  issueClosure: false,
+  productionQueryOrMutation: false,
+  runtimeFrozen: true,
+  accountingHistoryClarificationReset: false,
+  containment:
+    "STOP_FAIL_CLOSED_FIX_FORWARD_NO_AUTOMATIC_ROLLBACK_NO_GLOBAL_EGRESS_CLAIM",
+  evidenceFiles: [
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/OWNER_DECISION_LOG.md",
+  ],
+} as const;
+const WP8F_V22_SCOPE = [
+  "MP_06_WP8F_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
+  "TEN_EXACT_CONTROL_PATHS_ONLY",
+  "EXACT_FROZEN_V22_CANDIDATE_DEPLOYMENT_ONCE",
+  "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
+  "ONE_FIXED_SUCCESSOR_ACTIVATION_AFTER_POST_DEPLOY_AND_OWNER_AVAILABILITY",
+  "U2_THEN_U3_THEN_STOP_THEN_U4_OWNER_MOBILE_ONLY",
+  "PRESERVE_PRIMARY_U1_GAP_AND_A1_A3_UNRESOLVED",
+  "PRESERVE_ACCOUNTING_HISTORY_CLAIMS_MARKERS_AND_USED_CLARIFICATION",
+  "AUTHENTICATED_STOP_ON_FAILURE_OR_SILENCE",
+  "COMMIT_PUSH_CHECKPOINTS_AND_APPEND_ISSUE9_ISSUE12",
+  "RUNTIME_DEPENDENCIES_MODEL_PROMPT_POLICY_CATALOG_CHECKSUMS_READ_ONLY",
+  "PRODUCTION_NO_GO_MP12_SEPARATE",
+] as const;
+const WP8F_V22_FORBIDDEN = [
+  ...WP8F_V21_FORBIDDEN,
+  ...WP8F_V21_RETIRED_PROHIBITIONS,
+  "ALL_PR_MERGE_CLOSURE_IN_V22",
+  "HANDOFF_CLOSE_RESET_ROLLBACK_IN_V22",
+  "REPEAT_PRIMARY_U1_OR_PROMOTE_AUDIT_GAP",
+  "RETRY_OR_REPLACE_V22_DEPLOYMENT_OR_ACTIVATION",
+];
+const WP8F_V22_WORK_KEYS = [
+  ...WP8F_V21_WORK_KEYS,
+  "wp8fV22Authorization",
+  "wp8fV22OperationJournal",
+];
+const WP8F_V22_JOURNAL_SCHEMA = {
+  type: "array",
+  maxItems: 2,
+  items: {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "action",
+      "operationRef",
+      "attempt",
+      "startedAt",
+      "evidenceSha256",
+    ],
+    properties: {
+      action: {
+        enum: ["DEPLOY_TEST", "ACTIVATE_SUCCESSOR_V22"],
+      },
+      operationRef: {
+        enum: [
+          "39c5d097-72e9-4658-b087-a5545626060d",
+          "e7dbdaa5-01aa-454c-b8c9-e1838594662e",
+        ],
+      },
+      attempt: {
+        const: 1,
+      },
+      startedAt: {
+        type: "string",
+        format: "date-time",
+      },
+      evidenceSha256: {
+        type: "string",
+        pattern: "^[0-9a-f]{64}$",
+      },
+    },
+  },
+} as const;
+
+const WP8F_V21_CONSUMED_JOURNAL = [
+  {
+    action: "DEPLOY_TEST",
+    operationRef: "7b9535ab-1be3-4525-96db-952aa0a7315d",
+    attempt: 1,
+    startedAt: "2026-09-10T07:39:09.358Z",
+    evidenceSha256:
+      "4585e21b861cce845f01b2b11325b814f0089beeecb339c2b9a528422fe684f0",
+  },
+  {
+    action: "CLOSE_OWNER_HANDOFF",
+    operationRef: "feaa5f7f-9547-4ea5-b52f-811413c2e010",
+    attempt: 1,
+    startedAt: "2026-09-10T08:37:47.000Z",
+    evidenceSha256:
+      "fb97fc3ff711d860acd7ae6188367a9e353701c58e7f253954fcdef4be986382",
+  },
+  {
+    action: "OPEN_CONTINUATION",
+    operationRef: "ccf39f0b-e433-471d-9699-43cd3ff04124",
+    attempt: 1,
+    startedAt: "2026-09-10T09:01:40.000Z",
+    evidenceSha256:
+      "762001adce6f9471666e54e70ab5b9e367dd6abe4f1b156e0df6d000d7f05203",
+  },
+] as const;
+
 function validOperationRef(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -4064,6 +4290,7 @@ export function validateSuccessorOperationJournal(
 function validateWp8fSuccessor(
   errors: string[],
   work: Record<string, unknown>,
+  v22 = false,
 ): void {
   if (
     JSON.stringify(work.wp8fSuccessorCompletion) !==
@@ -4071,8 +4298,12 @@ function validateWp8fSuccessor(
   )
     errors.push("V21_OWNER_ENVELOPE_INVALID");
   if (
-    Object.keys(work).length !== WP8F_V21_WORK_KEYS.length ||
-    !exactPaths(Object.keys(work), WP8F_V21_WORK_KEYS)
+    Object.keys(work).length !==
+      (v22 ? WP8F_V22_WORK_KEYS : WP8F_V21_WORK_KEYS).length ||
+    !exactPaths(
+      Object.keys(work),
+      v22 ? WP8F_V22_WORK_KEYS : WP8F_V21_WORK_KEYS,
+    )
   )
     errors.push("V21_UNKNOWN_CURRENT_WORK_FIELDS");
   if (
@@ -4084,10 +4315,28 @@ function validateWp8fSuccessor(
     errors.push("V21_OPERATION_JOURNAL_INVALID");
   if (
     !Array.isArray(work.forbiddenScope) ||
-    work.forbiddenScope.length !== WP8F_V21_FORBIDDEN.length ||
-    !exactPaths(work.forbiddenScope, WP8F_V21_FORBIDDEN)
+    work.forbiddenScope.length !==
+      (v22 ? WP8F_V22_FORBIDDEN : WP8F_V21_FORBIDDEN).length ||
+    !exactPaths(
+      work.forbiddenScope,
+      v22 ? WP8F_V22_FORBIDDEN : WP8F_V21_FORBIDDEN,
+    )
   )
     errors.push("V21_FORBIDDEN_SCOPE_INVALID");
+  if (v22) {
+    if (
+      JSON.stringify(work.wp8fV22Authorization) !==
+      JSON.stringify(WP8F_V22_AUTHORIZATION)
+    )
+      errors.push("V22_OWNER_ENVELOPE_INVALID");
+    if (
+      JSON.stringify(work.wp8fSuccessorOperationJournal) !==
+      JSON.stringify(WP8F_V21_CONSUMED_JOURNAL)
+    )
+      errors.push("V22_HISTORICAL_GRANT_REWRITE_DENIED");
+    if (!validateV22OperationJournal(work.wp8fV22OperationJournal))
+      errors.push("V22_OPERATION_JOURNAL_INVALID");
+  }
 }
 
 function successorTarget(target: unknown): boolean {
@@ -4101,8 +4350,13 @@ function successorTarget(target: unknown): boolean {
   );
 }
 
-function successorCandidate(evidence: Record<string, unknown>): boolean {
-  const g = WP8F_V21_COMPLETION,
+function successorCandidate(
+  evidence: Record<string, unknown>,
+  grant:
+    | typeof WP8F_V21_COMPLETION
+    | typeof WP8F_V22_AUTHORIZATION = WP8F_V21_COMPLETION,
+): boolean {
+  const g = grant,
     c = evidence.candidate;
   return (
     isRecord(c) &&
@@ -4139,13 +4393,18 @@ function successorCandidate(evidence: Record<string, unknown>): boolean {
     c.noDeployAffectingChangesAfterCandidate === true &&
     exactPaths(c.postCandidatePaths, [
       ...WP8F_V18_ENVELOPE.controlFiles,
-      ...WP8F_V21_COMPLETION.evidenceFiles,
+      ...g.evidenceFiles,
     ])
   );
 }
 
-function successorObservation(test: unknown): test is Record<string, unknown> {
-  const g = WP8F_V21_COMPLETION,
+function successorObservation(
+  test: unknown,
+  grant:
+    | typeof WP8F_V21_COMPLETION
+    | typeof WP8F_V22_AUTHORIZATION = WP8F_V21_COMPLETION,
+): test is Record<string, unknown> {
+  const g = grant,
     now = Date.now();
   return (
     isRecord(test) &&
@@ -4252,6 +4511,409 @@ function successorContainment(input: unknown): boolean {
  * Operator evidence must be independently collected. Append/push the consumed attempt
  * before executing its one prepared command; never regenerate the operation on uncertainty.
  */
+/** Two independent, ordered, one-use starts. No retry, outcome reset, or old-grant reuse. */
+export function validateV22OperationJournal(
+  input: unknown,
+  previous: unknown = [],
+): boolean {
+  if (
+    !Array.isArray(input) ||
+    !Array.isArray(previous) ||
+    input.length > 2 ||
+    previous.length > input.length ||
+    previous.some((row, i) => JSON.stringify(row) !== JSON.stringify(input[i]))
+  )
+    return false;
+  let lastTime = 0;
+  for (const [index, row] of input.entries()) {
+    if (
+      !isRecord(row) ||
+      Object.keys(row).length !== 5 ||
+      !exactPaths(Object.keys(row), [
+        "action",
+        "operationRef",
+        "attempt",
+        "startedAt",
+        "evidenceSha256",
+      ]) ||
+      row.attempt !== 1 ||
+      !isFullSha(row.evidenceSha256, 64) ||
+      typeof row.startedAt !== "string"
+    )
+      return false;
+    const expected =
+      index === 0
+        ? WP8F_V22_AUTHORIZATION.deployment
+        : WP8F_V22_AUTHORIZATION.activation;
+    if (
+      row.action !== (index === 0 ? "DEPLOY_TEST" : "ACTIVATE_SUCCESSOR_V22") ||
+      row.operationRef !== expected.operation
+    )
+      return false;
+    const time = Date.parse(row.startedAt);
+    if (
+      !Number.isSafeInteger(time) ||
+      time < lastTime ||
+      new Date(time).toISOString() !== row.startedAt
+    )
+      return false;
+    lastTime = time;
+  }
+  return true;
+}
+
+function v22RetainedBaseline(t: Record<string, unknown>): boolean {
+  return (
+    t.pilot === "STOPPED" &&
+    t.stopReason === "OPERATOR_STOP" &&
+    t.aiAdmission === false &&
+    t.events === 6 &&
+    t.attempts === 6 &&
+    t.consumedMicroUsd === 34082 &&
+    t.reservedMicroUsd === 0 &&
+    t.inFlight === 0 &&
+    t.pendingAttempts === 0 &&
+    t.conservativeMicroUsd === 25864 &&
+    t.reportedUsageMicroUsd === 8218 &&
+    t.usageUnknownAttempts === 2 &&
+    t.settledAttempts === 4 &&
+    t.actualHistoricalBilling === "UNKNOWN" &&
+    t.ownerMode === "BOT_ACTIVE" &&
+    t.handoffRegistryActive === 0 &&
+    t.pendingTemplate === "T-C01" &&
+    t.clarificationUsed === true &&
+    t.pendingReplies === 0 &&
+    t.handoffCloseState === "COMPLETE" &&
+    t.handoffGeneration === 1 &&
+    t.handoffTechnicalAttempts === 1 &&
+    t.pendingHandoffClose === false &&
+    t.draftState === "EXPIRED_PURGED" &&
+    t.draftPurgeInvariantsVerified === true &&
+    t.draftPendingReplies === 0 &&
+    t.processedEvents === 6 &&
+    t.responsePlans === 4 &&
+    t.auditRows === 18 &&
+    t.deliveryClaims === 6 &&
+    t.deliveredClaims === 6 &&
+    v22DeliverySettled(t) &&
+    t.originalMarkers === 1 &&
+    t.oldContinuationMarkers === 1 &&
+    t.successorMarkers === 0 &&
+    t.successorMarkerTablePresent === false &&
+    t.sessionRef ===
+      WP8F_V22_AUTHORIZATION.activation.body.expectedSessionRef &&
+    t.lineage === "IMMUTABLE_V16_CONTINUATION" &&
+    t.lineageStorageVerified === true
+  );
+}
+
+function v22DeliverySettled(t: Record<string, unknown>): boolean {
+  return (
+    t.deliverySchema === "PRESENT_FENCED" &&
+    t.pendingDeliveryClaims === 0 &&
+    t.activeDeliveryClaims === 0 &&
+    t.orphanDeliveryClaims === 0 &&
+    t.unknownDeliveryClaims === 0 &&
+    t.malformedDeliveryClaims === 0 &&
+    t.inconsistentDeliveryLinks === 0 &&
+    t.legacyUndeliveredEvents === 0 &&
+    t.legacyUndeliveredPlans === 0
+  );
+}
+
+function v22PostDeployment(
+  t: Record<string, unknown>,
+  evidence: Record<string, unknown>,
+): boolean {
+  const g = WP8F_V22_AUTHORIZATION,
+    post = evidence.postDeployment;
+  return (
+    t.sourceCommit === g.sourceCommit &&
+    t.artifactSha256 === g.artifactSha256 &&
+    typeof t.version === "string" &&
+    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u.test(t.version) &&
+    t.version !== g.predecessorVersion &&
+    isRecord(post) &&
+    post.version === t.version &&
+    post.sourceCommit === g.sourceCommit &&
+    post.artifactSha256 === g.artifactSha256 &&
+    post.existingSchemaUnchanged === true &&
+    post.migrationAdditiveIdempotent === true &&
+    post.allRetainedRowsUnchanged === true &&
+    post.accountingUnchanged === true &&
+    post.ownerDraftAndHistoryUnchanged === true &&
+    post.successorMarkerAbsent === true &&
+    post.unexpectedEventDelta === 0 &&
+    post.responsePlanDelta === 0 &&
+    post.claimDelta === 0 &&
+    post.auditDelta === 0 &&
+    post.providerAttemptDelta === 0 &&
+    post.lineOutboundDelta === 0 &&
+    post.lateReplies === 0 &&
+    isFullSha(post.beforeSnapshotSha256, 64) &&
+    isFullSha(post.afterSnapshotSha256, 64) &&
+    post.evidenceCommittedPushed === true &&
+    isFullSha(post.evidenceCommit, 40)
+  );
+}
+
+/** An assessment cannot authorize itself, attest remote state or provide a distributed lock.
+ * Starts must be durably checkpointed by the operator and each exact command invoked once.
+ * Unknown outcomes only permit independent read reconciliation or authenticated STOP.
+ */
+function evaluateWp8fV22Action(
+  work: Record<string, unknown>,
+  action: string,
+  target: unknown,
+  evidence: unknown,
+): ProjectActionDecision {
+  const deny = { allowed: false, reason: "V22_MISSING_OR_FAILED_EXACT_GATE" },
+    g = WP8F_V22_AUTHORIZATION;
+  if (
+    [
+      "COMMIT",
+      "PUSH_BRANCH",
+      "UPDATE_GITHUB_ROADMAP",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+    ].includes(action)
+  )
+    return {
+      allowed: true,
+      reason: "V22_EXACT_CONTROL_AND_CHECKPOINT_AUTHORITY",
+    };
+  if (
+    !isRecord(target) ||
+    Object.keys(target).length !== 3 ||
+    target.worker !== g.worker ||
+    target.sourceCommit !== g.sourceCommit ||
+    target.artifactSha256 !== g.artifactSha256 ||
+    !isRecord(evidence) ||
+    evidence.provenance !== "INDEPENDENT_OPERATOR_VERIFICATION" ||
+    evidence.ownerDecision !== g.ownerDecision ||
+    !Array.isArray(work.wp8fV22OperationJournal)
+  )
+    return deny;
+  // Never trap an identified TEST pilot ON because downstream readiness is broken.
+  const t = evidence.test,
+    now = Date.now();
+  if (action === "STOP_TEST")
+    return isRecord(t) &&
+      t.account === g.account &&
+      t.worker === g.worker &&
+      t.environment === g.environment &&
+      t.accountIdentityVerified === true &&
+      typeof t.observedAt === "number" &&
+      Number.isSafeInteger(t.observedAt) &&
+      t.observedAt <= now &&
+      now - t.observedAt <= g.freshObservationMaximumAgeMs
+      ? { allowed: true, reason: "V22_AUTHENTICATED_TEST_STOP_CONTAINMENT" }
+      : deny;
+  if (
+    !successorObservation(t, g) ||
+    t.oa !== g.oa ||
+    !successorCandidate(evidence, g) ||
+    evidence.primaryU1 !== "GAP" ||
+    evidence.auditA1A3 !== "UNRESOLVED_AUDIT_RETENTION_RECONCILIATION_GAP" ||
+    evidence.acceptanceCriteriaUnchanged !== true
+  )
+    return deny;
+  const journal: unknown[] = work.wp8fV22OperationJournal,
+    op = evidence.operation;
+  const next = (kind: string, index: number, operationRef: string) =>
+    isRecord(op) &&
+    op.action === kind &&
+    op.operationRef === operationRef &&
+    op.attempt === 1 &&
+    op.persistedAttemptsVerified === true &&
+    op.noPriorUnrecordedInvocation === true &&
+    JSON.stringify(op.observedJournal) === JSON.stringify(journal) &&
+    isFullSha(op.evidenceSha256, 64) &&
+    journal.length === index &&
+    validateV22OperationJournal(
+      [
+        ...journal,
+        {
+          action: kind,
+          operationRef,
+          attempt: 1,
+          startedAt: new Date(now).toISOString(),
+          evidenceSha256: op.evidenceSha256,
+        },
+      ],
+      journal,
+    );
+  if (
+    action === "DEPLOY_TEST" ||
+    action === "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS"
+  ) {
+    return next("DEPLOY_TEST", 0, g.deployment.operation) &&
+      v22RetainedBaseline(t) &&
+      t.version === g.predecessorVersion &&
+      t.sourceCommit === g.predecessorSource &&
+      t.artifactSha256 === g.predecessorArtifact &&
+      successorContainment(evidence.containment)
+      ? { allowed: true, reason: "V22_ONE_EXACT_TEST_DEPLOYMENT_READY" }
+      : deny;
+  }
+  if (action === "ACTIVATE_SUCCESSOR_V22") {
+    const a = evidence.activation;
+    return next(action, 1, g.activation.operation) &&
+      v22RetainedBaseline(t) &&
+      v22PostDeployment(t, evidence) &&
+      successorContainment(evidence.containment) &&
+      t.successorEligibility === true &&
+      isRecord(a) &&
+      a.method === g.activation.method &&
+      a.path === g.activation.path &&
+      JSON.stringify(a.body) === JSON.stringify(g.activation.body) &&
+      a.expectedSuccessorSession === g.activation.successorSession &&
+      a.ownerAvailable === true &&
+      typeof a.ownerReadyConfirmedAt === "number" &&
+      Number.isSafeInteger(a.ownerReadyConfirmedAt) &&
+      a.ownerReadyConfirmedAt <= now &&
+      now - a.ownerReadyConfirmedAt <= 120000 &&
+      a.noInterveningOwnerMessage === true &&
+      a.noClarificationOrHistoryReset === true
+      ? { allowed: true, reason: "V22_ONE_EXACT_SUCCESSOR_ACTIVATION_READY" }
+      : deny;
+  }
+  if (action !== "OWNER_UAT_NEXT_CASE" && action !== "OWNER_KILL_SWITCH_CASE")
+    return { allowed: false, reason: "V22_ACTION_FORBIDDEN" };
+  const s = evidence.session,
+    u = evidence.uat;
+  if (
+    journal.length !== 2 ||
+    t.sourceCommit !== g.sourceCommit ||
+    t.artifactSha256 !== g.artifactSha256 ||
+    t.sessionRef !== g.activation.successorSession ||
+    t.lineage !== "IMMUTABLE_V22_SUCCESSOR" ||
+    t.lineageStorageVerified !== true ||
+    t.originalMarkers !== 1 ||
+    t.oldContinuationMarkers !== 1 ||
+    t.successorMarkers !== 1 ||
+    t.successorMarkerTablePresent !== true ||
+    t.successorEligibility !== false ||
+    !v22DeliverySettled(t) ||
+    t.reservedMicroUsd !== 0 ||
+    t.pendingAttempts !== 0 ||
+    t.inFlight !== 0 ||
+    t.pendingReplies !== 0 ||
+    t.draftPurgeInvariantsVerified !== true ||
+    t.draftPendingReplies !== 0 ||
+    t.clarificationUsed !== true ||
+    !isRecord(s) ||
+    s.operation !== g.activation.operation ||
+    s.ownerLineageVerified !== true ||
+    s.activationZeroAccountingDelta !== true ||
+    s.originalMarkersAndHistoryUnchanged !== true ||
+    s.maximumConcurrency !== 1 ||
+    s.maximumCostMicroUsd !== 5000000 ||
+    s.maximumEvents !== 200 ||
+    s.maximumAttempts !== 200 ||
+    typeof s.startedAt !== "number" ||
+    !Number.isSafeInteger(s.startedAt) ||
+    typeof s.expiresAt !== "number" ||
+    !Number.isSafeInteger(s.expiresAt) ||
+    s.startedAt > now ||
+    s.expiresAt - s.startedAt <= 0 ||
+    s.expiresAt - s.startedAt > 3600000 ||
+    !isRecord(u) ||
+    u.exactOwnerChatVerified !== true ||
+    u.expectedRouteAndReplyRecorded !== true ||
+    u.ownerSendsOneMessage !== true ||
+    u.noStopCondition !== true ||
+    u.noRetryOrReplacementSession !== true ||
+    !Array.isArray(u.completedCases) ||
+    u.primaryU1NotRepeated !== true ||
+    u.casePreviouslySent !== false
+  )
+    return deny;
+  if (action === "OWNER_UAT_NEXT_CASE") {
+    if (
+      t.pilot !== "ACTIVE" ||
+      t.aiAdmission !== true ||
+      t.ownerMode !== "BOT_ACTIVE" ||
+      t.handoffRegistryActive !== 0 ||
+      s.activeSessions !== 1 ||
+      s.expiresAt <= now ||
+      typeof t.events !== "number" ||
+      !Number.isSafeInteger(t.events) ||
+      t.events < 6 ||
+      t.events >= 200 ||
+      typeof t.attempts !== "number" ||
+      !Number.isSafeInteger(t.attempts) ||
+      t.attempts < 6 ||
+      t.attempts >= 200 ||
+      typeof t.consumedMicroUsd !== "number" ||
+      !Number.isSafeInteger(t.consumedMicroUsd) ||
+      t.consumedMicroUsd < 34082 ||
+      t.consumedMicroUsd >= 5000000
+    )
+      return deny;
+    if (u.caseId === "U2")
+      return u.completedCases.length === 0 &&
+        t.events === 6 &&
+        t.attempts === 6 &&
+        t.consumedMicroUsd === 34082 &&
+        t.pendingTemplate === "T-C01" &&
+        t.processedEvents === 6 &&
+        t.responsePlans === 4 &&
+        t.deliveryClaims === 6 &&
+        t.deliveredClaims === 6 &&
+        u.expectedRoute === "AUTO_APPROVED_CATALOG_39"
+        ? { allowed: true, reason: "V22_OWNER_SEND_U2_ONLY" }
+        : deny;
+    if (u.caseId === "U3")
+      return JSON.stringify(u.completedCases) === JSON.stringify(["U2"]) &&
+        u.priorVisibleAndBackendVerified === true &&
+        u.priorClaimAcknowledged === true &&
+        u.priorProviderSettlementClassified === true &&
+        t.pendingTemplate === null &&
+        t.processedEvents === 7 &&
+        t.responsePlans === 5 &&
+        t.deliveryClaims === 7 &&
+        t.deliveredClaims === 7 &&
+        u.expectedRoute === "MANDATORY_DETERMINISTIC_HUMAN_HANDOFF"
+        ? {
+            allowed: true,
+            reason: "V22_OWNER_SEND_U3_LAST_CONVERSATIONAL_CASE",
+          }
+        : deny;
+    return deny;
+  }
+  const stop = evidence.stop;
+  return u.caseId === "U4" &&
+    u.expectedRoute === "SILENT_HUMAN_HANDOFF" &&
+    JSON.stringify(u.completedCases) === JSON.stringify(["U2", "U3"]) &&
+    u.priorVisibleAndBackendVerified === true &&
+    u.priorClaimAcknowledged === true &&
+    u.mandatoryProviderAttemptDelta === 0 &&
+    u.mandatoryReservationDelta === 0 &&
+    u.mandatoryCostDelta === 0 &&
+    t.pilot === "STOPPED" &&
+    t.aiAdmission === false &&
+    t.ownerMode === "HUMAN_HANDOFF" &&
+    t.handoffRegistryActive === 1 &&
+    t.processedEvents === 8 &&
+    t.deliveryClaims === 8 &&
+    t.deliveredClaims === 8 &&
+    s.activeSessions === 0 &&
+    isRecord(stop) &&
+    typeof stop.aiDisabledAt === "number" &&
+    Number.isSafeInteger(stop.aiDisabledAt) &&
+    typeof stop.pilotStoppedAt === "number" &&
+    Number.isSafeInteger(stop.pilotStoppedAt) &&
+    stop.aiDisabledAt <= stop.pilotStoppedAt &&
+    stop.pilotStoppedAt <= now &&
+    stop.pilotStoppedAt >= s.startedAt &&
+    stop.authenticatedReceiptsVerified === true &&
+    stop.providerAttemptsSinceStop === 0 &&
+    stop.lineOutboundSinceStop === 0 &&
+    stop.lateReplies === 0
+    ? { allowed: true, reason: "V22_OWNER_SEND_U4_AFTER_VERIFIED_STOP_ONLY" }
+    : deny;
+}
+
 function evaluateWp8fSuccessorAction(
   work: Record<string, unknown>,
   action: string,
