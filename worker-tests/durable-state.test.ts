@@ -1208,4 +1208,62 @@ describe("successor durable one-logical handoff close", () => {
     expect(await empty.closeHandoff(input)).toMatchObject({ accepted: false });
     expect(await empty.state()).toBe("BOT_ACTIVE");
   });
+  it("backfills retained legacy registry entries once and preserves other conversations across close and restart", async () => {
+    const a = await fixture("registry-migration-owner");
+    const b = await fixture("registry-migration-other");
+    const registry = env.HANDOFF_REGISTRY.getByName(
+      "registry-legacy-migration",
+    );
+    expect(await registry.activate(a.name, baseInput.now, 1)).toBe(true);
+    expect(await registry.activate(b.name, baseInput.now + 1, 1)).toBe(true);
+    const before = await registry.listActive();
+    // Synthetic retained pre-successor registry: only the legacy table exists.
+    await runInDurableObject(registry, (_i, s) => {
+      s.storage.sql.exec("DROP TABLE handoff_registry_fences");
+    });
+    await evictDurableObject(registry);
+    expect(await registry.listActive()).toEqual(before);
+    const snapshot = () =>
+      runInDurableObject(registry, async (_i, s) => ({
+        rows: s.storage.sql
+          .exec(
+            "SELECT conversation_ref, generation, closed_generation, close_receipt_id FROM handoff_registry_fences ORDER BY conversation_ref",
+          )
+          .toArray(),
+        alarm: await s.storage.getAlarm(),
+      }));
+    const migrated = await snapshot();
+    expect(migrated.rows).toEqual(
+      [a.name, b.name].sort().map((conversation_ref) => ({
+        conversation_ref,
+        generation: 1,
+        closed_generation: 0,
+        close_receipt_id: null,
+      })),
+    );
+    expect(migrated.alarm).toBeNull();
+    await evictDurableObject(registry);
+    expect((await snapshot()).rows).toEqual(migrated.rows);
+    expect(await registry.listActive()).toEqual(before);
+    const result = await a.stub.closeHandoff(input);
+    if (!result.accepted) throw new Error("EXPECTED_CLOSE");
+    expect(await registry.reconcileClose(a.name, result.receipt)).toEqual(
+      result.receipt,
+    );
+    const closed = await snapshot();
+    await evictDurableObject(registry);
+    expect((await snapshot()).rows).toEqual(closed.rows);
+    expect(await registry.activate(a.name, baseInput.now + 2, 1)).toBe(false);
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: b.name, createdAt: baseInput.now + 1 },
+    ]);
+    expect(await b.stub.state()).toBe("HUMAN_HANDOFF");
+    const empty = env.HANDOFF_REGISTRY.getByName("registry-empty-migration");
+    expect(await empty.listActive()).toEqual([]);
+    expect(
+      await runInDurableObject(empty, (_i, s) =>
+        s.storage.sql.exec("SELECT * FROM handoff_registry_fences").toArray(),
+      ),
+    ).toEqual([]);
+  });
 });
