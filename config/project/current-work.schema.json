@@ -38,6 +38,8 @@
     "wp8fApprovedDeployment",
     "wp8fExecutionEnvelope",
     "wp8fExactDeploymentPreparation",
+    "wp8fSuccessorCompletion",
+    "wp8fSuccessorOperationJournal",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -45,20 +47,109 @@
     "failureMode"
   ],
   "properties": {
+    "wp8fSuccessorCompletion": {
+      "const": {
+        "version": "2026.09.10-v21",
+        "ownerDecision": "MP-OD-2026-09-10-V21",
+        "supersedes": "2026.09.09-v19",
+        "v20": "APPROVED_BUT_NOT_MATERIALIZED_NOT_REUSABLE_DEPLOYMENT_GRANT",
+        "authority": {
+          "issue12Comments": [5611740903, 5611756729],
+          "roadmap9Comments": [5611740789, 5611756596]
+        },
+        "executionBaseline": "47934a41aeebea9cf17a1cf3d3b98819179b4b97",
+        "sourceCommit": "bfff1a553868b85e5f66144e4741a51627f4a9be",
+        "artifactSha256": "8eabcc6a1628bfa776fa5768db49e2faa586ceaaaa6915510afec74835f2d2b5",
+        "artifactFile": "index.js",
+        "candidateCiRun": 34436364217,
+        "candidateTestsPassed": 767,
+        "account": "c395a1bc15b7c95267173de5ccd6407d",
+        "worker": "malispang-lineoa-test",
+        "environment": "TEST_ONLY",
+        "domain": "malispang-lineoa-test.eakkachai-dev.workers.dev",
+        "predecessorVersion": "8486019d-9b62-4de9-ae15-6299909a23d9",
+        "predecessorSource": "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
+        "predecessorArtifact": "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
+        "maximumDeployments": 1,
+        "ambiguousDeploymentOutcome": "CONSUMED_NO_RETRY",
+        "maximumLogicalHandoffCloses": 1,
+        "maximumHandoffTechnicalAttempts": 3,
+        "maximumHandoffMutations": 1,
+        "handoffContract": "DURABLE_SAME_RESULT_RECEIPT_GENERATION_FENCE_IDEMPOTENT_REGISTRY_RECONCILIATION_NOT_CROSS_DO_ATOMIC",
+        "maximumContinuations": 1,
+        "maximumSessionMinutes": 60,
+        "cumulativeCostMicroUsd": 5000000,
+        "cumulativeEvents": 200,
+        "cumulativeProviderAttempts": 200,
+        "maximumConcurrency": 1,
+        "ownerUat": "ONE_MESSAGE_AT_A_TIME_HUMAN_HANDOFF_LAST_BACKEND_AND_VISIBLE_EVIDENCE",
+        "finalContainment": "AI_OFF_PILOT_STOPPED_RESERVED_INFLIGHT_PENDING_ZERO_NO_LATE_REPLY",
+        "recovery": "FENCED_SCHEMA_COMPATIBLE_FAIL_CLOSED_NO_OLD_UNFENCED_AUTOMATIC_ROLLBACK",
+        "review": "TEST_UAT_KILL_SWITCH_RECOVERY_HOSTED_CI_SECURITY_THEN_REMEDIATION_PR",
+        "mergeAndIssueClosure": "ONLY_AFTER_VERIFIED_TEST_ACCEPTANCE_REVIEW_CHECKS_AND_INTEGRATION",
+        "production": "NO_GO_NOT_TOUCHED_MP12_ISSUE5_SEPARATE",
+        "nextWork": "MP07_BLOCKED_NO_AUTOMATIC_START",
+        "runtimeFrozen": true,
+        "modelPromptPolicyBudgetAccountingAndCustomerDataChanges": false,
+        "checkpointPolicy": "EXPLICIT_PATHS_COMMIT_PUSH_AND_ISSUE12_RECEIPT_NO_RESET_STASH_REBASE_AMEND_SQUASH_FORCE",
+        "freshObservationMaximumAgeMs": 120000,
+        "evidenceFiles": [
+          "docs/project/EXECUTION_GATES.md",
+          "docs/project/ROADMAP_CHANGELOG.md",
+          "docs/project/OWNER_DECISION_LOG.md",
+          "docs/line-oa/mp-06/MP_06_WP8F_TEST_ACCEPTANCE_TH.md",
+          "docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md"
+        ]
+      }
+    },
+    "wp8fSuccessorOperationJournal": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "operationRef",
+          "attempt",
+          "startedAt",
+          "evidenceSha256"
+        ],
+        "properties": {
+          "action": {
+            "enum": ["DEPLOY_TEST", "CLOSE_OWNER_HANDOFF", "OPEN_CONTINUATION"]
+          },
+          "operationRef": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenceSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": {
-      "type": "string",
-      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-v\\d+$"
-    },
+    "roadmapVersion": { "const": "2026.09.10-v21" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {
       "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
     },
     "status": {
-      "const": "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY"
+      "const": "AUTHORIZED_EXACT_SUCCESSOR_TEST_COMPLETION_AND_GATED_INTEGRATION"
     },
     "base": {
       "type": "object",
@@ -137,14 +228,14 @@
         "providerReconciliationControlledRetestWp8c": { "const": false },
         "durableLifecycleDiagnosticsRemediationWp8d": { "const": false },
         "exactStateReconciliationControlledRetestWp8e": { "const": false },
-        "testAcceptanceCompletionWp8f": { "const": false },
+        "testAcceptanceCompletionWp8f": { "const": true },
         "testDeploymentPreparationWp8f": { "const": true },
         "policySnapshot": { "type": "boolean" },
         "policySnapshotReadOnly": { "type": "boolean" },
         "commit": { "type": "boolean" },
         "pushBranch": { "type": "boolean" },
         "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": false },
+        "testDeploymentAuthorization": { "const": true },
         "testDeploymentOccurred": { "const": true },
         "testDeployment": { "const": false },
         "production": { "type": "boolean" }

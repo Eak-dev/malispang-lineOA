@@ -287,6 +287,7 @@ export function validateProjectControl(
 
   const roadmap = roadmapInput;
   const currentWork = currentWorkInput;
+  const successor = roadmap.version === WP8F_V21_COMPLETION.version;
 
   expectEqual(
     errors,
@@ -299,7 +300,7 @@ export function validateProjectControl(
   expectEqual(
     errors,
     roadmap.version,
-    "2026.09.09-v19",
+    successor ? WP8F_V21_COMPLETION.version : "2026.09.09-v19",
     "ROADMAP_VERSION_UNVERIFIED",
   );
   expectEqual(errors, roadmap.status, "ACTIVE", "ROADMAP_NOT_ACTIVE");
@@ -310,19 +311,19 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decisionId,
-      "MP-OD-2026-09-09-V19",
+      successor ? WP8F_V21_COMPLETION.ownerDecision : "MP-OD-2026-09-09-V19",
       "OWNER_DECISION_ID_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.decidedAt,
-      "2026-09-09",
+      successor ? "2026-09-10" : "2026-09-09",
       "OWNER_DECISION_DATE_INVALID",
     );
     expectEqual(
       errors,
       roadmap.ownerDecision.supersedes,
-      "2026.09.09-v18",
+      successor ? WP8F_V21_COMPLETION.supersedes : "2026.09.09-v18",
       "OWNER_DECISION_SUPERSEDES_INVALID",
     );
     if (
@@ -339,7 +340,9 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.verifiedLatestBaseline.commit,
-      "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+      successor
+        ? WP8F_V21_COMPLETION.sourceCommit
+        : "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
       "VERIFIED_BASELINE_COMMIT_MISMATCH",
     );
     expectEqual(
@@ -362,7 +365,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.authorization.testDeploymentAuthorization,
-      false,
+      successor,
       "NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
     );
     expectEqual(
@@ -529,7 +532,9 @@ export function validateProjectControl(
   expectEqual(
     errors,
     currentWork.status,
-    "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
+    successor
+      ? "AUTHORIZED_EXACT_SUCCESSOR_TEST_COMPLETION_AND_GATED_INTEGRATION"
+      : "AUTHORIZED_EXACT_TEST_DEPLOYMENT_PREPARATION_WP8F_ONLY",
     "CURRENT_WORK_STATUS_INVALID",
   );
   expectEqual(
@@ -722,7 +727,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testDeploymentAuthorization,
-      false,
+      successor,
       "CURRENT_NEW_TEST_DEPLOYMENT_REQUIRES_OWNER_APPROVAL",
     );
     expectEqual(
@@ -748,9 +753,10 @@ export function validateProjectControl(
   const allowedScope = Array.isArray(currentWork.allowedScope)
     ? currentWork.allowedScope
     : [];
+  const requiredScope = successor ? WP8F_V21_SCOPE : REQUIRED_WP8F_SCOPE;
   if (
-    allowedScope.length !== REQUIRED_WP8F_SCOPE.length ||
-    REQUIRED_WP8F_SCOPE.some((scope) => !allowedScope.includes(scope))
+    allowedScope.length !== requiredScope.length ||
+    requiredScope.some((scope) => !allowedScope.includes(scope))
   ) {
     errors.push("WP8F_SCOPE_INVALID");
   }
@@ -759,7 +765,7 @@ export function validateProjectControl(
     expectEqual(
       errors,
       currentWork.authorization.testAcceptanceCompletionWp8f,
-      false,
+      successor,
       "WP8F_OPERATIONAL_ACCEPTANCE_MUST_REMAIN_BLOCKED_IN_V19",
     );
   if (isRecord(currentWork.authorization))
@@ -885,11 +891,16 @@ export function validateProjectControl(
     )
   )
     errors.push("WP8F_ALL_PR_MUST_REMAIN_BLOCKED");
-  for (const required of REQUIRED_FORBIDDEN_SCOPE) {
+  const requiredForbidden = successor
+    ? WP8F_V21_FORBIDDEN
+    : REQUIRED_FORBIDDEN_SCOPE;
+  for (const required of requiredForbidden) {
     if (!forbiddenScope.includes(required)) {
       errors.push(`FORBIDDEN_SCOPE_MISSING_${required}`);
     }
   }
+
+  if (successor) validateWp8fSuccessor(errors, currentWork);
 
   const conflicts = Array.isArray(currentWork.conflicts)
     ? currentWork.conflicts
@@ -938,6 +949,14 @@ export function evaluateProjectAction(
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
   const authorization = currentWork.authorization;
+  if (isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version) {
+    return evaluateWp8fSuccessorAction(
+      currentWork,
+      action,
+      deploymentTarget,
+      executionEvidence,
+    );
+  }
   if (action === "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS") {
     return deploymentTarget &&
       wp8fV19ReadinessGate(deploymentTarget, executionEvidence)
@@ -1021,6 +1040,7 @@ export function evaluateProjectAction(
 export function validateSchemaDocuments(
   roadmapSchema: unknown,
   currentWorkSchema: unknown,
+  expectedVersion = "2026.09.09-v19",
 ): string[] {
   const errors: string[] = [];
   for (const [name, schema, requiredKey] of [
@@ -1056,6 +1076,22 @@ export function validateSchemaDocuments(
     )
       errors.push("V19_PREPARATION_SCHEMA_NOT_CLOSED");
   }
+  if (expectedVersion === WP8F_V21_COMPLETION.version) {
+    if (
+      !isRecord(currentWorkSchema) ||
+      !isRecord(currentWorkSchema.properties) ||
+      !Array.isArray(currentWorkSchema.required) ||
+      !currentWorkSchema.required.includes("wp8fSuccessorCompletion") ||
+      !currentWorkSchema.required.includes("wp8fSuccessorOperationJournal") ||
+      JSON.stringify(currentWorkSchema.properties.wp8fSuccessorCompletion) !==
+        JSON.stringify({ const: WP8F_V21_COMPLETION }) ||
+      JSON.stringify(
+        currentWorkSchema.properties.wp8fSuccessorOperationJournal,
+      ) !== JSON.stringify(WP8F_V21_JOURNAL_SCHEMA)
+    )
+      errors.push("V21_SCHEMA_NOT_CLOSED");
+  } else if (expectedVersion !== "2026.09.09-v19")
+    errors.push("UNKNOWN_SCHEMA_VERSION");
   return uniqueSorted(errors);
 }
 
@@ -3294,8 +3330,35 @@ const WP8F_V18_ENVELOPE = {
   },
 } as const;
 
-export function validateWp8fOwnerDecisionRecord(record: unknown): boolean {
+export function validateWp8fOwnerDecisionRecord(
+  record: unknown,
+  version = "2026.09.09-v19",
+): boolean {
   if (typeof record !== "string") return false;
+  if (version === WP8F_V21_COMPLETION.version) {
+    const current = record
+      .split("## MP-OD-2026-09-10-V21 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof current === "string" &&
+      validateWp8fOwnerDecisionRecord(record) &&
+      [
+        WP8F_V21_COMPLETION.sourceCommit,
+        WP8F_V21_COMPLETION.artifactSha256,
+        "supersedes 2026.09.09-v19",
+        "v20 APPROVED_BUT_NOT_MATERIALIZED",
+        "5611740903",
+        "5611756729",
+        "5611740789",
+        "5611756596",
+        "one logical handoff-close / maximum3 technical attempts / maximum1 mutation",
+        "No cross-Durable-Object atomicity",
+        "Production NO_GO — NOT TOUCHED",
+        "merge and Issue #12 closure only after all TEST and integration gates",
+      ].every((value) => current.includes(value))
+    );
+  }
+  if (version !== "2026.09.09-v19") return false;
   const section = record
     .split("## MP-OD-2026-09-09-V18 —")[1]
     ?.split("\n## ")[0];
@@ -3363,7 +3426,9 @@ export function evaluateWp8fPaths(
     phase === "CONTROL_TRANSITION"
       ? WP8F_V18_ENVELOPE.controlFiles
       : phase === "EVIDENCE"
-        ? WP8F_V19_PREPARATION.evidenceFiles
+        ? isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version
+          ? WP8F_V21_COMPLETION.evidenceFiles
+          : WP8F_V19_PREPARATION.evidenceFiles
         : [];
   return exactPaths(paths, allowed)
     ? { allowed: true, reason: "EXACT_OWNER_APPROVED_PATHS" }
@@ -3699,4 +3764,822 @@ function wp8fV19ReadinessGate(
     containment.failureCases.length === 7 &&
     exactPaths(containment.failureCases, grant.requiredFailureCases)
   );
+}
+
+// Successor authorization is a closed Owner record, not a generic capability flag.
+// The v18/v19 records above remain frozen historical evidence.
+const WP8F_V21_COMPLETION = {
+  version: "2026.09.10-v21",
+  ownerDecision: "MP-OD-2026-09-10-V21",
+  supersedes: "2026.09.09-v19",
+  v20: "APPROVED_BUT_NOT_MATERIALIZED_NOT_REUSABLE_DEPLOYMENT_GRANT",
+  authority: {
+    issue12Comments: [5611740903, 5611756729],
+    roadmap9Comments: [5611740789, 5611756596],
+  },
+  executionBaseline: "47934a41aeebea9cf17a1cf3d3b98819179b4b97",
+  sourceCommit: "bfff1a553868b85e5f66144e4741a51627f4a9be",
+  artifactSha256:
+    "8eabcc6a1628bfa776fa5768db49e2faa586ceaaaa6915510afec74835f2d2b5",
+  artifactFile: "index.js",
+  candidateCiRun: 34436364217,
+  candidateTestsPassed: 767,
+  account: "c395a1bc15b7c95267173de5ccd6407d",
+  worker: "malispang-lineoa-test",
+  environment: "TEST_ONLY",
+  domain: "malispang-lineoa-test.eakkachai-dev.workers.dev",
+  predecessorVersion: "8486019d-9b62-4de9-ae15-6299909a23d9",
+  predecessorSource: "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
+  predecessorArtifact:
+    "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
+  maximumDeployments: 1,
+  ambiguousDeploymentOutcome: "CONSUMED_NO_RETRY",
+  maximumLogicalHandoffCloses: 1,
+  maximumHandoffTechnicalAttempts: 3,
+  maximumHandoffMutations: 1,
+  handoffContract:
+    "DURABLE_SAME_RESULT_RECEIPT_GENERATION_FENCE_IDEMPOTENT_REGISTRY_RECONCILIATION_NOT_CROSS_DO_ATOMIC",
+  maximumContinuations: 1,
+  maximumSessionMinutes: 60,
+  cumulativeCostMicroUsd: 5000000,
+  cumulativeEvents: 200,
+  cumulativeProviderAttempts: 200,
+  maximumConcurrency: 1,
+  ownerUat:
+    "ONE_MESSAGE_AT_A_TIME_HUMAN_HANDOFF_LAST_BACKEND_AND_VISIBLE_EVIDENCE",
+  finalContainment:
+    "AI_OFF_PILOT_STOPPED_RESERVED_INFLIGHT_PENDING_ZERO_NO_LATE_REPLY",
+  recovery:
+    "FENCED_SCHEMA_COMPATIBLE_FAIL_CLOSED_NO_OLD_UNFENCED_AUTOMATIC_ROLLBACK",
+  review:
+    "TEST_UAT_KILL_SWITCH_RECOVERY_HOSTED_CI_SECURITY_THEN_REMEDIATION_PR",
+  mergeAndIssueClosure:
+    "ONLY_AFTER_VERIFIED_TEST_ACCEPTANCE_REVIEW_CHECKS_AND_INTEGRATION",
+  production: "NO_GO_NOT_TOUCHED_MP12_ISSUE5_SEPARATE",
+  nextWork: "MP07_BLOCKED_NO_AUTOMATIC_START",
+  runtimeFrozen: true,
+  modelPromptPolicyBudgetAccountingAndCustomerDataChanges: false,
+  checkpointPolicy:
+    "EXPLICIT_PATHS_COMMIT_PUSH_AND_ISSUE12_RECEIPT_NO_RESET_STASH_REBASE_AMEND_SQUASH_FORCE",
+  freshObservationMaximumAgeMs: 120000,
+  evidenceFiles: [
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "docs/line-oa/mp-06/MP_06_WP8F_TEST_ACCEPTANCE_TH.md",
+    "docs/line-oa/mp-06/MP_06_V16_DETERMINISTIC_PRECEDENCE_REMEDIATION_TH.md",
+  ],
+} as const;
+const WP8F_V21_SCOPE = [
+  "MP_06_WP8F_TEST_ACCEPTANCE_AND_INTEGRATION_ONLY",
+  "EXACT_V21_SUCCESSOR_CONTROL",
+  "EXACT_FROZEN_SUCCESSOR_TEST_DEPLOYMENT_ONCE",
+  "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
+  "OWNER_SCOPED_DURABLE_HANDOFF_CLOSE_ONE_LOGICAL_THREE_TECHNICAL_ATTEMPTS",
+  "ONE_ATOMIC_CONTINUATION_AND_OWNER_MOBILE_UAT",
+  "KILL_SWITCH_AND_FENCED_RECOVERY_VERIFICATION",
+  "FINAL_SECURITY_REVIEW_HOSTED_CI_AND_CONDITIONAL_REMEDIATION_INTEGRATION",
+  "ISSUE12_CLOSURE_ONLY_AFTER_ALL_TEST_AND_INTEGRATION_GATES",
+  "RUNTIME_DEPENDENCIES_MODEL_PROMPT_POLICY_CATALOG_CHECKSUMS_READ_ONLY",
+  "COMMIT_PUSH_EVERY_CHECKPOINT_AND_APPEND_ISSUE12",
+  "PRODUCTION_NO_GO_MP12_SEPARATE",
+] as const;
+const WP8F_V21_RETIRED_PROHIBITIONS: readonly string[] = [
+  "MERGE_DEFAULT_BRANCH",
+  "CREATE_READY_PULL_REQUEST",
+  "CHANGE_DEFAULT_BRANCH",
+  "RESOLVE_DEFAULT_BRANCH_DRIFT",
+  "CLOSE_MP_06_ISSUE",
+];
+const WP8F_V21_FORBIDDEN = [
+  "CREATE_PR_BEFORE_TEST_ACCEPTANCE_AND_FINAL_REVIEW",
+  ...REQUIRED_FORBIDDEN_SCOPE.filter(
+    (value) => !WP8F_V21_RETIRED_PROHIBITIONS.includes(value),
+  ),
+  ...[
+    "MERGE_OR_CLOSE_BEFORE_ALL_TEST_REVIEW_CI_INTEGRATION_GATES",
+    "CHANGE_FROZEN_SUCCESSOR_RUNTIME_OR_DEPENDENCIES",
+    "RESET_OR_REWRITE_OPERATION_JOURNAL",
+    "SECOND_LOGICAL_HANDOFF_CLOSE_OR_REPLACEMENT_SESSION",
+  ],
+];
+const WP8F_V21_AUTHORIZATION = {
+  localImplementation: false,
+  runtimeWp1: false,
+  benchmarkWp2: false,
+  runtimeRemediationWp3: false,
+  benchmarkCompletionWp4: false,
+  localClosureRemediationWp5: false,
+  testReadinessAssessmentWp6: false,
+  testReadinessConditionClosureWp6: false,
+  testReadinessConditionsClosedWp6: true,
+  aiNluImplementationWp7: false,
+  aiNluLocalAcceptanceCompleteWp7: true,
+  runtimePilotControlRemediationWp8a: false,
+  runtimePilotControlsCompleteWp8a: true,
+  testDeploymentSmokeRollbackWp8: false,
+  providerAttemptSettlementRemediationWp8b: false,
+  providerReconciliationControlledRetestWp8c: false,
+  durableLifecycleDiagnosticsRemediationWp8d: false,
+  exactStateReconciliationControlledRetestWp8e: false,
+  policySnapshot: false,
+  policySnapshotReadOnly: true,
+  commit: true,
+  pushBranch: true,
+  githubRoadmapUpdate: true,
+  testDeploymentAuthorization: true,
+  testDeploymentOccurred: true,
+  testDeployment: false,
+  production: false,
+  testAcceptanceCompletionWp8f: true,
+  testDeploymentPreparationWp8f: true,
+} as const;
+const WP8F_V21_WORK_KEYS = [
+  "$schema",
+  "schemaVersion",
+  "roadmapId",
+  "roadmapVersion",
+  "workId",
+  "githubIssue",
+  "currentPhase",
+  "status",
+  "base",
+  "implementationBranch",
+  "targetEnvironment",
+  "authorizedWorkPackage",
+  "allowedScope",
+  "forbiddenScope",
+  "authorization",
+  "wp8fExactDeploymentPreparation",
+  "wp8fExecutionEnvelope",
+  "wp8fApprovedDeployment",
+  "policySnapshotReference",
+  "wp2BenchmarkReference",
+  "benchmarkCompletionPlan",
+  "localClosureRemediationPlan",
+  "localDeterministicAcceptance",
+  "testReadinessAssessmentPlan",
+  "wp8TestPilotPlan",
+  "wp8bProviderAttemptSettlementPlan",
+  "wp8cProviderReconciliationControlledRetestPlan",
+  "wp8dDurableLifecycleDiagnosticsPlan",
+  "wp8eExactStateReconciliationControlledRetestPlan",
+  "testReadinessConditionClosurePlan",
+  "wp7AiNluPlan",
+  "wp8aRuntimePilotControlPlan",
+  "benchmarkAcceptanceCriteria",
+  "nextWork",
+  "conflicts",
+  "workingTreePolicy",
+  "failureMode",
+  "wp8fTestAcceptancePlan",
+  "wp8fSuccessorCompletion",
+  "wp8fSuccessorOperationJournal",
+] as const;
+const WP8F_V21_JOURNAL_SCHEMA = {
+  type: "array",
+  maxItems: 5,
+  items: {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "action",
+      "operationRef",
+      "attempt",
+      "startedAt",
+      "evidenceSha256",
+    ],
+    properties: {
+      action: {
+        enum: ["DEPLOY_TEST", "CLOSE_OWNER_HANDOFF", "OPEN_CONTINUATION"],
+      },
+      operationRef: {
+        type: "string",
+        pattern:
+          "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      },
+      attempt: {
+        type: "integer",
+        minimum: 1,
+        maximum: 3,
+      },
+      startedAt: {
+        type: "string",
+        format: "date-time",
+      },
+      evidenceSha256: {
+        type: "string",
+        pattern: "^[0-9a-f]{64}$",
+      },
+    },
+  },
+} as const;
+
+function validOperationRef(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(
+      value,
+    )
+  );
+}
+
+/** Records an attempt before its remote invocation. Unknown outcomes never delete a record. */
+export function validateSuccessorOperationJournal(
+  input: unknown,
+  previous: unknown = [],
+): boolean {
+  if (
+    !Array.isArray(input) ||
+    !Array.isArray(previous) ||
+    input.length > 5 ||
+    previous.length > input.length ||
+    previous.some(
+      (row, index) => JSON.stringify(row) !== JSON.stringify(input[index]),
+    )
+  )
+    return false;
+  let deployments = 0,
+    closes = 0,
+    continuations = 0,
+    closeOperation: unknown,
+    lastTime = 0;
+  const operations = new Set<string>();
+  for (const row of input) {
+    if (
+      !isRecord(row) ||
+      !exactPaths(Object.keys(row), [
+        "action",
+        "operationRef",
+        "attempt",
+        "startedAt",
+        "evidenceSha256",
+      ]) ||
+      Object.keys(row).length !== 5 ||
+      !validOperationRef(row.operationRef) ||
+      !isFullSha(row.evidenceSha256, 64) ||
+      typeof row.startedAt !== "string"
+    )
+      return false;
+    const time = Date.parse(row.startedAt);
+    if (
+      !Number.isSafeInteger(time) ||
+      time < lastTime ||
+      new Date(time).toISOString() !== row.startedAt
+    )
+      return false;
+    lastTime = time;
+    if (row.action === "DEPLOY_TEST") {
+      if (input.indexOf(row) !== 0 || ++deployments !== 1 || row.attempt !== 1)
+        return false;
+      operations.add(row.operationRef);
+    } else if (row.action === "CLOSE_OWNER_HANDOFF") {
+      if (
+        deployments !== 1 ||
+        continuations !== 0 ||
+        ++closes > 3 ||
+        row.attempt !== closes ||
+        (closes === 1
+          ? operations.has(row.operationRef)
+          : row.operationRef !== closeOperation)
+      )
+        return false;
+      closeOperation = row.operationRef;
+      operations.add(row.operationRef);
+    } else if (row.action === "OPEN_CONTINUATION") {
+      if (
+        deployments !== 1 ||
+        closes < 1 ||
+        ++continuations !== 1 ||
+        row.attempt !== 1 ||
+        operations.has(row.operationRef)
+      )
+        return false;
+      operations.add(row.operationRef);
+    } else return false;
+  }
+  return true;
+}
+
+function validateWp8fSuccessor(
+  errors: string[],
+  work: Record<string, unknown>,
+): void {
+  if (
+    JSON.stringify(work.wp8fSuccessorCompletion) !==
+    JSON.stringify(WP8F_V21_COMPLETION)
+  )
+    errors.push("V21_OWNER_ENVELOPE_INVALID");
+  if (
+    Object.keys(work).length !== WP8F_V21_WORK_KEYS.length ||
+    !exactPaths(Object.keys(work), WP8F_V21_WORK_KEYS)
+  )
+    errors.push("V21_UNKNOWN_CURRENT_WORK_FIELDS");
+  if (
+    JSON.stringify(work.authorization) !==
+    JSON.stringify(WP8F_V21_AUTHORIZATION)
+  )
+    errors.push("V21_SELF_AUTHORIZATION_DENIED");
+  if (!validateSuccessorOperationJournal(work.wp8fSuccessorOperationJournal))
+    errors.push("V21_OPERATION_JOURNAL_INVALID");
+  if (
+    !Array.isArray(work.forbiddenScope) ||
+    work.forbiddenScope.length !== WP8F_V21_FORBIDDEN.length ||
+    !exactPaths(work.forbiddenScope, WP8F_V21_FORBIDDEN)
+  )
+    errors.push("V21_FORBIDDEN_SCOPE_INVALID");
+}
+
+function successorTarget(target: unknown): boolean {
+  const grant = WP8F_V21_COMPLETION;
+  return (
+    isRecord(target) &&
+    Object.keys(target).length === 3 &&
+    target.worker === grant.worker &&
+    target.sourceCommit === grant.sourceCommit &&
+    target.artifactSha256 === grant.artifactSha256
+  );
+}
+
+function successorCandidate(evidence: Record<string, unknown>): boolean {
+  const g = WP8F_V21_COMPLETION,
+    c = evidence.candidate;
+  return (
+    isRecord(c) &&
+    c.sourceCommit === g.sourceCommit &&
+    c.artifactSha256 === g.artifactSha256 &&
+    c.ciHead === g.sourceCommit &&
+    c.ciRun === g.candidateCiRun &&
+    c.ciConclusion === "success" &&
+    c.testsPassed === g.candidateTestsPassed &&
+    c.testsFailed === 0 &&
+    c.testsSkipped === 0 &&
+    c.testsCancelled === 0 &&
+    c.auditAllLevelsZero === true &&
+    c.protectedChecksumsUnchanged === true &&
+    c.cleanFrozenInstall === true &&
+    c.cleanBuild === true &&
+    c.retainedAndEmptyMigrationPassed === true &&
+    c.nodeVersion === "24.19.0" &&
+    c.pnpmVersion === "11.19.0" &&
+    Array.isArray(c.reproducedArtifacts) &&
+    c.reproducedArtifacts.length >= 2 &&
+    c.reproducedArtifacts.every((hash) => hash === g.artifactSha256) &&
+    c.executionBaseline === g.executionBaseline &&
+    c.baselineAncestryVerified === true &&
+    c.candidateIsControlAncestor === true &&
+    isFullSha(c.controlCommit, 40) &&
+    c.controlCommit !== g.sourceCommit &&
+    c.controlOwnerDecision === g.ownerDecision &&
+    c.controlTestsAndValidatorsPassed === true &&
+    c.controlCiHead === c.controlCommit &&
+    c.controlCiConclusion === "success" &&
+    c.committedPushedAndClean === true &&
+    c.exactDiffReviewed === true &&
+    c.noDeployAffectingChangesAfterCandidate === true &&
+    exactPaths(c.postCandidatePaths, [
+      ...WP8F_V18_ENVELOPE.controlFiles,
+      ...WP8F_V21_COMPLETION.evidenceFiles,
+    ])
+  );
+}
+
+function successorObservation(test: unknown): test is Record<string, unknown> {
+  const g = WP8F_V21_COMPLETION,
+    now = Date.now();
+  return (
+    isRecord(test) &&
+    test.account === g.account &&
+    test.worker === g.worker &&
+    test.environment === g.environment &&
+    test.accountIdentityVerified === true &&
+    test.sourceArtifactAssociationVerified === true &&
+    test.trafficPercent === 100 &&
+    test.bindingsSecretsConfigurationVerified === true &&
+    test.health === "PASS" &&
+    typeof test.observedAt === "number" &&
+    Number.isSafeInteger(test.observedAt) &&
+    test.observedAt <= now &&
+    now - test.observedAt <= g.freshObservationMaximumAgeMs &&
+    test.ownerIdentityVerified === true &&
+    test.ownerLineageVerified === true &&
+    test.observationReadOnly === true &&
+    isFullSha(test.schemaSnapshotSha256, 64)
+  );
+}
+
+function successorClosedBaseline(test: Record<string, unknown>): boolean {
+  return (
+    test.pilot === "STOPPED" &&
+    test.stopReason === "OPERATOR_STOP" &&
+    test.aiAdmission === false &&
+    test.events === 6 &&
+    test.attempts === 6 &&
+    test.consumedMicroUsd === 34082 &&
+    test.reservedMicroUsd === 0 &&
+    test.inFlight === 0 &&
+    test.pendingAttempts === 0 &&
+    test.conservativeMicroUsd === 25864 &&
+    test.reportedUsageMicroUsd === 8218 &&
+    test.usageUnknownAttempts === 2 &&
+    test.settledAttempts === 4 &&
+    test.actualHistoricalBilling === "UNKNOWN" &&
+    test.pendingTemplate === null &&
+    test.clarificationUsed === false &&
+    test.pendingReplies === 0 &&
+    test.draftState === "EXPIRED_PURGED" &&
+    test.draftPurgeInvariantsVerified === true &&
+    test.draftPendingReplies === 0
+  );
+}
+
+function successorPostDeploy(
+  test: Record<string, unknown>,
+  evidence: Record<string, unknown>,
+): boolean {
+  const g = WP8F_V21_COMPLETION,
+    post = evidence.postDeployment;
+  return (
+    test.sourceCommit === g.sourceCommit &&
+    test.artifactSha256 === g.artifactSha256 &&
+    typeof test.version === "string" &&
+    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u.test(test.version) &&
+    test.version !== g.predecessorVersion &&
+    test.deliverySchema === "PRESENT_FENCED" &&
+    test.pendingDeliveryClaims === 0 &&
+    test.activeDeliveryClaims === 0 &&
+    test.orphanDeliveryClaims === 0 &&
+    isRecord(post) &&
+    post.version === test.version &&
+    post.sourceCommit === g.sourceCommit &&
+    post.artifactSha256 === g.artifactSha256 &&
+    post.migrationAdditiveIdempotent === true &&
+    post.legacyEventsPlansHistoryPreserved === true &&
+    post.accountingUnchanged === true &&
+    post.claimBackfillVerified === true &&
+    post.handoffGenerationBackfillVerified === true &&
+    post.registryFenceBackfillVerified === true &&
+    post.unexpectedEventDelta === 0 &&
+    post.providerAttemptDelta === 0 &&
+    post.lineOutboundDelta === 0 &&
+    post.lateReplies === 0 &&
+    isFullSha(post.beforeSnapshotSha256, 64) &&
+    isFullSha(post.afterSnapshotSha256, 64)
+  );
+}
+
+function successorContainment(input: unknown): boolean {
+  return (
+    isRecord(input) &&
+    input.ownerNoLine === true &&
+    input.noSessionOrProbe === true &&
+    input.noInFlightOrReserved === true &&
+    input.additiveMigrationVerified === true &&
+    input.ledgerHistoryPreserved === true &&
+    input.independentOfUnfencedRollback === true &&
+    input.globalLineEgressDisabled === false &&
+    input.testOnlyResidualRiskAcknowledged === true &&
+    input.automaticRollback === false &&
+    input.unexpectedDeltaStopsAcceptance === true &&
+    input.ambiguousOutcomeConsumesGrant === true &&
+    Array.isArray(input.failureCases) &&
+    input.failureCases.length === 7 &&
+    exactPaths(input.failureCases, WP8F_V19_PREPARATION.requiredFailureCases)
+  );
+}
+
+/** Pure policy assessment, not a capability, mutex, remote verifier or cross-DO transaction.
+ * Operator evidence must be independently collected. Append/push the consumed attempt
+ * before executing its one prepared command; never regenerate the operation on uncertainty.
+ */
+function evaluateWp8fSuccessorAction(
+  work: Record<string, unknown>,
+  action: string,
+  target: unknown,
+  evidence: unknown,
+): ProjectActionDecision {
+  const deny = { allowed: false, reason: "V21_MISSING_OR_FAILED_EXACT_GATE" };
+  if (
+    [
+      "COMMIT",
+      "PUSH_BRANCH",
+      "UPDATE_GITHUB_ROADMAP",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+    ].includes(action)
+  )
+    return { allowed: true, reason: "V21_OWNER_CHECKPOINT_AUTHORITY" };
+  if (
+    !successorTarget(target) ||
+    !isRecord(evidence) ||
+    evidence.provenance !== "INDEPENDENT_OPERATOR_VERIFICATION" ||
+    evidence.ownerDecision !== WP8F_V21_COMPLETION.ownerDecision ||
+    !Array.isArray(work.wp8fSuccessorOperationJournal)
+  )
+    return deny;
+  // Containment is an authenticated OFF/STOP only operation. A broken health,
+  // lineage or settlement check must not trap an otherwise identified TEST pilot ON.
+  if (action === "STOP_TEST") {
+    const identity = evidence.test;
+    return isRecord(identity) &&
+      identity.account === WP8F_V21_COMPLETION.account &&
+      identity.worker === WP8F_V21_COMPLETION.worker &&
+      identity.environment === "TEST_ONLY" &&
+      identity.accountIdentityVerified === true &&
+      typeof identity.observedAt === "number" &&
+      Number.isSafeInteger(identity.observedAt) &&
+      identity.observedAt <= Date.now() &&
+      Date.now() - identity.observedAt <=
+        WP8F_V21_COMPLETION.freshObservationMaximumAgeMs
+      ? { allowed: true, reason: "V21_EXACT_TEST_CONTAINMENT" }
+      : deny;
+  }
+  if (!successorObservation(evidence.test)) return deny;
+  const journal: unknown[] = work.wp8fSuccessorOperationJournal;
+  const deploys = journal.filter(
+    (row) => isRecord(row) && row.action === "DEPLOY_TEST",
+  );
+  const closes = journal.filter(
+    (row) => isRecord(row) && row.action === "CLOSE_OWNER_HANDOFF",
+  );
+  const continuations = journal.filter(
+    (row) => isRecord(row) && row.action === "OPEN_CONTINUATION",
+  );
+  const test = evidence.test;
+  if (!successorCandidate(evidence)) return deny;
+  const operation = evidence.operation;
+  const next = (kind: string, count: number) =>
+    isRecord(operation) &&
+    operation.action === kind &&
+    validOperationRef(operation.operationRef) &&
+    operation.attempt === count + 1 &&
+    operation.persistedAttemptsVerified === true &&
+    JSON.stringify(operation.observedJournal) === JSON.stringify(journal) &&
+    operation.noPriorUnrecordedInvocation === true &&
+    isFullSha(operation.evidenceSha256, 64) &&
+    validateSuccessorOperationJournal(
+      [
+        ...journal,
+        {
+          action: kind,
+          operationRef: operation.operationRef,
+          attempt: operation.attempt,
+          startedAt: new Date(Date.now()).toISOString(),
+          evidenceSha256: operation.evidenceSha256,
+        },
+      ],
+      journal,
+    );
+  if (
+    action === "DEPLOY_TEST" ||
+    action === "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS"
+  ) {
+    const g = WP8F_V21_COMPLETION;
+    return deploys.length === 0 &&
+      journal.length === 0 &&
+      next("DEPLOY_TEST", 0) &&
+      successorClosedBaseline(test) &&
+      test.ownerMode === "HUMAN_HANDOFF" &&
+      test.version === g.predecessorVersion &&
+      test.sourceCommit === g.predecessorSource &&
+      test.artifactSha256 === g.predecessorArtifact &&
+      test.deliverySchema ===
+        "ABSENT_IN_ACTIVE_SOURCE_BY_DIRECT_STORAGE_OBSERVATION" &&
+      test.pendingDeliveryClaims === null &&
+      test.legacyUndeliveredEvents === 0 &&
+      test.legacyUndeliveredPlans === 0 &&
+      test.legacyInventoryVerified === true &&
+      successorContainment(evidence.containment)
+      ? { allowed: true, reason: "V21_ONE_EXACT_TEST_DEPLOYMENT_READY" }
+      : deny;
+  }
+  if (action === "CLOSE_OWNER_HANDOFF") {
+    if (
+      deploys.length !== 1 ||
+      continuations.length !== 0 ||
+      closes.length >= 3 ||
+      !next(action, closes.length) ||
+      !successorClosedBaseline(test) ||
+      !successorPostDeploy(test, evidence) ||
+      !isRecord(operation) ||
+      typeof test.handoffGeneration !== "number" ||
+      !Number.isSafeInteger(test.handoffGeneration) ||
+      test.handoffGeneration < 1 ||
+      operation.expectedGeneration !== test.handoffGeneration
+    )
+      return deny;
+    const receipt = evidence.handoffClose;
+    const replay = closes.length > 0;
+    if (replay) {
+      const prior = closes[0];
+      if (
+        !isRecord(prior) ||
+        prior.operationRef !== operation.operationRef ||
+        !isRecord(receipt) ||
+        receipt.operationRef !== operation.operationRef ||
+        receipt.generation !== test.handoffGeneration ||
+        receipt.sameOriginalResult !== true ||
+        !validOperationRef(receipt.receiptId) ||
+        test.ownerMode !== "BOT_ACTIVE" ||
+        test.handoffCloseState !== "CONVERSATION_CLOSED"
+      )
+        return deny;
+    } else if (
+      test.ownerMode !== "HUMAN_HANDOFF" ||
+      test.handoffCloseState !== "NONE"
+    )
+      return deny;
+    return {
+      allowed: true,
+      reason: "V21_ONE_LOGICAL_OWNER_CLOSE_SAME_OPERATION_ONLY",
+    };
+  }
+  if (action === "OPEN_CONTINUATION") {
+    const close = evidence.handoffClose,
+      prior = closes[0];
+    return deploys.length === 1 &&
+      closes.length >= 1 &&
+      continuations.length === 0 &&
+      next(action, 0) &&
+      successorClosedBaseline(test) &&
+      successorPostDeploy(test, evidence) &&
+      test.ownerMode === "BOT_ACTIVE" &&
+      test.handoffCloseState === "COMPLETE" &&
+      test.handoffRegistryActive === 0 &&
+      test.activationEligibility === true &&
+      test.continuationMarkers === 0 &&
+      isRecord(close) &&
+      isRecord(prior) &&
+      close.operationRef === prior.operationRef &&
+      close.generation === test.handoffGeneration &&
+      validOperationRef(close.receiptId) &&
+      close.sameOriginalResult === true &&
+      close.registryReceiptVerified === true &&
+      close.historyDraftsAccountingAndOtherConversationsUnchanged === true
+      ? { allowed: true, reason: "V21_ONE_EXACT_OWNER_CONTINUATION" }
+      : deny;
+  }
+  if (action === "OWNER_KILL_SWITCH_CASE") {
+    const uat = evidence.uat,
+      stop = evidence.stop;
+    return deploys.length === 1 &&
+      continuations.length === 1 &&
+      test.sourceCommit === WP8F_V21_COMPLETION.sourceCommit &&
+      test.artifactSha256 === WP8F_V21_COMPLETION.artifactSha256 &&
+      test.pilot === "STOPPED" &&
+      test.aiAdmission === false &&
+      test.reservedMicroUsd === 0 &&
+      test.inFlight === 0 &&
+      test.pendingAttempts === 0 &&
+      test.pendingDeliveryClaims === 0 &&
+      test.activeDeliveryClaims === 0 &&
+      test.orphanDeliveryClaims === 0 &&
+      isRecord(stop) &&
+      typeof stop.aiDisabledAt === "number" &&
+      typeof stop.pilotStoppedAt === "number" &&
+      stop.aiDisabledAt <= stop.pilotStoppedAt &&
+      stop.pilotStoppedAt <= Date.now() &&
+      stop.authenticatedReceiptsVerified === true &&
+      stop.providerAttemptsSinceStop === 0 &&
+      stop.lateReplies === 0 &&
+      isRecord(uat) &&
+      uat.exactOwnerChatVerified === true &&
+      uat.expectedRouteAndReplyRecorded === true &&
+      uat.priorCaseBackendAndVisibleEvidenceVerified === true &&
+      uat.ownerSendsOneMessage === true &&
+      uat.noStopCondition === true &&
+      uat.killSwitchCaseNotPreviouslySent === true &&
+      uat.noReplacementSession === true
+      ? { allowed: true, reason: "V21_SINGLE_POST_STOP_OWNER_VERIFICATION" }
+      : deny;
+  }
+  if (action === "OWNER_UAT_NEXT_CASE") {
+    const session = evidence.session,
+      uat = evidence.uat;
+    return deploys.length === 1 &&
+      continuations.length === 1 &&
+      test.sourceCommit === WP8F_V21_COMPLETION.sourceCommit &&
+      test.artifactSha256 === WP8F_V21_COMPLETION.artifactSha256 &&
+      test.pilot === "ACTIVE" &&
+      test.aiAdmission === true &&
+      test.ownerMode === "BOT_ACTIVE" &&
+      test.inFlight === 0 &&
+      test.pendingAttempts === 0 &&
+      test.reservedMicroUsd === 0 &&
+      test.pendingDeliveryClaims === 0 &&
+      test.activeDeliveryClaims === 0 &&
+      test.orphanDeliveryClaims === 0 &&
+      typeof test.events === "number" &&
+      test.events >= 6 &&
+      test.events < 200 &&
+      typeof test.attempts === "number" &&
+      test.attempts >= 6 &&
+      test.attempts < 200 &&
+      typeof test.consumedMicroUsd === "number" &&
+      test.consumedMicroUsd >= 34082 &&
+      test.consumedMicroUsd < 5000000 &&
+      isRecord(session) &&
+      session.ownerLineageVerified === true &&
+      session.activeSessions === 1 &&
+      session.continuationMarkers === 1 &&
+      session.maximumConcurrency === 1 &&
+      typeof session.startedAt === "number" &&
+      typeof session.expiresAt === "number" &&
+      session.startedAt <= Date.now() &&
+      session.expiresAt > Date.now() &&
+      session.expiresAt - session.startedAt > 0 &&
+      session.expiresAt - session.startedAt <= 3600000 &&
+      isRecord(uat) &&
+      uat.acceptanceCriteriaUnchanged === true &&
+      uat.exactOwnerChatVerified === true &&
+      uat.expectedRouteAndReplyRecorded === true &&
+      uat.priorCaseBackendAndVisibleEvidenceVerified === true &&
+      uat.noStopCondition === true &&
+      uat.humanHandoffIsLastConversationCase === true &&
+      uat.ownerSendsOneMessage === true
+      ? { allowed: true, reason: "V21_ONE_OWNER_MESSAGE_THEN_VERIFY" }
+      : deny;
+  }
+  if (
+    [
+      "CREATE_DRAFT_PR",
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+    ].includes(action)
+  ) {
+    const final = evidence.finalReview;
+    if (
+      !isRecord(final) ||
+      deploys.length !== 1 ||
+      continuations.length !== 1 ||
+      test.sourceCommit !== WP8F_V21_COMPLETION.sourceCommit ||
+      test.artifactSha256 !== WP8F_V21_COMPLETION.artifactSha256 ||
+      test.pilot !== "STOPPED" ||
+      test.aiAdmission !== false ||
+      test.reservedMicroUsd !== 0 ||
+      test.inFlight !== 0 ||
+      test.pendingAttempts !== 0 ||
+      test.pendingDeliveryClaims !== 0 ||
+      test.activeDeliveryClaims !== 0 ||
+      test.orphanDeliveryClaims !== 0 ||
+      final.acceptanceCriteriaUnchanged !== true ||
+      final.testAcceptance !== "PASS" ||
+      final.ownerUat !== "PASS" ||
+      final.killSwitch !== "PASS" ||
+      final.fencedRecovery !== "PASS" ||
+      final.securityReview !== "PASS" ||
+      final.findingsOpen !== 0 ||
+      final.providerAttemptsAfterStop !== 0 ||
+      final.lateReplies !== 0 ||
+      final.accountingAndHistoryPreserved !== true ||
+      final.handoffStateReported !== true ||
+      final.productionTouched !== false ||
+      !isFullSha(final.releaseCommit, 40) ||
+      final.reviewedCommit !== final.releaseCommit ||
+      final.runtimeEquivalentToFrozenCandidate !== true ||
+      final.ciHead !== final.releaseCommit ||
+      final.ciConclusion !== "success" ||
+      !isFullSha(final.acceptanceEvidenceSha256, 64) ||
+      !isFullSha(final.recoveryEvidenceSha256, 64) ||
+      !isFullSha(final.securityEvidenceSha256, 64) ||
+      final.defaultDriftReviewed !== true ||
+      final.conflicts !== false
+    )
+      return deny;
+    if (action === "MERGE_DEFAULT_BRANCH" || action === "CLOSE_ISSUE") {
+      const integration = evidence.integration;
+      if (
+        !isRecord(integration) ||
+        integration.repository !== "Eak-dev/malispang-lineOA" ||
+        integration.baseBranch !== "codex/phase-1a-foundation" ||
+        !isFullSha(integration.baseCommit, 40) ||
+        integration.headBranch !== "codex/mp-06-guardrailed-ai" ||
+        integration.headCommit !== final.releaseCommit ||
+        integration.freshRemoteHeadsVerified !== true ||
+        integration.requiredChecksPassed !== true ||
+        integration.reviewPassed !== true ||
+        integration.unresolvedFindings !== 0 ||
+        integration.mergeMethod !== "merge" ||
+        typeof integration.pullRequest !== "number" ||
+        !Number.isSafeInteger(integration.pullRequest) ||
+        integration.pullRequest <= 14
+      )
+        return deny;
+      if (
+        action === "CLOSE_ISSUE" &&
+        (integration.merged !== true ||
+          !isFullSha(integration.mergeCommit, 40) ||
+          integration.postMergeChecks !== "PASS" ||
+          integration.acceptanceMatrixUpdated !== true ||
+          integration.issue !== 12 ||
+          integration.roadmapUpdated !== true)
+      )
+        return deny;
+    }
+    return {
+      allowed: true,
+      reason: "V21_OWNER_CONDITIONAL_TEST_INTEGRATION_GATE_PASS",
+    };
+  }
+  return { allowed: false, reason: "UNKNOWN_OR_FORBIDDEN_ACTION" };
 }

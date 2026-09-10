@@ -1,25 +1,16 @@
 import { readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
   evaluateProjectAction,
   validateProjectControl,
   validateSchemaDocuments,
   validateWp8fOwnerDecisionRecord,
+  validateSuccessorOperationJournal,
 } from "./project-control.js";
 
 export async function runProjectControlValidation(root: URL): Promise<void> {
-  if (
-    !validateWp8fOwnerDecisionRecord(
-      await readFile(
-        new URL("docs/project/OWNER_DECISION_LOG.md", root),
-        "utf8",
-      ),
-    )
-  ) {
-    throw new Error(
-      "ROADMAP_UNVERIFIED: explicit v19 preparation-only Owner decision record missing or inconsistent",
-    );
-  }
   const [roadmap, currentWork, roadmapSchema, currentWorkSchema] =
     await Promise.all([
       readJson(root, "config/project/roadmap.json"),
@@ -28,10 +19,90 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       readJson(root, "config/project/current-work.schema.json"),
     ]);
 
+  const version =
+    typeof roadmap === "object" &&
+    roadmap !== null &&
+    "version" in roadmap &&
+    typeof roadmap.version === "string"
+      ? roadmap.version
+      : "UNKNOWN";
+  if (
+    !validateWp8fOwnerDecisionRecord(
+      await readFile(
+        new URL("docs/project/OWNER_DECISION_LOG.md", root),
+        "utf8",
+      ),
+      version,
+    )
+  ) {
+    throw new Error(
+      "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
+    );
+  }
+  if (version === "2026.09.10-v21") {
+    if (
+      typeof currentWork !== "object" ||
+      currentWork === null ||
+      !("wp8fSuccessorOperationJournal" in currentWork)
+    )
+      throw new Error("V21_OPERATION_JOURNAL_MISSING");
+    const journal = currentWork.wp8fSuccessorOperationJournal;
+    const cwd = fileURLToPath(root);
+    if (
+      execFileSync("git", ["rev-parse", "--is-shallow-repository"], {
+        cwd,
+        encoding: "utf8",
+      }).trim() !== "false"
+    )
+      throw new Error("V21_FULL_CHECKPOINT_HISTORY_REQUIRED");
+    const revisions = execFileSync(
+      "git",
+      [
+        "log",
+        "--format=%H",
+        "958b00eea5587d27858d3bdee1047ee52c0a736f^..HEAD",
+        "--",
+        "config/project/current-work.json",
+      ],
+      { cwd, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n");
+    for (const revision of revisions) {
+      if (!/^[a-f0-9]{40}$/u.test(revision))
+        throw new Error("V21_CONTROL_HISTORY_UNVERIFIED");
+      const historical: unknown = JSON.parse(
+        execFileSync(
+          "git",
+          ["show", revision + ":config/project/current-work.json"],
+          { cwd, encoding: "utf8", maxBuffer: 1024 * 1024 },
+        ),
+      );
+      if (
+        typeof historical === "object" &&
+        historical !== null &&
+        "roadmapVersion" in historical &&
+        historical.roadmapVersion === version
+      ) {
+        if (
+          !("wp8fSuccessorOperationJournal" in historical) ||
+          !validateSuccessorOperationJournal(
+            journal,
+            historical.wp8fSuccessorOperationJournal,
+          )
+        )
+          throw new Error("V21_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED");
+      }
+    }
+    if (!validateSuccessorOperationJournal(journal))
+      throw new Error("V21_OPERATION_JOURNAL_INVALID");
+  }
+
   const validation = validateProjectControl(roadmap, currentWork);
   const schemaErrors = validateSchemaDocuments(
     roadmapSchema,
     currentWorkSchema,
+    version,
   );
   const errors = [...validation.errors, ...schemaErrors].sort();
 
@@ -98,6 +169,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "CHANGE_TEST_TRAFFIC",
     "OPEN_CONTINUATION",
     "RECOVER_CONVERSATION",
+    "CLOSE_OWNER_HANDOFF",
+    "OWNER_UAT_NEXT_CASE",
+    "CREATE_PR",
     "ROLLBACK_TEST",
     "QUERY_PRODUCTION",
     "MERGE_DEFAULT_BRANCH",
@@ -117,7 +191,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    `Project control validation passed: 2026.09.09-v19, MP-06 (GitHub #12), exact TEST deployment preparation only; Owner PR #14 integration occurred before final review, not acceptance/deployment; grant APPROVED_UNUSED 0/1, executable deployment false; stop before upload/version/traffic mutation pending Owner execute confirmation; session/recovery/rollback/additional PR/merge/closure and Production blocked, ${warningSuffix}`,
+    version === "2026.09.10-v21"
+      ? `Project control validation passed: ${version}, MP-06 (#12), frozen successor TEST_ONLY; independent exact deployment/close/continuation/UAT/review/integration gates required; append-only operation history verified; historical PR14 is not acceptance; Production NO_GO, MP07 blocked; ${warningSuffix}`
+      : `Project control validation passed: ${version}, historical preparation only; no remote mutation; ${warningSuffix}`,
   );
 }
 

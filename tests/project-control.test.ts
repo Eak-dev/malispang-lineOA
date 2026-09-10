@@ -1,4 +1,6 @@
 import { readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
   afterEach,
@@ -17,6 +19,7 @@ import {
   validateWp8fOwnerDecisionRecord,
   validateProjectControl,
   validateSchemaDocuments,
+  validateSuccessorOperationJournal,
 } from "../src/project-control.js";
 
 const root = new URL("../", import.meta.url);
@@ -2337,8 +2340,16 @@ describe("MP-06 WP8F TEST acceptance completion", () => {
   });
 });
 
-async function readJson(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(new URL(path, root), "utf8")) as unknown;
+function readJson(path: string): unknown {
+  // Keep all 85 historical contract tests against their exact approved v19 fixture.
+  // Current v21 files have independent positive/negative tests below; no old assertions change.
+  return JSON.parse(
+    execFileSync(
+      "git",
+      ["show", "958b00eea5587d27858d3bdee1047ee52c0a736f:" + path],
+      { cwd: fileURLToPath(root), encoding: "utf8", maxBuffer: 1024 * 1024 },
+    ),
+  ) as unknown;
 }
 
 function clone<T>(value: T): T {
@@ -3284,5 +3295,883 @@ describe("v16 explicit Owner execution envelope", () => {
         { review: { ...review, ownerUat: "GAP" } },
       ).allowed,
     ).toBe(false);
+  });
+});
+
+// Synthetic sanitized gate receipts only. These never attest real remote state.
+const v21Version = "2026.09.10-v21";
+const v21Now = Date.parse("2026-09-10T05:00:00.000Z");
+const v21Target = {
+  worker: "malispang-lineoa-test",
+  sourceCommit: "bfff1a553868b85e5f66144e4741a51627f4a9be",
+  artifactSha256:
+    "8eabcc6a1628bfa776fa5768db49e2faa586ceaaaa6915510afec74835f2d2b5",
+};
+const v21Ids = [
+  "11111111-1111-4111-8111-111111111111",
+  "22222222-2222-4222-8222-222222222222",
+  "33333333-3333-4333-8333-333333333333",
+];
+let v21Roadmap: Record<string, unknown>,
+  v21Work: Record<string, unknown>,
+  actualV21Work: Record<string, unknown>,
+  v21Schema: unknown;
+function v21Journal(action: string, operationRef: string, attempt = 1) {
+  return {
+    action,
+    operationRef,
+    attempt,
+    startedAt: new Date(v21Now).toISOString(),
+    evidenceSha256: "e".repeat(64),
+  };
+}
+function v21Evidence() {
+  return {
+    provenance: "INDEPENDENT_OPERATOR_VERIFICATION",
+    ownerDecision: "MP-OD-2026-09-10-V21",
+    candidate: {
+      ...v21Target,
+      ciHead: v21Target.sourceCommit,
+      ciRun: 34436364217,
+      ciConclusion: "success",
+      testsPassed: 767,
+      testsFailed: 0,
+      testsSkipped: 0,
+      testsCancelled: 0,
+      auditAllLevelsZero: true,
+      protectedChecksumsUnchanged: true,
+      cleanFrozenInstall: true,
+      cleanBuild: true,
+      retainedAndEmptyMigrationPassed: true,
+      nodeVersion: "24.19.0",
+      pnpmVersion: "11.19.0",
+      reproducedArtifacts: [v21Target.artifactSha256, v21Target.artifactSha256],
+      executionBaseline: "47934a41aeebea9cf17a1cf3d3b98819179b4b97",
+      baselineAncestryVerified: true,
+      candidateIsControlAncestor: true,
+      controlCommit: "a".repeat(40),
+      controlOwnerDecision: "MP-OD-2026-09-10-V21",
+      controlTestsAndValidatorsPassed: true,
+      controlCiHead: "a".repeat(40),
+      controlCiConclusion: "success",
+      committedPushedAndClean: true,
+      exactDiffReviewed: true,
+      noDeployAffectingChangesAfterCandidate: true,
+      postCandidatePaths: [
+        "config/project/current-work.json",
+        "src/project-control.ts",
+      ],
+    },
+    test: {
+      account: "c395a1bc15b7c95267173de5ccd6407d",
+      worker: v21Target.worker,
+      environment: "TEST_ONLY",
+      accountIdentityVerified: true,
+      sourceArtifactAssociationVerified: true,
+      trafficPercent: 100,
+      bindingsSecretsConfigurationVerified: true,
+      health: "PASS",
+      observedAt: v21Now,
+      ownerIdentityVerified: true,
+      ownerLineageVerified: true,
+      observationReadOnly: true,
+      schemaSnapshotSha256: "b".repeat(64),
+      version: "8486019d-9b62-4de9-ae15-6299909a23d9",
+      sourceCommit: "8a5b6547b4713ff50ad6b08ee58682e129641b6a",
+      artifactSha256:
+        "15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64",
+      pilot: "STOPPED",
+      stopReason: "OPERATOR_STOP",
+      aiAdmission: false,
+      events: 6,
+      attempts: 6,
+      consumedMicroUsd: 34082,
+      reservedMicroUsd: 0,
+      inFlight: 0,
+      pendingAttempts: 0,
+      conservativeMicroUsd: 25864,
+      reportedUsageMicroUsd: 8218,
+      usageUnknownAttempts: 2,
+      settledAttempts: 4,
+      actualHistoricalBilling: "UNKNOWN",
+      pendingTemplate: null,
+      clarificationUsed: false,
+      pendingReplies: 0,
+      draftState: "EXPIRED_PURGED",
+      draftPurgeInvariantsVerified: true,
+      draftPendingReplies: 0,
+      ownerMode: "HUMAN_HANDOFF",
+      deliverySchema: "ABSENT_IN_ACTIVE_SOURCE_BY_DIRECT_STORAGE_OBSERVATION",
+      pendingDeliveryClaims: null as number | null,
+      legacyUndeliveredEvents: 0,
+      legacyUndeliveredPlans: 0,
+      legacyInventoryVerified: true,
+      activeDeliveryClaims: 0,
+      orphanDeliveryClaims: 0,
+      handoffGeneration: 1,
+      handoffCloseState: "NONE",
+      handoffRegistryActive: 1,
+      activationEligibility: false,
+      continuationMarkers: 0,
+    },
+    operation: {
+      action: "DEPLOY_TEST",
+      operationRef: v21Ids[0]!,
+      attempt: 1,
+      persistedAttemptsVerified: true,
+      observedJournal: [] as ReturnType<typeof v21Journal>[],
+      noPriorUnrecordedInvocation: true,
+      evidenceSha256: "e".repeat(64),
+      expectedGeneration: 1,
+    },
+    containment: {
+      ownerNoLine: true,
+      noSessionOrProbe: true,
+      noInFlightOrReserved: true,
+      additiveMigrationVerified: true,
+      ledgerHistoryPreserved: true,
+      independentOfUnfencedRollback: true,
+      globalLineEgressDisabled: false,
+      testOnlyResidualRiskAcknowledged: true,
+      automaticRollback: false,
+      unexpectedDeltaStopsAcceptance: true,
+      ambiguousOutcomeConsumesGrant: true,
+      failureCases: v19Evidence().containment.failureCases,
+    },
+    postDeployment: {
+      version: "44444444-4444-4444-8444-444444444444",
+      sourceCommit: v21Target.sourceCommit,
+      artifactSha256: v21Target.artifactSha256,
+      migrationAdditiveIdempotent: true,
+      legacyEventsPlansHistoryPreserved: true,
+      accountingUnchanged: true,
+      claimBackfillVerified: true,
+      handoffGenerationBackfillVerified: true,
+      registryFenceBackfillVerified: true,
+      unexpectedEventDelta: 0,
+      providerAttemptDelta: 0,
+      lineOutboundDelta: 0,
+      lateReplies: 0,
+      beforeSnapshotSha256: "b".repeat(64),
+      afterSnapshotSha256: "c".repeat(64),
+    },
+    handoffClose: {
+      operationRef: v21Ids[1]!,
+      generation: 1,
+      sameOriginalResult: true,
+      receiptId: "55555555-5555-4555-8555-555555555555",
+      registryReceiptVerified: true,
+      historyDraftsAccountingAndOtherConversationsUnchanged: true,
+    },
+    session: {
+      ownerLineageVerified: true,
+      activeSessions: 1,
+      continuationMarkers: 1,
+      maximumConcurrency: 1,
+      startedAt: v21Now - 60000,
+      expiresAt: v21Now + 3540000,
+    },
+    uat: {
+      acceptanceCriteriaUnchanged: true,
+      exactOwnerChatVerified: true,
+      expectedRouteAndReplyRecorded: true,
+      priorCaseBackendAndVisibleEvidenceVerified: true,
+      noStopCondition: true,
+      humanHandoffIsLastConversationCase: true,
+      ownerSendsOneMessage: true,
+    },
+    finalReview: {
+      acceptanceCriteriaUnchanged: true,
+      testAcceptance: "PASS",
+      ownerUat: "PASS",
+      killSwitch: "PASS",
+      fencedRecovery: "PASS",
+      securityReview: "PASS",
+      findingsOpen: 0,
+      providerAttemptsAfterStop: 0,
+      lateReplies: 0,
+      accountingAndHistoryPreserved: true,
+      handoffStateReported: true,
+      productionTouched: false,
+      releaseCommit: "c".repeat(40),
+      reviewedCommit: "c".repeat(40),
+      runtimeEquivalentToFrozenCandidate: true,
+      ciHead: "c".repeat(40),
+      ciConclusion: "success",
+      acceptanceEvidenceSha256: "a".repeat(64),
+      recoveryEvidenceSha256: "b".repeat(64),
+      securityEvidenceSha256: "c".repeat(64),
+      defaultDriftReviewed: true,
+      conflicts: false,
+    },
+    integration: {
+      repository: "Eak-dev/malispang-lineOA",
+      baseBranch: "codex/phase-1a-foundation",
+      baseCommit: "d".repeat(40),
+      headBranch: "codex/mp-06-guardrailed-ai",
+      headCommit: "c".repeat(40),
+      freshRemoteHeadsVerified: true,
+      requiredChecksPassed: true,
+      reviewPassed: true,
+      unresolvedFindings: 0,
+      mergeMethod: "merge",
+      pullRequest: 15,
+      merged: true,
+      mergeCommit: "e".repeat(40),
+      postMergeChecks: "PASS",
+      acceptanceMatrixUpdated: true,
+      issue: 12,
+      roadmapUpdated: true,
+    },
+  };
+}
+function v21Post() {
+  const work = clone(v21Work),
+    evidence = v21Evidence();
+  const journal = [v21Journal("DEPLOY_TEST", v21Ids[0]!)];
+  work.wp8fSuccessorOperationJournal = journal;
+  evidence.operation.observedJournal = journal;
+  Object.assign(evidence.test, {
+    sourceCommit: v21Target.sourceCommit,
+    artifactSha256: v21Target.artifactSha256,
+    version: evidence.postDeployment.version,
+    deliverySchema: "PRESENT_FENCED",
+    pendingDeliveryClaims: 0,
+  });
+  return { work, evidence, journal };
+}
+function v21Closed() {
+  const { work, evidence, journal } = v21Post();
+  journal.push(v21Journal("CLOSE_OWNER_HANDOFF", v21Ids[1]!));
+  Object.assign(evidence.test, {
+    ownerMode: "BOT_ACTIVE",
+    handoffCloseState: "COMPLETE",
+    handoffRegistryActive: 0,
+    activationEligibility: true,
+  });
+  Object.assign(evidence.operation, {
+    action: "OPEN_CONTINUATION",
+    operationRef: v21Ids[2]!,
+  });
+  return { work, evidence, journal };
+}
+function v21Final() {
+  const fixture = v21Closed();
+  fixture.journal.push(v21Journal("OPEN_CONTINUATION", v21Ids[2]!));
+  return fixture;
+}
+function assessV21(
+  action = "DEPLOY_TEST",
+  evidence: unknown = v21Evidence(),
+  work: unknown = v21Work,
+  target = v21Target,
+) {
+  return evaluateProjectAction(v21Roadmap, work, action, target, evidence);
+}
+describe("v21 frozen successor TEST and gated integration", () => {
+  beforeAll(async () => {
+    const readCurrent = async (
+      path: string,
+    ): Promise<Record<string, unknown>> => {
+      const parsed: unknown = JSON.parse(
+        await readFile(new URL(path, root), "utf8"),
+      );
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        Array.isArray(parsed)
+      )
+        throw new Error("INVALID_CURRENT_CONTROL_FIXTURE");
+      return parsed as Record<string, unknown>;
+    };
+    [v21Roadmap, actualV21Work, v21Schema] = await Promise.all([
+      readCurrent("config/project/roadmap.json"),
+      readCurrent("config/project/current-work.json"),
+      readCurrent("config/project/current-work.schema.json"),
+    ]);
+    // Model the originally unused grant for the scenario matrix, not a live reset.
+    // The actual committed journal is validated separately and by CLI history checks.
+    v21Work = clone(actualV21Work);
+    v21Work.wp8fSuccessorOperationJournal = [];
+  });
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(v21Now);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+  it("accepts the actual current v21 snapshot without changing any historical criteria", () => {
+    expect(validateProjectControl(v21Roadmap, actualV21Work).errors).toEqual(
+      [],
+    );
+    expect(validateProjectControl(v21Roadmap, v21Work).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(roadmapSchema, v21Schema, v21Version),
+    ).toEqual([]);
+    expect(v21Work.benchmarkAcceptanceCriteria).toEqual(
+      (currentWork as Record<string, unknown>).benchmarkAcceptanceCriteria,
+    );
+    expect(v21Work.wp8fExactDeploymentPreparation).toEqual(
+      (currentWork as Record<string, unknown>).wp8fExactDeploymentPreparation,
+    );
+    expect(v21Work.wp8fExecutionEnvelope).toEqual(
+      (currentWork as Record<string, unknown>).wp8fExecutionEnvelope,
+    );
+    expect(assessV21().allowed).toBe(true);
+  });
+  it("requires a separate matching Owner record and preserves the unmaterialized v20 fact", async () => {
+    const log = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(log, v21Version)).toBe(true);
+    for (const marker of [
+      v21Target.sourceCommit,
+      v21Target.artifactSha256,
+      "5611756729",
+      "supersedes 2026.09.09-v19",
+      "v20 APPROVED_BUT_NOT_MATERIALIZED",
+    ])
+      expect(
+        validateWp8fOwnerDecisionRecord(
+          log.replaceAll(marker, "MISSING"),
+          v21Version,
+        ),
+        marker,
+      ).toBe(false);
+    expect(
+      validateWp8fOwnerDecisionRecord(JSON.stringify(v21Work), v21Version),
+    ).toBe(false);
+  });
+  it("denies swapped versions, Owner decisions, supersedes, issue, phase, baseline and target", () => {
+    for (const [field, value] of Object.entries({
+      version: "2026.09.10-v22",
+      ownerDecision: {
+        decisionId: "SELF",
+        decidedAt: "2026-09-10",
+        supersedes: v21Version,
+      },
+      verifiedLatestBaseline: {
+        commit: v19Target.sourceCommit,
+        branch: "codex/mp-06-guardrailed-ai",
+        contains: ["MP-06"],
+      },
+    })) {
+      const changed = clone(v21Roadmap);
+      changed[field] = value;
+      expect(
+        validateProjectControl(changed, v21Work).errors.length,
+        field,
+      ).toBeGreaterThan(0);
+    }
+    for (const [field, value] of Object.entries({
+      workId: "MP-12",
+      githubIssue: 5,
+      currentPhase: "RELEASE",
+      targetEnvironment: "PRODUCTION",
+      roadmapVersion: "2026.09.09-v19",
+    })) {
+      const changed = clone(v21Work);
+      changed[field] = value;
+      expect(
+        assessV21("DEPLOY_TEST", v21Evidence(), changed).allowed,
+        field,
+      ).toBe(false);
+    }
+  });
+  it("rejects every mutation of the exact envelope and every missing candidate predicate", () => {
+    const envelope = v21Work.wp8fSuccessorCompletion as Record<string, unknown>;
+    for (const key of Object.keys(envelope)) {
+      const changed = clone(v21Work);
+      Reflect.set(
+        changed.wp8fSuccessorCompletion as object,
+        key,
+        "SELF_APPROVED",
+      );
+      expect(
+        assessV21("DEPLOY_TEST", v21Evidence(), changed).allowed,
+        key,
+      ).toBe(false);
+    }
+    // worker is target metadata, not an additional candidate attestation.
+    for (const key of Object.keys(v21Evidence().candidate).filter(
+      (key) => key !== "worker",
+    )) {
+      const e = v21Evidence();
+      Reflect.deleteProperty(e.candidate, key);
+      expect(assessV21("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+  });
+  it("denies failed or other-commit CI, changed tests/audit/checksums and nonreproducible artifacts", () => {
+    for (const [key, value] of Object.entries({
+      ciHead: v19Target.sourceCommit,
+      ciConclusion: "failure",
+      controlCiHead: "b".repeat(40),
+      testsPassed: 733,
+      testsFailed: 1,
+      testsSkipped: 1,
+      testsCancelled: 1,
+      auditAllLevelsZero: false,
+      protectedChecksumsUnchanged: false,
+      reproducedArtifacts: [v21Target.artifactSha256, "f".repeat(64)],
+      postCandidatePaths: ["worker/index.ts"],
+    })) {
+      const e = v21Evidence();
+      Reflect.set(e.candidate, key, value);
+      expect(assessV21("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+  });
+  it("requires exact fresh independent TEST identity and legacy-schema absence, not zero invented claims", () => {
+    for (const [key, value] of Object.entries({
+      account: "other",
+      environment: "PRODUCTION",
+      version: "83fab7f1-646a-4ed8-be4d-a5f38df3a072",
+      sourceCommit: v21Target.sourceCommit,
+      artifactSha256: v21Target.artifactSha256,
+      trafficPercent: 50,
+      observedAt: v21Now - 120001,
+      ownerIdentityVerified: false,
+      ownerLineageVerified: false,
+      observationReadOnly: false,
+      schemaSnapshotSha256: "bad",
+      deliverySchema: "PRESENT_FENCED",
+      pendingDeliveryClaims: 0,
+      legacyUndeliveredEvents: 1,
+      legacyUndeliveredPlans: 1,
+    })) {
+      const e = v21Evidence();
+      Reflect.set(e.test, key, value);
+      expect(assessV21("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+    const future = v21Evidence();
+    future.test.observedAt = v21Now + 1;
+    expect(assessV21("DEPLOY_TEST", future).allowed).toBe(false);
+    expect(assessV21("DEPLOY_TEST", v21Work).allowed).toBe(false);
+    expect(
+      assessV21("DEPLOY_TEST", v21Evidence(), v21Work, {
+        ...v21Target,
+        sourceCommit: v19Target.sourceCommit,
+      }).allowed,
+    ).toBe(false);
+  });
+  it("denies accounting, pending, draft, handoff and containment mismatches", () => {
+    for (const [key, value] of Object.entries({
+      events: 7,
+      attempts: 5,
+      consumedMicroUsd: 25864,
+      reservedMicroUsd: 1,
+      inFlight: 1,
+      pendingAttempts: 1,
+      conservativeMicroUsd: 0,
+      reportedUsageMicroUsd: 34082,
+      usageUnknownAttempts: 0,
+      settledAttempts: 6,
+      actualHistoricalBilling: "KNOWN",
+      ownerMode: "BOT_ACTIVE",
+      pendingTemplate: "T-C01",
+      pendingReplies: 1,
+      clarificationUsed: true,
+      draftPurgeInvariantsVerified: false,
+      draftPendingReplies: 1,
+      pilot: "ACTIVE",
+      aiAdmission: true,
+    })) {
+      const e = v21Evidence();
+      Reflect.set(e.test, key, value);
+      expect(assessV21("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+    for (const key of Object.keys(v21Evidence().containment)) {
+      const e = v21Evidence();
+      Reflect.deleteProperty(e.containment, key);
+      expect(assessV21("DEPLOY_TEST", e).allowed, key).toBe(false);
+    }
+  });
+  it("never grants Production, arbitrary upload, rollback, model changes, or remote action from current-work alone", () => {
+    for (const action of [
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "DEPLOY_PRODUCTION",
+      "ROLLBACK_TEST",
+      "UPLOAD_TEST_VERSION",
+      "CREATE_TEST_VERSION",
+      "CHANGE_TEST_TRAFFIC",
+      "LOCAL_IMPLEMENTATION",
+      "AI_NLU_IMPLEMENTATION_WP7",
+      "UNKNOWN",
+      "OPEN_SESSION",
+      "RECOVER_CONVERSATION",
+      "START_MP_07",
+    ]) {
+      expect(assessV21(action).allowed, action).toBe(false);
+    }
+    for (const action of [
+      "DEPLOY_TEST",
+      "CLOSE_OWNER_HANDOFF",
+      "OPEN_CONTINUATION",
+      "OWNER_UAT_NEXT_CASE",
+      "CREATE_PR",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+    ])
+      expect(
+        evaluateProjectAction(v21Roadmap, v21Work, action, v21Target).allowed,
+        action,
+      ).toBe(false);
+    const changed = clone(v21Work);
+    Reflect.set(changed.authorization as object, "production", true);
+    expect(assessV21("CHANGE_PRODUCTION", v21Evidence(), changed).allowed).toBe(
+      false,
+    );
+    changed.allowAll = true;
+    expect(validateProjectControl(v21Roadmap, changed).errors).toContain(
+      "V21_UNKNOWN_CURRENT_WORK_FIELDS",
+    );
+  });
+  it("denies wildcard/traversal/runtime/dependency paths while allowing only exact control/evidence paths", () => {
+    for (const paths of [
+      ["worker/index.ts"],
+      ["package.json"],
+      ["**"],
+      ["../PROJECT_CONTROL.md"],
+      ["./PROJECT_CONTROL.md"],
+      ["PROJECT_CONTROL.md", "PROJECT_CONTROL.md"],
+    ])
+      expect(
+        evaluateWp8fPaths(v21Roadmap, v21Work, "CONTROL_TRANSITION", paths)
+          .allowed,
+      ).toBe(false);
+    expect(
+      evaluateWp8fPaths(v21Roadmap, v21Work, "CONTROL_TRANSITION", [
+        "src/project-control.ts",
+      ]).allowed,
+    ).toBe(true);
+    expect(
+      evaluateWp8fPaths(v21Roadmap, v21Work, "EVIDENCE", [
+        "docs/project/EXECUTION_GATES.md",
+      ]).allowed,
+    ).toBe(true);
+    expect(
+      evaluateWp8fPaths(v21Roadmap, v21Work, "UNKNOWN", ["PROJECT_CONTROL.md"])
+        .allowed,
+    ).toBe(false);
+  });
+  it("retains acceptance criteria and closed schema, with no threshold downgrade or missing successor controls", () => {
+    const changed = clone(v21Work);
+    Reflect.set(
+      changed.benchmarkAcceptanceCriteria as object,
+      "minimumAutoCorrectnessPercent",
+      97,
+    );
+    expect(assessV21("DEPLOY_TEST", v21Evidence(), changed).allowed).toBe(
+      false,
+    );
+    for (const field of [
+      "wp8fSuccessorCompletion",
+      "wp8fSuccessorOperationJournal",
+    ]) {
+      const schema = clone(v21Schema) as {
+        properties: Record<string, unknown>;
+      };
+      delete schema.properties[field];
+      expect(
+        validateSchemaDocuments(roadmapSchema, schema, v21Version),
+      ).toContain("V21_SCHEMA_NOT_CLOSED");
+    }
+  });
+  it("consumes a deployment attempt on start, including ambiguous or rejected outcomes; no second deployment", () => {
+    const { work, evidence } = v21Post();
+    expect(
+      validateSuccessorOperationJournal(work.wp8fSuccessorOperationJournal),
+    ).toBe(true);
+    expect(assessV21("DEPLOY_TEST", evidence, work).allowed).toBe(false);
+    for (const result of ["UNKNOWN", "REJECTED", "TIMEOUT"]) {
+      Reflect.set(evidence.operation, "result", result);
+      expect(assessV21("DEPLOY_TEST", evidence, work).allowed).toBe(false);
+    }
+    expect(
+      validateSuccessorOperationJournal([], work.wp8fSuccessorOperationJournal),
+    ).toBe(false);
+  });
+  it("requires journal append-only identity, monotonic order, one deploy/continuation and same close operation up to three attempts", () => {
+    const deploy = v21Journal("DEPLOY_TEST", v21Ids[0]!);
+    const close = v21Journal("CLOSE_OWNER_HANDOFF", v21Ids[1]!);
+    const close2 = v21Journal("CLOSE_OWNER_HANDOFF", v21Ids[1]!, 2),
+      close3 = v21Journal("CLOSE_OWNER_HANDOFF", v21Ids[1]!, 3);
+    const continuation = v21Journal("OPEN_CONTINUATION", v21Ids[2]!);
+    expect(
+      validateSuccessorOperationJournal(
+        [deploy, close, close2, close3, continuation],
+        [deploy, close],
+      ),
+    ).toBe(true);
+    for (const journal of [
+      [close],
+      [deploy, deploy],
+      [deploy, continuation],
+      [deploy, close, { ...close2, operationRef: v21Ids[2] }],
+      [deploy, close, close2, close3, { ...close3, attempt: 4 }],
+      [deploy, close, continuation, continuation],
+      [deploy, close, continuation, close2],
+      [{ ...deploy, operationRef: "fabricated" }],
+      [{ ...deploy, extra: "ignore" }],
+      [{ ...deploy, attempt: 2 }],
+      [{ ...deploy, action: "QUERY_PRODUCTION" }],
+    ]) {
+      expect(validateSuccessorOperationJournal(journal)).toBe(false);
+    }
+    expect(
+      validateSuccessorOperationJournal(
+        [{ ...deploy, evidenceSha256: "b".repeat(64) }],
+        [deploy],
+      ),
+    ).toBe(false);
+  });
+  it("requires post-deploy source/schema/backfill/accounting/no-egress evidence before one Owner close", () => {
+    const { work, evidence } = v21Post();
+    Object.assign(evidence.operation, {
+      action: "CLOSE_OWNER_HANDOFF",
+      operationRef: v21Ids[1]!,
+    });
+    expect(assessV21("CLOSE_OWNER_HANDOFF", evidence, work).allowed).toBe(true);
+    for (const key of Object.keys(evidence.postDeployment)) {
+      const e = clone(evidence);
+      Reflect.deleteProperty(e.postDeployment, key);
+      expect(assessV21("CLOSE_OWNER_HANDOFF", e, work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const [key, value] of Object.entries({
+      ownerMode: "BOT_ACTIVE",
+      handoffGeneration: 2,
+      pendingDeliveryClaims: 1,
+      activeDeliveryClaims: 1,
+      orphanDeliveryClaims: 1,
+      deliverySchema: "ABSENT",
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.test, key, value);
+      expect(assessV21("CLOSE_OWNER_HANDOFF", e, work).allowed, key).toBe(
+        false,
+      );
+    }
+  });
+  it("permits only same-result same-generation incomplete close recovery within the three-attempt ceiling", () => {
+    const { work, evidence, journal } = v21Closed();
+    Object.assign(evidence.test, {
+      handoffCloseState: "CONVERSATION_CLOSED",
+      activationEligibility: false,
+    });
+    Object.assign(evidence.operation, {
+      action: "CLOSE_OWNER_HANDOFF",
+      operationRef: v21Ids[1]!,
+      attempt: 2,
+    });
+    expect(assessV21("CLOSE_OWNER_HANDOFF", evidence, work).allowed).toBe(true);
+    for (const [field, value] of Object.entries({
+      operationRef: v21Ids[2]!,
+      generation: 2,
+      sameOriginalResult: false,
+      receiptId: "forged",
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.handoffClose, field, value);
+      expect(assessV21("CLOSE_OWNER_HANDOFF", e, work).allowed, field).toBe(
+        false,
+      );
+    }
+    const reopened = clone(evidence);
+    reopened.test.ownerMode = "HUMAN_HANDOFF";
+    expect(assessV21("CLOSE_OWNER_HANDOFF", reopened, work).allowed).toBe(
+      false,
+    );
+    const complete = clone(evidence);
+    complete.test.handoffCloseState = "COMPLETE";
+    expect(assessV21("CLOSE_OWNER_HANDOFF", complete, work).allowed).toBe(
+      false,
+    );
+    journal.push(
+      v21Journal("CLOSE_OWNER_HANDOFF", v21Ids[1]!, 2),
+      v21Journal("CLOSE_OWNER_HANDOFF", v21Ids[1]!, 3),
+    );
+    evidence.operation.attempt = 4;
+    expect(assessV21("CLOSE_OWNER_HANDOFF", evidence, work).allowed).toBe(
+      false,
+    );
+  });
+  it("allows continuation only after reconciled original close and fresh empty pending state, without ledger reset", () => {
+    const { work, evidence, journal } = v21Closed();
+    expect(assessV21("OPEN_CONTINUATION", evidence, work).allowed).toBe(true);
+    for (const [key, value] of Object.entries({
+      activationEligibility: false,
+      handoffCloseState: "CONVERSATION_CLOSED",
+      handoffRegistryActive: 1,
+      continuationMarkers: 1,
+      consumedMicroUsd: 0,
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.test, key, value);
+      expect(assessV21("OPEN_CONTINUATION", e, work).allowed, key).toBe(false);
+    }
+    const e = clone(evidence);
+    e.handoffClose.registryReceiptVerified = false;
+    expect(assessV21("OPEN_CONTINUATION", e, work).allowed).toBe(false);
+    journal.push(v21Journal("OPEN_CONTINUATION", v21Ids[2]!));
+    expect(assessV21("OPEN_CONTINUATION", evidence, work).allowed).toBe(false);
+  });
+  it("allows only one-at-a-time active Owner UAT with prior evidence, unchanged caps and HUMAN_HANDOFF last", () => {
+    const { work, evidence } = v21Final();
+    Object.assign(evidence.test, {
+      pilot: "ACTIVE",
+      aiAdmission: true,
+      continuationMarkers: 1,
+    });
+    expect(assessV21("OWNER_UAT_NEXT_CASE", evidence, work).allowed).toBe(true);
+    for (const key of Object.keys(evidence.uat)) {
+      const e = clone(evidence);
+      Reflect.set(e.uat, key, false);
+      expect(assessV21("OWNER_UAT_NEXT_CASE", e, work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const [key, value] of Object.entries({
+      events: 200,
+      attempts: 200,
+      consumedMicroUsd: 5000000,
+      reservedMicroUsd: 1,
+      pendingAttempts: 1,
+      ownerMode: "HUMAN_HANDOFF",
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.test, key, value);
+      expect(assessV21("OWNER_UAT_NEXT_CASE", e, work).allowed, key).toBe(
+        false,
+      );
+    }
+    const expired = clone(evidence);
+    expired.session.expiresAt = v21Now;
+    expect(assessV21("OWNER_UAT_NEXT_CASE", expired, work).allowed).toBe(false);
+    const longer = clone(evidence);
+    longer.session.expiresAt = v21Now + 3600000;
+    expect(assessV21("OWNER_UAT_NEXT_CASE", longer, work).allowed).toBe(false);
+  });
+  it("does not wait for CI/accounting success to contain the exact TEST session", () => {
+    const e = v21Evidence();
+    e.candidate.ciConclusion = "failure";
+    e.test.inFlight = 1;
+    e.test.aiAdmission = true;
+    e.test.pilot = "ACTIVE";
+    e.test.health = "FAIL";
+    e.test.ownerLineageVerified = false;
+    e.test.schemaSnapshotSha256 = "UNKNOWN";
+    expect(assessV21("STOP_TEST", e).allowed).toBe(true);
+    e.test.environment = "PRODUCTION";
+    expect(assessV21("STOP_TEST", e).allowed).toBe(false);
+  });
+  it("denies operation-key reuse across deployment, close and continuation", () => {
+    const { work, evidence } = v21Post();
+    Object.assign(evidence.operation, {
+      action: "CLOSE_OWNER_HANDOFF",
+      operationRef: v21Ids[0]!,
+    });
+    expect(assessV21("CLOSE_OWNER_HANDOFF", evidence, work).allowed).toBe(
+      false,
+    );
+    const closed = v21Closed();
+    closed.evidence.operation.operationRef = v21Ids[1]!;
+    expect(
+      assessV21("OPEN_CONTINUATION", closed.evidence, closed.work).allowed,
+    ).toBe(false);
+  });
+  it("requires verified ordered stop receipts and a single Owner case, without reopening or hiding handoff", () => {
+    const { work, evidence } = v21Final();
+    evidence.test.ownerMode = "HUMAN_HANDOFF";
+    const e = {
+      ...evidence,
+      stop: {
+        aiDisabledAt: v21Now - 2000,
+        pilotStoppedAt: v21Now - 1000,
+        authenticatedReceiptsVerified: true,
+        providerAttemptsSinceStop: 0,
+        lateReplies: 0,
+      },
+      uat: {
+        ...evidence.uat,
+        killSwitchCaseNotPreviouslySent: true,
+        noReplacementSession: true,
+      },
+    };
+    expect(assessV21("OWNER_KILL_SWITCH_CASE", e, work).allowed).toBe(true);
+    for (const [field, value] of Object.entries({
+      aiDisabledAt: v21Now,
+      pilotStoppedAt: v21Now + 1,
+      authenticatedReceiptsVerified: false,
+      providerAttemptsSinceStop: 1,
+      lateReplies: 1,
+    })) {
+      const changed = clone(e);
+      Reflect.set(changed.stop, field, value);
+      expect(
+        assessV21("OWNER_KILL_SWITCH_CASE", changed, work).allowed,
+        field,
+      ).toBe(false);
+    }
+    e.uat.killSwitchCaseNotPreviouslySent = false;
+    expect(assessV21("OWNER_KILL_SWITCH_CASE", e, work).allowed).toBe(false);
+  });
+  it("requires every TEST/kill-switch/recovery/security/CI fact before a remediation PR", () => {
+    const { work, evidence } = v21Final();
+    expect(assessV21("CREATE_PR", evidence, work).allowed).toBe(true);
+    expect(assessV21("CREATE_DRAFT_PR", evidence, work).allowed).toBe(true);
+    for (const key of Object.keys(evidence.finalReview)) {
+      const e = clone(evidence);
+      Reflect.deleteProperty(e.finalReview, key);
+      expect(assessV21("CREATE_PR", e, work).allowed, key).toBe(false);
+    }
+    for (const [key, value] of Object.entries({
+      ciHead: "b".repeat(40),
+      runtimeEquivalentToFrozenCandidate: false,
+      ownerUat: "GAP",
+      fencedRecovery: "BLOCKED",
+      providerAttemptsAfterStop: 1,
+      lateReplies: 1,
+      findingsOpen: 1,
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.finalReview, key, value);
+      expect(assessV21("CREATE_PR", e, work).allowed, key).toBe(false);
+    }
+  });
+  it("requires new reviewed PR, exact head/base/checks and merge method, and actual integration before Issue12 closure", () => {
+    const { work, evidence } = v21Final();
+    expect(assessV21("MERGE_DEFAULT_BRANCH", evidence, work).allowed).toBe(
+      true,
+    );
+    expect(assessV21("CLOSE_ISSUE", evidence, work).allowed).toBe(true);
+    for (const [key, value] of Object.entries({
+      pullRequest: 14,
+      headCommit: "b".repeat(40),
+      requiredChecksPassed: false,
+      reviewPassed: false,
+      mergeMethod: "squash",
+      freshRemoteHeadsVerified: false,
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.integration, key, value);
+      expect(assessV21("MERGE_DEFAULT_BRANCH", e, work).allowed, key).toBe(
+        false,
+      );
+    }
+    for (const [key, value] of Object.entries({
+      merged: false,
+      mergeCommit: null,
+      postMergeChecks: "FAIL",
+      issue: 5,
+      roadmapUpdated: false,
+    })) {
+      const e = clone(evidence);
+      Reflect.set(e.integration, key, value);
+      expect(assessV21("CLOSE_ISSUE", e, work).allowed, key).toBe(false);
+    }
   });
 });
