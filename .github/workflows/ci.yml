@@ -1,0 +1,57 @@
+name: MP-06 validation
+
+on:
+  push:
+    branches: [codex/mp-06-guardrailed-ai]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Frozen toolchain / full validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      WRANGLER_SEND_METRICS: "false"
+      CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "false"
+    steps:
+      - name: Checkout exact event commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, immutable pin
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pinned Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6, immutable pin
+        with:
+          node-version: "24.19.0"
+          package-manager-cache: false
+      - name: Pinned pnpm
+        run: npm install --global pnpm@11.19.0
+      - name: Clean frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Full local-only project gates
+        # Includes format/lint/types/build, all Node and Worker/SQLite tests,
+        # every project validator, frozen 5,000-case benchmark and local dry-run.
+        # validate:production-readiness reads committed documents, not Production.
+        # No Cloudflare/LINE/OpenAI credentials or remote bindings are supplied.
+        run: pnpm check
+      - name: Secret scan
+        run: pnpm secret:scan
+      - name: Dependency audit - zero at every severity
+        run: |
+          pnpm audit --json | node --input-type=module -e '
+            let raw = "";
+            for await (const chunk of process.stdin) raw += chunk;
+            const report = JSON.parse(raw);
+            const counts = report.metadata?.vulnerabilities;
+            if (!counts || !["info", "low", "moderate", "high", "critical"].every(level => counts[level] === 0)) {
+              console.error("Dependency audit gate failed", counts ?? "MISSING_METADATA");
+              process.exit(1);
+            }
+            console.log("Dependency audit PASS", counts);
+          '
+      - name: Generated evidence and tracked input stability
+        run: git diff --exit-code
