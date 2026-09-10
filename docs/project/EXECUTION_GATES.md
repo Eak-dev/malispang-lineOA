@@ -1123,3 +1123,56 @@ Historical failed run34526504485/head a9bafd83856b351136e04f28164718a5eb2fb477 r
 Frozen runtime candidate1790da58635edcee154b60d76730248e8130c2d3 and its two clean-checkout252715-byte bundles were rehashed unchanged: adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657. This is artifact/input equivalence, not a new runtime build or deployment candidate. State/schema/accounting behavior, protected policy/WP7/catalog/benchmark inputs and deployment configuration are unchanged. No TEST query, TEST_ADMIN_KEY access, deployment, activation, remote STOP, LINE/U2, rollback, new PR/merge/closure or Production operation. Synthetic fixture cleanup is local SQLite only and does not use the remote STOP grant. Deployment/activation/STOP remain0/1 each. Primary U1 GAP/A1–A3 UNRESOLVED/billing UNKNOWN retained. Status WIP — NOT_DEPLOYABLE pending exact instrumented CI and honest timeout analysis; Issue12 OPEN, Production NO_GO — NOT TOUCHED.
 
 Pre-push validation PASS: whole-checkout formatting, whole-project ESLint, both Node/Worker TypeScript checks, project-control/schema/history/journals,121/121 control tests, secret scan214 files, exact four-path/no-removal diff and test AST equivalence. The appended evidence was also formatted/checked explicitly. Local Worker file164/164 and focused2/2 results above are separate runs, not additive unique-case totals. No full857-case local run is claimed for this narrow timing change; the one automatic hosted checkpoint run must exercise the unchanged full workflow and report its actual outcome. Historical failed CI remains unresolved, not an ignored gate.
+
+#### Instrumented hosted result — INSTRUMENTED_RUN_PASS, cause unresolved
+
+Exact instrumentation checkpoint **3fd4fdb184cda134f05c6effb22a7c4046094556**, parent e6888f65fae9a0f20478b412ca62426e26101b5c. Its single automatic push-triggered [CI run34533153312](https://github.com/Eak-dev/malispang-lineOA/actions/runs/34533153312), job103058463883, ran2026-09-10T21:37:03Z–21:43:11Z on the unchanged macos-15-intel workflow and finished SUCCESS. No workflow dispatch, manual rerun, retry-until-green or settings change. Checkpoint receipts: Issue12 comment5625785484 and Roadmap9 comment5625785756.
+
+Fresh hosted full-suite result: **857/857 PASS =551 Node +14 benchmark +292 Worker**, no failed/skipped/cancelled tests; the target file passed164/164 in44168ms. All13 job steps succeeded, including frozen install/pinned toolchain, formatting/lint/Node-and-Worker typecheck/build, project/control/policy/readiness validators, local dry-run, secret scan214, audit zero at every severity and generated-input stability. The local document-only Production-readiness validator did not query Production. Benchmark5000, zero false-auto/unsupported/leakage, semantic checksum f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6; frozen WP7 semantic checksum7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55. Audit info/low/moderate/high/critical=0/0/0/0/0. No full-suite acceptance is inferred for live UAT.
+
+All29 expected markers were captured once:13 observation-error,16 unconfirmed ACK; last completed phase for both was cleanup_stop_complete. Both original final assertions and cleanup completed. The span below is the difference between adjacent emitted markers, in milliseconds; it includes intervening test/runtime/mock/logging work and is not isolated RPC latency. Local means the complete164-case run, not the faster focused run. Cumulative elapsed remains relative to the individual callback entry.
+
+| synthetic_observation_error phase                  | Local span ms | Hosted span ms | Hosted minus local ms | Hosted cumulative ms |
+| -------------------------------------------------- | ------------: | -------------: | --------------------: | -------------------: |
+| test_started                                       |             0 |              0 |                     0 |                    0 |
+| setup_complete                                     |            59 |             96 |                    37 |                   96 |
+| other_claim_complete                               |            51 |             67 |                    16 |                  163 |
+| fixture_ready                                      |             0 |              1 |                     1 |                  164 |
+| delivery_claim_rpc_complete                        |            21 |             39 |                    18 |                  203 |
+| observation_rpc_fault_reached                      |             8 |             19 |                    11 |                  222 |
+| signed_webhook_complete                            |             1 |              1 |                     0 |                  223 |
+| send_guard_assertions_complete                     |             0 |              0 |                     0 |                  223 |
+| pilot_observation_complete                         |             6 |             14 |                     8 |                  237 |
+| handoff_observation_complete                       |             6 |             10 |                     4 |                  247 |
+| delivery_observation_and_final_assertions_complete |             7 |             10 |                     3 |                  257 |
+| globals_restored                                   |             0 |              0 |                     0 |                  257 |
+| cleanup_stop_complete                              |             6 |             10 |                     4 |                  267 |
+
+| synthetic_unconfirmed_ack phase          | Local span ms | Hosted span ms | Hosted minus local ms | Hosted cumulative ms |
+| ---------------------------------------- | ------------: | -------------: | --------------------: | -------------------: |
+| test_started                             |             0 |              0 |                     0 |                    0 |
+| setup_complete                           |            58 |             86 |                    28 |                   86 |
+| fixture_ready                            |             0 |              0 |                     0 |                   86 |
+| delivery_claim_rpc_complete              |           106 |            117 |                    11 |                  203 |
+| ack_rpc_fault_reached                    |             7 |             14 |                     7 |                  217 |
+| signed_webhook_complete                  |             0 |              1 |                     1 |                  218 |
+| claimed_observation_complete             |             7 |             12 |                     5 |                  230 |
+| eviction_complete                        |             2 |              4 |                     2 |                  234 |
+| restart_duplicate_webhook_complete       |            43 |             54 |                    11 |                  288 |
+| duplicate_suppression_assertion_complete |             0 |              1 |                     1 |                  289 |
+| acknowledgement_complete                 |            10 |             18 |                     8 |                  307 |
+| idempotent_acknowledgement_complete      |             6 |             13 |                     7 |                  320 |
+| independent_event_webhook_complete       |            59 |             93 |                    34 |                  413 |
+| final_assertions_complete                |             7 |             15 |                     8 |                  428 |
+| globals_restored                         |             0 |              0 |                     0 |                  428 |
+| cleanup_stop_complete                    |             6 |             12 |                     6 |                  440 |
+
+Observation-error completed at267ms hosted versus165ms local; unconfirmed ACK at440ms versus311ms. Largest hosted spans in these two callbacks were setup96ms and pre-claim work117ms respectively; independent-event webhook93ms, eviction4ms and post-eviction duplicate54ms completed in the ACK case. These observed spans are not proven timeout hotspots. The ACK case's Vitest whole-test duration was441ms; phase clocks and whole-test reporter time are different boundaries.
+
+Comparison with failed [run34526504485](https://github.com/Eak-dev/malispang-lineOA/actions/runs/34526504485): both cases exceeded the unchanged5000ms watchdog, with whole-test reporter durations7326ms/5098ms. Historical per-phase timings and last completed await are UNKNOWN because that revision had no markers. Do not subtract current callback timing from old whole-test time to claim an optimization, infer benign runner load or identify a causative RPC. Earlier local/e688 passing results and this single instrumented pass do not erase the failure. Marker output itself may perturb scheduling/timing; this was not an uninstrumented controlled performance comparison.
+
+Verdict **INSTRUMENTED_RUN_PASS / ROOT_CAUSE_UNRESOLVED / WIP — NOT_DEPLOYABLE**. No performance/harness/runtime remediation is justified by this pass alone, and none was implemented. If a subsequent independently authorized observation exposes a timeout, the existing last completed phase can bound the next incomplete interval; propose the exact test/harness/runtime change and its proof before modifying it. No automatic rerun or new diagnostic workload is authorized here.
+
+Runtime candidate1790da58635edcee154b60d76730248e8130c2d3, v22 control4b3a91c1e1c6748a1b6da2920888f87d736c1138 and artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657 remain unchanged; this checkpoint is not a replacement candidate. Frozen runtime/config/dependency/workflow inputs and policy/WP7/catalog/benchmark checksums are unchanged. Delivery/schema/rollback semantics were not modified; previous compatible fix-forward containment and prohibition on automatic unfenced rollback still apply, with no new recovery acceptance claim.
+
+No TEST state was queried or freshly attested this round. No credential/TEST_ADMIN_KEY read, remote deployment/activation/STOP/LINE/U2/session, rollback, PR/merge/closure, MP07 or Production query/action. Deployment, successor activation and remote STOP grants each remain **APPROVED_UNUSED —0/1**. Primary AI-ON U1 GAP, A1–A3 UNRESOLVED/AUDIT_RETENTION_RECONCILIATION_GAP and historical provider billing UNKNOWN are retained. Issue12 OPEN; Production NO_GO — NOT TOUCHED. Append this result as a separate evidence-only checkpoint and update both issues. Any CI automatically created for that evidence descendant is a separate run, not a rerun of3fd4fdb and not a substitute for this exact instrumented verdict.
