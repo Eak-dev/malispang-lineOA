@@ -204,6 +204,13 @@ export class ConversationStateDO extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     void ctx.blockConcurrencyWhile(() => {
+      const handoffTables = this.ctx.storage.sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name IN ('handoff_generation', 'handoff_close_operation', 'handoff_close_attempts')",
+        )
+        .one().count;
+      if (handoffTables !== 0 && handoffTables !== 3)
+        throw new Error("HANDOFF_SCHEMA_INCOMPLETE");
       this.ctx.storage.sql.exec(`
         CREATE TABLE IF NOT EXISTS conversation_state (
           id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -217,9 +224,6 @@ export class ConversationStateDO extends DurableObject<Env> {
           id INTEGER PRIMARY KEY CHECK (id = 1),
           generation INTEGER NOT NULL CHECK (generation >= 0)
         );
-        INSERT OR IGNORE INTO handoff_generation
-          SELECT 1, CASE WHEN mode = 'HUMAN_HANDOFF' THEN 1 ELSE 0 END
-          FROM conversation_state WHERE id = 1;
         CREATE TABLE IF NOT EXISTS handoff_close_operation (
           id INTEGER PRIMARY KEY CHECK (id = 1),
           operation_ref TEXT NOT NULL UNIQUE,
@@ -365,6 +369,10 @@ export class ConversationStateDO extends DurableObject<Env> {
         CREATE INDEX IF NOT EXISTS idx_mp06_pilot_checkpoint_recorded
           ON mp06_pilot_lifecycle_checkpoints(recorded_at, sequence);
       `);
+      if (handoffTables === 0)
+        this.ctx.storage.sql.exec(
+          "INSERT INTO handoff_generation SELECT 1, CASE WHEN mode = 'HUMAN_HANDOFF' THEN 1 ELSE 0 END FROM conversation_state WHERE id = 1",
+        );
       return Promise.resolve();
     });
   }
@@ -767,6 +775,14 @@ export class ConversationStateDO extends DurableObject<Env> {
 
   /** SELECT-only. Neither an activation token nor a recovery capability. */
   handoffObservation() {
+    try {
+      return this.readHandoffState();
+    } catch {
+      return null;
+    }
+  }
+
+  private readHandoffState() {
     const sql = this.ctx.storage.sql;
     const generation = sql
       .exec<{ generation: number }>(
@@ -842,6 +858,7 @@ export class ConversationStateDO extends DurableObject<Env> {
       )
         return deny("HANDOFF_CLOSE_OPERATION_CONFLICT");
       const observed = this.handoffObservation();
+      if (!observed) return deny("HANDOFF_CLOSE_STATE_INVALID");
       if (
         observed.generation !== input.expectedGeneration ||
         (existing &&
@@ -933,7 +950,7 @@ export class ConversationStateDO extends DurableObject<Env> {
         row.receipt_id !== receipt.receiptId ||
         row.generation !== receipt.generation ||
         row.closed_at !== receipt.closedAt ||
-        this.handoffObservation().generation !== row.generation ||
+        this.handoffObservation()?.generation !== row.generation ||
         this.state() !== "BOT_ACTIVE" ||
         !Number.isSafeInteger(attempt) ||
         attempt < 1 ||
@@ -3174,6 +3191,11 @@ export class HandoffRegistryDO extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     void ctx.blockConcurrencyWhile(() => {
+      const existing = this.ctx.storage.sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'handoff_registry_fences'",
+        )
+        .one().count;
       this.ctx.storage.sql.exec(`
         CREATE TABLE IF NOT EXISTS active_handoffs (
           conversation_ref TEXT PRIMARY KEY,
@@ -3185,14 +3207,52 @@ export class HandoffRegistryDO extends DurableObject<Env> {
           closed_generation INTEGER NOT NULL,
           close_receipt_id TEXT
         );
-        INSERT OR IGNORE INTO handoff_registry_fences
-          SELECT conversation_ref, 1, 0, NULL FROM active_handoffs;
       `);
+      if (existing === 0)
+        this.ctx.storage.sql.exec(
+          "INSERT INTO handoff_registry_fences SELECT conversation_ref, 1, 0, NULL FROM active_handoffs",
+        );
       return Promise.resolve();
     });
   }
 
-  activate(conversationRef: string, now: number, generation: number): void {
+  private fence(conversationRef: string) {
+    const sql = this.ctx.storage.sql;
+    const row = sql
+      .exec<{
+        generation: number;
+        closed_generation: number;
+        close_receipt_id: string | null;
+      }>(
+        "SELECT generation, closed_generation, close_receipt_id FROM handoff_registry_fences WHERE conversation_ref = ?",
+        conversationRef,
+      )
+      .toArray()[0];
+    const active = sql
+      .exec<{ count: number }>(
+        "SELECT COUNT(*) AS count FROM active_handoffs WHERE conversation_ref = ?",
+        conversationRef,
+      )
+      .one().count;
+    if (
+      (!row && active !== 0) ||
+      (row &&
+        (!Number.isSafeInteger(row.generation) ||
+          row.generation < 1 ||
+          !Number.isSafeInteger(row.closed_generation) ||
+          row.closed_generation < 0 ||
+          row.closed_generation > row.generation ||
+          (row.closed_generation === 0
+            ? row.close_receipt_id !== null
+            : typeof row.close_receipt_id !== "string" ||
+              !/^[a-f0-9-]{36}$/u.test(row.close_receipt_id)) ||
+          (row.closed_generation === row.generation && active !== 0)))
+    )
+      return null;
+    return row;
+  }
+
+  activate(conversationRef: string, now: number, generation: number): boolean {
     if (
       !isMp06PilotReference(conversationRef) ||
       !isMp06PilotTimestamp(now) ||
@@ -3200,20 +3260,16 @@ export class HandoffRegistryDO extends DurableObject<Env> {
       generation < 1
     )
       throw new Error("HANDOFF_REGISTRY_INPUT_INVALID");
-    this.ctx.storage.transactionSync(() => {
+    return this.ctx.storage.transactionSync(() => {
       const sql = this.ctx.storage.sql;
-      const fence = sql
-        .exec<{ generation: number; closed_generation: number }>(
-          "SELECT generation, closed_generation FROM handoff_registry_fences WHERE conversation_ref = ?",
-          conversationRef,
-        )
-        .toArray()[0];
+      const fence = this.fence(conversationRef);
+      if (fence === null) return false;
       // A delayed activation can never revive a closed generation or replace a newer one.
       if (
         fence &&
         (generation < fence.generation || generation <= fence.closed_generation)
       )
-        return;
+        return false;
       sql.exec(
         "INSERT INTO handoff_registry_fences VALUES (?, ?, 0, NULL) ON CONFLICT(conversation_ref) DO UPDATE SET generation = excluded.generation",
         conversationRef,
@@ -3230,6 +3286,7 @@ export class HandoffRegistryDO extends DurableObject<Env> {
         conversationRef,
         now,
       );
+      return true;
     });
   }
 
@@ -3251,16 +3308,8 @@ export class HandoffRegistryDO extends DurableObject<Env> {
       return null;
     return this.ctx.storage.transactionSync(() => {
       const sql = this.ctx.storage.sql;
-      const fence = sql
-        .exec<{
-          generation: number;
-          closed_generation: number;
-          close_receipt_id: string | null;
-        }>(
-          "SELECT generation, closed_generation, close_receipt_id FROM handoff_registry_fences WHERE conversation_ref = ?",
-          conversationRef,
-        )
-        .toArray()[0];
+      const fence = this.fence(conversationRef);
+      if (fence === null) return null;
       if (
         fence &&
         (fence.generation > receipt.generation ||

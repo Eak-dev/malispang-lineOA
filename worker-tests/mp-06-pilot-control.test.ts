@@ -288,11 +288,9 @@ async function closeHttpFixture(
   const registry = env.HANDOFF_REGISTRY.getByName(
     `synthetic-close-registry:${label}`,
   );
-  await registry.activate(
-    f.owner,
-    Date.now(),
-    (await conversation.handoffObservation()).generation,
-  );
+  const handoff = await conversation.handoffObservation();
+  if (!handoff) throw new Error("EXPECTED_HANDOFF_GENERATION");
+  await registry.activate(f.owner, Date.now(), handoff.generation);
   const localEnv = {
     ...env,
     CONVERSATION_STATE: new Proxy(env.CONVERSATION_STATE, {

@@ -258,11 +258,10 @@ async function processLineEvent(
         return;
       }
       if (delivery.enteredHandoff) {
-        await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
-          conversationRef,
-          now,
-          (await conversation.handoffObservation()).generation,
-        );
+        if (!(await publishHandoff(conversation, conversationRef, now, env))) {
+          logOutcome(eventRef, "SILENT", "HANDOFF_REGISTRY_FENCE_REJECTED");
+          return;
+        }
       }
       if (
         !(await sendOwnedLineReply(
@@ -361,11 +360,10 @@ async function processLineEvent(
     return;
   }
   if (result.enteredHandoff) {
-    await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
-      conversationRef,
-      now,
-      (await conversation.handoffObservation()).generation,
-    );
+    if (!(await publishHandoff(conversation, conversationRef, now, env))) {
+      logOutcome(eventRef, "SILENT", "HANDOFF_REGISTRY_FENCE_REJECTED");
+      return;
+    }
   }
   const messages = replyMessages(
     result.replyKind,
@@ -417,11 +415,10 @@ async function processMp06Plan(
     return;
   }
   if (result.enteredHandoff) {
-    await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
-      conversationRef,
-      now,
-      (await conversation.handoffObservation()).generation,
-    );
+    if (!(await publishHandoff(conversation, conversationRef, now, env))) {
+      logOutcome(eventRef, "SILENT", "HANDOFF_REGISTRY_FENCE_REJECTED");
+      return;
+    }
   }
   const messages =
     result.replyKind === "HANDOFF_ACK" || plan.classification === "STAFF_ONLY"
@@ -445,6 +442,21 @@ async function processMp06Plan(
   )
     return;
   logOutcome(eventRef, "REPLIED", `MP06_${plan.classification}`);
+}
+
+async function publishHandoff(
+  conversation: DurableObjectStub<ConversationStateDO>,
+  conversationRef: string,
+  now: number,
+  env: Env,
+): Promise<boolean> {
+  const observed = await conversation.handoffObservation();
+  if (!observed) return false;
+  return env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
+    conversationRef,
+    now,
+    observed.generation,
+  );
 }
 
 async function sendOwnedLineReply(
@@ -585,6 +597,7 @@ async function handleAdmin(
         !context.clarificationUsed &&
         context.pendingTemplate === null &&
         context.pendingReplies === 0 &&
+        handoff !== null &&
         !handoff.pendingClose &&
         draftContext.nonBlocking &&
         draftContext.pendingReplies === 0;
@@ -1052,7 +1065,7 @@ async function handleAdmin(
       context.clarificationUsed ||
       context.pendingTemplate !== null ||
       context.pendingReplies !== 0 ||
-      (await conversation.handoffObservation()).pendingClose ||
+      (await conversation.handoffObservation())?.pendingClose !== false ||
       !order.nonBlocking ||
       order.pendingReplies !== 0 ||
       JSON.stringify(context) !==

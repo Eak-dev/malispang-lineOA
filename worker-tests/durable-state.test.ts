@@ -280,10 +280,12 @@ describe("Durable Object persistence and webhook security", () => {
     const conversationRef = "c".repeat(64);
     const stub = env.CONVERSATION_STATE.getByName(conversationRef);
     await stub.processEvent(baseInput);
+    const handoff = await stub.handoffObservation();
+    if (!handoff) throw new Error("EXPECTED_HANDOFF_GENERATION");
     await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
       conversationRef,
       baseInput.now,
-      (await stub.handoffObservation()).generation,
+      handoff.generation,
     );
     const response = await exports.default.fetch(
       new Request(
@@ -935,6 +937,43 @@ describe("successor durable one-logical handoff close", () => {
     await stub.markDelivered(baseInput.eventRef, actualClaim(event));
     return { name, stub };
   };
+  it.each([
+    "UPDATE handoff_registry_fences SET generation = 'unknown'",
+    "UPDATE handoff_registry_fences SET closed_generation = 2",
+    "UPDATE handoff_registry_fences SET close_receipt_id = 'forged'",
+    "DELETE FROM handoff_registry_fences",
+  ])(
+    "denies corrupt registry lineage without normalizing retained state: %s",
+    async (corrupt) => {
+      const { name, stub } = await fixture(corrupt);
+      const registry = env.HANDOFF_REGISTRY.getByName(
+        `synthetic-corrupt:${corrupt}`,
+      );
+      await registry.activate(name, baseInput.now, 1);
+      const close = await stub.closeHandoff(input);
+      if (!close.accepted) throw new Error("EXPECTED_CLOSE");
+      await runInDurableObject(registry, (_i, s) => {
+        s.storage.sql.exec(corrupt);
+      });
+      const snapshot = () =>
+        runInDurableObject(registry, (_i, s) => ({
+          active: s.storage.sql.exec("SELECT * FROM active_handoffs").toArray(),
+          fences: s.storage.sql
+            .exec("SELECT * FROM handoff_registry_fences")
+            .toArray(),
+        }));
+      const before = await snapshot();
+      expect(await registry.reconcileClose(name, close.receipt)).toBeNull();
+      expect(await registry.activate(name, baseInput.now, 2)).toBe(false);
+      await evictDurableObject(registry);
+      expect(await registry.reconcileClose(name, close.receipt)).toBeNull();
+      expect(await registry.activate(name, baseInput.now, 2)).toBe(false);
+      expect(await snapshot()).toEqual(before);
+      expect(await stub.handoffObservation()).toMatchObject({
+        pendingClose: true,
+      });
+    },
+  );
   it("one concurrent mutation, three counted attempts, stable receipt and durable replay ceiling", async () => {
     const { stub } = await fixture("concurrent");
     const before = await deliverySnapshot(stub);
@@ -990,6 +1029,27 @@ describe("successor durable one-logical handoff close", () => {
       { outcome: "HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED" },
       { outcome: "HANDOFF_CLOSE_OPERATION_CONFLICT" },
     ]);
+  });
+  it("reports missing generation as unavailable without repairing or granting a close after restart", async () => {
+    const { stub } = await fixture("missing-generation");
+    await runInDurableObject(stub, (_i, s) => {
+      s.storage.sql.exec("DELETE FROM handoff_generation");
+    });
+    const before = await deliverySnapshot(stub);
+    expect(await stub.handoffObservation()).toBeNull();
+    await evictDurableObject(stub);
+    expect(await stub.handoffObservation()).toBeNull();
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    expect(await stub.closeHandoff(input)).toEqual({
+      accepted: false,
+      code: "HANDOFF_CLOSE_STATE_INVALID",
+    });
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql.exec("SELECT * FROM handoff_generation").toArray(),
+      ),
+    ).toEqual([]);
   });
   it("recovers a lost response, fences wrong ACK, persists completion and prevents generation ABA", async () => {
     const { name, stub } = await fixture("lost-response");
