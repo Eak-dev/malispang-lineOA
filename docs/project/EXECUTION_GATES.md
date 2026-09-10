@@ -1072,3 +1072,54 @@ Two bounded local diagnostic runs used the unchanged exact1790 clean checkout, s
 Result **CI_GATE_FAILED / HOSTED_DELIVERY_TEST_TIMEOUT_UNRESOLVED / WIP — NOT_DEPLOYABLE**. The timeout did not reproduce locally, but that does not prove harmless runner load, eliminate an order/RPC/lifecycle issue or establish the uncompleted hosted security assertions. Root cause remains UNRESOLVED; preserve run34526504485 and the distinction between failed CI and passing local diagnostics. Any proposed fix must retain every security assertion,5000ms watchdog, zero retries and exact candidate integrity. A narrow next diagnostic proposal is phase timing around existing setup/send/claim observation/eviction/ACK/teardown in those two tests, with sanitized phase names/durations only; no such test/workflow/runtime edit is authorized or implemented by this credential-access instruction. Do not rerun CI just to conceal this result or deploy without the actual required SUCCESS and fresh-state gates.
 
 This turn made **no Keychain credential read, Wrangler authentication command, TEST query or remote mutation**, no activation/session/U2/LINE/provider/STOP/rollback/PR/merge/Issue closure/Production access. Current remote state was deliberately not refreshed because CI failed before the just-in-time preflight; last observed TEST facts remain timestamped above, not newly attested. Deployment0/1, successor activation0/1 and this STOP allowance0/1 remain unused. Primary AI-ON U1 GAP, A1–A3 UNRESOLVED/AUDIT_RETENTION_RECONCILIATION_GAP and historical billingUNKNOWN remain. Record Owner authorization plus the new CI blocker in an explicit-path pushed checkpoint/#9/#12 before pausing; no repeated credential-use approval is required.
+
+#### Owner-approved two-test timing instrumentation — local checkpoint
+
+2026-09-11, MP-06/Issue12/WP8F/TEST_ONLY, v22 control4b3a91c1e1c6748a1b6da2920888f87d736c1138. Starting branch/local/remote e6888f65fae9a0f20478b412ca62426e26101b5c verified clean; project-control/schema/history/journals PASS. Owner now explicitly authorizes only timing instrumentation in worker-tests/mp-06-pilot-control.test.ts for the observation-error grant case and the unconfirmed-acknowledgement case. This is not a runtime, workflow, timeout, assertion, retry, parallelism, deployment or credential-use authorization. Append-only checkpoint evidence is recorded in the three existing project evidence paths.
+
+Implementation adds53 lines, no removals. Two callback-local monotonic performance.now clocks emit only static synthetic test name, phase label and elapsedMs. The parameterized callback emits markers only for observation-error; its five other variants remain uninstrumented. There are13 and16 markers respectively, including entry, completed existing phases, the exact existing injected-fault boundary, final assertions and cleanup. A fault-reached marker means the synthetic exception point was reached, not that an observation/ACK succeeded. Restart is observed through the existing post-eviction duplicate webhook; no extra restart/RPC/poll/wait was introduced. TypeScript AST comparison after removing exactly33 timing declarations/calls matches the complete original file, preserving all assertions, calls, literals,5000ms watchdog and coverage. No runtime/config/dependency/workflow change.
+
+Validation uses an isolated tracked-files-only e688 checkout plus the exact test patch, pinned Node24.19.0/pnpm11.19.0/Vitest4.1.11, frozen lockfile, no local credential files and no real keys. An initial focused run at04:29:38Asia/Bangkok passed2/2 in203ms but the automatically selected agent reporter hid passing console output. The same instrumentation was then validated with the normal local reporter at04:31:57:2PASS,162 excluded only by the explicitly authorized focused command,173ms test time/1.49s total. Reporter selection is local reporting only, not a workflow/config/test behavior edit or a retry after failure. At04:32:15 the complete original-order file passed164/164, failed/skipped0,24908ms test time/26.23s total. Existing --no-file-parallelism matches the hosted command; no additional serialization was introduced.
+
+Times below are cumulative monotonic milliseconds from each callback entry; adjacent differences are phase spans, not isolated RPC latency. Zero spans reflect clock resolution/synchronous work, not proof of no work. No extra setup substeps or hidden internal RPC timings are inferred.
+
+| synthetic_observation_error phase                  | Focused ms | Full-file ms |
+| -------------------------------------------------- | ---------: | -----------: |
+| test_started                                       |          0 |            0 |
+| setup_complete                                     |         20 |           59 |
+| other_claim_complete                               |         31 |          110 |
+| fixture_ready                                      |         31 |          110 |
+| delivery_claim_rpc_complete                        |         56 |          131 |
+| observation_rpc_fault_reached                      |         65 |          139 |
+| signed_webhook_complete                            |         66 |          140 |
+| send_guard_assertions_complete                     |         66 |          140 |
+| pilot_observation_complete                         |         70 |          146 |
+| handoff_observation_complete                       |         73 |          152 |
+| delivery_observation_and_final_assertions_complete |         75 |          159 |
+| globals_restored                                   |         75 |          159 |
+| cleanup_stop_complete                              |         78 |          165 |
+
+| synthetic_unconfirmed_ack phase          | Focused ms | Full-file ms |
+| ---------------------------------------- | ---------: | -----------: |
+| test_started                             |          0 |            0 |
+| setup_complete                           |         12 |           58 |
+| fixture_ready                            |         13 |           58 |
+| delivery_claim_rpc_complete              |         47 |          164 |
+| ack_rpc_fault_reached                    |         50 |          171 |
+| signed_webhook_complete                  |         50 |          171 |
+| claimed_observation_complete             |         53 |          178 |
+| eviction_complete                        |         55 |          180 |
+| restart_duplicate_webhook_complete       |         61 |          223 |
+| duplicate_suppression_assertion_complete |         61 |          223 |
+| acknowledgement_complete                 |         64 |          233 |
+| idempotent_acknowledgement_complete      |         66 |          239 |
+| independent_event_webhook_complete       |         84 |          298 |
+| final_assertions_complete                |         87 |          305 |
+| globals_restored                         |         87 |          305 |
+| cleanup_stop_complete                    |         90 |          311 |
+
+Historical failed run34526504485/head a9bafd83856b351136e04f28164718a5eb2fb477 reported7326ms and5098ms respectively, both5000ms watchdog failures. It had no phase markers, so historical per-phase timings/last completed phase remain UNKNOWN. The later evidence-only e688 automatic run34528578436 is SUCCESS, but does not replace or explain the failure. This instrumentation checkpoint must obtain its own single automatic hosted run; no manual rerun. One passing instrumented run may be labeled INSTRUMENTED_RUN_PASS only, never root-cause resolved.
+
+Frozen runtime candidate1790da58635edcee154b60d76730248e8130c2d3 and its two clean-checkout252715-byte bundles were rehashed unchanged: adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657. This is artifact/input equivalence, not a new runtime build or deployment candidate. State/schema/accounting behavior, protected policy/WP7/catalog/benchmark inputs and deployment configuration are unchanged. No TEST query, TEST_ADMIN_KEY access, deployment, activation, remote STOP, LINE/U2, rollback, new PR/merge/closure or Production operation. Synthetic fixture cleanup is local SQLite only and does not use the remote STOP grant. Deployment/activation/STOP remain0/1 each. Primary U1 GAP/A1–A3 UNRESOLVED/billing UNKNOWN retained. Status WIP — NOT_DEPLOYABLE pending exact instrumented CI and honest timeout analysis; Issue12 OPEN, Production NO_GO — NOT TOUCHED.
+
+Pre-push validation PASS: whole-checkout formatting, whole-project ESLint, both Node/Worker TypeScript checks, project-control/schema/history/journals,121/121 control tests, secret scan214 files, exact four-path/no-removal diff and test AST equivalence. The appended evidence was also formatted/checked explicitly. Local Worker file164/164 and focused2/2 results above are separate runs, not additive unique-case totals. No full857-case local run is claimed for this narrow timing change; the one automatic hosted checkpoint run must exercise the unchanged full workflow and report its actual outcome. Historical failed CI remains unresolved, not an ignored gate.

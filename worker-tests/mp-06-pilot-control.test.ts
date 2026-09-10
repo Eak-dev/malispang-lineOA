@@ -2192,11 +2192,27 @@ describe("v18 signed-webhook delivery ownership integration", () => {
   ] as const)(
     "%s grant is rejected BEFORE the external LINE boundary",
     async (failure) => {
+      const timingStartedAt =
+        failure === "observation-error" ? performance.now() : undefined;
+      const timingMarker =
+        timingStartedAt === undefined
+          ? undefined
+          : (phase: string) => {
+              console.info(
+                JSON.stringify({
+                  test: "synthetic_observation_error",
+                  phase,
+                  elapsedMs: performance.now() - timingStartedAt,
+                }),
+              );
+            };
+      timingMarker?.("test_started");
       const actor = `U_SYNTHETIC_V18_GRANT_${failure}`;
       const { coordinator, conversation, before, localEnv } = await v17Setup(
         actor,
         true,
       );
+      timingMarker?.("setup_complete");
       const another = await conversation.processEvent({
         eventRef: await hashReference(actor + ":other"),
         decision: classifyText("ร้านอยู่ที่ไหน"),
@@ -2206,6 +2222,7 @@ describe("v18 signed-webhook delivery ownership integration", () => {
       });
       if (another.status !== "RESPOND")
         throw new Error("EXPECTED_REAL_OTHER_CLAIM");
+      timingMarker?.("other_claim_complete");
       const network = vi.fn<typeof fetch>();
       vi.stubGlobal("fetch", network);
       let original: DeliveryClaim | undefined;
@@ -2214,6 +2231,7 @@ describe("v18 signed-webhook delivery ownership integration", () => {
           if (key === "processEvent")
             return async (input: ProcessEventInput) => {
               const result = await target.processEvent(input);
+              timingMarker?.("delivery_claim_rpc_complete");
               if (result.status !== "RESPOND") return result;
               original = result.deliveryClaim;
               if (failure === "missing")
@@ -2247,6 +2265,7 @@ describe("v18 signed-webhook delivery ownership integration", () => {
             };
           if (key === "checkDeliveryClaim" && failure === "observation-error")
             return () => {
+              timingMarker?.("observation_rpc_fault_reached");
               throw new Error("SYNTHETIC_STORAGE_UNAVAILABLE");
             };
           const value: unknown = Reflect.get(target, key);
@@ -2268,15 +2287,20 @@ describe("v18 signed-webhook delivery ownership integration", () => {
             : value;
         },
       });
+      timingMarker?.("fixture_ready");
       try {
         await v17Send(actor, "คืนเงิน", `v18-grant-${failure}`, {
           ...localEnv,
           CONVERSATION_STATE: ns,
         });
+        timingMarker?.("signed_webhook_complete");
         expect(original).toBeDefined();
         expect(network).not.toHaveBeenCalled();
+        timingMarker?.("send_guard_assertions_complete");
         expect(await coordinator.mp06PilotStatus(Date.now())).toEqual(before);
+        timingMarker?.("pilot_observation_complete");
         expect(await conversation.state()).toBe("HUMAN_HANDOFF");
+        timingMarker?.("handoff_observation_complete");
         expect(
           await conversation.deliveryObservation(
             await hashReference(`v18-grant-${failure}`),
@@ -2284,30 +2308,47 @@ describe("v18 signed-webhook delivery ownership integration", () => {
         ).toMatchObject({
           state: failure === "fenced" ? "DELIVERY_UNKNOWN" : "CLAIMED",
         });
+        timingMarker?.("delivery_observation_and_final_assertions_complete");
       } finally {
         vi.unstubAllGlobals();
+        timingMarker?.("globals_restored");
         await coordinator.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
+        timingMarker?.("cleanup_stop_complete");
       }
     },
   );
 
   it("an unconfirmed acknowledgement never resends and a different event remains independent", async () => {
+    const timingStartedAt = performance.now();
+    const timingMarker = (phase: string) => {
+      console.info(
+        JSON.stringify({
+          test: "synthetic_unconfirmed_ack",
+          phase,
+          elapsedMs: performance.now() - timingStartedAt,
+        }),
+      );
+    };
+    timingMarker("test_started");
     const actor = "U_SYNTHETIC_V18_ACK_FAILURE";
     const { coordinator, conversation, before, localEnv } = await v17Setup(
       actor,
       false,
     );
+    timingMarker("setup_complete");
     let grant: DeliveryClaim | undefined;
     const wrapped = new Proxy(conversation, {
       get(target, key) {
         if (key === "processEvent")
           return async (input: ProcessEventInput) => {
             const result = await target.processEvent(input);
+            timingMarker("delivery_claim_rpc_complete");
             if (result.status === "RESPOND") grant = result.deliveryClaim;
             return result;
           };
         if (key === "markDelivered")
           return () => {
+            timingMarker("ack_rpc_fault_reached");
             throw new Error("SYNTHETIC_ACK_RPC_UNAVAILABLE");
           };
         const value: unknown = Reflect.get(target, key);
@@ -2332,33 +2373,45 @@ describe("v18 signed-webhook delivery ownership integration", () => {
       Promise.resolve(new Response(null, { status: 200 })),
     );
     vi.stubGlobal("fetch", v17Network(provider, line));
+    timingMarker("fixture_ready");
     try {
       await v17Send(actor, "ร้านอยู่ที่ไหน", "v18-ack-failure", {
         ...localEnv,
         CONVERSATION_STATE: ns,
       });
+      timingMarker("signed_webhook_complete");
       if (!grant) throw new Error("EXPECTED_REAL_GRANT");
       expect(
         await conversation.deliveryObservation(grant.eventRef),
       ).toMatchObject({ state: "CLAIMED" });
+      timingMarker("claimed_observation_complete");
       await evictDurableObject(conversation);
+      timingMarker("eviction_complete");
       await v17Send(actor, "ร้านอยู่ที่ไหน", "v18-ack-failure", localEnv);
+      timingMarker("restart_duplicate_webhook_complete");
       expect(line).toHaveBeenCalledTimes(1);
+      timingMarker("duplicate_suppression_assertion_complete");
       // A late acknowledgement refers to this SAME known-successful dispatch,
       // not a new delivery attempt or an inference from elapsed time.
       expect(await conversation.markDelivered(grant.eventRef, grant)).toBe(
         "ACKNOWLEDGED",
       );
+      timingMarker("acknowledgement_complete");
       expect(await conversation.markDelivered(grant.eventRef, grant)).toBe(
         "ALREADY_ACKNOWLEDGED",
       );
+      timingMarker("idempotent_acknowledgement_complete");
       await v17Send(actor, "ร้านอยู่ที่ไหน", "v18-distinct-event", localEnv);
+      timingMarker("independent_event_webhook_complete");
       expect(line).toHaveBeenCalledTimes(2);
       expect(provider).not.toHaveBeenCalled();
       expect(await coordinator.mp06PilotStatus(Date.now())).toEqual(before);
+      timingMarker("final_assertions_complete");
     } finally {
       vi.unstubAllGlobals();
+      timingMarker("globals_restored");
       await coordinator.stopMp06Pilot(Date.now(), "OPERATOR_STOP");
+      timingMarker("cleanup_stop_complete");
     }
   });
 });
