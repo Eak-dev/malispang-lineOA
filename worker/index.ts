@@ -1,6 +1,7 @@
 import {
   ConversationStateDO,
   HandoffRegistryDO,
+  MP06_SUCCESSOR_V22,
   type DeliveryClaim,
 } from "./durable-objects.js";
 import { DraftOrderDO, PromotionControlDO } from "./draft-order-objects.js";
@@ -575,6 +576,12 @@ async function handleAdmin(
       );
       const draftContext = await draft.ownerUatDraftObservation();
       const handoff = await conversation.handoffObservation();
+      const successorContext =
+        before.successorEligible || before.lineage === "IMMUTABLE_V22_SUCCESSOR"
+          ? await conversation.ownerUatSuccessorConversationObservation(
+              before.eventRef,
+            )
+          : undefined;
       if (!context || !draftContext)
         return result("READINESS_UNAVAILABLE", 409);
       // Cross-object observations are not a transaction or an activation capability.
@@ -588,7 +595,14 @@ async function handleAdmin(
         JSON.stringify(draftContext) !==
           JSON.stringify(await draft.ownerUatDraftObservation()) ||
         JSON.stringify(handoff) !==
-          JSON.stringify(await conversation.handoffObservation())
+          JSON.stringify(await conversation.handoffObservation()) ||
+        (successorContext !== undefined &&
+          JSON.stringify(successorContext) !==
+            JSON.stringify(
+              await conversation.ownerUatSuccessorConversationObservation(
+                before.eventRef,
+              ),
+            ))
       )
         return result("READINESS_CHANGED_DURING_READ", 409);
       const ready =
@@ -615,6 +629,18 @@ async function handleAdmin(
             eligibleAtObservation: ready,
             authorizedByResponse: false,
           },
+          successorEligibility: {
+            contract: "WP8F_V22",
+            eligibleAtObservation:
+              before.successorEligible &&
+              successorContext?.retainedClarificationReady === true &&
+              draftContext.nonBlocking &&
+              draftContext.pendingReplies === 0,
+            authorizedByResponse: false,
+            clarificationBudgetReset: false,
+            primaryU1Satisfied: false,
+          },
+          ...(successorContext ? { delivery: successorContext.delivery } : {}),
           stateObservation: {
             available: true,
             lineage: before.lineage,
@@ -647,6 +673,76 @@ async function handleAdmin(
       );
     } catch {
       return result("READINESS_UNAVAILABLE", 409);
+    }
+  }
+  if (url.pathname === "/admin/mp06-pilot/continue-acceptance-v22") {
+    const respond = (code: string, status: number, receipt?: unknown) => {
+      const audit = {
+        actor: "AUTHENTICATED_TEST_ADMIN",
+        target: "RETAINED_WP8E_OWNER_CONVERSATION",
+        requestId: crypto.randomUUID(),
+        observedAt: new Date().toISOString(),
+        code,
+      };
+      console.info(
+        JSON.stringify({ outcome: "V22_SUCCESSOR_CONTROL", ...audit }),
+      );
+      return Response.json(
+        { outcome: code, ...(receipt ? { receipt } : {}), audit },
+        {
+          status,
+          headers: { "cache-control": "no-store" },
+        },
+      );
+    };
+    if (
+      request.method !== "POST" ||
+      !env.TEST_ADMIN_KEY ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      url.search !== "" ||
+      url.origin !== "https://malispang-lineoa-test.eakkachai-dev.workers.dev"
+    )
+      return respond("TEST_ADMIN_AND_EXACT_TARGET_REQUIRED", 403);
+    const limits = mp06PilotLimitsFromEnvironment(env);
+    const aiEnv = env as Env & Mp06AiNluEnvironment;
+    if (
+      !limits ||
+      aiEnv.MP06_AI_NLU_MODEL !== MP06_AI_NLU_MODEL ||
+      typeof aiEnv.OPENAI_API_KEY !== "string" ||
+      aiEnv.OPENAI_API_KEY.length < 20
+    )
+      return respond("SUCCESSOR_CONFIGURATION_INVALID", 403);
+    const input = parseAcceptanceResume(
+      decoder.decode(await readBoundedBody(request, MAX_ADMIN_BYTES)),
+    );
+    if (
+      !input ||
+      input.expectedSessionRef !== MP06_SUCCESSOR_V22.expectedSessionRef ||
+      input.operationRef !== MP06_SUCCESSOR_V22.operationRef
+    )
+      return respond("SUCCESSOR_INPUT_REJECTED", 400);
+    try {
+      // No Owner reference or readiness capability is accepted from HTTP. The
+      // Coordinator independently resolves lineage/context and atomically claims
+      // the fixed successor. No provider/LINE call, handoff-close or state reset.
+      const result = await env.CONVERSATION_STATE.getByName(
+        MP06_PILOT_CONTROL_OBJECT_NAME,
+      ).continueMp06AcceptanceV22({
+        ...input,
+        sessionRef: MP06_SUCCESSOR_V22.sessionRef,
+        now: Date.now(),
+        limits,
+      });
+      return respond(
+        result.code,
+        result.accepted ? (result.code === "ACTIVATED" ? 201 : 200) : 409,
+        result.accepted ? result.receipt : undefined,
+      );
+    } catch {
+      // Unknown outcome never yields a fresh operation, automatic retry or reopen.
+      return respond("SUCCESSOR_OUTCOME_UNRESOLVED", 503);
     }
   }
   const registry = env.HANDOFF_REGISTRY.getByName("test-active-handoffs");

@@ -167,6 +167,40 @@ interface Mp06ContinuationRow extends Record<string, SqlStorageValue> {
   prior_stop_reason: string;
 }
 
+// Public operation identifiers from the reviewed proposal, NOT credentials or
+// customer identities. This is one exact successor, never a renewal API.
+export const MP06_SUCCESSOR_V22 = Object.freeze({
+  expectedSessionRef:
+    "0af18b7d44468ca89d3d6a762892bda6cb812e6c2c7c41178bbd43b38bec7a8c",
+  operationRef:
+    "e26e1a51fc1f55e7472e5aa33b0f740f4188ed3ed31a29d3a758d8862fdbb25a",
+  sessionRef:
+    "9fbc9737f1b4a2a3eeed3addb79105b6867f1e22bd34863881124d3cfcfb3603",
+});
+
+interface Mp06SuccessorRow extends Mp06ContinuationRow {
+  previous_activated_at: number;
+  previous_expires_at: number;
+  prior_lineage_fingerprint: string;
+  owner_state_fingerprint: string;
+}
+
+export type Mp06SuccessorResult =
+  | {
+      readonly accepted: true;
+      readonly code: "ACTIVATED" | "ACTIVATED_IDEMPOTENT";
+      readonly receipt: {
+        readonly contract: "WP8F_V22";
+        readonly startedAt: number;
+        readonly expiresAt: number;
+        readonly events: 6;
+        readonly attempts: 6;
+        readonly consumedMicroUsd: 34082;
+        readonly reservedMicroUsd: 0;
+      };
+    }
+  | { readonly accepted: false; readonly code: string };
+
 interface Mp06PilotLifecycleRow extends Record<string, SqlStorageValue> {
   client_request_id: string;
   provider_request_id: string | null;
@@ -1098,12 +1132,26 @@ export class ConversationStateDO extends DurableObject<Env> {
       if (markers.length > 1) return null;
       const lineage = markers[0];
       const continuation = this.mp06ContinuationMarker();
+      const successor = this.mp06SuccessorMarker();
+      if (
+        successor &&
+        (!lineage ||
+          !continuation ||
+          successor.previous_session_ref !== continuation.session_ref ||
+          successor.session_ref !== session.session_ref ||
+          successor.activated_at !== session.started_at ||
+          successor.previous_activated_at !== continuation.activated_at ||
+          successor.owner_ref !== continuation.owner_ref)
+      )
+        return null;
       if (
         continuation &&
         (!lineage ||
           continuation.previous_session_ref !== lineage.session_ref ||
-          continuation.session_ref !== session.session_ref ||
-          continuation.activated_at !== session.started_at ||
+          continuation.session_ref !==
+            (successor?.previous_session_ref ?? session.session_ref) ||
+          continuation.activated_at !==
+            (successor?.previous_activated_at ?? session.started_at) ||
           continuation.activated_at < lineage.activated_at ||
           continuation.session_ref === lineage.previous_session_ref)
       )
@@ -1187,6 +1235,7 @@ export class ConversationStateDO extends DurableObject<Env> {
             !isMp06PilotReference(e.session_ref) ||
             !isMp06PilotReference(e.event_ref) ||
             !isMp06PilotReference(e.tester_ref) ||
+            (successor && e.tester_ref !== owners[0]!.tester_ref) ||
             !isMp06PilotTimestamp(e.admitted_at) ||
             ![0, 1].includes(e.result_authorized),
         ) ||
@@ -1228,7 +1277,8 @@ export class ConversationStateDO extends DurableObject<Env> {
         (a) =>
           !lineage ||
           (a.session_ref !== lineage.session_ref &&
-            a.session_ref !== continuation?.session_ref),
+            a.session_ref !== continuation?.session_ref &&
+            a.session_ref !== successor?.session_ref),
       );
       if (
         historical.length !== 3 ||
@@ -1246,6 +1296,16 @@ export class ConversationStateDO extends DurableObject<Env> {
       const currentEvents = lineage
         ? events.filter((e) => e.session_ref === session.session_ref)
         : [];
+      // The consumed V16 generation had no admitted AI events. Keep that
+      // immutable fact; a late old-generation row cannot become successor work.
+      if (
+        successor &&
+        (events.some((e) => e.session_ref === successor.previous_session_ref) ||
+          attempts.some(
+            (a) => a.session_ref === successor.previous_session_ref,
+          ))
+      )
+        return null;
       if (continuation && lineage) {
         const priorEvents = events.filter(
           (e) => e.session_ref === lineage.session_ref,
@@ -1280,7 +1340,8 @@ export class ConversationStateDO extends DurableObject<Env> {
               !isMp06PilotReference(e.event_ref) ||
               ![0, 1].includes(e.result_authorized) ||
               !isMp06PilotTimestamp(e.admitted_at) ||
-              e.admitted_at < (continuation ?? lineage).activated_at ||
+              e.admitted_at <
+                (successor ?? continuation ?? lineage).activated_at ||
               e.admitted_at >= session.expires_at,
           ) ||
           attempts
@@ -1329,6 +1390,7 @@ export class ConversationStateDO extends DurableObject<Env> {
         session,
         markers,
         continuation,
+        successor,
         testers,
         attempts,
         events,
@@ -1357,6 +1419,12 @@ export class ConversationStateDO extends DurableObject<Env> {
           continuation.session_ref
       )
         return null;
+      if (
+        successor &&
+        successor.prior_lineage_fingerprint !==
+          (await mp06ReadOnlyFingerprint({ markers, continuation }))
+      )
+        return null;
       return {
         sessionRef: session.session_ref,
         ownerRef: owners[0]!.tester_ref,
@@ -1365,11 +1433,13 @@ export class ConversationStateDO extends DurableObject<Env> {
         observationFingerprint: Array.from(new Uint8Array(fingerprint), (b) =>
           b.toString(16).padStart(2, "0"),
         ).join(""),
-        lineage: continuation
-          ? ("IMMUTABLE_V16_CONTINUATION" as const)
-          : lineage
-            ? ("IMMUTABLE_PREVIOUS_CURRENT_SESSION" as const)
-            : ("RETAINED_PRE_ACTIVATION_SESSION" as const),
+        lineage: successor
+          ? ("IMMUTABLE_V22_SUCCESSOR" as const)
+          : continuation
+            ? ("IMMUTABLE_V16_CONTINUATION" as const)
+            : lineage
+              ? ("IMMUTABLE_PREVIOUS_CURRENT_SESSION" as const)
+              : ("RETAINED_PRE_ACTIVATION_SESSION" as const),
         activationEligible:
           !lineage ||
           (!continuation &&
@@ -1381,6 +1451,21 @@ export class ConversationStateDO extends DurableObject<Env> {
             session.budget_reserved_micro_usd === 0 &&
             session.in_flight === 0 &&
             pending.length === 0),
+        // Observation only, NOT a capability. Old activation eligibility stays
+        // false. The exact successor RPC independently rechecks its transaction.
+        successorEligible:
+          !successor &&
+          continuation !== undefined &&
+          session.session_ref === MP06_SUCCESSOR_V22.expectedSessionRef &&
+          session.state === "STOPPED" &&
+          session.stop_reason === "OPERATOR_STOP" &&
+          session.admitted_events === 6 &&
+          session.provider_attempts === 6 &&
+          session.budget_consumed_micro_usd === 34082 &&
+          session.budget_reserved_micro_usd === 0 &&
+          session.in_flight === 0 &&
+          pending.length === 0 &&
+          events.every((e) => e.tester_ref === owners[0]!.tester_ref),
         state: session.state,
         expiredAtObservation: expired,
         aiAdmission: session.state === "ACTIVE" && !expired,
@@ -1396,6 +1481,112 @@ export class ConversationStateDO extends DurableObject<Env> {
           (a) => a.state === "USAGE_UNKNOWN",
         ).length,
         settledAttempts: attempts.filter((a) => a.state === "SETTLED").length,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** SELECT-only retained-context/delivery inventory. Private fingerprints never
+   * authorize activation or leave internal RPCs. No expiry/cleanup/ACK helper. */
+  async ownerUatSuccessorConversationObservation(expectedEventRef: string) {
+    try {
+      const context = this.ownerUatConversationObservation(expectedEventRef);
+      const handoff = this.handoffObservation();
+      if (!context || !handoff) return null;
+      const sql = this.ctx.storage.sql;
+      const tables = [
+        "conversation_state",
+        "mp06_conversation_state",
+        "processed_events",
+        "mp06_response_plans",
+        "delivery_claims",
+        "audit_events",
+        "handoff_generation",
+        "handoff_close_operation",
+        "handoff_close_attempts",
+      ];
+      const rows = tables.map((name) =>
+        sql.exec(`SELECT * FROM ${name} ORDER BY rowid`).toArray(),
+      );
+      if (
+        rows[0]!.length !== 1 ||
+        rows[1]!.length !== 1 ||
+        rows[6]!.length !== 1
+      )
+        return null;
+      const claims = rows[4]!;
+      const malformedClaims = claims.filter(
+        (c) =>
+          !isMp06PilotReference(c.event_ref) ||
+          !Number.isSafeInteger(c.revision) ||
+          Number(c.revision) < 1 ||
+          c.contract_version !== 1 ||
+          typeof c.state !== "string" ||
+          ![
+            "CLAIMED",
+            "DELIVERED",
+            "LEGACY_UNKNOWN",
+            "DELIVERY_UNKNOWN",
+          ].includes(c.state) ||
+          !isMp06PilotTimestamp(c.claimed_at) ||
+          (c.owner_token !== null &&
+            (typeof c.owner_token !== "string" ||
+              !/^[a-f0-9-]{36}$/u.test(c.owner_token))) ||
+          (c.acknowledged_at !== null &&
+            !isMp06PilotTimestamp(c.acknowledged_at)) ||
+          (c.state === "CLAIMED" &&
+            (c.owner_token === null || c.acknowledged_at !== null)) ||
+          (c.state === "DELIVERED" &&
+            c.owner_token !== null &&
+            c.acknowledged_at === null),
+      ).length;
+      const links = sql
+        .exec<{ inconsistent: number }>(
+          `
+        SELECT
+          (SELECT COUNT(*) FROM delivery_claims c LEFT JOIN processed_events e ON e.event_ref = c.event_ref
+           WHERE e.event_ref IS NULL OR (c.state = 'DELIVERED' AND e.delivered != 1)
+             OR (c.state != 'DELIVERED' AND e.delivered != 0)) +
+          (SELECT COUNT(*) FROM mp06_response_plans p LEFT JOIN processed_events e ON e.event_ref = p.event_ref
+           WHERE e.event_ref IS NULL OR p.delivered != e.delivered) +
+          (SELECT COUNT(*) FROM processed_events e LEFT JOIN delivery_claims c ON c.event_ref = e.event_ref
+           WHERE c.event_ref IS NULL AND (e.reply_kind != 'NONE' OR EXISTS
+             (SELECT 1 FROM mp06_response_plans p WHERE p.event_ref = e.event_ref))) AS inconsistent
+      `,
+        )
+        .one();
+      const delivery = {
+        processedEvents: rows[2]!.length,
+        responsePlans: rows[3]!.length,
+        claims: claims.length,
+        deliveredClaims: claims.filter((c) => c.state === "DELIVERED").length,
+        pendingOrUnknownClaims: claims.filter((c) => c.state !== "DELIVERED")
+          .length,
+        malformedClaims,
+        inconsistentLinks: links.inconsistent,
+      };
+      return {
+        context,
+        handoff,
+        delivery,
+        retainedClarificationReady:
+          context.mode === "BOT_ACTIVE" &&
+          context.clarificationUsed &&
+          context.pendingTemplate === "T-C01" &&
+          context.pendingReplies === 0 &&
+          handoff.generation === 1 &&
+          handoff.closeState === "COMPLETE" &&
+          handoff.technicalAttempts === 1 &&
+          !handoff.pendingClose &&
+          delivery.processedEvents === 6 &&
+          delivery.responsePlans === 4 &&
+          delivery.claims === 6 &&
+          delivery.deliveredClaims === 6 &&
+          delivery.pendingOrUnknownClaims === 0 &&
+          malformedClaims === 0 &&
+          links.inconsistent === 0,
+        observationFingerprint: await mp06ReadOnlyFingerprint(rows),
       };
     } catch {
       return null;
@@ -1428,7 +1619,7 @@ export class ConversationStateDO extends DurableObject<Env> {
       if (
         this.ctx.storage.sql
           .exec<{ count: number }>(
-            "SELECT COUNT(*) AS count FROM sqlite_master WHERE name IN ('mp06_wp8f_activation', 'mp06_wp8f_v16_continuation')",
+            "SELECT COUNT(*) AS count FROM sqlite_master WHERE name IN ('mp06_wp8f_activation', 'mp06_wp8f_v16_continuation', 'mp06_wp8f_v22_successor')",
           )
           .one().count > 0
       )
@@ -1710,6 +1901,7 @@ export class ConversationStateDO extends DurableObject<Env> {
     return JSON.stringify({
       session: this.mp06PilotSession(),
       marker: this.mp06ContinuationMarker(),
+      successor: this.mp06SuccessorMarker(),
       original: sql
         .exec("SELECT * FROM mp06_wp8f_activation ORDER BY id")
         .toArray(),
@@ -1725,6 +1917,199 @@ export class ConversationStateDO extends DurableObject<Env> {
         .exec("SELECT * FROM mp06_pilot_attempts ORDER BY attempt_ref")
         .toArray(),
     });
+  }
+
+  private mp06SuccessorMarker(): Mp06SuccessorRow | undefined {
+    const sql = this.ctx.storage.sql;
+    const present = sql
+      .exec<{ count: number }>(
+        "SELECT COUNT(*) AS count FROM sqlite_master WHERE name = 'mp06_wp8f_v22_successor'",
+      )
+      .one().count;
+    if (present === 0) return undefined;
+    const rows = sql
+      .exec<Mp06SuccessorRow>(
+        "SELECT * FROM mp06_wp8f_v22_successor ORDER BY id",
+      )
+      .toArray();
+    const row = rows[0];
+    if (
+      present !== 1 ||
+      rows.length !== 1 ||
+      !row ||
+      Object.keys(row).length !== 15 ||
+      row.id !== 1 ||
+      row.previous_session_ref !== MP06_SUCCESSOR_V22.expectedSessionRef ||
+      row.operation_ref !== MP06_SUCCESSOR_V22.operationRef ||
+      row.session_ref !== MP06_SUCCESSOR_V22.sessionRef ||
+      !isMp06PilotReference(row.owner_ref) ||
+      !isMp06PilotReference(row.prior_lineage_fingerprint) ||
+      !isMp06PilotReference(row.owner_state_fingerprint) ||
+      !isMp06PilotTimestamp(row.activated_at) ||
+      !isMp06PilotTimestamp(row.previous_activated_at) ||
+      !isMp06PilotTimestamp(row.previous_expires_at) ||
+      row.previous_expires_at - row.previous_activated_at !==
+        MP06_PILOT_SESSION_DURATION_MS ||
+      row.activated_at < row.previous_activated_at ||
+      row.baseline_events !== 6 ||
+      row.baseline_attempts !== 6 ||
+      row.baseline_consumed_micro_usd !== 34082 ||
+      row.baseline_reserved_micro_usd !== 0 ||
+      row.prior_stop_reason !== "OPERATOR_STOP"
+    )
+      throw new Error("SUCCESSOR_LINEAGE_INVALID");
+    return row;
+  }
+
+  /** One exact TEST-only successor. All writes below are one Coordinator
+   * transaction; Conversation/Draft observations are explicitly NOT cross-DO
+   * atomicity. Owner silence and post-activation observation remain required. */
+  async continueMp06AcceptanceV22(
+    input: ResumeMp06AcceptanceInput,
+  ): Promise<Mp06SuccessorResult> {
+    const deny = (
+      code = "SUCCESSOR_PRECONDITION_REJECTED",
+    ): Mp06SuccessorResult => ({ accepted: false, code });
+    if (
+      this.env.ENVIRONMENT !== "TEST" ||
+      this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      !input ||
+      !input.limits ||
+      !validMp06PilotLimits(input.limits) ||
+      input.expectedSessionRef !== MP06_SUCCESSOR_V22.expectedSessionRef ||
+      input.operationRef !== MP06_SUCCESSOR_V22.operationRef ||
+      input.sessionRef !== MP06_SUCCESSOR_V22.sessionRef ||
+      !isMp06PilotTimestamp(input.now)
+    )
+      return deny("SUCCESSOR_INPUT_REJECTED");
+    try {
+      const snapshot = this.mp06ContinuationSnapshot();
+      const observed = await this.ownerUatPilotObservation();
+      if (!observed) return deny("SUCCESSOR_LINEAGE_UNAVAILABLE");
+      const existing = this.mp06SuccessorMarker();
+      if (existing) {
+        // Lost-response replay only returns the durable receipt, even after
+        // STOP/expiry/U2/handoff. It never checks a fresh activation opportunity.
+        return this.ctx.storage.transactionSync(() =>
+          snapshot === this.mp06ContinuationSnapshot() &&
+          observed.lineage === "IMMUTABLE_V22_SUCCESSOR"
+            ? mp06SuccessorReceipt(existing, "ACTIVATED_IDEMPOTENT")
+            : deny(),
+        );
+      }
+      if (
+        !observed.successorEligible ||
+        observed.lineage !== "IMMUTABLE_V16_CONTINUATION"
+      )
+        return deny();
+      const conversation = this.env.CONVERSATION_STATE.getByName(
+        observed.ownerRef,
+      );
+      const draft = this.env.DRAFT_ORDER.getByName(observed.ownerRef);
+      const context =
+        await conversation.ownerUatSuccessorConversationObservation(
+          observed.eventRef,
+        );
+      const order = await draft.ownerUatDraftObservation();
+      if (
+        !context?.retainedClarificationReady ||
+        !order?.nonBlocking ||
+        order.pendingReplies !== 0
+      )
+        return deny("SUCCESSOR_RETAINED_CONTEXT_REJECTED");
+      const markers = this.ctx.storage.sql
+        .exec(
+          "SELECT id, previous_session_ref, operation_ref, session_ref, activated_at FROM mp06_wp8f_activation ORDER BY id",
+        )
+        .toArray();
+      const priorFingerprint = await mp06ReadOnlyFingerprint({
+        markers,
+        continuation: this.mp06ContinuationMarker(),
+      });
+      if (
+        JSON.stringify(context) !==
+          JSON.stringify(
+            await conversation.ownerUatSuccessorConversationObservation(
+              observed.eventRef,
+            ),
+          ) ||
+        JSON.stringify(order) !==
+          JSON.stringify(await draft.ownerUatDraftObservation())
+      )
+        return deny("SUCCESSOR_CHANGED_DURING_READ");
+      return this.ctx.storage.transactionSync(() => {
+        // No await or RPC in this transaction. SQL/crypto observations cannot
+        // self-authorize; compare every retained Coordinator row again here.
+        if (snapshot !== this.mp06ContinuationSnapshot())
+          return deny("SUCCESSOR_CHANGED_DURING_READ");
+        const current = this.mp06PilotSession();
+        if (
+          !current ||
+          !observed.successorEligible ||
+          current.state !== "STOPPED" ||
+          current.stop_reason !== "OPERATOR_STOP" ||
+          current.session_ref !== input.expectedSessionRef ||
+          input.now < current.started_at ||
+          Date.now() >= input.now + MP06_PILOT_SESSION_DURATION_MS
+        )
+          return deny();
+        const sql = this.ctx.storage.sql;
+        // Lazy additive creation: mere deployment/readiness/restart does not
+        // create a grant. A present empty/malformed marker always denies.
+        sql.exec(`CREATE TABLE mp06_wp8f_v22_successor (
+          id INTEGER PRIMARY KEY CHECK (id = 1), previous_session_ref TEXT NOT NULL,
+          operation_ref TEXT NOT NULL UNIQUE, session_ref TEXT NOT NULL UNIQUE,
+          activated_at INTEGER NOT NULL, owner_ref TEXT NOT NULL,
+          baseline_events INTEGER NOT NULL CHECK (baseline_events = 6),
+          baseline_attempts INTEGER NOT NULL CHECK (baseline_attempts = 6),
+          baseline_consumed_micro_usd INTEGER NOT NULL CHECK (baseline_consumed_micro_usd = 34082),
+          baseline_reserved_micro_usd INTEGER NOT NULL CHECK (baseline_reserved_micro_usd = 0),
+          prior_stop_reason TEXT NOT NULL CHECK (prior_stop_reason = 'OPERATOR_STOP'),
+          previous_activated_at INTEGER NOT NULL, previous_expires_at INTEGER NOT NULL,
+          prior_lineage_fingerprint TEXT NOT NULL, owner_state_fingerprint TEXT NOT NULL
+        )`);
+        sql.exec(
+          "INSERT INTO mp06_wp8f_v22_successor VALUES (1, ?, ?, ?, ?, ?, 6, 6, 34082, 0, 'OPERATOR_STOP', ?, ?, ?, ?)",
+          current.session_ref,
+          input.operationRef,
+          input.sessionRef,
+          input.now,
+          observed.ownerRef,
+          current.started_at,
+          current.expires_at,
+          priorFingerprint,
+          context.observationFingerprint,
+        );
+        const testers = sql
+          .exec<{ tester_ref: string }>(
+            "UPDATE mp06_pilot_testers SET session_ref = ? WHERE session_ref = ? AND tester_ref = ? RETURNING tester_ref",
+            input.sessionRef,
+            current.session_ref,
+            observed.ownerRef,
+          )
+          .toArray();
+        const sessions = sql
+          .exec<{ session_ref: string }>(
+            "UPDATE mp06_pilot_session SET session_ref = ?, state = 'ACTIVE', started_at = ?, expires_at = ?, stop_reason = NULL WHERE id = 1 AND session_ref = ? AND state = 'STOPPED' AND stop_reason = 'OPERATOR_STOP' RETURNING session_ref",
+            input.sessionRef,
+            input.now,
+            input.now + MP06_PILOT_SESSION_DURATION_MS,
+            current.session_ref,
+          )
+          .toArray();
+        if (
+          testers.length !== 1 ||
+          testers[0]?.tester_ref !== observed.ownerRef ||
+          sessions.length !== 1 ||
+          sessions[0]?.session_ref !== input.sessionRef
+        )
+          throw new Error("SUCCESSOR_TRANSACTION_CONFLICT");
+        return mp06SuccessorReceipt(this.mp06SuccessorMarker()!, "ACTIVATED");
+      });
+    } catch {
+      return deny("SUCCESSOR_STORAGE_OR_OBSERVATION_UNAVAILABLE");
+    }
   }
 
   async continueMp06AcceptanceV16(
@@ -2921,6 +3306,35 @@ async function mp06ContinuationSessionRef(
   return Array.from(new Uint8Array(bytes), (b) =>
     b.toString(16).padStart(2, "0"),
   ).join("");
+}
+
+async function mp06ReadOnlyFingerprint(value: unknown): Promise<string> {
+  const bytes = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(JSON.stringify(value)),
+  );
+  return Array.from(new Uint8Array(bytes), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+function mp06SuccessorReceipt(
+  row: Mp06SuccessorRow,
+  code: "ACTIVATED" | "ACTIVATED_IDEMPOTENT",
+): Mp06SuccessorResult {
+  return {
+    accepted: true,
+    code,
+    receipt: {
+      contract: "WP8F_V22",
+      startedAt: row.activated_at,
+      expiresAt: row.activated_at + MP06_PILOT_SESSION_DURATION_MS,
+      events: 6,
+      attempts: 6,
+      consumedMicroUsd: 34082,
+      reservedMicroUsd: 0,
+    },
+  };
 }
 
 function validMp06ProviderLifecycleDiagnostics(
