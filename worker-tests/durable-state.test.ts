@@ -276,26 +276,34 @@ describe("Durable Object persistence and webhook security", () => {
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
-  it("allows an authenticated and authorized Test staff close", async () => {
+  it("requires retained Owner lineage even for an authenticated authorized Test staff close", async () => {
     const conversationRef = "c".repeat(64);
     const stub = env.CONVERSATION_STATE.getByName(conversationRef);
     await stub.processEvent(baseInput);
     await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
       conversationRef,
       baseInput.now,
+      (await stub.handoffObservation()).generation,
     );
     const response = await exports.default.fetch(
-      new Request("https://test.invalid/admin/handoff/close", {
-        method: "POST",
-        headers: {
-          authorization: "Bearer unit-test-admin-key",
-          "content-type": "application/json",
+      new Request(
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev/admin/handoff/close",
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            operationRef: "1".repeat(64),
+            expectedGeneration: 1,
+            staffId: "OWNER_TEST",
+          }),
         },
-        body: JSON.stringify({ conversationRef, staffId: "OWNER_TEST" }),
-      }),
+      ),
     );
-    expect(response.status).toBe(200);
-    expect(await stub.state()).toBe("BOT_ACTIVE");
+    expect(response.status).toBe(409);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
   it("rejects unauthorized staff-close and keeps handoff active", async () => {
@@ -303,14 +311,21 @@ describe("Durable Object persistence and webhook security", () => {
     const stub = env.CONVERSATION_STATE.getByName(conversationRef);
     await stub.processEvent(baseInput);
     const response = await exports.default.fetch(
-      new Request("https://test.invalid/admin/handoff/close", {
-        method: "POST",
-        headers: {
-          authorization: "Bearer unit-test-admin-key",
-          "content-type": "application/json",
+      new Request(
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev/admin/handoff/close",
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            operationRef: "2".repeat(64),
+            expectedGeneration: 1,
+            staffId: "UNKNOWN_STAFF",
+          }),
         },
-        body: JSON.stringify({ conversationRef, staffId: "UNKNOWN_STAFF" }),
-      }),
+      ),
     );
     expect(response.status).toBe(403);
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
@@ -523,8 +538,14 @@ describe("Durable Object persistence and webhook security", () => {
     });
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
     expect(
-      await stub.closeHandoff("staff-ref", baseInput.now + 1, 604_800),
-    ).toBe(true);
+      await stub.closeHandoff({
+        operationRef: "3".repeat(64),
+        actorRef: "4".repeat(64),
+        expectedGeneration: 1,
+        now: baseInput.now + 1,
+        auditRetentionSeconds: 604_800,
+      }),
+    ).toMatchObject({ accepted: true });
     const afterClose = await stub.processEvent({
       ...baseInput,
       eventRef: "f2".repeat(32),
@@ -892,3 +913,239 @@ async function deliverySnapshot(
     alarm: await state.storage.getAlarm(),
   }));
 }
+
+describe("successor durable one-logical handoff close", () => {
+  const input = {
+    operationRef: "ab".repeat(32),
+    actorRef: "cd".repeat(32),
+    expectedGeneration: 1,
+    now: baseInput.now + 1,
+    auditRetentionSeconds: 604800,
+  };
+  const fixture = async (label: string) => {
+    const ref = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`synthetic-close:${label}`),
+    );
+    const name = Array.from(new Uint8Array(ref), (v) =>
+      v.toString(16).padStart(2, "0"),
+    ).join("");
+    const stub = env.CONVERSATION_STATE.getByName(name);
+    const event = await stub.processEvent(baseInput);
+    await stub.markDelivered(baseInput.eventRef, actualClaim(event));
+    return { name, stub };
+  };
+  it("one concurrent mutation, three counted attempts, stable receipt and durable replay ceiling", async () => {
+    const { stub } = await fixture("concurrent");
+    const before = await deliverySnapshot(stub);
+    const results = await Promise.all(
+      Array.from({ length: 3 }, () => stub.closeHandoff(input)),
+    );
+    for (const result of results)
+      expect(result).toMatchObject({ accepted: true });
+    const first = results[0]!;
+    if (!first.accepted) throw new Error("EXPECTED_CLOSE_RECEIPT");
+    for (const result of results) {
+      if (!result.accepted) throw new Error("EXPECTED_REPLAY_RECEIPT");
+      expect(result.receipt).toEqual(first.receipt);
+    }
+    expect(results.map((r) => (r.accepted ? r.attempt : 0)).sort()).toEqual([
+      1, 2, 3,
+    ]);
+    expect(await stub.state()).toBe("BOT_ACTIVE");
+    const after = await deliverySnapshot(stub);
+    expect(after.processed).toEqual(before.processed);
+    expect(after.claims).toEqual(before.claims);
+    expect(after.plans).toEqual(before.plans);
+    expect(after.audit.slice(0, before.audit.length)).toEqual(before.audit);
+    expect(
+      after.audit.filter((r) => r.outcome === "HANDOFF_CLOSED"),
+    ).toHaveLength(1);
+    await evictDurableObject(stub);
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 1,
+      technicalAttempts: 3,
+      pendingClose: true,
+    });
+    expect(await stub.closeHandoff(input)).toEqual({
+      accepted: false,
+      code: "HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED",
+    });
+    expect(
+      await stub.closeHandoff({ ...input, operationRef: "ef".repeat(32) }),
+    ).toMatchObject({
+      accepted: false,
+      code: "HANDOFF_CLOSE_OPERATION_CONFLICT",
+    });
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql
+          .exec("SELECT outcome FROM handoff_close_attempts ORDER BY id")
+          .toArray(),
+      ),
+    ).toEqual([
+      { outcome: "CONVERSATION_CLOSED" },
+      { outcome: "SAME_OPERATION_REPLAY" },
+      { outcome: "SAME_OPERATION_REPLAY" },
+      { outcome: "HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED" },
+      { outcome: "HANDOFF_CLOSE_OPERATION_CONFLICT" },
+    ]);
+  });
+  it("recovers a lost response, fences wrong ACK, persists completion and prevents generation ABA", async () => {
+    const { name, stub } = await fixture("lost-response");
+    const registry = env.HANDOFF_REGISTRY.getByName("successor-close-registry");
+    await registry.activate(name, baseInput.now, 1);
+    const first = await stub.closeHandoff(input);
+    if (!first.accepted) throw new Error("EXPECTED_CLOSE");
+    expect(
+      await stub.acknowledgeHandoffClose(
+        { ...first.receipt, receiptId: crypto.randomUUID() },
+        1,
+      ),
+    ).toBe(false);
+    // Registry performed its own transaction; its response is intentionally discarded.
+    expect(await registry.reconcileClose(name, first.receipt)).toEqual(
+      first.receipt,
+    );
+    await evictDurableObject(stub);
+    await evictDurableObject(registry);
+    const replay = await stub.closeHandoff(input);
+    if (!replay.accepted) throw new Error("EXPECTED_REPLAY");
+    expect(replay.receipt).toEqual(first.receipt);
+    expect(await registry.reconcileClose(name, replay.receipt)).toEqual(
+      first.receipt,
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(replay.receipt, replay.attempt),
+    ).toBe(true);
+    const stable = await runInDurableObject(stub, (_i, s) =>
+      s.storage.sql
+        .exec("SELECT * FROM handoff_close_attempts ORDER BY id")
+        .toArray(),
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(replay.receipt, replay.attempt),
+    ).toBe(true);
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql
+          .exec("SELECT * FROM handoff_close_attempts ORDER BY id")
+          .toArray(),
+      ),
+    ).toEqual(stable);
+    const finalReplay = await stub.closeHandoff(input);
+    expect(finalReplay).toMatchObject({
+      accepted: true,
+      complete: true,
+      receipt: first.receipt,
+    });
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "fe".repeat(32),
+      now: baseInput.now + 2,
+    });
+    expect(await stub.handoffObservation()).toMatchObject({ generation: 2 });
+    await registry.activate(name, baseInput.now + 2, 2);
+    expect(await stub.closeHandoff(input)).toMatchObject({
+      accepted: false,
+      code: "HANDOFF_GENERATION_CHANGED",
+    });
+    expect(await stub.acknowledgeHandoffClose(first.receipt, 1)).toBe(false);
+    expect(await registry.reconcileClose(name, first.receipt)).toBeNull();
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: name, createdAt: baseInput.now + 2 },
+    ]);
+  });
+  it("fences delayed registry activation and cannot reconcile another conversation", async () => {
+    const a = await fixture("isolated-a"),
+      b = await fixture("isolated-b");
+    const registry = env.HANDOFF_REGISTRY.getByName(
+      "successor-isolated-registry",
+    );
+    await registry.activate(b.name, baseInput.now, 1);
+    const close = await a.stub.closeHandoff(input);
+    if (!close.accepted) throw new Error("EXPECTED_CLOSE");
+    expect(await registry.reconcileClose(b.name, close.receipt)).toBeNull();
+    expect(await b.stub.acknowledgeHandoffClose(close.receipt, 1)).toBe(false);
+    expect(await registry.reconcileClose(a.name, close.receipt)).toEqual(
+      close.receipt,
+    );
+    await registry.activate(a.name, baseInput.now, 1);
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: b.name, createdAt: baseInput.now },
+    ]);
+    expect(await b.stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await b.stub.handoffObservation()).toMatchObject({
+      closeState: "UNUSED",
+      technicalAttempts: 0,
+    });
+  });
+  it.each([
+    { operationRef: "malformed" },
+    { actorRef: "malformed" },
+    { expectedGeneration: 2 },
+    { expectedGeneration: 0 },
+  ])(
+    "rejects invalid or stale close inputs without state changes: %j",
+    async (change) => {
+      const { stub } = await fixture(JSON.stringify(change));
+      const before = await deliverySnapshot(stub);
+      expect(await stub.closeHandoff({ ...input, ...change })).toMatchObject({
+        accepted: false,
+      });
+      const after = await deliverySnapshot(stub);
+      expect(after.claims).toEqual(before.claims);
+      expect(after.processed).toEqual(before.processed);
+      expect(after.plans).toEqual(before.plans);
+      expect(after.audit).toEqual(before.audit);
+      expect(after.alarm).toEqual(before.alarm);
+      expect(
+        after.sequence.filter((r) => r.name !== "handoff_close_attempts"),
+      ).toEqual(before.sequence);
+      expect(
+        after.sequence.filter((r) => r.name === "handoff_close_attempts"),
+      ).toEqual([{ name: "handoff_close_attempts", seq: 1 }]);
+      expect(await stub.state()).toBe("HUMAN_HANDOFF");
+      expect(await stub.handoffObservation()).toMatchObject({
+        technicalAttempts: 0,
+        closeState: "UNUSED",
+      });
+    },
+  );
+  it("retained-state additive backfill is idempotent; empty state and read-only observations grant no close", async () => {
+    const { stub } = await fixture("migration");
+    // Model the exact pre-successor schema locally, not a remote rollback.
+    await runInDurableObject(stub, (_i, s) => {
+      s.storage.sql.exec(
+        "DROP TABLE handoff_generation; DROP TABLE handoff_close_operation; DROP TABLE handoff_close_attempts",
+      );
+    });
+    const before = await deliverySnapshot(stub);
+    await evictDurableObject(stub);
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 1,
+      closeState: "UNUSED",
+    });
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    const migrated = await runInDurableObject(stub, (_i, s) =>
+      s.storage.sql.exec("SELECT * FROM handoff_generation").toArray(),
+    );
+    await evictDurableObject(stub);
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql.exec("SELECT * FROM handoff_generation").toArray(),
+      ),
+    ).toEqual(migrated);
+    const empty = env.CONVERSATION_STATE.getByName("successor-empty");
+    const snapshot = await deliverySnapshot(empty);
+    expect(await empty.handoffObservation()).toMatchObject({
+      generation: 0,
+      closeState: "UNUSED",
+      pendingClose: false,
+    });
+    expect(await deliverySnapshot(empty)).toEqual(snapshot);
+    expect(await empty.closeHandoff(input)).toMatchObject({ accepted: false });
+    expect(await empty.state()).toBe("BOT_ACTIVE");
+  });
+});

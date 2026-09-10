@@ -86,6 +86,42 @@ interface StateRow extends Record<string, SqlStorageValue> {
   mode: "BOT_ACTIVE" | "HUMAN_HANDOFF";
 }
 
+export interface HandoffCloseInput {
+  readonly operationRef: string;
+  readonly actorRef: string;
+  readonly expectedGeneration: number;
+  readonly now: number;
+  readonly auditRetentionSeconds: number;
+}
+
+export interface HandoffCloseReceipt {
+  /** Internal RPC binding only; never serialize this identifier to HTTP/logs. */
+  readonly conversationId: string;
+  readonly receiptId: string;
+  readonly generation: number;
+  readonly closedAt: number;
+  readonly result: "CLOSED";
+}
+
+export type HandoffCloseResult =
+  | {
+      readonly accepted: true;
+      readonly receipt: HandoffCloseReceipt;
+      readonly attempt: number;
+      readonly complete: boolean;
+    }
+  | { readonly accepted: false; readonly code: string };
+
+interface HandoffCloseRow extends Record<string, SqlStorageValue> {
+  operation_ref: string;
+  actor_ref: string;
+  generation: number;
+  receipt_id: string;
+  closed_at: number;
+  status: "CONVERSATION_CLOSED" | "COMPLETE";
+  attempts: number;
+}
+
 interface Wp1PlanRow extends Record<string, SqlStorageValue> {
   response_fingerprint: string;
   delivered: number;
@@ -177,6 +213,30 @@ export class ConversationStateDO extends DurableObject<Env> {
         );
         INSERT OR IGNORE INTO conversation_state (id, mode, acknowledged, updated_at)
         VALUES (1, 'BOT_ACTIVE', 0, 0);
+        CREATE TABLE IF NOT EXISTS handoff_generation (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          generation INTEGER NOT NULL CHECK (generation >= 0)
+        );
+        INSERT OR IGNORE INTO handoff_generation
+          SELECT 1, CASE WHEN mode = 'HUMAN_HANDOFF' THEN 1 ELSE 0 END
+          FROM conversation_state WHERE id = 1;
+        CREATE TABLE IF NOT EXISTS handoff_close_operation (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          operation_ref TEXT NOT NULL UNIQUE,
+          actor_ref TEXT NOT NULL,
+          generation INTEGER NOT NULL,
+          receipt_id TEXT NOT NULL UNIQUE,
+          closed_at INTEGER NOT NULL,
+          status TEXT NOT NULL CHECK (status IN ('CONVERSATION_CLOSED', 'COMPLETE')),
+          attempts INTEGER NOT NULL CHECK (attempts BETWEEN 1 AND 3)
+        );
+        CREATE TABLE IF NOT EXISTS handoff_close_attempts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          receipt_id TEXT,
+          attempt INTEGER,
+          outcome TEXT NOT NULL,
+          recorded_at INTEGER NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS processed_events (
           event_ref TEXT PRIMARY KEY,
           reply_kind TEXT NOT NULL,
@@ -408,10 +468,7 @@ export class ConversationStateDO extends DurableObject<Env> {
             storedPlan.response_fingerprint !== input.responseFingerprint) ||
           (!storedPlan && input.responseFingerprint !== undefined)
         ) {
-          sql.exec(
-            "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
-            input.now,
-          );
+          this.enterHandoff(input.now);
           sql.exec(
             "UPDATE processed_events SET reply_kind = 'HANDOFF_ACK', entered_handoff = 1 WHERE event_ref = ?",
             input.eventRef,
@@ -520,10 +577,7 @@ export class ConversationStateDO extends DurableObject<Env> {
         sql.exec(
           "UPDATE mp06_conversation_state SET pending_template_id = NULL WHERE id = 1",
         );
-        sql.exec(
-          "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
-          input.now,
-        );
+        this.enterHandoff(input.now);
       }
       sql.exec(
         "INSERT INTO processed_events VALUES (?, ?, 0, ?, ?, ?)",
@@ -694,29 +748,212 @@ export class ConversationStateDO extends DurableObject<Env> {
     return { state: "UNSEEN", revision: null };
   }
 
-  closeHandoff(
-    actorRef: string,
-    now: number,
-    auditRetentionSeconds: number,
+  private enterHandoff(now: number): void {
+    const sql = this.ctx.storage.sql;
+    if (this.state() === "BOT_ACTIVE") {
+      const changed = sql
+        .exec<{ generation: number }>(
+          "UPDATE handoff_generation SET generation = generation + 1 WHERE id = 1 RETURNING generation",
+        )
+        .one();
+      if (!Number.isSafeInteger(changed.generation) || changed.generation < 1)
+        throw new Error("HANDOFF_GENERATION_INVALID");
+    }
+    sql.exec(
+      "UPDATE conversation_state SET mode = 'HUMAN_HANDOFF', acknowledged = 1, updated_at = ? WHERE id = 1",
+      now,
+    );
+  }
+
+  /** SELECT-only. Neither an activation token nor a recovery capability. */
+  handoffObservation() {
+    const sql = this.ctx.storage.sql;
+    const generation = sql
+      .exec<{ generation: number }>(
+        "SELECT generation FROM handoff_generation WHERE id = 1",
+      )
+      .one().generation;
+    if (
+      !Number.isSafeInteger(generation) ||
+      generation < 0 ||
+      (this.state() === "HUMAN_HANDOFF" && generation === 0)
+    )
+      throw new Error("HANDOFF_GENERATION_INVALID");
+    const operation = sql
+      .exec<HandoffCloseRow>(
+        "SELECT * FROM handoff_close_operation WHERE id = 1",
+      )
+      .toArray()[0];
+    if (
+      operation &&
+      (!isMp06PilotReference(operation.operation_ref) ||
+        !isMp06PilotReference(operation.actor_ref) ||
+        !Number.isSafeInteger(operation.generation) ||
+        operation.generation < 1 ||
+        operation.generation > generation ||
+        !/^[a-f0-9-]{36}$/u.test(operation.receipt_id) ||
+        !isMp06PilotTimestamp(operation.closed_at) ||
+        !["CONVERSATION_CLOSED", "COMPLETE"].includes(operation.status) ||
+        !Number.isInteger(operation.attempts) ||
+        operation.attempts < 1 ||
+        operation.attempts > 3)
+    )
+      throw new Error("HANDOFF_CLOSE_STATE_INVALID");
+    return {
+      generation,
+      closeState: operation?.status ?? "UNUSED",
+      technicalAttempts: operation?.attempts ?? 0,
+      pendingClose: operation?.status === "CONVERSATION_CLOSED",
+    };
+  }
+
+  /** Atomic only inside THIS object. Registry completion is separately fenced. */
+  closeHandoff(input: HandoffCloseInput): HandoffCloseResult {
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const deny = (code: string): HandoffCloseResult => {
+        sql.exec(
+          "INSERT INTO handoff_close_attempts (outcome, recorded_at) VALUES (?, ?)",
+          code,
+          Date.now(),
+        );
+        return { accepted: false, code };
+      };
+      if (
+        !input ||
+        !isMp06PilotReference(input.operationRef) ||
+        !isMp06PilotReference(input.actorRef) ||
+        !isMp06PilotTimestamp(input.now) ||
+        !Number.isSafeInteger(input.expectedGeneration) ||
+        input.expectedGeneration < 1 ||
+        !Number.isSafeInteger(input.auditRetentionSeconds) ||
+        input.auditRetentionSeconds <= 0
+      )
+        return deny("HANDOFF_CLOSE_INPUT_INVALID");
+      const existing = sql
+        .exec<HandoffCloseRow>(
+          "SELECT * FROM handoff_close_operation WHERE id = 1",
+        )
+        .toArray()[0];
+      if (
+        existing &&
+        (existing.operation_ref !== input.operationRef ||
+          existing.actor_ref !== input.actorRef)
+      )
+        return deny("HANDOFF_CLOSE_OPERATION_CONFLICT");
+      const observed = this.handoffObservation();
+      if (
+        observed.generation !== input.expectedGeneration ||
+        (existing &&
+          (existing.generation !== observed.generation ||
+            this.state() !== "BOT_ACTIVE"))
+      )
+        return deny("HANDOFF_GENERATION_CHANGED");
+      if (existing && existing.attempts >= 3)
+        return deny("HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED");
+      if (!existing && this.state() !== "HUMAN_HANDOFF")
+        return deny("HANDOFF_CLOSE_PRECONDITION_FAILED");
+      const row: HandoffCloseRow = existing ?? {
+        operation_ref: input.operationRef,
+        actor_ref: input.actorRef,
+        generation: observed.generation,
+        receipt_id: crypto.randomUUID(),
+        closed_at: input.now,
+        status: "CONVERSATION_CLOSED",
+        attempts: 0,
+      };
+      const attempt = row.attempts + 1;
+      if (!existing) {
+        sql.exec(
+          "INSERT INTO handoff_close_operation VALUES (1, ?, ?, ?, ?, ?, 'CONVERSATION_CLOSED', 1)",
+          row.operation_ref,
+          row.actor_ref,
+          row.generation,
+          row.receipt_id,
+          row.closed_at,
+        );
+        sql.exec(
+          "UPDATE conversation_state SET mode = 'BOT_ACTIVE', acknowledged = 0, updated_at = ? WHERE id = 1",
+          input.now,
+        );
+        sql.exec(
+          "UPDATE mp06_conversation_state SET clarification_used = 0, pending_template_id = NULL WHERE id = 1",
+        );
+        sql.exec(
+          "INSERT INTO audit_events (event_ref, outcome, reason_code, actor_ref, created_at, expires_at) VALUES ('STAFF_CLOSE', 'HANDOFF_CLOSED', 'AUTHORIZED_TEST_STAFF', ?, ?, ?)",
+          input.actorRef,
+          input.now,
+          input.now + input.auditRetentionSeconds * 1000,
+        );
+      } else {
+        sql.exec(
+          "UPDATE handoff_close_operation SET attempts = ? WHERE id = 1",
+          attempt,
+        );
+      }
+      sql.exec(
+        "INSERT INTO handoff_close_attempts (receipt_id, attempt, outcome, recorded_at) VALUES (?, ?, ?, ?)",
+        row.receipt_id,
+        attempt,
+        existing ? "SAME_OPERATION_REPLAY" : "CONVERSATION_CLOSED",
+        input.now,
+      );
+      return {
+        accepted: true,
+        receipt: {
+          conversationId: this.ctx.id.toString(),
+          receiptId: row.receipt_id,
+          generation: row.generation,
+          closedAt: row.closed_at,
+          result: "CLOSED",
+        },
+        attempt,
+        complete: row.status === "COMPLETE",
+      };
+    });
+  }
+
+  /** Exact receipt acknowledgement; does not repeat the conversation mutation. */
+  acknowledgeHandoffClose(
+    receipt: HandoffCloseReceipt,
+    attempt: number,
   ): boolean {
-    const state = this.ctx.storage.sql
-      .exec<StateRow>("SELECT mode FROM conversation_state WHERE id = 1")
-      .one();
-    if (state.mode !== "HUMAN_HANDOFF") return false;
-    this.ctx.storage.sql.exec(
-      "UPDATE conversation_state SET mode = 'BOT_ACTIVE', acknowledged = 0, updated_at = ? WHERE id = 1",
-      now,
-    );
-    this.ctx.storage.sql.exec(
-      "UPDATE mp06_conversation_state SET clarification_used = 0, pending_template_id = NULL WHERE id = 1",
-    );
-    this.ctx.storage.sql.exec(
-      "INSERT INTO audit_events (event_ref, outcome, reason_code, actor_ref, created_at, expires_at) VALUES ('STAFF_CLOSE', 'HANDOFF_CLOSED', 'AUTHORIZED_TEST_STAFF', ?, ?, ?)",
-      actorRef,
-      now,
-      now + auditRetentionSeconds * 1000,
-    );
-    return true;
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const row = sql
+        .exec<HandoffCloseRow>(
+          "SELECT * FROM handoff_close_operation WHERE id = 1",
+        )
+        .toArray()[0];
+      if (
+        !receipt ||
+        !row ||
+        receipt.result !== "CLOSED" ||
+        receipt.conversationId !== this.ctx.id.toString() ||
+        row.receipt_id !== receipt.receiptId ||
+        row.generation !== receipt.generation ||
+        row.closed_at !== receipt.closedAt ||
+        this.handoffObservation().generation !== row.generation ||
+        this.state() !== "BOT_ACTIVE" ||
+        !Number.isSafeInteger(attempt) ||
+        attempt < 1 ||
+        attempt > row.attempts
+      )
+        return false;
+      // This follows a verified Registry RPC receipt, not a cross-object transaction.
+      sql.exec(
+        "UPDATE handoff_close_operation SET status = 'COMPLETE' WHERE id = 1 AND status = 'CONVERSATION_CLOSED'",
+      );
+      sql.exec(
+        "INSERT INTO handoff_close_attempts (receipt_id, attempt, outcome, recorded_at) SELECT ?, ?, 'REGISTRY_RECONCILED', ? WHERE NOT EXISTS (SELECT 1 FROM handoff_close_attempts WHERE receipt_id = ? AND attempt = ? AND outcome = 'REGISTRY_RECONCILED')",
+        row.receipt_id,
+        attempt,
+        Date.now(),
+        row.receipt_id,
+        attempt,
+      );
+      return true;
+    });
   }
 
   state(): "BOT_ACTIVE" | "HUMAN_HANDOFF" {
@@ -2942,24 +3179,120 @@ export class HandoffRegistryDO extends DurableObject<Env> {
           conversation_ref TEXT PRIMARY KEY,
           created_at INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS handoff_registry_fences (
+          conversation_ref TEXT PRIMARY KEY,
+          generation INTEGER NOT NULL,
+          closed_generation INTEGER NOT NULL,
+          close_receipt_id TEXT
+        );
+        INSERT OR IGNORE INTO handoff_registry_fences
+          SELECT conversation_ref, 1, 0, NULL FROM active_handoffs;
       `);
       return Promise.resolve();
     });
   }
 
-  activate(conversationRef: string, now: number): void {
-    this.ctx.storage.sql.exec(
-      "INSERT OR IGNORE INTO active_handoffs (conversation_ref, created_at) VALUES (?, ?)",
-      conversationRef,
-      now,
-    );
+  activate(conversationRef: string, now: number, generation: number): void {
+    if (
+      !isMp06PilotReference(conversationRef) ||
+      !isMp06PilotTimestamp(now) ||
+      !Number.isSafeInteger(generation) ||
+      generation < 1
+    )
+      throw new Error("HANDOFF_REGISTRY_INPUT_INVALID");
+    this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const fence = sql
+        .exec<{ generation: number; closed_generation: number }>(
+          "SELECT generation, closed_generation FROM handoff_registry_fences WHERE conversation_ref = ?",
+          conversationRef,
+        )
+        .toArray()[0];
+      // A delayed activation can never revive a closed generation or replace a newer one.
+      if (
+        fence &&
+        (generation < fence.generation || generation <= fence.closed_generation)
+      )
+        return;
+      sql.exec(
+        "INSERT INTO handoff_registry_fences VALUES (?, ?, 0, NULL) ON CONFLICT(conversation_ref) DO UPDATE SET generation = excluded.generation",
+        conversationRef,
+        generation,
+      );
+      if (fence && generation > fence.generation)
+        sql.exec(
+          "UPDATE active_handoffs SET created_at = ? WHERE conversation_ref = ?",
+          now,
+          conversationRef,
+        );
+      sql.exec(
+        "INSERT OR IGNORE INTO active_handoffs (conversation_ref, created_at) VALUES (?, ?)",
+        conversationRef,
+        now,
+      );
+    });
   }
 
-  remove(conversationRef: string): void {
-    this.ctx.storage.sql.exec(
-      "DELETE FROM active_handoffs WHERE conversation_ref = ?",
-      conversationRef,
-    );
+  reconcileClose(
+    conversationRef: string,
+    receipt: HandoffCloseReceipt,
+  ): HandoffCloseReceipt | null {
+    if (
+      !isMp06PilotReference(conversationRef) ||
+      !receipt ||
+      receipt.result !== "CLOSED" ||
+      receipt.conversationId !==
+        this.env.CONVERSATION_STATE.idFromName(conversationRef).toString() ||
+      !/^[a-f0-9-]{36}$/u.test(receipt.receiptId) ||
+      !isMp06PilotTimestamp(receipt.closedAt) ||
+      !Number.isSafeInteger(receipt.generation) ||
+      receipt.generation < 1
+    )
+      return null;
+    return this.ctx.storage.transactionSync(() => {
+      const sql = this.ctx.storage.sql;
+      const fence = sql
+        .exec<{
+          generation: number;
+          closed_generation: number;
+          close_receipt_id: string | null;
+        }>(
+          "SELECT generation, closed_generation, close_receipt_id FROM handoff_registry_fences WHERE conversation_ref = ?",
+          conversationRef,
+        )
+        .toArray()[0];
+      if (
+        fence &&
+        (fence.generation > receipt.generation ||
+          fence.closed_generation > receipt.generation ||
+          (fence.close_receipt_id !== null &&
+            fence.close_receipt_id !== receipt.receiptId))
+      )
+        return null;
+      if (fence?.closed_generation === receipt.generation) {
+        const active = sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM active_handoffs WHERE conversation_ref = ?",
+            conversationRef,
+          )
+          .one().count;
+        return active === 0 && fence.close_receipt_id === receipt.receiptId
+          ? receipt
+          : null;
+      }
+      sql.exec(
+        "INSERT INTO handoff_registry_fences VALUES (?, ?, ?, ?) ON CONFLICT(conversation_ref) DO UPDATE SET generation = excluded.generation, closed_generation = excluded.closed_generation, close_receipt_id = excluded.close_receipt_id",
+        conversationRef,
+        receipt.generation,
+        receipt.generation,
+        receipt.receiptId,
+      );
+      sql.exec(
+        "DELETE FROM active_handoffs WHERE conversation_ref = ?",
+        conversationRef,
+      );
+      return receipt;
+    });
   }
 
   listActive(): readonly { conversationRef: string; createdAt: number }[] {

@@ -261,6 +261,7 @@ async function processLineEvent(
         await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
           conversationRef,
           now,
+          (await conversation.handoffObservation()).generation,
         );
       }
       if (
@@ -363,6 +364,7 @@ async function processLineEvent(
     await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
       conversationRef,
       now,
+      (await conversation.handoffObservation()).generation,
     );
   }
   const messages = replyMessages(
@@ -418,6 +420,7 @@ async function processMp06Plan(
     await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
       conversationRef,
       now,
+      (await conversation.handoffObservation()).generation,
     );
   }
   const messages =
@@ -559,6 +562,7 @@ async function handleAdmin(
         before.eventRef,
       );
       const draftContext = await draft.ownerUatDraftObservation();
+      const handoff = await conversation.handoffObservation();
       if (!context || !draftContext)
         return result("READINESS_UNAVAILABLE", 409);
       // Cross-object observations are not a transaction or an activation capability.
@@ -570,7 +574,9 @@ async function handleAdmin(
             await conversation.ownerUatConversationObservation(before.eventRef),
           ) ||
         JSON.stringify(draftContext) !==
-          JSON.stringify(await draft.ownerUatDraftObservation())
+          JSON.stringify(await draft.ownerUatDraftObservation()) ||
+        JSON.stringify(handoff) !==
+          JSON.stringify(await conversation.handoffObservation())
       )
         return result("READINESS_CHANGED_DURING_READ", 409);
       const ready =
@@ -579,6 +585,7 @@ async function handleAdmin(
         !context.clarificationUsed &&
         context.pendingTemplate === null &&
         context.pendingReplies === 0 &&
+        !handoff.pendingClose &&
         draftContext.nonBlocking &&
         draftContext.pendingReplies === 0;
       return result(
@@ -607,6 +614,7 @@ async function handleAdmin(
           },
           ownerLink: "RETAINED_SETTLED_WP8E_EVENT_AND_SINGLE_PRIVATE_ALLOWLIST",
           conversation: context,
+          handoff,
           draft: draftContext,
           accounting: {
             state: before.state,
@@ -1044,6 +1052,7 @@ async function handleAdmin(
       context.clarificationUsed ||
       context.pendingTemplate !== null ||
       context.pendingReplies !== 0 ||
+      (await conversation.handoffObservation()).pendingClose ||
       !order.nonBlocking ||
       order.pendingReplies !== 0 ||
       JSON.stringify(context) !==
@@ -1186,32 +1195,108 @@ async function handleAdmin(
     }
   }
   if (request.method === "POST" && url.pathname === "/admin/handoff/close") {
-    const body = await readBoundedBody(request, MAX_ADMIN_BYTES);
-    const input = parseCloseInput(decoder.decode(body));
-    if (!input)
-      return Response.json({ error: "INVALID_CLOSE_REQUEST" }, { status: 400 });
-    const allowedStaff = env.TEST_STAFF_ALLOWLIST.split(",").map((value) =>
-      value.trim(),
-    );
-    if (!allowedStaff.includes(input.staffId)) {
-      console.warn(
+    const response = (code: string, status: number, receipt?: unknown) => {
+      console.info(
         JSON.stringify({
-          level: "warn",
-          outcome: "HANDOFF_CLOSE_DENIED",
-          staffRef: await sha256Reference(input.staffId),
+          outcome: "OWNER_HANDOFF_CLOSE",
+          code,
+          actor: "AUTHENTICATED_TEST_ADMIN",
+          target: "RETAINED_WP8E_OWNER_CONVERSATION",
+          requestId: crypto.randomUUID(),
+          observedAt: new Date().toISOString(),
         }),
       );
-      return Response.json({ error: "STAFF_NOT_AUTHORIZED" }, { status: 403 });
-    }
-    const closed = await env.CONVERSATION_STATE.getByName(
-      input.conversationRef,
-    ).closeHandoff(
-      await sha256Reference(input.staffId),
-      Date.now(),
-      positiveInteger(env.AUDIT_RETENTION_SECONDS),
+      return Response.json(receipt ? { closed: true, receipt } : { code }, {
+        status,
+        headers: { "cache-control": "no-store" },
+      });
+    };
+    if (
+      !env.TEST_ADMIN_KEY ||
+      env.ENVIRONMENT !== "TEST" ||
+      env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      url.origin !==
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev" ||
+      url.search !== ""
+    )
+      return response("TEST_ADMIN_AND_EXACT_TARGET_REQUIRED", 403);
+    const input = parseHandoffCloseInput(
+      decoder.decode(await readBoundedBody(request, MAX_ADMIN_BYTES)),
     );
-    if (closed) await registry.remove(input.conversationRef);
-    return Response.json({ closed });
+    if (!input) return response("INVALID_CLOSE_REQUEST", 400);
+    if (
+      !env.TEST_STAFF_ALLOWLIST.split(",")
+        .map((v) => v.trim())
+        .includes(input.staffId)
+    )
+      return response("STAFF_NOT_AUTHORIZED", 403);
+    try {
+      // Resolve the retained Owner through the existing SELECT-only lineage contract.
+      // Client input cannot select a different conversation or supply a receipt.
+      const before = await pilot.ownerUatPilotObservation();
+      if (
+        !before ||
+        before.state !== "STOPPED" ||
+        before.aiAdmission !== false ||
+        before.events !== 6 ||
+        before.attempts !== 6 ||
+        before.consumedMicroUsd !== 34082 ||
+        before.reservedMicroUsd !== 0 ||
+        before.inFlight !== 0 ||
+        before.pendingAttempts !== 0
+      )
+        return response("HANDOFF_CLOSE_READINESS_UNAVAILABLE", 409);
+      const conversation = env.CONVERSATION_STATE.getByName(before.ownerRef);
+      const context = await conversation.ownerUatConversationObservation(
+        before.eventRef,
+      );
+      const order = await env.DRAFT_ORDER.getByName(
+        before.ownerRef,
+      ).ownerUatDraftObservation();
+      if (
+        !context ||
+        context.pendingReplies !== 0 ||
+        context.pendingTemplate !== null ||
+        !order ||
+        !order.nonBlocking ||
+        order.pendingReplies !== 0 ||
+        JSON.stringify(before) !==
+          JSON.stringify(await pilot.ownerUatPilotObservation())
+      )
+        return response("HANDOFF_CLOSE_READINESS_UNAVAILABLE", 409);
+      const result = await conversation.closeHandoff({
+        operationRef: input.operationRef,
+        expectedGeneration: input.expectedGeneration,
+        actorRef: await sha256Reference(input.staffId),
+        now: Date.now(),
+        auditRetentionSeconds: positiveInteger(env.AUDIT_RETENTION_SECONDS),
+      });
+      if (!result.accepted) return response(result.code, 409);
+      // Retried RPCs are idempotent, but there is NO automatic retry here and NO
+      // transaction across these objects. A lost response retains the receipt.
+      const reconciled = await registry.reconcileClose(
+        before.ownerRef,
+        result.receipt,
+      );
+      if (
+        JSON.stringify(reconciled) !== JSON.stringify(result.receipt) ||
+        !(await conversation.acknowledgeHandoffClose(
+          result.receipt,
+          result.attempt,
+        ))
+      )
+        return response("HANDOFF_CLOSE_RECONCILIATION_BLOCKED", 409);
+      return response("HANDOFF_CLOSE_COMPLETE", 200, {
+        receiptId: result.receipt.receiptId,
+        generation: result.receipt.generation,
+        closedAt: result.receipt.closedAt,
+        result: result.receipt.result,
+      });
+    } catch {
+      // Unknown RPC outcomes do not mint a new operation, refund or force-close.
+      return response("HANDOFF_CLOSE_OUTCOME_UNRESOLVED", 503);
+    }
   }
   return Response.json({ error: "NOT_FOUND" }, { status: 404 });
 }
@@ -1541,6 +1626,40 @@ function createMp06PilotAttemptController(
     },
     dispatchWasAuthorized: () => dispatchAuthorized,
   };
+}
+
+function parseHandoffCloseInput(
+  raw: string,
+):
+  | { operationRef: string; staffId: string; expectedGeneration: number }
+  | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      Object.keys(value).sort().join(",") !==
+        "expectedGeneration,operationRef,staffId" ||
+      !("operationRef" in value) ||
+      typeof value.operationRef !== "string" ||
+      !/^[a-f0-9]{64}$/u.test(value.operationRef) ||
+      !("staffId" in value) ||
+      typeof value.staffId !== "string" ||
+      !/^[A-Z0-9_-]{1,64}$/u.test(value.staffId) ||
+      !("expectedGeneration" in value) ||
+      typeof value.expectedGeneration !== "number" ||
+      !Number.isSafeInteger(value.expectedGeneration) ||
+      value.expectedGeneration < 1
+    )
+      return undefined;
+    return {
+      operationRef: value.operationRef,
+      staffId: value.staffId,
+      expectedGeneration: value.expectedGeneration,
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function parseCloseInput(
