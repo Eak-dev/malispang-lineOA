@@ -44,7 +44,33 @@ jobs:
         # every project validator, frozen 5,000-case benchmark and local dry-run.
         # validate:production-readiness reads committed documents, not Production.
         # No Cloudflare/LINE/OpenAI credentials or remote bindings are supplied.
-        run: pnpm check
+        # Serialize only Worker test FILES to isolate RPC-heavy tests from other
+        # Miniflare instances. In-test Promise.all races, isolation, assertions,
+        # the 5,000ms test timeout and zero retries remain unchanged.
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, existsSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'));
+          const commands = scripts.check.split(' && ');
+          if (
+            commands.some(command => !/^pnpm [a-z0-9:-]+$/.test(command)) ||
+            commands.filter(command => command === 'pnpm test').length !== 1 ||
+            scripts.test !== 'pnpm test:node && pnpm test:worker' ||
+            scripts['test:worker'] !== 'vitest run --config vitest.worker.config.ts' ||
+            ['.dev.vars', '.env'].some(path => existsSync(path))
+          ) throw new Error('CI_GATE_CONTRACT_OR_LOCAL_CREDENTIAL_FILE_CHANGED');
+          for (const command of commands) {
+            console.log(`::group::${command}`);
+            if (command === 'pnpm test') {
+              execFileSync('pnpm', ['test:node'], { stdio: 'inherit' });
+              execFileSync('pnpm', ['test:worker', '--no-file-parallelism'], { stdio: 'inherit' });
+            } else {
+              execFileSync('pnpm', [command.slice('pnpm '.length)], { stdio: 'inherit' });
+            }
+            console.log('::endgroup::');
+          }
+          NODE
       - name: Secret scan
         run: pnpm secret:scan
       - name: Dependency audit - zero at every severity
