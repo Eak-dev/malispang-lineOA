@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 import worker from "../worker/index.js";
 import type {
   DeliveryClaim,
+  HandoffCloseReceipt,
   ProcessEventInput,
 } from "../worker/durable-objects.js";
 import { draftReservationForm } from "../src/draft-order.js";
@@ -51,6 +52,334 @@ const sessionRef = "a".repeat(64);
 const testerA = "b".repeat(64);
 const testerB = "c".repeat(64);
 const baseNow = 1_789_000_000_000;
+
+describe("successor Owner-only HTTP handoff close", () => {
+  it("returns the original result across concurrent calls and lost HTTP response/restart", async () => {
+    const f = await closeHttpFixture("concurrent");
+    const network = vi.fn<typeof fetch>(() => {
+      throw new Error("NO_NETWORK_ALLOWED");
+    });
+    vi.stubGlobal("fetch", network);
+    try {
+      const before = await v16Stored(f.stub);
+      const responses = await Promise.all([f.call(), f.call()]);
+      for (const response of responses) expect(response.status).toBe(200);
+      const first: unknown = await responses[0].json();
+      expect(await responses[1].json()).toEqual(first);
+      await evictDurableObject(f.conversation);
+      await evictDurableObject(f.registry);
+      const recovered = await f.call();
+      expect(recovered.status).toBe(200);
+      expect(await recovered.json()).toEqual(first);
+      expect((await f.call()).status).toBe(409);
+      expect(await f.conversation.state()).toBe("BOT_ACTIVE");
+      expect(await f.conversation.handoffObservation()).toMatchObject({
+        closeState: "COMPLETE",
+        technicalAttempts: 3,
+        pendingClose: false,
+      });
+      expect(await f.registry.listActive()).toEqual([]);
+      expect(await v16Stored(f.stub)).toEqual(before);
+      expect(JSON.stringify(first)).not.toContain(f.owner);
+      expect(JSON.stringify(first)).not.toContain(f.conversation.id.toString());
+      expect(JSON.stringify(first)).not.toContain(f.operationRef);
+      expect(network).not.toHaveBeenCalled();
+      const audit = await runInDurableObject(f.conversation, (_i, s) =>
+        s.storage.sql
+          .exec(
+            "SELECT outcome FROM audit_events WHERE outcome = 'HANDOFF_CLOSED'",
+          )
+          .toArray(),
+      );
+      expect(audit).toEqual([{ outcome: "HANDOFF_CLOSED" }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each(["before-registry", "after-registry"] as const)(
+    "same-operation recovery after %s RPC failure preserves all accounting",
+    async (failure) => {
+      let failed = false;
+      const f = await closeHttpFixture(failure, async (invoke) => {
+        if (!failed) {
+          failed = true;
+          if (failure === "after-registry") await invoke();
+          throw new Error("PRIVATE_SYNTHETIC_RPC_FAILURE_MUST_NOT_LEAK");
+        }
+        return invoke();
+      });
+      const network = vi.fn<typeof fetch>(() => {
+        throw new Error("NO_NETWORK_ALLOWED");
+      });
+      const logs: unknown[][] = [];
+      const logger = vi
+        .spyOn(console, "info")
+        .mockImplementation((...values: unknown[]) => {
+          logs.push(values);
+        });
+      vi.stubGlobal("fetch", network);
+      try {
+        const ledger = await v16Stored(f.stub);
+        const before = await closeConversationSnapshot(f.conversation);
+        const first = await f.call();
+        expect(first.status).toBe(503);
+        expect(await first.json()).toEqual({
+          code: "HANDOFF_CLOSE_OUTCOME_UNRESOLVED",
+        });
+        expect(await f.conversation.state()).toBe("BOT_ACTIVE");
+        expect(await f.conversation.handoffObservation()).toMatchObject({
+          pendingClose: true,
+          technicalAttempts: 1,
+        });
+        const continuation = await worker.fetch(
+          new Request(
+            closeEndpoint.replace(
+              "handoff/close",
+              "mp06-pilot/continue-acceptance-v16",
+            ),
+            {
+              method: "POST",
+              headers: { authorization: "Bearer unit-test-admin-key" },
+              body: JSON.stringify({
+                expectedSessionRef: f.previous,
+                operationRef: f.input.operationRef,
+              }),
+            },
+          ),
+          f.localEnv,
+          createExecutionContext(),
+        );
+        expect(continuation.status).toBe(409);
+        expect(await v16Stored(f.stub)).toEqual(ledger);
+        await evictDurableObject(f.conversation);
+        await evictDurableObject(f.registry);
+        const retry = await f.call();
+        expect(retry.status).toBe(200);
+        const receipt: unknown = await retry.json();
+        expect(await f.registry.listActive()).toEqual([]);
+        expect(await f.conversation.handoffObservation()).toMatchObject({
+          pendingClose: false,
+          closeState: "COMPLETE",
+          technicalAttempts: 2,
+        });
+        expect(await v16Stored(f.stub)).toEqual(ledger);
+        const after = await closeConversationSnapshot(f.conversation);
+        expect(after.processed).toEqual(before.processed);
+        expect(after.plans).toEqual(before.plans);
+        expect(after.claims).toEqual(before.claims);
+        expect(after.context).toEqual(before.context);
+        expect(after.audit.slice(0, before.audit.length)).toEqual(before.audit);
+        expect(after.audit.length).toBe(before.audit.length + 1);
+        expect(after.alarm).toEqual(before.alarm);
+        const replay = await f.call();
+        expect(await replay.json()).toEqual(receipt);
+        expect(network).not.toHaveBeenCalled();
+        const output = JSON.stringify({ receipt, logs });
+        for (const forbidden of [
+          f.owner,
+          f.conversation.id.toString(),
+          f.operationRef,
+          "PRIVATE_SYNTHETIC_RPC_FAILURE",
+          env.TEST_ADMIN_KEY,
+        ])
+          expect(output).not.toContain(forbidden);
+      } finally {
+        logger.mockRestore();
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("stops after three unresolved technical attempts and rejects replacement keys", async () => {
+    const f = await closeHttpFixture("three-failures", () =>
+      Promise.reject(new Error("SIMULATED_REGISTRY_UNAVAILABLE")),
+    );
+    const before = await v16Stored(f.stub);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      expect((await f.call()).status).toBe(503);
+      expect(await f.conversation.handoffObservation()).toMatchObject({
+        technicalAttempts: attempt,
+        pendingClose: true,
+      });
+    }
+    const exhausted = await f.call();
+    expect(exhausted.status).toBe(409);
+    expect(await exhausted.json()).toEqual({
+      code: "HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED",
+    });
+    const replaced = await f.call({ operationRef: hexRef(889) });
+    expect(await replaced.json()).toEqual({
+      code: "HANDOFF_CLOSE_OPERATION_CONFLICT",
+    });
+    expect(await v16Stored(f.stub)).toEqual(before);
+    expect(await f.registry.listActive()).toHaveLength(1);
+    expect(await f.conversation.state()).toBe("BOT_ACTIVE");
+  });
+
+  it("denies wrong target, staff, ownership selector, unknown fields, missing key and generation without mutation", async () => {
+    const f = await closeHttpFixture("deny");
+    const before = await closeConversationSnapshot(f.conversation);
+    const ledger = await v16Stored(f.stub);
+    expect((await f.call({}, closeEndpoint, false)).status).toBe(401);
+    expect(
+      (
+        await f.call(
+          {},
+          closeEndpoint.replace(
+            "malispang-lineoa-test.eakkachai-dev.workers.dev",
+            "other.invalid",
+          ),
+        )
+      ).status,
+    ).toBe(403);
+    expect((await f.call({}, closeEndpoint + "?owner=other")).status).toBe(403);
+    expect((await f.call({ staffId: "UNKNOWN_STAFF" })).status).toBe(403);
+    expect((await f.call({ conversationRef: hexRef(777) })).status).toBe(400);
+    expect((await f.call({ allowAll: true })).status).toBe(400);
+    expect((await f.call({ operationRef: undefined })).status).toBe(400);
+    expect((await f.call({ expectedGeneration: 2 })).status).toBe(409);
+    expect(await closeConversationSnapshot(f.conversation)).toEqual(before);
+    expect(await v16Stored(f.stub)).toEqual(ledger);
+    expect(await f.conversation.state()).toBe("HUMAN_HANDOFF");
+  });
+});
+
+const closeEndpoint =
+  "https://malispang-lineoa-test.eakkachai-dev.workers.dev/admin/handoff/close";
+async function closeHttpFixture(
+  label: string,
+  intercept?: (
+    invoke: () => Promise<HandoffCloseReceipt | null>,
+  ) => Promise<HandoffCloseReceipt | null>,
+) {
+  const f = await v16ContinuationFixture(`close-${label}`);
+  const conversation = env.CONVERSATION_STATE.getByName(f.owner);
+  await runInDurableObject(conversation, (_i, s) => {
+    s.storage.sql.exec(
+      "INSERT INTO processed_events VALUES (?, 'NONE', 1, 0, ?, ?)",
+      hexRef(13),
+      Date.now(),
+      Date.now() + 86400000,
+    );
+    s.storage.sql.exec(
+      "INSERT INTO mp06_response_plans VALUES (?, ?, 1, ?, ?)",
+      hexRef(13),
+      hexRef(500),
+      Date.now(),
+      Date.now() + 86400000,
+    );
+  });
+  await evictDurableObject(conversation);
+  const event = await conversation.processEvent({
+    eventRef: hexRef(501),
+    decision: {
+      replyKind: "HANDOFF_ACK",
+      handoff: true,
+      allowDuringHandoff: false,
+      reasonCode: "CUSTOMER_REQUESTED_STAFF",
+    },
+    now: Date.now(),
+    processedRetentionSeconds: 86400,
+    auditRetentionSeconds: 604800,
+  });
+  if (event.status !== "RESPOND") throw new Error("EXPECTED_HANDOFF");
+  await conversation.markDelivered(hexRef(501), event.deliveryClaim);
+  const registry = env.HANDOFF_REGISTRY.getByName(
+    `synthetic-close-registry:${label}`,
+  );
+  await registry.activate(
+    f.owner,
+    Date.now(),
+    (await conversation.handoffObservation()).generation,
+  );
+  const localEnv = {
+    ...env,
+    CONVERSATION_STATE: new Proxy(env.CONVERSATION_STATE, {
+      get(target, key) {
+        if (key === "getByName")
+          return (name: string) =>
+            name === MP06_PILOT_CONTROL_OBJECT_NAME
+              ? f.stub
+              : target.getByName(name);
+        const value: unknown = Reflect.get(target, key);
+        return typeof value === "function"
+          ? (...args: unknown[]): unknown =>
+              Reflect.apply(value, target, args) as unknown
+          : value;
+      },
+    }),
+    HANDOFF_REGISTRY: new Proxy(env.HANDOFF_REGISTRY, {
+      get(target, key) {
+        if (key === "getByName")
+          return () =>
+            new Proxy(registry, {
+              get(stub, method) {
+                if (method === "reconcileClose" && intercept)
+                  return (ref: string, receipt: HandoffCloseReceipt) =>
+                    intercept(async () => stub.reconcileClose(ref, receipt));
+                const value: unknown = Reflect.get(stub, method);
+                return typeof value === "function"
+                  ? (...args: unknown[]): unknown =>
+                      Reflect.apply(value, stub, args) as unknown
+                  : value;
+              },
+            });
+        const value: unknown = Reflect.get(target, key);
+        return typeof value === "function"
+          ? (...args: unknown[]): unknown =>
+              Reflect.apply(value, target, args) as unknown
+          : value;
+      },
+    }),
+  };
+  const operationRef = await hashReference(
+    `synthetic-close-operation:${label}`,
+  );
+  const call = (
+    change: Record<string, unknown> = {},
+    url = closeEndpoint,
+    auth = true,
+  ) =>
+    worker.fetch(
+      new Request(url, {
+        method: "POST",
+        headers: auth ? { authorization: "Bearer unit-test-admin-key" } : {},
+        body: JSON.stringify({
+          operationRef,
+          staffId: "OWNER_TEST",
+          expectedGeneration: 1,
+          ...change,
+        }),
+      }),
+      localEnv,
+      createExecutionContext(),
+    );
+  return { ...f, conversation, registry, localEnv, operationRef, call };
+}
+
+async function closeConversationSnapshot(
+  stub: ReturnType<typeof env.CONVERSATION_STATE.getByName>,
+) {
+  return runInDurableObject(stub, async (_i, s) => ({
+    processed: s.storage.sql
+      .exec("SELECT * FROM processed_events ORDER BY event_ref")
+      .toArray(),
+    plans: s.storage.sql
+      .exec("SELECT * FROM mp06_response_plans ORDER BY event_ref")
+      .toArray(),
+    claims: s.storage.sql
+      .exec("SELECT * FROM delivery_claims ORDER BY revision")
+      .toArray(),
+    context: s.storage.sql
+      .exec("SELECT * FROM mp06_conversation_state")
+      .toArray(),
+    audit: s.storage.sql
+      .exec("SELECT * FROM audit_events ORDER BY id")
+      .toArray(),
+    alarm: await s.storage.getAlarm(),
+  }));
+}
 
 describe("v16 deterministic precedence compatibility gate", () => {
   it("preserves the signed-webhook catalog follow-up while exposing the legacy UNKNOWN handoff conflict", async () => {
