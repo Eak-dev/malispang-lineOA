@@ -464,6 +464,74 @@ describe("v22 exact successor continuation and multi-generation readiness", () =
     }
   });
 
+  it("rolls back marker creation and allowlist movement if the final session write fails", async () => {
+    const f = await v22Fixture("transaction-abort");
+    await runInDurableObject(f.stub, (_instance, s) => {
+      // Local fault injection only. The production transaction must roll back
+      // its earlier CREATE/INSERT and tester UPDATE when this last write aborts.
+      s.storage.sql.exec(`CREATE TRIGGER synthetic_successor_abort
+        BEFORE UPDATE OF session_ref ON mp06_pilot_session
+        BEGIN SELECT RAISE(ABORT, 'SYNTHETIC_SESSION_WRITE_REJECTED'); END`);
+    });
+    const before = await v22Snapshot(f);
+    expect(await f.stub.continueMp06AcceptanceV22(f.input)).toEqual({
+      accepted: false,
+      code: "SUCCESSOR_STORAGE_OR_OBSERVATION_UNAVAILABLE",
+    });
+    expect(await v22Snapshot(f)).toEqual(before);
+    await evictDurableObject(f.stub);
+    expect(await v22Snapshot(f)).toEqual(before);
+    expect(await f.stub.ownerUatPilotObservation()).toMatchObject({
+      state: "STOPPED",
+      aiAdmission: false,
+      lineage: "IMMUTABLE_V16_CONTINUATION",
+      events: 6,
+      attempts: 6,
+      consumedMicroUsd: 34082,
+      reservedMicroUsd: 0,
+      inFlight: 0,
+    });
+  });
+
+  it("accepts the retained five legacy tombstones plus one native T-C01 acknowledgement without rewriting claims", async () => {
+    const f = await v22Fixture("retained-legacy-claims");
+    await runInDurableObject(f.conversation, (_instance, s) => {
+      // Reproduce the already-backfilled old five DELIVERED records. The sixth
+      // is the native fenced AI-OFF T-C01 event, not another legacy tombstone.
+      s.storage.sql.exec(
+        "UPDATE delivery_claims SET owner_token = NULL, acknowledged_at = NULL WHERE revision <= 5",
+      );
+      expect(
+        s.storage.sql
+          .exec(
+            `SELECT
+          COUNT(CASE WHEN owner_token IS NULL AND acknowledged_at IS NULL THEN 1 END) AS legacy,
+          COUNT(CASE WHEN owner_token IS NOT NULL AND acknowledged_at IS NOT NULL THEN 1 END) AS native
+          FROM delivery_claims WHERE state = 'DELIVERED'`,
+          )
+          .one(),
+      ).toEqual({ legacy: 5, native: 1 });
+    });
+    const before = await v22Snapshot(f);
+    expect(
+      await f.conversation.ownerUatSuccessorConversationObservation(hexRef(13)),
+    ).toMatchObject({ retainedClarificationReady: true });
+    await evictDurableObject(f.conversation);
+    expect(await v22Snapshot(f)).toEqual(before);
+    expect((await f.call()).status).toBe(201);
+    const after = await v22Snapshot(f);
+    expect(after.owner).toEqual(before.owner);
+    expect(after.draft).toEqual(before.draft);
+    expect(after.coordinator.rows.mp06_pilot_attempts).toEqual(
+      before.coordinator.rows.mp06_pilot_attempts,
+    );
+    expect(after.coordinator.rows.mp06_pilot_events).toEqual(
+      before.coordinator.rows.mp06_pilot_events,
+    );
+    expect((await f.readiness()).status).toBe(200);
+    expect(await v22Snapshot(f)).toEqual(after);
+  });
+
   it("admits one concurrent winner, rejects another key and preserves the winning expiry", async () => {
     const f = await v22Fixture("concurrent");
     const results = await Promise.all(
