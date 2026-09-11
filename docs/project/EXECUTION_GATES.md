@@ -1430,3 +1430,67 @@ Runtime1790da58635edcee154b60d76730248e8130c2d3 and artifactadc5e2e9d465a1426a87
 Initial local control run161/161 PASS (153 inherited plus8 v24 cases). A new fixture's inferred-array TypeScript error was corrected with an explicit three-document tuple, without suppression or changed assertions. Typecheck/lint/format/diff checks then PASS. The new suite is placed after all inherited suites; AST comparison proves every inherited test callback and order unchanged, only the three approved watchdog arguments changed, and the inspector's Git/proof body is unchanged after removal of its timing statements. Current-work is exactly the previous manifest after removing only v24/version; the four Markdown changes are append-only. The temporary AST verifier initially overmatched an existing nested variable name; correcting that verifier demonstrated unchanged journal code, not a runtime/control fix.
 
 Full local-gate launcher stopped before executing any gate because the working checkout contains an existing ignored local development-credential file. No contents were read and no credential or TEST operation was invoked. Full validation will use an isolated clean checkout without that file and a fresh frozen install; do not delete, copy or inspect local credentials. This first pushed v24 checkpoint remains WIP — NOT_DEPLOYABLE: final-order full suite, clean reproduction, audit, hosted CI and fresh remote observations are pending. Previous161/161 is retained as its actual intermediate result, not a claim that all final gates have already run.
+
+### V24 checkpoint result — clean validation PASS, hosted fourth-case timeout BLOCKED
+
+Control/implementation checkpoint **5d1a9275964f3fd6df5c3a137b1c0558bf9335db** was committed/pushed with exactly the ten authorized control paths; Roadmap9 receipt5629233496, Issue12 receipt5629233621. No amendments, rewritten history or replacement grants. The complete candidate-to-HEAD inventory contains the ten control paths plus only the original sealed worker-tests/mp-06-pilot-control.test.ts exception:11 paths; no runtime/configuration/dependency/workflow change. The v23 seal, candidate1790da58635edcee154b60d76730248e8130c2d3 and original v22 journal remain unchanged.
+
+**Clean-checkout full validation PASS at2026-09-11T04:03:48.814Z**, exact5d1a927: fresh frozen install, pinnedNode24.19.0/pnpm11.19.0/Wrangler4.122.0, **897/897 =591Node+14benchmark+292Worker/SQLite**, including161control cases; no failed/skipped/cancelled tests. All formatting/lint/typecheck/build/project/control/schema/history/sealed-inventory/policy/catalog/readiness validators passed; frozen5,000-case benchmark PASS (result checksumf1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6), WP7 evaluation/protected checksums unchanged, secret scan214, dependency audit info/low/moderate/high/critical all0. The local production-readiness validator read committed documents only and retained NO_GO/18 blockers; it did not query Production. Local Worker dry-run only, credential-free checkout, generated/tracked files remained clean. Worker file parallelism was the existing frozen hosted-workflow setting, not a workflow/test-order change.
+
+Two additional local-only minified reproductions used a separate fresh frozen install and detached exact runtime1790 checkout, not evidence/control HEAD. At04:10:00.579Z and04:10:06.466Z, both bundles were252715bytes with SHA256 **adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657**. Same approved TEST Worker/configuration/binding manifest and compatibility2026-08-14/nodejs_compat; clean checkout retained. No upload/version creation/traffic change/deployment command without dry-run was issued.
+
+Automatic hosted CI **34560439252 / job103141874757** on exact5d1a927 ended **FAILURE**, **590/591 Node; control160/161**. Pinned toolchain/install/font/format/lint/typecheck passed; the combined full-gates step stopped at Node tests. Hosted benchmark/Worker/build/later validators/secret/audit/stability were not completed in this run; their clean-local PASS must not be relabeled hosted PASS. No manual rerun.
+
+Only failing case: **rejects real committed future edit-and-restore even with matching final sealed bytes**,5733ms against its unchanged5000ms watchdog. This is the fourth historical control case, not one of the three tests authorized for timing/watchdog changes. Its test body/timeout were not changed. No semantic assertion failure was reported, but that case has no phase instrumentation, so its last completed phase and whether every final assertion/cleanup completed are **UNVERIFIED**. Do not attribute the timeout to a specific Git operation, inspector phase, runner, filesystem or cleanup without evidence. Preserve ROOT_CAUSE_UNRESOLVED / ACCEPTED_TEST_ONLY_RESIDUAL; this is not a successful exact-HEAD hosted gate.
+
+The three approved cases passed at4875/7368/7199ms with all26 existing markers, including final assertions/restoration. Diagnostic-only timing comparison follows; marker durations are not equivalent to whole-test watchdog totals.
+
+| Phase                                           | Clean local ms | Hosted ms |
+| ----------------------------------------------- | -------------: | --------: |
+| v23_exact.start                                 |          0.035 |     0.032 |
+| v23_exact.proof_collected                       |        670.533 |  3613.097 |
+| v23_exact.inventory_asserted                    |          0.193 |     0.205 |
+| v23_exact.sealed_observation_asserted           |          0.268 |     0.240 |
+| v23_exact.action_assessment_asserted            |        664.557 |  1213.839 |
+| v23_exact.final_cleanliness_asserted            |         27.809 |    46.651 |
+| v23_inventory.start                             |          0.049 |     0.073 |
+| v23_inventory.proof_collected                   |        661.285 |  1265.364 |
+| v23_inventory.variant_1_asserted                |        661.362 |  1287.344 |
+| v23_inventory.variant_2_asserted                |        659.015 |  1207.333 |
+| v23_inventory.variant_3_asserted                |        660.011 |  1197.387 |
+| v23_inventory.variant_4_asserted                |        663.253 |  1219.449 |
+| v23_inventory.wrong_head_asserted               |        662.953 |  1190.162 |
+| v23_reinspect.start                             |          0.036 |     0.056 |
+| v23_reinspect.proof_and_evidence_collected      |        661.733 |  1229.498 |
+| v23_reinspect.test_file_read                    |          8.944 |    20.295 |
+| v23_reinspect.test_edit_written                 |          3.104 |     1.581 |
+| v23_reinspect.edited_test_inspection_asserted   |        637.581 |  1156.044 |
+| v23_reinspect.edited_test_action_asserted       |        634.683 |  1186.985 |
+| v23_reinspect.test_file_restored                |          3.412 |    13.107 |
+| v23_reinspect.control_file_read                 |          0.430 |     1.193 |
+| v23_reinspect.control_edit_written              |          0.625 |     1.266 |
+| v23_reinspect.dirty_control_inspection_asserted |        663.361 |  1217.300 |
+| v23_reinspect.dirty_control_action_asserted     |        660.749 |  1196.766 |
+| v23_reinspect.control_file_restored             |          0.674 |     1.179 |
+| v23_reinspect.restored_action_asserted          |        663.056 |  1172.699 |
+
+Inspector subdivisions from only those three subscribed cases:
+
+| Inspector phase               | Local count / min–max ms | Hosted count / min–max ms | Hosted initial proof ms |
+| ----------------------------- | ------------------------ | ------------------------- | ----------------------: |
+| v23_inspect.repository        | 14 / 44.805–47.182       | 14 / 76.317–2475.110      |                2475.110 |
+| v23_inspect.ancestry          | 14 / 143.652–148.996     | 14 / 256.641–295.453      |                 292.216 |
+| v23_inspect.inventory_history | 14 / 55.350–59.304       | 14 / 75.264–104.009       |                  90.516 |
+| v23_inspect.sealed_bytes_diff | 14 / 210.690–212.948     | 14 / 374.385–415.768      |                 393.896 |
+| v23_inspect.dirty_state       | 14 / 74.364–77.922       | 14 / 111.270–150.610      |                 132.889 |
+| v23_inspect.inherited_journal | 14 / 100.419–104.301     | 14 / 166.227–199.318      |                 182.172 |
+| v23_inspect.final_head        | 12 / 22.512–24.011       | 12 / 36.972–48.072        |                  44.494 |
+| v23_inspect.proof_created     | 12 / 0.506–0.624         | 12 / 0.632–1.110          |                   0.632 |
+
+Fourteen inspector entries are recorded for repository through inherited_journal; only12 reach final_head/proof_created because the two intentional edited-file rejection paths return the expected denial before proof issuance. This is expected negative-test coverage, not acceptance of an incomplete positive proof. The initial hosted repository phase2475.110ms was much longer than the later76.317–103.191ms observations and local44.805–47.182ms. It identifies a phase-duration difference in the passing first case; it does not prove the cause of the uninstrumented fourth-case failure. No cache, Git batching, reduced validation, retry, skipped assertion or extra watchdog change was implemented to chase a pass.
+
+**Selector/readiness:** one technical pre-SQL preparation attempt under v24 reached the exact TEST namespace and Data Studio modal, entering only Unique-name mp06-pilot-control-v1. No exact option was selected/Explore clicked before CI failure was learned. A local tab-handle type issue was corrected by using its documented string ID; no object lookup/SQL/alternative identity resulted. The temporary tab was closed. Logical SELECT usage remains0/1; no result cardinality, query_id, RowsRead, schema hash or claim count is certified for this round. No object list, guessed ID, Owner-reference read, clipboard, Keychain/TEST_ADMIN_KEY access or authenticated admin readiness operation occurred. Namespace UI metadata alone is not fresh schema/accounting/Owner-claim proof. The dated last readiness remains2026-09-11T01:32:19.640Z, not a reusable120second lease.
+
+**Stop: V24_HOSTED_CI_BLOCKED / FOURTH_CONTROL_TEST_OUTSIDE_APPROVED_THREE_CASE_TIMING_SCOPE — WIP — NOT_DEPLOYABLE.** The master grant permits optimization inside the inspector only with unchanged proven validation; this fourth failure has no per-phase evidence establishing such a narrow fix. Do not change an unapproved fourth watchdog, instrument that case, redesign proof collection or infer complete assertions. Exact deployment/activation/STOP each remain APPROVED_UNUSED0/1. No deployment/session/LINE/U2/STOP/recovery/Production/PR/merge/closure; Issue12 OPEN, PrimaryU1 GAP, A1–A3 UNRESOLVED, actual historical billingUNKNOWN. No fresh TEST state is claimed.
+
+Consolidated narrow next proposal, **not implemented**: extend the same fixed-phase/millisecond diagnostic permission to only that fourth test in tests/project-control.test.ts: mark existing temporary-child creation, clone, real proof, file read/edit, staging/first commit, restore/staging/second commit, byte-equality assertion, inspector rejection assertion, action rejection assertion and cleanup, preserving every operation/order/assertion. If an instrumented run proves every phase completes and has only watchdog failure, separately include the same conditional maximum15000ms watchdog for this fourth case. No runtime/artifact/dependency/workflow/parallelism/model/policy/threshold/production change, retry/skip/filter or validation weakening. Existing inspector timing may be observed only within that explicitly extended diagnostic scope. A new checkpoint would trigger ordinary exact-commit CI, never a manual rerun. Until Owner disposition, only append-only failure evidence and required affected checks are performed; no evidence push is used as a green-CI retry strategy.
