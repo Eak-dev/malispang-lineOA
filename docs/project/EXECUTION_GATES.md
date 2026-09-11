@@ -1369,3 +1369,48 @@ Verdict **INSTRUMENTED_RUN_PASS / ROOT_CAUSE_UNRESOLVED**. The measured dominant
 The committed clean inspector and hosted control validator verify the same complete11-path inventory and original sealed Worker digests. This authorized control-test path did not trigger an inventory/digest rejection, so no new sealed transition was fabricated. **The full deployment action remains BLOCKED**: the single coordinator selector attempt stopped before Explore/SQL and schema/claims remain UNVERIFIED; no fresh120second TEST state was collected. This narrow read-only scope permits only the coordinator and cannot establish the separate retained Owner object's claim count. Do not substitute coordinator counts or old Owner evidence. Current next disposition is the local-selector correction already proposed; any further exact Owner-object observation outside this narrow grant also needs explicit scope. No repeated selector attempt or remote work was performed while collecting CI.
 
 Freeze unchanged: control2ba2b4c17cefa7bb2f92106c03c09d66665dbcc0, runtime1790da58635edcee154b60d76730248e8130c2d3, artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657; all three inherited grants APPROVED_UNUSED0/1. End **WIP — NOT_DEPLOYABLE / READINESS_BLOCKED**, not READY_TO_CLOSE_ISSUE_12. Primary U1 GAP, A1–A3 UNRESOLVED, historical billingUNKNOWN and both separately recorded CI issues remain; no TEST_ADMIN_KEY/LINE/U2/session/deployment/STOP/rollback/PR/merge/closure/Production query/action. Push this append-only CI evidence checkpoint and reconcile #9/#12; its automatic CI is separate and must not be called successful before completion.
+
+### Evidence-head automatic CI failure — initial sealed proof hotspot
+
+Evidence checkpoint **a661f879697cb47ea0c529da0dd6c5c538338dc7**, only the three append-only evidence paths above, was pushed clean/local=remote. Its automatic [CI34555760340](https://github.com/Eak-dev/malispang-lineOA/actions/runs/34555760340), job103128001519, completed **FAILURE**,2026-09-11T02:44:15Z–02:47:05Z. Issue12 receipt5628714421 and Roadmap9 receipt5628714475 record both the prior successful instrumentation run and this separate failure. No manual rerun. No executable, test, dependency, configuration or workflow changes occurred between cd91d299f3ed50f460f46ef8e3521f24f3fca1bb and a661f879697cb47ea0c529da0dd6c5c538338dc7.
+
+Node **582/583**, control **152/153**, control-file55.698s. Exactly one failed test: exact sealed checkout/inventory **6826ms**, unchanged5000ms watchdog. Invalid inventory passed4901ms; working-edit/dirty-checkout reinspection passed4510ms; the untouched future-edit/restore case passed3636ms. Frozen install and earlier checks reached the Node suite; benchmark/Worker/later project gates did not complete. Hosted secret scan, dependency audit and tracked-input stability steps were skipped after the failure, not PASS. Their prior successful results remain associated only with CI34555005881; no new all-gates success is claimed.
+
+All26 phase records were captured again,2026-09-11T02:46:09.509457Z–02:46:53.329867Z. These are phase deltas, rounded0.001ms, not raw Git arguments, output, paths or environment values:
+
+| Phase                                           | Failed-run ms |
+| ----------------------------------------------- | ------------: |
+| v23_exact.start                                 |         0.056 |
+| v23_exact.proof_collected                       |      5981.139 |
+| v23_exact.inventory_asserted                    |         0.257 |
+| v23_exact.sealed_observation_asserted           |         0.290 |
+| v23_exact.action_assessment_asserted            |       804.389 |
+| v23_exact.final_cleanliness_asserted            |        27.409 |
+| v23_inventory.start                             |         0.064 |
+| v23_inventory.proof_collected                   |       933.933 |
+| v23_inventory.variant_1_asserted                |       884.255 |
+| v23_inventory.variant_2_asserted                |       848.894 |
+| v23_inventory.variant_3_asserted                |       829.360 |
+| v23_inventory.variant_4_asserted                |       710.297 |
+| v23_inventory.wrong_head_asserted               |       693.853 |
+| v23_reinspect.start                             |         0.039 |
+| v23_reinspect.proof_and_evidence_collected      |       744.039 |
+| v23_reinspect.test_file_read                    |        13.320 |
+| v23_reinspect.test_edit_written                 |         1.066 |
+| v23_reinspect.edited_test_inspection_asserted   |       704.956 |
+| v23_reinspect.edited_test_action_asserted       |       714.876 |
+| v23_reinspect.test_file_restored                |         0.960 |
+| v23_reinspect.control_file_read                 |         0.693 |
+| v23_reinspect.control_edit_written              |         0.832 |
+| v23_reinspect.dirty_control_inspection_asserted |       760.698 |
+| v23_reinspect.dirty_control_action_asserted     |       770.147 |
+| v23_reinspect.control_file_restored             |         0.983 |
+| v23_reinspect.restored_action_asserted          |       796.900 |
+
+The initial proof alone took **5981.139ms**, versus2595.219ms in the successful hosted run and682.746ms locally. The later same-test assessment took804.389ms, close to792.487ms in the passing hosted run. All six exact-test markers are present, including final_cleanliness_asserted: do not invent an unfinished RPC, assertion or missing marker. Source inspection shows verified() calls the real inspectV23SealedRepository(), whose complete proof performs synchronous Git operations and history/digest/journal checks. This establishes an elapsed-time hotspot in the initial proof, not the causal Git sub-operation or a proven runner, filesystem, CPU or logging defect. **ROOT_CAUSE_UNRESOLVED / HOSTED_CONTROL_TEST_TIMEOUT** remains; the earlier INSTRUMENTED_RUN_PASS is retained as a result of its exact commit/run, not generalized to this failure.
+
+Narrow next diagnostic proposal, **not implemented or authorized by this checkpoint**: separately approve timing-only instrumentation within inspectV23SealedRepository() in src/project-control.ts, exercised only by the same three synthetic cases in tests/project-control.test.ts. Measure existing repository/ancestry, complete inventory/history, sealed bytes/diff, dirty-state, inherited-journal and final-HEAD phases without adding/removing/reordering Git operations or changing proof/validation results. Emit only fixed phase labels and monotonic milliseconds; no path, argument, value, identifier, environment, digest or supplied proof/reader. Any diagnostic activation mechanism and exact diff must be reviewed before implementation; no performance fix, cache, bypass, timeout/retry/parallelism change is proposed as proven safe. Current limited test-only grant is exhausted as diagnostic work, not permission to modify control source.
+
+Independent selector blocker remains **LOCAL_SELECTOR_ADAPTER_UNRESOLVED / SELECT_NOT_RUN**. One exact-name match was selected, but the extra local verification failed before Explore; no new browser attempt, SQL, Owner reference, authenticated TEST state or credential access followed. Schema/claim inventory is still UNVERIFIED, not absent/zero, and no fresh120second lease exists. The previously stated exact-name UI-verification correction needs Owner disposition before another logical observation. Coordinator-only scope cannot establish the separate retained Owner claim inventory.
+
+Stop **V23_PRECONDITION_BLOCKED / READINESS_BLOCKED — WIP — NOT_DEPLOYABLE**. Append this failure checkpoint without modifying any tests or frozen runtime/artifact/grants. Deployment, successor activation and STOP each remain APPROVED_UNUSED0/1. No TEST or Production mutation/query, key access, U2, session, rollback, PR/merge/closure; Issue12 OPEN. PrimaryU1 GAP, A1–A3 UNRESOLVED and historicalbillingUNKNOWN unchanged. Only append-only evidence formatting/control/schema/sealed inventory/journal/secret/diff checks are rerun locally; full suite is not rerun to replace failed evidence. The next evidence push triggers its own ordinary CI; do not call that run successful while pending, nor loop evidence pushes/manual reruns to chase a green result.
