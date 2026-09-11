@@ -42,6 +42,7 @@
     "wp8fSuccessorOperationJournal",
     "wp8fV22Authorization",
     "wp8fV22OperationJournal",
+    "wp8fV23InstrumentationAddendum",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -49,6 +50,23 @@
     "failureMode"
   ],
   "properties": {
+    "wp8fV23InstrumentationAddendum": {
+      "const": {
+        "version": "2026.09.11-v23",
+        "ownerDecision": "MP-OD-2026-09-11-V23",
+        "supersedes": "2026.09.10-v22",
+        "type": "SEALED_CONTROL_ONLY_ADDENDUM_INHERITING_V22",
+        "commit": "3fd4fdb184cda134f05c6effb22a7c4046094556",
+        "path": "worker-tests/mp-06-pilot-control.test.ts",
+        "candidateFileSha256": "4498bc3159bb496a76632f7f6908f1d9a71b4dd5b7fb594d3b863a76f5b615ae",
+        "instrumentedFileSha256": "dd3b6f206660d2bfab570086b088df069b9263d074cb1dce79ea6280a3166f6c",
+        "pathDiffSha256": "173978931b60cb1721c82bc4d1c3f2f238eeb0ba28cf278cf3cf3f9861bd0d88",
+        "additions": 53,
+        "removals": 0,
+        "purpose": "MONOTONIC_TIMING_ONLY_IN_TWO_OWNER_APPROVED_TESTS",
+        "grants": "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE"
+      }
+    },
     "wp8fV22Authorization": {
       "const": {
         "version": "2026.09.10-v22",

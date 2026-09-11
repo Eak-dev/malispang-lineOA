@@ -9,6 +9,7 @@ import {
   validateWp8fOwnerDecisionRecord,
   validateSuccessorOperationJournal,
   validateV22OperationJournal,
+  inspectV23SealedRepository,
 } from "./project-control.js";
 
 export async function runProjectControlValidation(root: URL): Promise<void> {
@@ -40,7 +41,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
   }
-  if (version === "2026.09.10-v21" || version === "2026.09.10-v22") {
+  const inheritsV22 =
+    version === "2026.09.10-v22" || version === "2026.09.11-v23";
+  if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
       currentWork === null ||
@@ -84,7 +87,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
         historical !== null &&
         "roadmapVersion" in historical &&
         (historical.roadmapVersion === "2026.09.10-v21" ||
-          historical.roadmapVersion === "2026.09.10-v22")
+          historical.roadmapVersion === "2026.09.10-v22" ||
+          historical.roadmapVersion === "2026.09.11-v23")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -96,11 +100,12 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           throw new Error("V21_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED");
       }
       if (
-        version === "2026.09.10-v22" &&
+        inheritsV22 &&
         typeof historical === "object" &&
         historical !== null &&
         "roadmapVersion" in historical &&
-        historical.roadmapVersion === version
+        (historical.roadmapVersion === "2026.09.10-v22" ||
+          historical.roadmapVersion === "2026.09.11-v23")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -116,11 +121,18 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     if (!validateSuccessorOperationJournal(journal))
       throw new Error("V21_OPERATION_JOURNAL_INVALID");
     if (
-      version === "2026.09.10-v22" &&
+      inheritsV22 &&
       (!("wp8fV22OperationJournal" in currentWork) ||
         !validateV22OperationJournal(currentWork.wp8fV22OperationJournal))
     )
       throw new Error("V22_OPERATION_JOURNAL_INVALID");
+  }
+  if (version === "2026.09.11-v23") {
+    const sealed = inspectV23SealedRepository(fileURLToPath(root));
+    if (!sealed.ok) throw new Error(sealed.reason);
+    console.log(
+      `V23 sealed Git inventory verified: ${sealed.proof.paths.length} complete post-candidate paths; checkout clean=${sealed.proof.clean}; this is not deployment/state/CI approval`,
+    );
   }
 
   const validation = validateProjectControl(roadmap, currentWork);
@@ -217,7 +229,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    version === "2026.09.10-v22"
+    inheritsV22
       ? `Project control validation passed: ${version}, MP-06 (#12), exact frozen TEST_ONLY; separate one-use deployment/successor grants; historical and current journals verified; U1 GAP/A1-A3 UNRESOLVED retained; no handoff-close/rollback/PR/merge/closure/Production/MP07; ${warningSuffix}`
       : version === "2026.09.10-v21"
         ? `Project control validation passed: ${version}, MP-06 (#12), frozen successor TEST_ONLY; independent exact deployment/close/continuation/UAT/review/integration gates required; append-only operation history verified; historical PR14 is not acceptance; Production NO_GO, MP07 blocked; ${warningSuffix}`

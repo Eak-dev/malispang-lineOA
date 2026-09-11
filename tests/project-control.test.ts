@@ -1,9 +1,12 @@
-import { readFile } from "node:fs/promises";
+import { readFile, copyFile, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 import {
   afterEach,
+  afterAll,
   beforeAll,
   beforeEach,
   describe,
@@ -21,6 +24,8 @@ import {
   validateSchemaDocuments,
   validateSuccessorOperationJournal,
   validateV22OperationJournal,
+  inspectV23SealedRepository,
+  validateV23SealedObservation,
 } from "../src/project-control.js";
 
 const root = new URL("../", import.meta.url);
@@ -4423,8 +4428,18 @@ describe("v22 exact one-use TEST deployment and retained-Owner successor UAT", (
         "config/project/current-work.json",
         "config/project/current-work.schema.json",
       ].map(
-        async (path) =>
-          JSON.parse(await readFile(new URL(path, root), "utf8")) as unknown,
+        (path) =>
+          JSON.parse(
+            execFileSync(
+              "git",
+              ["show", "81170bc91624503cd9d92a27c9de796037afa87e:" + path],
+              {
+                cwd: fileURLToPath(root),
+                encoding: "utf8",
+                maxBuffer: 1024 * 1024,
+              },
+            ),
+          ) as unknown,
       ),
     );
     v22Roadmap = record(r);
@@ -4436,7 +4451,7 @@ describe("v22 exact one-use TEST deployment and retained-Owner successor UAT", (
   });
   beforeEach(() => vi.spyOn(Date, "now").mockReturnValue(v21Now));
   afterEach(() => vi.restoreAllMocks());
-  it("validates actual current v22 and retains exact historical grants and unchanged criteria", () => {
+  it("validates frozen v22 and retains exact historical grants and unchanged criteria", () => {
     expect(validateProjectControl(v22Roadmap, actualV22Work).errors).toEqual(
       [],
     );
@@ -4947,5 +4962,582 @@ describe("v22 exact one-use TEST deployment and retained-Owner successor UAT", (
     expect(assessV22("STOP_TEST", f.e, f.work).allowed).toBe(true);
     record(f.e.test).account = "other";
     expect(assessV22("STOP_TEST", f.e, f.work).allowed).toBe(false);
+  });
+});
+
+// Real local Git provenance plus explicitly synthetic remote/CI scenario fields.
+// These tests never contact Cloudflare or attest real deployment readiness.
+describe("v23 sealed control addendum inheriting v22 grants", () => {
+  const version = "2026.09.11-v23",
+    decision = "MP-OD-2026-09-11-V23";
+  const path = "worker-tests/mp-06-pilot-control.test.ts";
+  const controlPaths = [
+    "PROJECT_CONTROL.md",
+    "config/project/roadmap.json",
+    "config/project/current-work.json",
+    "config/project/current-work.schema.json",
+    "src/project-control.ts",
+    "src/project-control-cli.ts",
+    "tests/project-control.test.ts",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/EXECUTION_GATES.md",
+  ];
+  let r: Record<string, unknown>,
+    w: Record<string, unknown>,
+    actual: Record<string, unknown>,
+    schema: unknown;
+  let fixture: string, usedFixture: string, resetFixture: string;
+  const git = (cwd: string, ...args: string[]) =>
+    execFileSync(
+      "git",
+      [
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "user.name=MP06 Synthetic",
+        "-c",
+        "user.email=mp06-synthetic@example.invalid",
+        ...args,
+      ],
+      { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+  function verified(cwd = fixture) {
+    const result = inspectV23SealedRepository(cwd);
+    if (!result.ok) throw new Error(result.reason);
+    return result.proof;
+  }
+  function evidence(proof = verified()) {
+    const e = v22Evidence();
+    e.ownerDecision = decision;
+    Object.assign(record(e.candidate), {
+      controlOwnerDecision: decision,
+      evidenceHead: proof.head,
+      controlCommit: proof.head,
+      controlCiHead: proof.head,
+      postCandidatePaths: [...proof.paths],
+    });
+    record(e.test).observedAt = Date.now();
+    record(e.activation).ownerReadyConfirmedAt = Date.now();
+    return e;
+  }
+  function assess(
+    e = evidence(),
+    proof: unknown = verified(),
+    action = "DEPLOY_TEST",
+    work = w,
+  ) {
+    return evaluateProjectAction(r, work, action, v22Target, e, proof);
+  }
+  function deployedScenario(proof = verified(usedFixture)) {
+    const f = v22Deployed();
+    f.work = clone(w);
+    f.work.wp8fV22OperationJournal = f.journal;
+    f.e.ownerDecision = decision;
+    f.e.candidate = evidence(proof).candidate;
+    record(f.e.test).observedAt = Date.now();
+    record(f.e.activation).ownerReadyConfirmedAt = Date.now();
+    return { ...f, proof };
+  }
+  function observation(): Record<string, unknown> {
+    const s = record(w.wp8fV23InstrumentationAddendum);
+    return {
+      commit: s.commit,
+      path: s.path,
+      candidateFileSha256: s.candidateFileSha256,
+      parentFileSha256: s.candidateFileSha256,
+      sealedFileSha256: s.instrumentedFileSha256,
+      headFileSha256: s.instrumentedFileSha256,
+      workingFileSha256: s.instrumentedFileSha256,
+      pathDiffSha256: s.pathDiffSha256,
+      additions: 53,
+      removals: 0,
+      paths: [...controlPaths, path],
+      historyPaths: [...controlPaths, path],
+      pathCommits: [s.commit],
+      commitPaths: [
+        path,
+        "docs/project/EXECUTION_GATES.md",
+        "docs/project/OWNER_DECISION_LOG.md",
+        "docs/project/ROADMAP_CHANGELOG.md",
+      ],
+    };
+  }
+  beforeAll(async () => {
+    const [currentRoadmap, currentManifest, currentSchema] = await Promise.all(
+      [
+        "config/project/roadmap.json",
+        "config/project/current-work.json",
+        "config/project/current-work.schema.json",
+      ].map(async (p): Promise<unknown> => {
+        const parsed: unknown = JSON.parse(
+          await readFile(new URL(p, root), "utf8"),
+        );
+        return parsed;
+      }),
+    );
+    r = record(currentRoadmap);
+    w = record(currentManifest);
+    schema = currentSchema;
+    actual = w;
+    w = clone(actual);
+    // A synthetic branch from the original unused baseline, never a live reset.
+    w.wp8fV22OperationJournal = [];
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v23-synthetic-control-"));
+    git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      fixture,
+    );
+    git(
+      fixture,
+      "checkout",
+      "--quiet",
+      "--detach",
+      "81170bc91624503cd9d92a27c9de796037afa87e",
+    );
+    for (const p of controlPaths)
+      await copyFile(new URL(p, root), join(fixture, p));
+    await writeFile(
+      join(fixture, "config/project/current-work.json"),
+      JSON.stringify(w, null, 2) + "\n",
+    );
+    git(fixture, "add", "--", ...controlPaths);
+    if (git(fixture, "diff", "--cached", "--name-only").trim())
+      git(fixture, "commit", "--quiet", "-m", "synthetic v23 control fixture");
+    // Separate immutable synthetic histories keep each security assertion
+    // independent; no scenario relies on another test consuming a grant.
+    usedFixture = await mkdtemp(join(tmpdir(), "mp06-v23-synthetic-used-"));
+    git(fixture, "clone", "--quiet", "--shared", fixture, usedFixture);
+    const usedWork = clone(w);
+    usedWork.wp8fV22OperationJournal = v22Deployed().journal;
+    await writeFile(
+      join(usedFixture, "config/project/current-work.json"),
+      JSON.stringify(usedWork, null, 2) + "\n",
+    );
+    git(usedFixture, "add", "--", "config/project/current-work.json");
+    git(
+      usedFixture,
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic inherited deployment start",
+    );
+    resetFixture = await mkdtemp(join(tmpdir(), "mp06-v23-synthetic-reset-"));
+    git(usedFixture, "clone", "--quiet", "--shared", usedFixture, resetFixture);
+    await writeFile(
+      join(resetFixture, "config/project/current-work.json"),
+      JSON.stringify(w, null, 2) + "\n",
+    );
+    git(resetFixture, "add", "--", "config/project/current-work.json");
+    git(
+      resetFixture,
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic forbidden journal rewrite",
+    );
+  });
+  afterAll(async () => {
+    for (const directory of [resetFixture, usedFixture, fixture])
+      if (directory) await rm(directory, { recursive: true, force: true });
+  });
+
+  it("validates v23 while preserving every inherited manifest field, grant and acceptance criterion", () => {
+    expect(validateProjectControl(r, actual).errors).toEqual([]);
+    expect(
+      validateV22OperationJournal(
+        actual.wp8fV22OperationJournal,
+        actualV22Work.wp8fV22OperationJournal,
+      ),
+    ).toBe(true);
+    expect(validateSchemaDocuments(roadmapSchema, schema, version)).toEqual([]);
+    const inherited = clone(w);
+    delete inherited.wp8fV23InstrumentationAddendum;
+    inherited.roadmapVersion = v22Version;
+    expect(inherited).toEqual(actualV22Work);
+    expect(w.wp8fV22OperationJournal).toEqual([]);
+    expect(record(w.wp8fV22Authorization).sourceCommit).toBe(
+      v22Target.sourceCommit,
+    );
+    expect(record(w.wp8fV22Authorization).artifactSha256).toBe(
+      v22Target.artifactSha256,
+    );
+  });
+  it("requires the separate exact Owner record, chain and sealed schema", async () => {
+    const log = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(log, version)).toBe(true);
+    const seal = record(w.wp8fV23InstrumentationAddendum);
+    for (const key of [
+      "commit",
+      "path",
+      "candidateFileSha256",
+      "instrumentedFileSha256",
+      "pathDiffSha256",
+    ])
+      expect(
+        validateWp8fOwnerDecisionRecord(
+          log.replaceAll(String(seal[key]), "MISSING"),
+          version,
+        ),
+        key,
+      ).toBe(false);
+    expect(validateWp8fOwnerDecisionRecord(JSON.stringify(w), version)).toBe(
+      false,
+    );
+    const changed = clone(record(schema));
+    record(changed.properties).wp8fV23InstrumentationAddendum = {
+      type: "object",
+    };
+    expect(validateSchemaDocuments(roadmapSchema, changed, version)).toContain(
+      "V23_SCHEMA_NOT_CLOSED",
+    );
+    for (const value of [v22Version, "UNKNOWN"]) {
+      const bad = clone(r);
+      record(bad.ownerDecision).supersedes =
+        value === v22Version ? "2026.09.10-v21" : value;
+      expect(validateProjectControl(bad, w).errors).toContain(
+        "OWNER_DECISION_SUPERSEDES_INVALID",
+      );
+    }
+  });
+  it("accepts only the real sealed checkout with the complete independently collected inventory", () => {
+    const proof = verified();
+    expect(proof.clean).toBe(true);
+    expect([...proof.paths].sort()).toEqual([...controlPaths, path].sort());
+    expect(validateV23SealedObservation(observation())).toBe(true);
+    expect(assess(evidence(proof), proof)).toEqual({
+      allowed: true,
+      reason: "V22_ONE_EXACT_TEST_DEPLOYMENT_READY",
+    });
+    expect(git(fixture, "status", "--porcelain=v1")).toBe("");
+  });
+  it("rejects each missing field and wrong commit, file/diff digest or line count", () => {
+    const original = observation();
+    for (const key of Object.keys(original)) {
+      const bad = clone(original);
+      delete bad[key];
+      expect(validateV23SealedObservation(bad), key).toBe(false);
+    }
+    for (const key of [
+      "commit",
+      "path",
+      "candidateFileSha256",
+      "parentFileSha256",
+      "sealedFileSha256",
+      "headFileSha256",
+      "workingFileSha256",
+      "pathDiffSha256",
+      "additions",
+      "removals",
+    ]) {
+      const bad = clone(original);
+      bad[key] = typeof bad[key] === "number" ? 54 : "wrong";
+      expect(validateV23SealedObservation(bad), key).toBe(false);
+    }
+  });
+  it("rejects future edits including an edit/revert that restores identical final file bytes", () => {
+    const bad = observation();
+    bad.pathCommits = [
+      "a".repeat(40),
+      "b".repeat(40),
+      record(w.wp8fV23InstrumentationAddendum).commit,
+    ];
+    expect(validateV23SealedObservation(bad)).toBe(false);
+    bad.pathCommits = [];
+    expect(validateV23SealedObservation(bad)).toBe(false);
+  });
+  it("rejects any additional test/runtime/config/dependency/workflow path including reverted history", () => {
+    for (const extra of [
+      "worker/index.ts",
+      "worker/durable-objects.ts",
+      "worker-tests/durable-state.test.ts",
+      "tests/new.test.ts",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "wrangler.jsonc",
+      ".github/workflows/ci.yml",
+      "dist/worker/index.js",
+      "../" + path,
+      "\nPROJECT_CONTROL.md",
+    ]) {
+      for (const key of ["paths", "historyPaths", "commitPaths"]) {
+        const bad = observation();
+        bad[key] = [...(bad[key] as string[]), extra];
+        expect(validateV23SealedObservation(bad), key + ":" + extra).toBe(
+          false,
+        );
+      }
+    }
+  });
+  it("rejects missing, copied, JSON and current-work/evidence self-attested proofs", () => {
+    const proof = verified(),
+      e = evidence(proof);
+    for (const forged of [
+      undefined,
+      null,
+      {},
+      w,
+      observation(),
+      { ...proof },
+      JSON.parse(JSON.stringify(proof)),
+    ])
+      expect(
+        evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, e, forged)
+          .allowed,
+      ).toBe(false);
+    e.sealedCheckout = proof;
+    expect(
+      evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, e).allowed,
+    ).toBe(false);
+    for (const key of Object.keys(record(w.wp8fV23InstrumentationAddendum))) {
+      const bad = clone(w);
+      record(bad.wp8fV23InstrumentationAddendum)[key] = "SELF_APPROVED";
+      expect(validateProjectControl(r, bad).errors).toContain(
+        "V23_SEALED_ADDENDUM_INVALID",
+      );
+    }
+  });
+  it("rejects an omitted inventory path, duplicate path or wrong evidence HEAD despite a genuine proof", () => {
+    const proof = verified();
+    for (const paths of [
+      proof.paths.filter((p) => p !== path),
+      proof.paths.filter((p) => p !== "PROJECT_CONTROL.md"),
+      [...proof.paths, path],
+      [...proof.paths, "worker/index.ts"],
+    ]) {
+      const e = evidence(proof);
+      record(e.candidate).postCandidatePaths = paths;
+      expect(assess(e, proof).allowed).toBe(false);
+    }
+    const e = evidence(proof);
+    record(e.candidate).evidenceHead = "a".repeat(40);
+    expect(assess(e, proof).allowed).toBe(false);
+  });
+  it("cannot accept source/artifact drift or substitute the original v22 decision for v23 control CI", () => {
+    const proof = verified();
+    for (const field of [
+      "sourceCommit",
+      "artifactSha256",
+      "controlOwnerDecision",
+      "controlCiConclusion",
+    ]) {
+      const e = evidence(proof);
+      record(e.candidate)[field] = "wrong";
+      expect(assess(e, proof).allowed, field).toBe(false);
+    }
+    const e = evidence(proof);
+    e.ownerDecision = "MP-OD-2026-09-10-V22";
+    expect(assess(e, proof).allowed).toBe(false);
+  });
+  it.each(
+    Object.entries({
+      events: 7,
+      consumedMicroUsd: 0,
+      reservedMicroUsd: 1,
+      inFlight: 1,
+      pendingAttempts: 1,
+      pendingTemplate: null,
+      clarificationUsed: false,
+      account: "other",
+      observedAt: -120001,
+    }),
+  )("inherits the fresh-state/accounting boundary for %s", (key, value) => {
+    const proof = verified(),
+      e = evidence(proof);
+    record(e.test)[key] = key === "observedAt" ? Date.now() - 120001 : value;
+    expect(assess(e, proof).allowed, key).toBe(false);
+  });
+  it.each(
+    Object.entries({
+      primaryU1: "PASS",
+      auditA1A3: "EXPLAINED",
+      acceptanceCriteriaUnchanged: false,
+    }),
+  )("does not waive the inherited acceptance boundary for %s", (key, value) => {
+    const proof = verified(),
+      e = evidence(proof);
+    e[key] = value;
+    expect(assess(e, proof).allowed, key).toBe(false);
+  });
+  it("never replenishes consumed v22 deployment or activation operations across the addendum", () => {
+    const proof = verified(),
+      used = clone(w),
+      e = evidence(proof);
+    used.wp8fV22OperationJournal = [v22Journal(0)];
+    record(e.operation).observedJournal = used.wp8fV22OperationJournal;
+    expect(assess(e, proof, "DEPLOY_TEST", used).allowed).toBe(false);
+    expect(validateV22OperationJournal([], used.wp8fV22OperationJournal)).toBe(
+      false,
+    );
+    expect(
+      validateV22OperationJournal(
+        [v22Journal(0)],
+        [v22Journal(0), v22Journal(1)],
+      ),
+    ).toBe(false);
+    used.wp8fV23OperationJournal = [];
+    expect(validateProjectControl(r, used).errors).toContain(
+      "V21_UNKNOWN_CURRENT_WORK_FIELDS",
+    );
+  });
+  it("denies activation before the exact deployment grant is consumed", () => {
+    const proof = verified(),
+      e = evidence(proof);
+    expect(assess(e, proof, "ACTIVATE_SUCCESSOR_V22").allowed).toBe(false);
+  });
+  it("permits activation only with the exact independently committed post-deployment journal", () => {
+    const f = deployedScenario();
+    expect(assess(f.e, f.proof, "ACTIVATE_SUCCESSOR_V22", f.work).allowed).toBe(
+      true,
+    );
+  });
+  it("rejects fabricated unused work even with a real proof of the consumed journal", () => {
+    const usedProof = verified(usedFixture);
+    expect(
+      assess(evidence(usedProof), usedProof, "DEPLOY_TEST", w).allowed,
+    ).toBe(false);
+  });
+  it("requires fresh Owner availability after exact post-deployment verification", () => {
+    const f = deployedScenario();
+    record(f.e.activation).ownerReadyConfirmedAt = Date.now() - 120001;
+    expect(assess(f.e, f.proof, "ACTIVATE_SUCCESSOR_V22", f.work).allowed).toBe(
+      false,
+    );
+  });
+  it("rejects a committed inherited journal reset even when every sealed file digest matches", () => {
+    expect(inspectV23SealedRepository(resetFixture)).toEqual({
+      ok: false,
+      reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE",
+    });
+  });
+  it("retains emergency authenticated STOP without a seal proof and denies Production/PR/closure", () => {
+    const proof = verified(),
+      complete = evidence(proof),
+      e = clone(complete);
+    delete e.candidate;
+    expect(evaluateProjectAction(r, w, "STOP_TEST", v22Target, e).allowed).toBe(
+      true,
+    );
+    for (const action of [
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "CREATE_PR",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+      "ROLLBACK_TEST",
+      "CLOSE_OWNER_HANDOFF",
+      "OPEN_CONTINUATION",
+      "unknown",
+    ])
+      expect(assess(complete, proof, action).allowed, action).toBe(false);
+  });
+  it("re-inspects genuine proof after a working-file edit and denies dirty control checkout for deployment", async () => {
+    const proof = verified(),
+      e = evidence(proof),
+      testFile = join(fixture, path);
+    const before = await readFile(testFile);
+    try {
+      await writeFile(
+        testFile,
+        Buffer.concat([before, Buffer.from("\n// synthetic future edit\n")]),
+      );
+      expect(inspectV23SealedRepository(fixture).ok).toBe(false);
+      expect(assess(e, proof).allowed).toBe(false);
+    } finally {
+      await writeFile(testFile, before);
+    }
+    const control = join(fixture, "PROJECT_CONTROL.md"),
+      original = await readFile(control);
+    try {
+      await writeFile(
+        control,
+        Buffer.concat([
+          original,
+          Buffer.from("\nSynthetic uncommitted control.\n"),
+        ]),
+      );
+      expect(verified().clean).toBe(false);
+      expect(assess(e, proof).allowed).toBe(false);
+    } finally {
+      await writeFile(control, original);
+    }
+    expect(assess(e, proof).allowed).toBe(true);
+  });
+  it("fails closed on an unavailable or unrelated Git repository instead of taking reported digests", () => {
+    expect(inspectV23SealedRepository(join(fixture, "missing"))).toEqual({
+      ok: false,
+      reason: "V23_GIT_OBSERVATION_UNAVAILABLE",
+    });
+    expect(
+      assess(evidence(), { ...observation(), root: fixture }).allowed,
+    ).toBe(false);
+  });
+  it("rejects a staged control change even when working-file bytes match HEAD", async () => {
+    const proof = verified(),
+      e = evidence(proof),
+      path = "PROJECT_CONTROL.md",
+      file = join(fixture, path),
+      before = await readFile(file);
+    try {
+      await writeFile(
+        file,
+        Buffer.concat([before, Buffer.from("\nSynthetic staged control.\n")]),
+      );
+      git(fixture, "add", "--", path);
+      await writeFile(file, before);
+      expect(git(fixture, "diff", "HEAD", "--", path)).toBe("");
+      expect(git(fixture, "diff", "--cached", "--name-only").trim()).toBe(path);
+      expect(verified().clean).toBe(false);
+      expect(assess(e, proof).allowed).toBe(false);
+    } finally {
+      await writeFile(file, before);
+      git(fixture, "add", "--", path);
+    }
+    expect(git(fixture, "status", "--porcelain=v1")).toBe("");
+  });
+  it("rejects real committed future edit-and-restore even with matching final sealed bytes", async () => {
+    const child = await mkdtemp(join(tmpdir(), "mp06-v23-synthetic-drift-"));
+    try {
+      git(fixture, "clone", "--quiet", "--shared", fixture, child);
+      const proof = verified(child),
+        e = evidence(proof),
+        file = join(child, path),
+        before = await readFile(file);
+      await writeFile(
+        file,
+        Buffer.concat([
+          before,
+          Buffer.from("\n// synthetic unauthorized edit\n"),
+        ]),
+      );
+      git(child, "add", "--", path);
+      git(child, "commit", "--quiet", "-m", "synthetic unauthorized edit");
+      await writeFile(file, before);
+      git(child, "add", "--", path);
+      git(
+        child,
+        "commit",
+        "--quiet",
+        "-m",
+        "synthetic restored bytes with forbidden history",
+      );
+      expect(await readFile(file)).toEqual(before);
+      expect(inspectV23SealedRepository(child)).toEqual({
+        ok: false,
+        reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+      });
+      expect(assess(e, proof).allowed).toBe(false);
+    } finally {
+      await rm(child, { recursive: true, force: true });
+    }
   });
 });

@@ -1,6 +1,16 @@
 # MalisPang Project Control
 
-## Current v22 — exact TEST deployment and retained-Owner successor UAT only
+## Current v23 — sealed control-only instrumentation addendum
+
+Roadmap2026.09.11-v23 / MP-OD-2026-09-11-V23 supersedes v22 solely to represent the already approved timing instrumentation. All v22 runtime, TEST target, operation/session identifiers, fresh-state/containment gates, limits and prohibitions are inherited unchanged. No mint/reset/reissue grants: use the original wp8fV22OperationJournal and preserve its full history; no v23 remote grant or journal exists. Deployment/activation/STOP remain0/1 until their authorized starts, never inferred from this document. Ephemeral TEST_ADMIN_KEY conditions remain unchanged.
+
+The only post-candidate test exception is commit3fd4fdb184cda134f05c6effb22a7c4046094556, worker-tests/mp-06-pilot-control.test.ts,53 additions/0 removals. Candidate-file SHA2564498bc3159bb496a76632f7f6908f1d9a71b4dd5b7fb594d3b863a76f5b615ae, instrumented-file SHA256dd3b6f206660d2bfab570086b088df069b9263d074cb1dce79ea6280a3166f6c, exact path-diff SHA256173978931b60cb1721c82bc4d1c3f2f238eeb0ba28cf278cf3cf3f9861bd0d88. Only the existing ten control paths may be edited for this transition. No future edit, additional test/runtime/configuration/dependency/workflow/artifact drift or path omission is authorized.
+
+The Node-only control inspector reads real local Git objects, complete candidate-to-HEAD and historical path inventories, sealed commit ancestry/parent/blobs/diff/numstat, HEAD and working-file bytes. It does not accept a supplied Git reader or self-reported digest. Only an inspector-created process-local proof can satisfy the action-specific exception; JSON/current-work/copied evidence cannot. The assessor re-inspects that checkout, requires clean state, matching evidence HEAD and complete path inventory. This is local provenance only, not a remote verifier, CI approval, signed capability or distributed lock. Independent candidate/control CI, exact artifact and fresh TEST gates remain mandatory. General control validation may inspect dirty allowlisted control work; that state cannot authorize deployment.
+
+Frozen runtime1790da58635edcee154b60d76730248e8130c2d3 / artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657 remain unchanged. Residual hosted flake is ROOT_CAUSE_UNRESOLVED / RESIDUAL_HOSTED_CI_FLAKE — ACCEPTED_FOR_CONTROLLED_TEST_ONLY, not Production reliability acceptance. Primary U1 GAP and A1–A3 UNRESOLVED/AUDIT_RETENTION_RECONCILIATION_GAP remain unchanged. No Production, new PR/merge/closure/MP07, automatic rollback, replacement grant/session or acceptance downgrade. Issue12 OPEN; Production NO_GO — NOT TOUCHED.
+
+## Historical v22 — exact TEST deployment and retained-Owner successor UAT only
 
 Roadmap2026.09.10-v22 / MP-OD-2026-09-10-V22 supersedes v21. MP-06/Issue12/WP8F/TEST_ONLY. Approved baseline7faf727e36d13f5f83be4c904522ef0fa494ce1b, frozen candidate1790da58635edcee154b60d76730248e8130c2d3, minified index.js252715bytes/SHA256adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657. Only ten control paths may change. No runtime/dependency/config/model/prompt/policy change. Current authority is wp8fV22Authorization, with independent append-only wp8fV22OperationJournal grants for one exact TEST deploy and one fixed successor activation. Historical v21 journal and its consumed grants remain unchanged, not reusable.
 
