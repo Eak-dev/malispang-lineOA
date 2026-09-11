@@ -5208,15 +5208,29 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     }
   });
   it("accepts only the real sealed checkout with the complete independently collected inventory", () => {
+    let timingPrevious = performance.now();
+    const timingMark = (phase: string) => {
+      const now = performance.now();
+      process.stdout.write(
+        JSON.stringify({ phase, milliseconds: now - timingPrevious }) + "\n",
+      );
+      timingPrevious = now;
+    };
+    timingMark("v23_exact.start");
     const proof = verified();
+    timingMark("v23_exact.proof_collected");
     expect(proof.clean).toBe(true);
     expect([...proof.paths].sort()).toEqual([...controlPaths, path].sort());
+    timingMark("v23_exact.inventory_asserted");
     expect(validateV23SealedObservation(observation())).toBe(true);
+    timingMark("v23_exact.sealed_observation_asserted");
     expect(assess(evidence(proof), proof)).toEqual({
       allowed: true,
       reason: "V22_ONE_EXACT_TEST_DEPLOYMENT_READY",
     });
+    timingMark("v23_exact.action_assessment_asserted");
     expect(git(fixture, "status", "--porcelain=v1")).toBe("");
+    timingMark("v23_exact.final_cleanliness_asserted");
   });
   it("rejects each missing field and wrong commit, file/diff digest or line count", () => {
     const original = observation();
@@ -5306,7 +5320,18 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     }
   });
   it("rejects an omitted inventory path, duplicate path or wrong evidence HEAD despite a genuine proof", () => {
+    let timingPrevious = performance.now();
+    const timingMark = (phase: string) => {
+      const now = performance.now();
+      process.stdout.write(
+        JSON.stringify({ phase, milliseconds: now - timingPrevious }) + "\n",
+      );
+      timingPrevious = now;
+    };
+    let timingVariant = 0;
+    timingMark("v23_inventory.start");
     const proof = verified();
+    timingMark("v23_inventory.proof_collected");
     for (const paths of [
       proof.paths.filter((p) => p !== path),
       proof.paths.filter((p) => p !== "PROJECT_CONTROL.md"),
@@ -5316,10 +5341,12 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
       const e = evidence(proof);
       record(e.candidate).postCandidatePaths = paths;
       expect(assess(e, proof).allowed).toBe(false);
+      timingMark(`v23_inventory.variant_${++timingVariant}_asserted`);
     }
     const e = evidence(proof);
     record(e.candidate).evidenceHead = "a".repeat(40);
     expect(assess(e, proof).allowed).toBe(false);
+    timingMark("v23_inventory.wrong_head_asserted");
   });
   it("cannot accept source/artifact drift or substitute the original v22 decision for v23 control CI", () => {
     const proof = verified();
@@ -5441,22 +5468,38 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
       expect(assess(complete, proof, action).allowed, action).toBe(false);
   });
   it("re-inspects genuine proof after a working-file edit and denies dirty control checkout for deployment", async () => {
+    let timingPrevious = performance.now();
+    const timingMark = (phase: string) => {
+      const now = performance.now();
+      process.stdout.write(
+        JSON.stringify({ phase, milliseconds: now - timingPrevious }) + "\n",
+      );
+      timingPrevious = now;
+    };
+    timingMark("v23_reinspect.start");
     const proof = verified(),
       e = evidence(proof),
       testFile = join(fixture, path);
+    timingMark("v23_reinspect.proof_and_evidence_collected");
     const before = await readFile(testFile);
+    timingMark("v23_reinspect.test_file_read");
     try {
       await writeFile(
         testFile,
         Buffer.concat([before, Buffer.from("\n// synthetic future edit\n")]),
       );
+      timingMark("v23_reinspect.test_edit_written");
       expect(inspectV23SealedRepository(fixture).ok).toBe(false);
+      timingMark("v23_reinspect.edited_test_inspection_asserted");
       expect(assess(e, proof).allowed).toBe(false);
+      timingMark("v23_reinspect.edited_test_action_asserted");
     } finally {
       await writeFile(testFile, before);
+      timingMark("v23_reinspect.test_file_restored");
     }
     const control = join(fixture, "PROJECT_CONTROL.md"),
       original = await readFile(control);
+    timingMark("v23_reinspect.control_file_read");
     try {
       await writeFile(
         control,
@@ -5465,12 +5508,17 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
           Buffer.from("\nSynthetic uncommitted control.\n"),
         ]),
       );
+      timingMark("v23_reinspect.control_edit_written");
       expect(verified().clean).toBe(false);
+      timingMark("v23_reinspect.dirty_control_inspection_asserted");
       expect(assess(e, proof).allowed).toBe(false);
+      timingMark("v23_reinspect.dirty_control_action_asserted");
     } finally {
       await writeFile(control, original);
+      timingMark("v23_reinspect.control_file_restored");
     }
     expect(assess(e, proof).allowed).toBe(true);
+    timingMark("v23_reinspect.restored_action_asserted");
   });
   it("fails closed on an unavailable or unrelated Git repository instead of taking reported digests", () => {
     expect(inspectV23SealedRepository(join(fixture, "missing"))).toEqual({
