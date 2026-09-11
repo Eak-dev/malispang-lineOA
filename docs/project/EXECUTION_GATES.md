@@ -1326,3 +1326,46 @@ Related lint, both typechecks, formatting, v23 schema/control/history/journal/se
 Data Studio result **LOCAL_SELECTOR_ADAPTER_UNRESOLVED — SELECT_NOT_RUN**. Exact accountc395a1bc15b7c95267173de5ccd6407d / TEST namespacea87e8a2d78b447d7a71d4130ab6b31b5 / malispang-lineoa-test_ConversationStateDO was reached. The Data Studio dialog received only mp06-pilot-control-v1; it returned exactly1 option whose full visible title matched, and that exact option was selected. No broad object list, similar result or other-object scan was used. Before pressing Explore, an extra local DOM adapter attempted to obtain the selected coordinator identifier from textbox values; it returned no verifiable value and raised COORDINATOR_SELECTION_UNKNOWN. This is an operator-adapter verification failure, not evidence that remote lineage is missing or the single-name result mismatched. Under the explicit UNKNOWN stop rule, Explore was not clicked, no alternative extraction/navigation was attempted, no SQL ran, and the temporary tab/context was closed/released. No Owner reference, clipboard, key or customer row was read. Query_id/RowsRead/schema hash/claim inventory are **NOT_RUN/UNVERIFIED**, not zero. No fresh deployment lease is established. Correcting the local UI verification or repeating this logical attempt requires Owner disposition; proposed narrow correction is to rely on the already verified single exact-name selected option, then verify the opened exact TEST namespace, without reading/deriving Owner identity or scanning any list. Do not execute that proposal in this round.
 
 Checkpoint remains **WIP — NOT_DEPLOYABLE** pending automatic exact-commit CI and the unresolved SELECT-only inventory. No action-specific exception expansion or new sealed transition is implemented. Deployment, successor activation and STOP remain APPROVED_UNUSED0/1 with empty original journal; no TEST_ADMIN_KEY read, deployment, activation, STOP, SQL, LINE/U2, rollback, PR/merge/Issue closure/MP07 or Production query/action. U1 GAP, A1–A3 UNRESOLVED, historical billingUNKNOWN and both distinct unresolved CI issues remain truthful. Next: push this test/evidence checkpoint, collect its single automatic hosted CI and every available phase record, then append outcomes without calling a pass a root-cause resolution.
+
+### Instrumented automatic hosted run — PASS, cause remains unresolved
+
+Instrumentation checkpoint **cd91d299f3ed50f460f46ef8e3521f24f3fca1bb** pushed clean/local=remote; Issue12 receipt5628581305 and Roadmap9 receipt5628581443. Its single automatic [CI34555005881](https://github.com/Eak-dev/malispang-lineOA/actions/runs/34555005881), job103125682442, completed **SUCCESS**,2026-09-11T02:32:26Z–02:37:32Z, all13 steps successful. **889/889 =583 Node +14 benchmark +292 Worker**, zero failed/skipped/cancelled; control153/153,49.044s. Frozen install, formatting/lint/both types/build, all validators,5000-case benchmark, WP7, local dry-run and tracked-input byte stability PASS. Secret214; audit info/low/moderate/high/critical0/0/0/0/0. Frozen WP7 checksum7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55 and benchmarkf1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6 unchanged. No manual rerun.
+
+All26 approved phase markers were present in hosted stdout2026-09-11T02:34:03.232398Z–02:34:43.397907Z. Values below are rounded to0.001ms; differences use the previously recorded rounded local values. The failed runs had no per-phase markers, so no failed-run phase duration or last-completed phase is invented.
+
+| Phase                                           | Local ms | Hosted ms | Hosted minus local ms |
+| ----------------------------------------------- | -------: | --------: | --------------------: |
+| v23_exact.start                                 |    0.027 |     0.033 |                 0.006 |
+| v23_exact.proof_collected                       |  682.746 |  2595.219 |              1912.473 |
+| v23_exact.inventory_asserted                    |    0.215 |     0.172 |                -0.043 |
+| v23_exact.sealed_observation_asserted           |    0.233 |     0.171 |                -0.062 |
+| v23_exact.action_assessment_asserted            |  679.468 |   792.487 |               113.019 |
+| v23_exact.final_cleanliness_asserted            |   79.015 |    47.386 |               -31.629 |
+| v23_inventory.start                             |    0.060 |     0.043 |                -0.017 |
+| v23_inventory.proof_collected                   |  653.296 |   716.878 |                63.582 |
+| v23_inventory.variant_1_asserted                |  653.669 |   725.850 |                72.181 |
+| v23_inventory.variant_2_asserted                |  652.596 |   710.028 |                57.432 |
+| v23_inventory.variant_3_asserted                |  654.245 |   747.003 |                92.758 |
+| v23_inventory.variant_4_asserted                |  655.097 |   741.788 |                86.691 |
+| v23_inventory.wrong_head_asserted               |  656.215 |   756.201 |                99.986 |
+| v23_reinspect.start                             |    0.076 |     0.040 |                -0.036 |
+| v23_reinspect.proof_and_evidence_collected      |  653.012 |   717.634 |                64.622 |
+| v23_reinspect.test_file_read                    |    1.112 |     9.759 |                 8.647 |
+| v23_reinspect.test_edit_written                 |    0.877 |     1.261 |                 0.384 |
+| v23_reinspect.edited_test_inspection_asserted   |  629.178 |   845.924 |               216.746 |
+| v23_reinspect.edited_test_action_asserted       |  628.919 |   903.080 |               274.161 |
+| v23_reinspect.test_file_restored                |    0.659 |     0.912 |                 0.253 |
+| v23_reinspect.control_file_read                 |    0.400 |     0.887 |                 0.487 |
+| v23_reinspect.control_edit_written              |    0.690 |     1.118 |                 0.428 |
+| v23_reinspect.dirty_control_inspection_asserted |  651.608 |   722.132 |                70.524 |
+| v23_reinspect.dirty_control_action_asserted     |  660.105 |   636.369 |               -23.736 |
+| v23_reinspect.control_file_restored             |    0.744 |     0.904 |                 0.160 |
+| v23_reinspect.restored_action_asserted          |  667.986 |   706.650 |                38.664 |
+
+Whole-test comparison (framework durations, not marker sums): exact inventory **3436ms** versus7814ms in failed34551477889 and6903ms in failed34552180390; invalid inventory **4398ms** versus6365/6039ms; reinspection **4547ms** versus6335/5364ms. The uninstrumented fourth future-edit/restore case passed3163ms versus6554ms in34552180390; no change was made to that case. All5000ms watchdogs remain unchanged.
+
+Verdict **INSTRUMENTED_RUN_PASS / ROOT_CAUSE_UNRESOLVED**. The measured dominant phases are initial proof collection and action re-inspection, with the first hosted proof2595.219ms versus local682.746ms, while its next assessment792.487ms is much shorter. The repeated invalid-inventory assessments consume710.028–756.201ms each. This localizes elapsed time to existing complete Git-verification paths but does not distinguish subprocess startup, Git operation, filesystem, runner load or causal effect of output capture. No failed-run phase timings exist to prove why those earlier watchdogs fired. No caching, reduced reinspection, regrouping, parallelism, timeout, retry, runtime or harness remediation is authorized or applied; a new narrow measurement/optimization proposal would require separate review.
+
+The committed clean inspector and hosted control validator verify the same complete11-path inventory and original sealed Worker digests. This authorized control-test path did not trigger an inventory/digest rejection, so no new sealed transition was fabricated. **The full deployment action remains BLOCKED**: the single coordinator selector attempt stopped before Explore/SQL and schema/claims remain UNVERIFIED; no fresh120second TEST state was collected. This narrow read-only scope permits only the coordinator and cannot establish the separate retained Owner object's claim count. Do not substitute coordinator counts or old Owner evidence. Current next disposition is the local-selector correction already proposed; any further exact Owner-object observation outside this narrow grant also needs explicit scope. No repeated selector attempt or remote work was performed while collecting CI.
+
+Freeze unchanged: control2ba2b4c17cefa7bb2f92106c03c09d66665dbcc0, runtime1790da58635edcee154b60d76730248e8130c2d3, artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657; all three inherited grants APPROVED_UNUSED0/1. End **WIP — NOT_DEPLOYABLE / READINESS_BLOCKED**, not READY_TO_CLOSE_ISSUE_12. Primary U1 GAP, A1–A3 UNRESOLVED, historical billingUNKNOWN and both separately recorded CI issues remain; no TEST_ADMIN_KEY/LINE/U2/session/deployment/STOP/rollback/PR/merge/closure/Production query/action. Push this append-only CI evidence checkpoint and reconcile #9/#12; its automatic CI is separate and must not be called successful before completion.
