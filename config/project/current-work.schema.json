@@ -43,6 +43,7 @@
     "wp8fV22Authorization",
     "wp8fV22OperationJournal",
     "wp8fV23InstrumentationAddendum",
+    "wp8fV24LiveUatEnablement",
     "benchmarkAcceptanceCriteria",
     "nextWork",
     "conflicts",
@@ -50,6 +51,46 @@
     "failureMode"
   ],
   "properties": {
+    "wp8fV24LiveUatEnablement": {
+      "const": {
+        "version": "2026.09.11-v24",
+        "ownerDecision": "MP-OD-2026-09-11-V24",
+        "supersedes": "2026.09.11-v23",
+        "type": "TEST_LIVE_UAT_ENABLEMENT_CONTROL_ONLY",
+        "grants": "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE",
+        "runtimeAndArtifact": "EXACT_UNCHANGED_V22_AUTHORIZATION",
+        "controlTiming": {
+          "inspector": "inspectV23SealedRepository",
+          "path": "tests/project-control.test.ts",
+          "tests": [
+            "accepts only the real sealed checkout with the complete independently collected inventory",
+            "rejects an omitted inventory path, duplicate path or wrong evidence HEAD despite a genuine proof",
+            "re-inspects genuine proof after a working-file edit and denies dirty control checkout for deployment"
+          ],
+          "maximumWatchdogMs": 15000,
+          "condition": "ALL_PHASES_COMPLETE_NO_SEMANTIC_ASSERTION_FAILURE",
+          "semantics": "PRESERVE_ASSERTIONS_GIT_PROOF_ORDER_PARALLELISM_NO_RETRY_SKIP_OR_INCOMPLETE_PROOF",
+          "log": "FIXED_PHASE_NAME_AND_MONOTONIC_MILLISECONDS_ONLY",
+          "residual": "ROOT_CAUSE_UNRESOLVED / ACCEPTED_TEST_ONLY_RESIDUAL"
+        },
+        "dataStudio": {
+          "account": "c395a1bc15b7c95267173de5ccd6407d",
+          "namespace": "a87e8a2d78b447d7a71d4130ab6b31b5",
+          "uniqueName": "mp06-pilot-control-v1",
+          "maximumLogicalObservations": 1,
+          "maximumTechnicalAttemptsBeforeSql": 3,
+          "selection": "SINGLE_EXACT_VISIBLE_NAME_VALUE_NO_OBJECT_LIST_OR_GUESSED_ID",
+          "query": "SELECT_ONLY_SANITIZED_SCHEMA_COUNTS_INVARIANTS_NO_OWNER_REFERENCE",
+          "executedSql": "CONSUMES_LOGICAL_OBSERVATION_NO_RETRY_ON_REJECTED_TIMEOUT_UNKNOWN",
+          "ownerClaims": "EXISTING_AUTHENTICATED_TEST_OWNER_BOUND_DIAGNOSTIC_NO_REFERENCE_EXPOSURE_OR_ENUMERATION"
+        },
+        "credential": "EXISTING_TEST_ADMIN_KEY_KEYCHAIN_JUST_IN_TIME_SHORT_LIVED_MEMORY_ONLY",
+        "deploymentGate": "EXACT_FINAL_V24_CI_SUCCESS_FULL_VALIDATION_FROZEN_REPRODUCTION_COMPLETE_INVENTORY_AND_FRESH_TEST_INVARIANTS",
+        "grantsUsedAfterAmbiguity": "CONSUMED_NO_RETRY_OR_REPLACEMENT",
+        "closure": "FINAL_OWNER_DECISION_REQUIRED_PRESERVE_U1_A1_A3_BILLING_GAPS",
+        "production": "NO_GO_NOT_TOUCHED"
+      }
+    },
     "wp8fV23InstrumentationAddendum": {
       "const": {
         "version": "2026.09.11-v23",

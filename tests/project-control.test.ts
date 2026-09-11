@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { channel } from "node:diagnostics_channel";
 
 import {
   afterEach,
@@ -4988,6 +4989,46 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     actual: Record<string, unknown>,
     schema: unknown;
   let fixture: string, usedFixture: string, resetFixture: string;
+  const inspectorTiming = channel("mp06.v24.control-inspection-timing");
+  const timedTests = [
+    "accepts only the real sealed checkout with the complete independently collected inventory",
+    "rejects an omitted inventory path, duplicate path or wrong evidence HEAD despite a genuine proof",
+    "re-inspects genuine proof after a working-file edit and denies dirty control checkout for deployment",
+  ];
+  const timingPhases = new Set(
+    [
+      "repository",
+      "ancestry",
+      "inventory_history",
+      "sealed_bytes_diff",
+      "dirty_state",
+      "inherited_journal",
+      "final_head",
+      "proof_created",
+    ].map((name) => "v23_inspect." + name),
+  );
+  const logInspectorTiming = (message: unknown) => {
+    if (typeof message !== "object" || message === null)
+      throw new Error("TIMING_SHAPE_INVALID");
+    const { phase, milliseconds } = message as Record<string, unknown>;
+    if (
+      typeof phase !== "string" ||
+      !timingPhases.has(phase) ||
+      typeof milliseconds !== "number" ||
+      !Number.isFinite(milliseconds) ||
+      milliseconds < 0
+    )
+      throw new Error("TIMING_SHAPE_INVALID");
+    process.stdout.write(JSON.stringify({ phase, milliseconds }) + "\n");
+  };
+  beforeEach((context) => {
+    if (timedTests.includes(context.task.name))
+      inspectorTiming.subscribe(logInspectorTiming);
+  });
+  afterEach(() => {
+    inspectorTiming.unsubscribe(logInspectorTiming);
+  });
+
   const git = (cwd: string, ...args: string[]) =>
     execFileSync(
       "git",
@@ -5076,9 +5117,27 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
         return parsed;
       }),
     );
-    r = record(currentRoadmap);
-    w = record(currentManifest);
-    schema = currentSchema;
+    // Retain the original v23 scenarios verbatim under the v24 successor.
+    // Only strip the new control-only layer; inherited grants and the seal
+    // remain exact. Current v24 documents are tested separately below.
+    r = clone(record(currentRoadmap));
+    w = clone(record(currentManifest));
+    schema = clone(record(currentSchema));
+    if (r.version === "2026.09.11-v24") {
+      r.version = version;
+      r.ownerDecision = {
+        decisionId: decision,
+        decidedAt: "2026-09-11",
+        supersedes: v22Version,
+      };
+      w.roadmapVersion = version;
+      delete w.wp8fV24LiveUatEnablement;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV24LiveUatEnablement",
+      );
+      delete record(s.properties).wp8fV24LiveUatEnablement;
+    }
     actual = w;
     w = clone(actual);
     // A synthetic branch from the original unused baseline, never a live reset.
@@ -5231,7 +5290,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     timingMark("v23_exact.action_assessment_asserted");
     expect(git(fixture, "status", "--porcelain=v1")).toBe("");
     timingMark("v23_exact.final_cleanliness_asserted");
-  });
+  }, 15_000);
   it("rejects each missing field and wrong commit, file/diff digest or line count", () => {
     const original = observation();
     for (const key of Object.keys(original)) {
@@ -5347,7 +5406,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     record(e.candidate).evidenceHead = "a".repeat(40);
     expect(assess(e, proof).allowed).toBe(false);
     timingMark("v23_inventory.wrong_head_asserted");
-  });
+  }, 15_000);
   it("cannot accept source/artifact drift or substitute the original v22 decision for v23 control CI", () => {
     const proof = verified();
     for (const field of [
@@ -5519,7 +5578,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     }
     expect(assess(e, proof).allowed).toBe(true);
     timingMark("v23_reinspect.restored_action_asserted");
-  });
+  }, 15_000);
   it("fails closed on an unavailable or unrelated Git repository instead of taking reported digests", () => {
     expect(inspectV23SealedRepository(join(fixture, "missing"))).toEqual({
       ok: false,
@@ -5587,5 +5646,253 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     } finally {
       await rm(child, { recursive: true, force: true });
     }
+  });
+});
+
+describe("v24 TEST live UAT enablement without replacement grants", () => {
+  const version = "2026.09.11-v24",
+    decision = "MP-OD-2026-09-11-V24";
+  let r: Record<string, unknown>,
+    w: Record<string, unknown>,
+    s: Record<string, unknown>,
+    baseline: Record<string, unknown>;
+  let fixture: string;
+  let proof: Extract<
+    ReturnType<typeof inspectV23SealedRepository>,
+    { ok: true }
+  >["proof"];
+  const controls = [
+    "PROJECT_CONTROL.md",
+    "config/project/roadmap.json",
+    "config/project/current-work.json",
+    "config/project/current-work.schema.json",
+    "src/project-control.ts",
+    "src/project-control-cli.ts",
+    "tests/project-control.test.ts",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/EXECUTION_GATES.md",
+  ];
+  beforeAll(async () => {
+    const readDocument = async (path: string) =>
+      record(JSON.parse(await readFile(new URL(path, root), "utf8")));
+    [r, w, s] = await Promise.all([
+      readDocument("config/project/roadmap.json"),
+      readDocument("config/project/current-work.json"),
+      readDocument("config/project/current-work.schema.json"),
+    ]);
+    baseline = record(
+      JSON.parse(
+        execFileSync(
+          "git",
+          [
+            "show",
+            "31d2d3dc6c6aaa95ce1b3c82820c8ce1e78c3f1f:config/project/current-work.json",
+          ],
+          {
+            cwd: fileURLToPath(root),
+            encoding: "utf8",
+            maxBuffer: 1024 * 1024,
+          },
+        ),
+      ),
+    );
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v24-synthetic-control-"));
+    const git = (...args: string[]) =>
+      execFileSync(
+        "git",
+        [
+          "-c",
+          "core.hooksPath=/dev/null",
+          "-c",
+          "user.name=MP06 Synthetic",
+          "-c",
+          "user.email=mp06-synthetic@example.invalid",
+          ...args,
+        ],
+        { cwd: fixture, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      );
+    git("clone", "--quiet", "--shared", fileURLToPath(root), fixture);
+    for (const p of controls)
+      await copyFile(new URL(p, root), join(fixture, p));
+    git("add", "--", ...controls);
+    if (git("diff", "--cached", "--name-only").trim())
+      git("commit", "--quiet", "-m", "synthetic v24 control fixture");
+    const observed = inspectV23SealedRepository(fixture);
+    if (!observed.ok) throw new Error(observed.reason);
+    proof = observed.proof;
+  });
+  afterAll(async () => {
+    if (fixture) await rm(fixture, { recursive: true, force: true });
+  });
+  const evidence = () => {
+    const e = v22Evidence();
+    e.ownerDecision = decision;
+    Object.assign(record(e.candidate), {
+      controlOwnerDecision: decision,
+      evidenceHead: proof.head,
+      controlCommit: proof.head,
+      controlCiHead: proof.head,
+      postCandidatePaths: [...proof.paths],
+    });
+    record(e.test).observedAt = Date.now();
+    return e;
+  };
+  it("preserves every v23 field and original journal after removing only the v24 layer", () => {
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(validateSchemaDocuments(roadmapSchema, s, version)).toEqual([]);
+    const inherited = clone(w);
+    delete inherited.wp8fV24LiveUatEnablement;
+    inherited.roadmapVersion = "2026.09.11-v23";
+    expect(inherited).toEqual(baseline);
+    expect(w.wp8fV22OperationJournal).toEqual([]);
+    expect(r.ownerDecision).toEqual({
+      decisionId: decision,
+      decidedAt: "2026-09-11",
+      supersedes: "2026.09.11-v23",
+    });
+  });
+  it("requires the exact v24 Owner record and historical chain rather than self-attestation", async () => {
+    const log = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(log, version)).toBe(true);
+    for (const text of [
+      "MP-OD-2026-09-11-V24 —",
+      "supersedes 2026.09.11-v23",
+      "TEST_LIVE_UAT_ENABLEMENT_CONTROL_ONLY",
+      "15000ms maximum only for the three named control tests",
+      "one logical SELECT-only observation",
+      "Primary U1 GAP; A1–A3 UNRESOLVED; historical billing UNKNOWN",
+    ])
+      expect(
+        validateWp8fOwnerDecisionRecord(
+          log.replaceAll(text, "REMOVED"),
+          version,
+        ),
+        text,
+      ).toBe(false);
+    expect(validateWp8fOwnerDecisionRecord(JSON.stringify(w), version)).toBe(
+      false,
+    );
+  });
+  it("denies missing or changed enablement fields, selectors, attempts and watchdog bounds", () => {
+    for (const key of Object.keys(record(w.wp8fV24LiveUatEnablement))) {
+      const bad = clone(w);
+      record(bad.wp8fV24LiveUatEnablement)[key] = "SELF_APPROVED";
+      expect(validateProjectControl(r, bad).errors).toContain(
+        "V24_LIVE_UAT_ENABLEMENT_INVALID",
+      );
+      delete record(bad.wp8fV24LiveUatEnablement)[key];
+      expect(validateProjectControl(r, bad).errors).toContain(
+        "V24_LIVE_UAT_ENABLEMENT_INVALID",
+      );
+    }
+    for (const [section, key, value] of [
+      ["controlTiming", "maximumWatchdogMs", 15001],
+      ["dataStudio", "maximumTechnicalAttemptsBeforeSql", 4],
+      ["dataStudio", "maximumLogicalObservations", 2],
+      ["dataStudio", "uniqueName", "latest"],
+      ["dataStudio", "query", "WRITE_ALLOWED"],
+    ] as const) {
+      const bad = clone(w);
+      record(record(bad.wp8fV24LiveUatEnablement)[section])[key] = value;
+      expect(validateProjectControl(r, bad).errors).toContain(
+        "V24_LIVE_UAT_ENABLEMENT_INVALID",
+      );
+    }
+  });
+  it("rejects permissive schema, foreign work and a newly invented operation journal", () => {
+    const schema = clone(s);
+    record(schema.properties).wp8fV24LiveUatEnablement = { type: "object" };
+    expect(validateSchemaDocuments(roadmapSchema, schema, version)).toContain(
+      "V24_SCHEMA_NOT_CLOSED",
+    );
+    for (const [key, value] of [
+      ["workId", "MP-07"],
+      ["githubIssue", 5],
+      ["targetEnvironment", "PRODUCTION"],
+      ["wp8fV24OperationJournal", []],
+    ] as const) {
+      const bad = clone(w);
+      bad[key] = value;
+      expect(validateProjectControl(r, bad).errors.length).toBeGreaterThan(0);
+    }
+  });
+  it("requires real v24 re-inspection and exact current-HEAD CI for the inherited grant", () => {
+    expect(
+      evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, evidence(), proof),
+    ).toEqual({ allowed: true, reason: "V22_ONE_EXACT_TEST_DEPLOYMENT_READY" });
+  });
+  it("rejects stale or failed CI and missing or copied sealed proofs", () => {
+    const stale = evidence();
+    Object.assign(record(stale.candidate), {
+      controlCommit: "a".repeat(40),
+      controlCiHead: "a".repeat(40),
+    });
+    expect(
+      evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, stale, proof)
+        .allowed,
+    ).toBe(false);
+    const failed = evidence();
+    record(failed.candidate).controlCiConclusion = "failure";
+    expect(
+      evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, failed, proof)
+        .allowed,
+    ).toBe(false);
+    for (const fake of [undefined, w, { ...proof }])
+      expect(
+        evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, evidence(), fake)
+          .allowed,
+      ).toBe(false);
+  });
+  it("retains exact paths with no runtime, dependency, workflow or alias expansion", () => {
+    expect(
+      evaluateWp8fPaths(r, w, "CONTROL_TRANSITION", controls).allowed,
+    ).toBe(true);
+    for (const path of [
+      "worker/index.ts",
+      "worker/durable-objects.ts",
+      "worker-tests/mp-06-pilot-control.test.ts",
+      "package.json",
+      "wrangler.jsonc",
+      ".github/workflows/ci.yml",
+      "*",
+      "../PROJECT_CONTROL.md",
+    ])
+      expect(
+        evaluateWp8fPaths(r, w, "CONTROL_TRANSITION", [path]).allowed,
+        path,
+      ).toBe(false);
+  });
+  it("denies new sessions, rollback, Production, PR, merge, closure and unknown operations", () => {
+    for (const action of [
+      "OPEN_CONTINUATION",
+      "CLOSE_OWNER_HANDOFF",
+      "ROLLBACK_TEST",
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+      "ALLOW_ALL",
+      "UNKNOWN",
+    ])
+      expect(
+        evaluateProjectAction(r, w, action, v22Target, evidence(), proof)
+          .allowed,
+        action,
+      ).toBe(false);
+    expect(
+      evaluateProjectAction(
+        r,
+        w,
+        "ACTIVATE_SUCCESSOR_V22",
+        v22Target,
+        evidence(),
+        proof,
+      ).allowed,
+    ).toBe(false);
   });
 });
