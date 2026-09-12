@@ -1568,3 +1568,36 @@ All15 complete in both runs; summed spans2978.382/4095.517ms. This establishes c
 **Stop: V24_HOSTED_CI_BLOCKED / WORKER_PROVIDER_HANG_TIMEOUT_OUTSIDE_APPROVED_CONTROL_TIMING_SCOPE — WIP — NOT_DEPLOYABLE.** As explicitly ordered when CI still fails, stop before Data Studio/readiness/deployment/activation. No fresh TEST snapshot was attempted; SQL usage0/1 and selector technical usage1/3 remain as previously recorded. No Keychain/TEST_ADMIN_KEY access, HTTP admin observation, SQL, deploy, version/traffic change, successor/session, STOP, LINE/U2 or Production query/action. Deployment/activation/STOP each **APPROVED_UNUSED0/1**, v22 journal empty; primaryU1 GAP, A1–A3 UNRESOLVED, billingUNKNOWN, Issue12 OPEN. No PR/merge/closure/MP07. No new remote grant or exception.
 
 Consolidated narrow next proposal, **UNIMPLEMENTED / REQUIRES_OWNER_SCOPE**: permit phase-only diagnostics in that single existing Worker provider-hang test, with a captured real monotonic clock that is not advanced by its existing fake timers. Place fixed phase/millisecond markers after existing baseline snapshot, activation, mock installation, signed-webhook200, provider-call observation, fake-clock advance, execution-context drain, terminal/accounting/checkpoint/diagnostic assertions and cleanup. Preserve every assertion,5000ms watchdog, timer/wait operation, invocation, order, parallelism, runtime and mock behavior; no retry/skip/polling addition or performance fix. Because this file is sealed to commit3fd4fdb/filedd3b6f2/diff1739789, a future edit would intentionally fail the current exact path-history gate: separately bind the eventual reviewed diagnostic commit/file/diff digests in an Owner-authorized control-only sealed addendum, never self-attest or widen to future edits. New digests do not exist yet and are not invented. No runtime/artifact change is proposed; any such need must be consolidated for new review. The required evidence-only push may trigger normal CI, but it is not a manual rerun or permission to bypass this mandatory stop using a later green result.
+
+### V25 precursor — approved provider-hang diagnostic, unchanged watchdog
+
+Owner authorized the consolidated proposal in Issue12 comment5645793653 from exact baseline046eff1d72edeea539623a9bbe9e006ba241a7ae. Baseline local=remote/clean; automatic baseline CI34692898525/job103551202555 SUCCESS at2026-09-12T12:13:57Z, without rerun. This does not erase CI34692370653's5017/5000ms Worker timeout or prove a cause.
+
+Only worker-tests/mp-06-pilot-control.test.ts, case reproduces a provider hang through the webhook and leaves durable fail-closed checkpoints, receives31 additions/0 removals: three timing definitions and20 fixed-label calls. The native performance.now binding is captured before existing fake timers; logs contain only synthetic test name, phase and elapsed milliseconds. Whole-file TypeScript AST normalization after removing precisely these additions equals the baseline AST. Assertions, expected outcomes, existing fake8000ms advance, waitFor, RPC/webhook/mock invocation/order, cleanup and default5000ms watchdog are unchanged. There is no delivery-claim, acknowledgement or replay operation in this particular fail-closed provider-hang scenario; those phases are NOT_APPLICABLE, not fabricated new calls or claimed coverage. Existing no-additional-network-call assertion remains; callback cleanup is measured, while framework teardown outside the callback is not separately instrumented.
+
+Isolated credential-free clone/frozen install validation2026-09-12T12:32:20.217Z–12:33:23.980Z: focused1/1 (163 nonselected cases reported skipped only in diagnostic focused selection), full target Worker file164/164 with zero skipped/failed, format/lint/typecheck/secret214 PASS. Both runs emit all20 markers monotonically, including all final assertions and cleanup. Table is cumulative elapsed milliseconds from test entry, not the synthetic clock and not per-phase duration; marker order follows actual execution. Whole-case reporter170ms focused; full-file target marker span240ms. No application timeout or CI-root-cause conclusion follows from these local passes. Keep5000ms; ROOT_CAUSE_UNRESOLVED / HOSTED_PROVIDER_HANG_TEST_TIMEOUT.
+
+| Fixed phase                            | Focused ms | Full Worker file ms |
+| -------------------------------------- | ---------: | ------------------: |
+| test_started                           |          0 |                   0 |
+| fake_timers_installed                  |          3 |                   0 |
+| synthetic_clock_set                    |          6 |                   0 |
+| baseline_lifecycle_snapshot_complete   |         21 |                   8 |
+| pilot_activation_asserted              |         29 |                  19 |
+| provider_hang_mock_installed           |         29 |                  19 |
+| payload_and_execution_context_prepared |         30 |                  20 |
+| signed_webhook_accepted                |         36 |                  21 |
+| provider_hang_entered                  |        107 |                 148 |
+| single_provider_call_observed          |        143 |                 191 |
+| deadline_clock_advance_complete        |        146 |                 202 |
+| execution_context_settled              |        157 |                 216 |
+| no_additional_outbound_call_asserted   |        157 |                 216 |
+| terminal_state_and_accounting_asserted |        160 |                 224 |
+| final_lifecycle_snapshot_complete      |        163 |                 232 |
+| durable_lifecycle_phases_asserted      |        163 |                 232 |
+| provider_deadline_diagnostics_asserted |        166 |                 240 |
+| globals_restored                       |        166 |                 240 |
+| real_timers_restored                   |        166 |                 240 |
+| test_completed                         |        166 |                 240 |
+
+This precursor must be committed to obtain the immutable instrumentation SHA before the Owner-authorized next sealed-control addendum2026.09.12-v25 can bind real file/diff digests. The old v23/v24 seal intentionally cannot authorize this newly edited Worker-test path; no action-specific gate is bypassed or self-attested. WIP — NOT_DEPLOYABLE until the new exact seal, full clean validation/artifact reproduction and automatic exact sealed-HEAD CI pass. No watchdog adjustment, runtime1790da58635edcee154b60d76730248e8130c2d3/artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657/dependency/workflow/config change. Historical journals retained; deployment/activation/STOP APPROVED_UNUSED0/1. No SQL/Keychain/key/TEST query/deploy/activation/STOP/LINE/U2/Production action. U1 GAP; A1–A3 UNRESOLVED; billingUNKNOWN; Issue12 OPEN. The received approval ends mid-item11; no additional remote execution instruction is inferred from the missing text.

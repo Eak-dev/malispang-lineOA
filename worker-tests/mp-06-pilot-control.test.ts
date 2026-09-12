@@ -4392,8 +4392,22 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
   });
 
   it("reproduces a provider hang through the webhook and leaves durable fail-closed checkpoints", async () => {
+    const timingNow = performance.now.bind(performance);
+    const timingStartedAt = timingNow();
+    const timingMarker = (phase: string) => {
+      console.info(
+        JSON.stringify({
+          test: "synthetic_provider_hang",
+          phase,
+          elapsedMs: timingNow() - timingStartedAt,
+        }),
+      );
+    };
+    timingMarker("test_started");
     vi.useFakeTimers();
+    timingMarker("fake_timers_installed");
     vi.setSystemTime(new Date("2026-09-08T00:00:00.000Z"));
+    timingMarker("synthetic_clock_set");
     const senderId = "U_SYNTHETIC_WP8D_TIMEOUT_TESTER";
     const coordinator = env.CONVERSATION_STATE.getByName(
       MP06_PILOT_CONTROL_OBJECT_NAME,
@@ -4405,6 +4419,7 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         (checkpoint) => `${checkpoint.clientRequestId}:${checkpoint.phase}`,
       ),
     );
+    timingMarker("baseline_lifecycle_snapshot_complete");
     expect(
       await coordinator.activateMp06Pilot({
         sessionRef: hexRef(884),
@@ -4413,13 +4428,16 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         limits,
       }),
     ).toMatchObject({ activated: true });
+    timingMarker("pilot_activation_asserted");
     const network = vi.fn<typeof fetch>((input) => {
       if (requestUrl(input).startsWith("https://api.openai.com/")) {
+        timingMarker("provider_hang_entered");
         return new Promise<Response>(() => undefined);
       }
       return Promise.reject(new Error("LINE must not be called after timeout"));
     });
     vi.stubGlobal("fetch", network);
+    timingMarker("provider_hang_mock_installed");
     try {
       const payload = JSON.stringify({
         destination: env.LINE_BOT_USER_ID,
@@ -4434,6 +4452,7 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         ],
       });
       const ctx = createExecutionContext();
+      timingMarker("payload_and_execution_context_prepared");
       const response = await worker.fetch(
         new Request("https://test.invalid/webhook", {
           method: "POST",
@@ -4450,18 +4469,25 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         ctx,
       );
       expect(response.status).toBe(200);
+      timingMarker("signed_webhook_accepted");
       await vi.waitFor(() => expect(network).toHaveBeenCalledTimes(1));
+      timingMarker("single_provider_call_observed");
       await vi.advanceTimersByTimeAsync(8_000);
+      timingMarker("deadline_clock_advance_complete");
       await waitOnExecutionContext(ctx);
+      timingMarker("execution_context_settled");
 
       expect(network).toHaveBeenCalledTimes(1);
+      timingMarker("no_additional_outbound_call_asserted");
       expect(await coordinator.mp06PilotStatus(Date.now())).toMatchObject({
         state: "STOPPED",
         stopReason: "PROVIDER_USAGE_UNKNOWN",
         budgetReservedMicroUsd: 0,
         inFlight: 0,
       });
+      timingMarker("terminal_state_and_accounting_asserted");
       const snapshot = await coordinator.mp06PilotLifecycleCheckpointSnapshot();
+      timingMarker("final_lifecycle_snapshot_complete");
       expect(
         snapshot.checkpoints
           .filter(
@@ -4478,16 +4504,21 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         "SETTLEMENT_STARTED",
         "SETTLEMENT_SUCCEEDED",
       ]);
+      timingMarker("durable_lifecycle_phases_asserted");
       expect(
         await coordinator.mp06PilotAttemptDiagnostics(Date.now()),
       ).toMatchObject({
         sessionState: "STOPPED",
         latestLifecycle: { outcomeCode: "PROVIDER_DEADLINE" },
       });
+      timingMarker("provider_deadline_diagnostics_asserted");
     } finally {
       vi.unstubAllGlobals();
+      timingMarker("globals_restored");
       vi.useRealTimers();
+      timingMarker("real_timers_restored");
     }
+    timingMarker("test_completed");
   });
 
   it("rejects a signed webhook with the wrong destination before pilot admission", async () => {
