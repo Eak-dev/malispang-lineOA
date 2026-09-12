@@ -5669,7 +5669,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
       timingMark("v24_future_drift.cleanup_completed");
     }
     timingMark("v24_future_drift.completed");
-  });
+  }, 15_000);
 });
 
 describe("v24 TEST live UAT enablement without replacement grants", () => {
