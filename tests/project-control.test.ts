@@ -5718,6 +5718,207 @@ const v25ControlPaths = Object.keys(v25HistoricalHashes).filter(
 );
 const v25Hash = (data: string | Buffer) =>
   createHash("sha256").update(data).digest("hex");
+type V25FixtureDiagnostic = {
+  identity: string;
+  fingerprint: string;
+  headOid: string;
+  headState: string;
+  headReferenceHash: string;
+  indexHash: string;
+  stagedHash: string;
+  trackedHash: string;
+  untrackedHash: string;
+  statusHash: string;
+  operationHash: string;
+};
+let v25FixtureTrace:
+  | {
+      phase: string;
+      started: number;
+      testIndex: number;
+      first: Map<string, V25FixtureDiagnostic>;
+      latest: Map<string, V25FixtureDiagnostic>;
+    }
+  | undefined;
+function v25DiagnosticLog(value: Record<string, unknown>): void {
+  try {
+    console.info(JSON.stringify({ diagnostic: "mp06.v25.fixture", ...value }));
+  } catch {
+    // Diagnostic output must never replace the existing assertion/error.
+  }
+}
+function v25DiagnosticChanges(
+  before: V25FixtureDiagnostic | undefined,
+  after: V25FixtureDiagnostic | undefined,
+): string[] {
+  if (!before || !after) return ["UNKNOWN_COMPONENT"];
+  const changed: string[] = [];
+  if (
+    before.headOid !== after.headOid ||
+    before.headState !== after.headState ||
+    before.headReferenceHash !== after.headReferenceHash
+  )
+    changed.push("HEAD_CHANGED");
+  if (
+    before.indexHash !== after.indexHash ||
+    before.stagedHash !== after.stagedHash
+  )
+    changed.push("INDEX_CHANGED");
+  if (before.trackedHash !== after.trackedHash)
+    changed.push("TRACKED_WORKTREE_CHANGED");
+  if (before.untrackedHash !== after.untrackedHash)
+    changed.push("UNTRACKED_SET_CHANGED");
+  if (before.operationHash !== after.operationHash)
+    changed.push("GIT_OPERATION_STATE_CHANGED");
+  if (before.fingerprint !== after.fingerprint && changed.length === 0)
+    changed.push("UNKNOWN_COMPONENT");
+  return changed;
+}
+function v25DiagnosticCapture(
+  cwd: string,
+  index: string,
+  fingerprint: string,
+  parts: readonly [string, string, string, string, string, string[][]],
+): void {
+  if (!v25FixtureTrace) return;
+  try {
+    const trace = v25FixtureTrace;
+    const identity = v25Hash(cwd);
+    const headPath = join(index, "..", "HEAD");
+    const headRaw = readFileSync(headPath, "utf8");
+    const operations = Object.fromEntries(
+      [
+        "MERGE_HEAD",
+        "CHERRY_PICK_HEAD",
+        "REVERT_HEAD",
+        "REBASE_HEAD",
+        "rebase-merge",
+        "rebase-apply",
+        "sequencer",
+        "BISECT_LOG",
+      ].map((name) => [name, existsSync(join(index, "..", name))]),
+    );
+    const snapshot: V25FixtureDiagnostic = {
+      identity,
+      fingerprint,
+      headOid: /^[a-f0-9]{40}$/.test(parts[0].trim())
+        ? parts[0].trim()
+        : "UNKNOWN",
+      headState: headRaw.startsWith("ref: ")
+        ? "SYMBOLIC"
+        : /^[a-f0-9]{40}\n?$/.test(headRaw)
+          ? "DETACHED"
+          : "UNKNOWN",
+      headReferenceHash: v25Hash(headRaw),
+      indexHash: parts[1],
+      stagedHash: v25Hash(parts[3]),
+      trackedHash: v25Hash(parts[2]),
+      untrackedHash: v25Hash(JSON.stringify(parts[5])),
+      statusHash: v25Hash(parts[4]),
+      operationHash: v25Hash(JSON.stringify(operations)),
+    };
+    const key = identity + ":" + fingerprint;
+    const previous = trace.latest.get(identity);
+    if (!trace.first.has(key)) trace.first.set(key, snapshot);
+    trace.latest.set(identity, snapshot);
+    const paths = parts[4]
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        const status = /^[ MADRCU?!]{2}$/.test(line.slice(0, 2))
+          ? line.slice(0, 2)
+          : "??";
+        const path = line.slice(3);
+        return {
+          status,
+          path:
+            status !== "??" &&
+            /^[a-zA-Z0-9_./-]{1,200}$/.test(path) &&
+            !/(?:[a-f0-9]{32}|\.env|\.dev\.vars)/.test(path)
+              ? path
+              : "PATH_REDACTED",
+        };
+      });
+    v25DiagnosticLog({
+      phase: trace.phase,
+      testIndex: trace.testIndex,
+      milliseconds: performance.now() - trace.started,
+      ...snapshot,
+      operationState: operations,
+      stagedPaths: paths.filter(
+        ({ status }) => ![" ", "?", "!"].includes(status[0]!),
+      ),
+      trackedPaths: paths.filter(
+        ({ status }) => status !== "??" && status !== "!!",
+      ),
+      untrackedCount: parts[5].length,
+      changesSincePrevious: previous
+        ? v25DiagnosticChanges(previous, snapshot)
+        : [],
+      diagnosticReadsPreservedHead: readFileSync(headPath, "utf8") === headRaw,
+      diagnosticReadsPreservedIndex:
+        (existsSync(index) ? v25Hash(readFileSync(index)) : "INDEX_ABSENT") ===
+        parts[1],
+    });
+  } catch {
+    v25DiagnosticLog({
+      phase: v25FixtureTrace.phase,
+      changes: ["UNKNOWN_COMPONENT"],
+      diagnosticStatus: "OBSERVATION_FAILED_OR_INCOMPLETE",
+    });
+  }
+}
+function v25DiagnosticMutation(before: string, cwd: string): void {
+  if (!v25FixtureTrace) return;
+  try {
+    const identity = v25Hash(cwd);
+    v25DiagnosticLog({
+      phase: v25FixtureTrace.phase,
+      testIndex: v25FixtureTrace.testIndex,
+      milliseconds: performance.now() - v25FixtureTrace.started,
+      identity,
+      guard: "ACTIVE_REPOSITORY_MUTATED",
+      changes: v25DiagnosticChanges(
+        v25FixtureTrace.first.get(identity + ":" + before),
+        v25FixtureTrace.latest.get(identity),
+      ),
+    });
+  } catch {
+    v25DiagnosticLog({
+      guard: "ACTIVE_REPOSITORY_MUTATED",
+      changes: ["UNKNOWN_COMPONENT"],
+    });
+  }
+}
+function v25DiagnosticPhase(
+  phase: string,
+  fixture?: string,
+  removed = false,
+): void {
+  if (!v25FixtureTrace) return;
+  v25FixtureTrace.phase = phase;
+  try {
+    v25OperatorSnapshot();
+    if (fixture) {
+      const present = existsSync(fixture);
+      v25DiagnosticLog({
+        phase,
+        fixtureIdentity: v25Hash(fixture),
+        fixturePresent: present,
+        changes: removed && present ? ["TEMP_FIXTURE_LEAKED"] : [],
+        milliseconds: performance.now() - v25FixtureTrace.started,
+      });
+      if (present && existsSync(join(fixture, ".git")))
+        v25OperatorSnapshot(fixture);
+    }
+  } catch {
+    v25DiagnosticLog({
+      phase,
+      changes: ["UNKNOWN_COMPONENT"],
+      diagnosticStatus: "OBSERVATION_FAILED_OR_INCOMPLETE",
+    });
+  }
+}
 function v25Git(cwd: string, ...args: string[]): string {
   return execFileSync(
     "/usr/bin/git",
@@ -5766,33 +5967,36 @@ function v25OperatorSnapshot(cwd = fileURLToPath(root)): string {
   )
     .split("\0")
     .filter(Boolean);
-  return v25Hash(
-    JSON.stringify([
-      v25Git(cwd, "rev-parse", "HEAD"),
-      existsSync(index) ? v25Hash(readFileSync(index)) : "INDEX_ABSENT",
-      v25Git(cwd, "diff", "--no-ext-diff", "--no-textconv", "--binary", "HEAD"),
-      v25Git(
-        cwd,
-        "diff",
-        "--no-ext-diff",
-        "--no-textconv",
-        "--cached",
-        "--binary",
-        "HEAD",
-      ),
-      v25Git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
-      untracked.map((p) => [
-        p,
-        lstatSync(join(cwd, p)).isFile()
-          ? v25Hash(readFileSync(join(cwd, p)))
-          : "NON_REGULAR",
-      ]),
+  const parts: [string, string, string, string, string, string[][]] = [
+    v25Git(cwd, "rev-parse", "HEAD"),
+    existsSync(index) ? v25Hash(readFileSync(index)) : "INDEX_ABSENT",
+    v25Git(cwd, "diff", "--no-ext-diff", "--no-textconv", "--binary", "HEAD"),
+    v25Git(
+      cwd,
+      "diff",
+      "--no-ext-diff",
+      "--no-textconv",
+      "--cached",
+      "--binary",
+      "HEAD",
+    ),
+    v25Git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+    untracked.map((p) => [
+      p,
+      lstatSync(join(cwd, p)).isFile()
+        ? v25Hash(readFileSync(join(cwd, p)))
+        : "NON_REGULAR",
     ]),
-  );
+  ];
+  const fingerprint = v25Hash(JSON.stringify(parts));
+  v25DiagnosticCapture(cwd, index, fingerprint, parts);
+  return fingerprint;
 }
 function v25AssertUnchanged(before: string, cwd = fileURLToPath(root)): void {
-  if (v25OperatorSnapshot(cwd) !== before)
+  if (v25OperatorSnapshot(cwd) !== before) {
+    v25DiagnosticMutation(before, cwd);
     throw new Error("ACTIVE_REPOSITORY_MUTATED");
+  }
 }
 function v25AssertHistorical(
   cwd: string,
@@ -5822,7 +6026,9 @@ async function v25CreateHistorical(): Promise<string> {
   let complete = false;
   try {
     v25AssertHistorical(fileURLToPath(root));
+    v25DiagnosticPhase("historical.blobs_verified");
     fixture = await mkdtemp(join(tmpdir(), "mp06-v25-historical-"));
+    v25DiagnosticPhase("historical.directory_created", fixture);
     v25Git(
       fileURLToPath(root),
       "clone",
@@ -5831,8 +6037,11 @@ async function v25CreateHistorical(): Promise<string> {
       fileURLToPath(root),
       fixture,
     );
+    v25DiagnosticPhase("historical.clone_complete", fixture);
     v25Git(fixture, "checkout", "--quiet", "--detach", v25HistoricalCommit);
+    v25DiagnosticPhase("historical.checkout_complete", fixture);
     v25AssertHistorical(fixture, v25HistoricalCommit, true);
+    v25DiagnosticPhase("historical.working_digests_verified", fixture);
     v25AssertUnchanged(before);
     complete = true;
     return fixture;
@@ -5893,8 +6102,16 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
     "docs/project/EXECUTION_GATES.md",
   ];
   beforeAll(async () => {
+    v25FixtureTrace = {
+      phase: "v24.before_all",
+      started: performance.now(),
+      testIndex: 0,
+      first: new Map(),
+      latest: new Map(),
+    };
     operatorBefore = v25OperatorSnapshot();
     fixture = await v25CreateHistorical();
+    v25DiagnosticPhase("v24.historical_ready", fixture);
     const readDocument = async (path: string) =>
       record(JSON.parse(await readFile(join(fixture, path), "utf8")));
     [r, w, s] = await Promise.all([
@@ -5902,6 +6119,7 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
       readDocument("config/project/current-work.json"),
       readDocument("config/project/current-work.schema.json"),
     ]);
+    v25DiagnosticPhase("v24.documents_read", fixture);
     baseline = record(
       JSON.parse(
         execFileSync(
@@ -5918,25 +6136,38 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
         ),
       ),
     );
+    v25DiagnosticPhase("v24.baseline_read", fixture);
     const observed = inspectV23SealedRepository(fixture);
+    v25DiagnosticPhase("v24.inspection_complete", fixture);
     if (!observed.ok) throw new Error(observed.reason);
     proof = observed.proof;
   });
   afterAll(async () => {
+    v25DiagnosticPhase("v24.after_all_before_cleanup", fixture);
     try {
       if (operatorBefore) v25AssertUnchanged(operatorBefore);
     } finally {
       try {
         if (fixture) await rm(fixture, { recursive: true, force: true });
       } finally {
-        if (operatorBefore) v25AssertUnchanged(operatorBefore);
+        v25DiagnosticPhase("v24.after_all_cleanup_complete", fixture, true);
+        try {
+          if (operatorBefore) v25AssertUnchanged(operatorBefore);
+        } finally {
+          v25FixtureTrace = undefined;
+        }
       }
     }
   });
   beforeEach(() => {
+    if (v25FixtureTrace) {
+      v25FixtureTrace.testIndex++;
+      v25FixtureTrace.phase = "v24.before_test";
+    }
     v25AssertUnchanged(operatorBefore);
   });
   afterEach(() => {
+    if (v25FixtureTrace) v25FixtureTrace.phase = "v24.after_test";
     v25AssertUnchanged(operatorBefore);
   });
   const evidence = () => {
