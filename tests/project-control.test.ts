@@ -5890,6 +5890,35 @@ function v25DiagnosticMutation(before: string, cwd: string): void {
     });
   }
 }
+function v25DiagnosticSnapshotStage<T>(
+  cwd: string,
+  index: string,
+  snapshotStage: string,
+  value: T,
+): T {
+  if (v25FixtureTrace) {
+    try {
+      v25DiagnosticLog({
+        phase: v25FixtureTrace.phase,
+        testIndex: v25FixtureTrace.testIndex,
+        milliseconds: performance.now() - v25FixtureTrace.started,
+        identity: v25Hash(cwd),
+        snapshotStage,
+        indexHash: existsSync(index)
+          ? v25Hash(readFileSync(index))
+          : "INDEX_ABSENT",
+      });
+    } catch {
+      v25DiagnosticLog({
+        phase: v25FixtureTrace.phase,
+        snapshotStage,
+        changes: ["UNKNOWN_COMPONENT"],
+        diagnosticStatus: "OBSERVATION_FAILED_OR_INCOMPLETE",
+      });
+    }
+  }
+  return value;
+}
 function v25DiagnosticPhase(
   phase: string,
   fixture?: string,
@@ -5969,18 +5998,38 @@ function v25OperatorSnapshot(cwd = fileURLToPath(root)): string {
     .filter(Boolean);
   const parts: [string, string, string, string, string, string[][]] = [
     v25Git(cwd, "rev-parse", "HEAD"),
-    existsSync(index) ? v25Hash(readFileSync(index)) : "INDEX_ABSENT",
-    v25Git(cwd, "diff", "--no-ext-diff", "--no-textconv", "--binary", "HEAD"),
-    v25Git(
+    v25DiagnosticSnapshotStage(
       cwd,
-      "diff",
-      "--no-ext-diff",
-      "--no-textconv",
-      "--cached",
-      "--binary",
-      "HEAD",
+      index,
+      "index_sampled",
+      existsSync(index) ? v25Hash(readFileSync(index)) : "INDEX_ABSENT",
     ),
-    v25Git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+    v25DiagnosticSnapshotStage(
+      cwd,
+      index,
+      "working_diff_completed",
+      v25Git(cwd, "diff", "--no-ext-diff", "--no-textconv", "--binary", "HEAD"),
+    ),
+    v25DiagnosticSnapshotStage(
+      cwd,
+      index,
+      "staged_diff_completed",
+      v25Git(
+        cwd,
+        "diff",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--cached",
+        "--binary",
+        "HEAD",
+      ),
+    ),
+    v25DiagnosticSnapshotStage(
+      cwd,
+      index,
+      "status_completed",
+      v25Git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+    ),
     untracked.map((p) => [
       p,
       lstatSync(join(cwd, p)).isFile()
