@@ -48,7 +48,8 @@
     "nextWork",
     "conflicts",
     "workingTreePolicy",
-    "failureMode"
+    "failureMode",
+    "wp8fV25WorkerTimingAddendum"
   ],
   "properties": {
     "wp8fV24LiveUatEnablement": {
@@ -311,7 +312,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.10-v22" },
+    "roadmapVersion": { "const": "2026.09.12-v25" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {
@@ -2462,6 +2463,28 @@
       }
     },
     "workingTreePolicy": { "const": "CLEAN_OR_PRESERVE_OWNER_CHANGES" },
-    "failureMode": { "const": "ROADMAP_UNVERIFIED" }
+    "failureMode": { "const": "ROADMAP_UNVERIFIED" },
+    "wp8fV25WorkerTimingAddendum": {
+      "const": {
+        "version": "2026.09.12-v25",
+        "ownerDecision": "MP-OD-2026-09-12-V25",
+        "supersedes": "2026.09.11-v24",
+        "type": "SEALED_WORKER_TIMING_ONLY_ADDENDUM_INHERITING_V24",
+        "commit": "ce2ef9a9a75044a932d1d96ba2a8c0c633c23f4c",
+        "path": "worker-tests/mp-06-pilot-control.test.ts",
+        "candidateFileSha256": "4498bc3159bb496a76632f7f6908f1d9a71b4dd5b7fb594d3b863a76f5b615ae",
+        "parentFileSha256": "dd3b6f206660d2bfab570086b088df069b9263d074cb1dce79ea6280a3166f6c",
+        "instrumentedFileSha256": "463db843c2cd64eeada1628f23c7e73dd3aefdf8167fba885c8f7b78b085621e",
+        "pathDiffSha256": "9b1b8ba2e389609a4a76d88cddee23e4f3057fd00d2176a4c1124659d2084f37",
+        "additions": 31,
+        "removals": 0,
+        "test": "reproduces a provider hang through the webhook and leaves durable fail-closed checkpoints",
+        "watchdogMs": 5000,
+        "purpose": "MONOTONIC_TIMING_ONLY_NO_ASSERTION_FAULT_CALL_ORDER_OR_RUNTIME_CHANGE",
+        "residual": "ROOT_CAUSE_UNRESOLVED",
+        "grants": "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE",
+        "runtimeAndArtifact": "EXACT_UNCHANGED_V22_AUTHORIZATION"
+      }
+    }
   }
 }

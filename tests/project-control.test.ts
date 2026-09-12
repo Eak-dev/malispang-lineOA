@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { channel } from "node:diagnostics_channel";
+import { createHash } from "node:crypto";
+import { readFileSync, lstatSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 import {
   afterEach,
@@ -27,6 +30,7 @@ import {
   validateV22OperationJournal,
   inspectV23SealedRepository,
   validateV23SealedObservation,
+  validateV25SealedObservation,
 } from "../src/project-control.js";
 
 const root = new URL("../", import.meta.url);
@@ -5123,6 +5127,15 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.12-v25") {
+      r.version = "2026.09.11-v24";
+      delete w.wp8fV25WorkerTimingAddendum;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV25WorkerTimingAddendum",
+      );
+      delete record(s.properties).wp8fV25WorkerTimingAddendum;
+    }
     if (r.version === "2026.09.11-v24") {
       r.version = version;
       r.ownerDecision = {
@@ -5672,6 +5685,188 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
   }, 15_000);
 });
 
+// Immutable historical bytes, not derived from the manifest under test.
+const v25HistoricalCommit = "046eff1d72edeea539623a9bbe9e006ba241a7ae";
+const v25InstrumentationCommit = "ce2ef9a9a75044a932d1d96ba2a8c0c633c23f4c";
+const v25SealedPath = "worker-tests/mp-06-pilot-control.test.ts";
+const v25HistoricalHashes: Readonly<Record<string, string>> = {
+  "PROJECT_CONTROL.md":
+    "4e5dd6d6621d5911b0ddde5c1b693807af4dae95f369ce011a1de04eb5b4ff79",
+  "config/project/roadmap.json":
+    "e2f50d8d3d07ef111d58c8a550b961e97124dfa59592aca9fc15f575e8062c36",
+  "config/project/current-work.json":
+    "87ebedc23fc53f9c88dbf58b3076d579a17a9bfd9e57c60da64a1a22c4787abd",
+  "config/project/current-work.schema.json":
+    "7212999aa5002611cd0ed589553c3847df804613a757003f08872c0c3beb3f85",
+  "src/project-control.ts":
+    "d4520b9aa5b317b682f77c873948630f90153e02558b2a61a0c27e4fb2b253fa",
+  "src/project-control-cli.ts":
+    "b027dafdb80e6d64410e86c31c5ee091036938374f808c5c3143fd1a297dcd36",
+  "tests/project-control.test.ts":
+    "67c556232c827265c86b9b43bef3cf9bda97e1320f69c750c10013f7b95a7470",
+  "docs/project/OWNER_DECISION_LOG.md":
+    "1502c1196605544dbb490f417b8f79f3340870dece4b8b778f010460191a9692",
+  "docs/project/ROADMAP_CHANGELOG.md":
+    "95b5aa418c9fece94582f0316ab8dddd1afd67e0112178497d3d3bb885dcb128",
+  "docs/project/EXECUTION_GATES.md":
+    "23d4d4d61774b48f50451b708bef38a0dfa10602d586e75f6fad5dd1073e4a68",
+  [v25SealedPath]:
+    "dd3b6f206660d2bfab570086b088df069b9263d074cb1dce79ea6280a3166f6c",
+};
+const v25ControlPaths = Object.keys(v25HistoricalHashes).filter(
+  (p) => p !== v25SealedPath,
+);
+const v25Hash = (data: string | Buffer) =>
+  createHash("sha256").update(data).digest("hex");
+function v25Git(cwd: string, ...args: string[]): string {
+  return execFileSync(
+    "/usr/bin/git",
+    [
+      "--no-optional-locks",
+      "--no-replace-objects",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "-c",
+      "protocol.allow=never",
+      "-c",
+      "protocol.file.allow=always",
+      "-c",
+      "user.name=MP06 Synthetic",
+      "-c",
+      "user.email=mp06-synthetic@example.invalid",
+      ...args,
+    ],
+    {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        PATH: "/usr/bin:/bin",
+        LANG: "C",
+        LC_ALL: "C",
+        GIT_CONFIG_NOSYSTEM: "1",
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_TERMINAL_PROMPT: "0",
+      },
+    },
+  );
+}
+function v25OperatorSnapshot(cwd = fileURLToPath(root)): string {
+  const index = resolve(
+    cwd,
+    v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+  );
+  const untracked = v25Git(
+    cwd,
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  )
+    .split("\0")
+    .filter(Boolean);
+  return v25Hash(
+    JSON.stringify([
+      v25Git(cwd, "rev-parse", "HEAD"),
+      existsSync(index) ? v25Hash(readFileSync(index)) : "INDEX_ABSENT",
+      v25Git(cwd, "diff", "--no-ext-diff", "--no-textconv", "--binary", "HEAD"),
+      v25Git(
+        cwd,
+        "diff",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--cached",
+        "--binary",
+        "HEAD",
+      ),
+      v25Git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+      untracked.map((p) => [
+        p,
+        lstatSync(join(cwd, p)).isFile()
+          ? v25Hash(readFileSync(join(cwd, p)))
+          : "NON_REGULAR",
+      ]),
+    ]),
+  );
+}
+function v25AssertUnchanged(before: string, cwd = fileURLToPath(root)): void {
+  if (v25OperatorSnapshot(cwd) !== before)
+    throw new Error("ACTIVE_REPOSITORY_MUTATED");
+}
+function v25AssertHistorical(
+  cwd: string,
+  commit = v25HistoricalCommit,
+  working = false,
+): void {
+  if (
+    commit !== v25HistoricalCommit ||
+    v25Git(cwd, "rev-parse", "--verify", commit + "^{commit}").trim() !== commit
+  )
+    throw new Error("HISTORICAL_FIXTURE_COMMIT_INVALID");
+  if (working && v25Git(cwd, "rev-parse", "HEAD").trim() !== commit)
+    throw new Error("HISTORICAL_FIXTURE_HEAD_INVALID");
+  for (const [path, digest] of Object.entries(v25HistoricalHashes)) {
+    const bytes = working
+      ? readFileSync(join(cwd, path))
+      : v25Git(cwd, "show", commit + ":" + path);
+    if (working && !lstatSync(join(cwd, path)).isFile())
+      throw new Error("HISTORICAL_FIXTURE_PATH_INVALID");
+    if (v25Hash(bytes) !== digest)
+      throw new Error("HISTORICAL_FIXTURE_DIGEST_MISMATCH");
+  }
+}
+async function v25CreateHistorical(): Promise<string> {
+  const before = v25OperatorSnapshot();
+  let fixture: string | undefined;
+  let complete = false;
+  try {
+    v25AssertHistorical(fileURLToPath(root));
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v25-historical-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      fixture,
+    );
+    v25Git(fixture, "checkout", "--quiet", "--detach", v25HistoricalCommit);
+    v25AssertHistorical(fixture, v25HistoricalCommit, true);
+    v25AssertUnchanged(before);
+    complete = true;
+    return fixture;
+  } finally {
+    if (!complete && fixture)
+      await rm(fixture, { recursive: true, force: true });
+    v25AssertUnchanged(before);
+  }
+}
+async function v25WithChild<T>(
+  source: string,
+  run: (cwd: string) => Promise<T>,
+): Promise<T> {
+  const before = v25OperatorSnapshot();
+  const fixture = await mkdtemp(join(tmpdir(), "mp06-v25-child-"));
+  try {
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      source,
+      fixture,
+    );
+    return await run(fixture);
+  } finally {
+    try {
+      await rm(fixture, { recursive: true, force: true });
+    } finally {
+      v25AssertUnchanged(before);
+    }
+  }
+}
+
 describe("v24 TEST live UAT enablement without replacement grants", () => {
   const version = "2026.09.11-v24",
     decision = "MP-OD-2026-09-11-V24";
@@ -5680,6 +5875,7 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
     s: Record<string, unknown>,
     baseline: Record<string, unknown>;
   let fixture: string;
+  let operatorBefore: string;
   let proof: Extract<
     ReturnType<typeof inspectV23SealedRepository>,
     { ok: true }
@@ -5697,8 +5893,10 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
     "docs/project/EXECUTION_GATES.md",
   ];
   beforeAll(async () => {
+    operatorBefore = v25OperatorSnapshot();
+    fixture = await v25CreateHistorical();
     const readDocument = async (path: string) =>
-      record(JSON.parse(await readFile(new URL(path, root), "utf8")));
+      record(JSON.parse(await readFile(join(fixture, path), "utf8")));
     [r, w, s] = await Promise.all([
       readDocument("config/project/roadmap.json"),
       readDocument("config/project/current-work.json"),
@@ -5720,33 +5918,26 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
         ),
       ),
     );
-    fixture = await mkdtemp(join(tmpdir(), "mp06-v24-synthetic-control-"));
-    const git = (...args: string[]) =>
-      execFileSync(
-        "git",
-        [
-          "-c",
-          "core.hooksPath=/dev/null",
-          "-c",
-          "user.name=MP06 Synthetic",
-          "-c",
-          "user.email=mp06-synthetic@example.invalid",
-          ...args,
-        ],
-        { cwd: fixture, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
-      );
-    git("clone", "--quiet", "--shared", fileURLToPath(root), fixture);
-    for (const p of controls)
-      await copyFile(new URL(p, root), join(fixture, p));
-    git("add", "--", ...controls);
-    if (git("diff", "--cached", "--name-only").trim())
-      git("commit", "--quiet", "-m", "synthetic v24 control fixture");
     const observed = inspectV23SealedRepository(fixture);
     if (!observed.ok) throw new Error(observed.reason);
     proof = observed.proof;
   });
   afterAll(async () => {
-    if (fixture) await rm(fixture, { recursive: true, force: true });
+    try {
+      if (operatorBefore) v25AssertUnchanged(operatorBefore);
+    } finally {
+      try {
+        if (fixture) await rm(fixture, { recursive: true, force: true });
+      } finally {
+        if (operatorBefore) v25AssertUnchanged(operatorBefore);
+      }
+    }
+  });
+  beforeEach(() => {
+    v25AssertUnchanged(operatorBefore);
+  });
+  afterEach(() => {
+    v25AssertUnchanged(operatorBefore);
   });
   const evidence = () => {
     const e = v22Evidence();
@@ -5917,5 +6108,402 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
         proof,
       ).allowed,
     ).toBe(false);
+  });
+});
+
+describe("v25 exact two-commit seal and isolated historical fixture", () => {
+  const version = "2026.09.12-v25",
+    decision = "MP-OD-2026-09-12-V25";
+  let fixture: string, historical: string, operatorBefore: string;
+  let r: Record<string, unknown>,
+    w: Record<string, unknown>,
+    s: Record<string, unknown>;
+  let proof: Extract<
+    ReturnType<typeof inspectV23SealedRepository>,
+    { ok: true }
+  >["proof"];
+  const checked = (cwd: string) => {
+    const result = inspectV23SealedRepository(cwd);
+    if (!result.ok) throw new Error(result.reason);
+    return result.proof;
+  };
+  const evidence = () => {
+    const e = v22Evidence();
+    e.ownerDecision = decision;
+    Object.assign(record(e.candidate), {
+      controlOwnerDecision: decision,
+      evidenceHead: proof.head,
+      controlCommit: proof.head,
+      controlCiHead: proof.head,
+      postCandidatePaths: [...proof.paths],
+    });
+    record(e.test).observedAt = Date.now();
+    return e;
+  };
+  const assess = (
+    e = evidence(),
+    p: unknown = proof,
+    work = w,
+    action = "DEPLOY_TEST",
+  ) => evaluateProjectAction(r, work, action, v22Target, e, p);
+  const commit = (cwd: string, path: string) => {
+    v25Git(cwd, "add", "--", path);
+    v25Git(cwd, "commit", "--quiet", "-m", "synthetic negative proof");
+  };
+  beforeAll(async () => {
+    operatorBefore = v25OperatorSnapshot();
+    historical = await v25CreateHistorical();
+    if (
+      v25Git(
+        fileURLToPath(root),
+        "rev-parse",
+        "--verify",
+        v25InstrumentationCommit + "^{commit}",
+      ).trim() !== v25InstrumentationCommit
+    )
+      throw new Error("INSTRUMENTATION_COMMIT_NOT_UNIQUE");
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v25-current-"));
+    try {
+      v25Git(
+        fileURLToPath(root),
+        "clone",
+        "--quiet",
+        "--shared",
+        fileURLToPath(root),
+        fixture,
+      );
+      for (const p of v25ControlPaths)
+        await copyFile(new URL(p, root), join(fixture, p));
+      v25Git(fixture, "add", "--", ...v25ControlPaths);
+      if (v25Git(fixture, "diff", "--cached", "--name-only").trim())
+        v25Git(
+          fixture,
+          "commit",
+          "--quiet",
+          "-m",
+          "synthetic complete v25 control",
+        );
+      const readDocument = async (p: string) =>
+        record(JSON.parse(await readFile(join(fixture, p), "utf8")));
+      [r, w, s] = await Promise.all([
+        readDocument("config/project/roadmap.json"),
+        readDocument("config/project/current-work.json"),
+        readDocument("config/project/current-work.schema.json"),
+      ]);
+      proof = checked(fixture);
+    } catch (error) {
+      try {
+        throw error;
+      } finally {
+        await rm(fixture, { recursive: true, force: true });
+      }
+    } finally {
+      v25AssertUnchanged(operatorBefore);
+    }
+  });
+  beforeEach(() => {
+    v25AssertUnchanged(operatorBefore);
+  });
+  afterEach(() => {
+    v25AssertUnchanged(operatorBefore);
+  });
+  afterAll(async () => {
+    try {
+      if (operatorBefore) v25AssertUnchanged(operatorBefore);
+    } finally {
+      try {
+        if (fixture) await rm(fixture, { recursive: true, force: true });
+        if (historical) await rm(historical, { recursive: true, force: true });
+      } finally {
+        if (operatorBefore) v25AssertUnchanged(operatorBefore);
+      }
+    }
+  });
+  function observation(): Record<string, unknown> {
+    const old = record(w.wp8fV23InstrumentationAddendum),
+      next = record(w.wp8fV25WorkerTimingAddendum);
+    const one = (seal: Record<string, unknown>, parent: unknown) => ({
+      commit: seal.commit,
+      path: seal.path,
+      candidateFileSha256: seal.candidateFileSha256,
+      parentFileSha256: parent,
+      sealedFileSha256: seal.instrumentedFileSha256,
+      headFileSha256: next.instrumentedFileSha256,
+      workingFileSha256: next.instrumentedFileSha256,
+      pathDiffSha256: seal.pathDiffSha256,
+      additions: seal.additions,
+      removals: seal.removals,
+      paths: [...v25ControlPaths, v25SealedPath],
+      historyPaths: [...v25ControlPaths, v25SealedPath],
+      pathCommits: [next.commit, old.commit],
+      commitPaths: [
+        v25SealedPath,
+        "docs/project/EXECUTION_GATES.md",
+        "docs/project/OWNER_DECISION_LOG.md",
+        "docs/project/ROADMAP_CHANGELOG.md",
+      ],
+    });
+    return {
+      previous: one(old, old.candidateFileSha256),
+      current: one(next, next.parentFileSha256),
+    };
+  }
+  it("accepts only the exact v25 layer while every v24 field and grant remains unchanged", async () => {
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(validateSchemaDocuments(roadmapSchema, s, version)).toEqual([]);
+    const old = record(
+      JSON.parse(
+        await readFile(
+          join(historical, "config/project/current-work.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const inherited = clone(w);
+    delete inherited.wp8fV25WorkerTimingAddendum;
+    inherited.roadmapVersion = "2026.09.11-v24";
+    expect(inherited).toEqual(old);
+    expect(w.wp8fV22OperationJournal).toEqual([]);
+    expect(record(w.wp8fV25WorkerTimingAddendum).watchdogMs).toBe(5000);
+    expect(assess()).toEqual({
+      allowed: true,
+      reason: "V22_ONE_EXACT_TEST_DEPLOYMENT_READY",
+    });
+  });
+  it("requires the exact appended Owner record, closed schema and full sealed fields", async () => {
+    const log = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(log, version)).toBe(true);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        log.replaceAll(v25InstrumentationCommit, "REMOVED"),
+        version,
+      ),
+    ).toBe(false);
+    expect(validateWp8fOwnerDecisionRecord(JSON.stringify(w), version)).toBe(
+      false,
+    );
+    for (const key of Object.keys(record(w.wp8fV25WorkerTimingAddendum))) {
+      const bad = clone(w);
+      record(bad.wp8fV25WorkerTimingAddendum)[key] = "SUBSTITUTED";
+      expect(validateProjectControl(r, bad).errors).toContain(
+        "V25_SEALED_ADDENDUM_INVALID",
+      );
+      delete record(bad.wp8fV25WorkerTimingAddendum)[key];
+      expect(validateProjectControl(r, bad).errors).toContain(
+        "V25_SEALED_ADDENDUM_INVALID",
+      );
+    }
+    for (const key of ["roadmapVersion", "wp8fV25WorkerTimingAddendum"]) {
+      const bad = clone(s);
+      record(bad.properties)[key] = { type: "object" };
+      expect(validateSchemaDocuments(roadmapSchema, bad, version)).toContain(
+        "V25_SCHEMA_NOT_CLOSED",
+      );
+    }
+  });
+  it("rejects missing or wrong commits, every digest, count, incomplete inventory and new fields", () => {
+    expect(validateV25SealedObservation(observation())).toBe(true);
+    for (const half of ["previous", "current"])
+      for (const [key, value] of [
+        ["commit", "0".repeat(40)],
+        ["path", "tests/other.test.ts"],
+        ["candidateFileSha256", "0".repeat(64)],
+        ["parentFileSha256", "0".repeat(64)],
+        ["sealedFileSha256", "0".repeat(64)],
+        ["headFileSha256", "0".repeat(64)],
+        ["workingFileSha256", "0".repeat(64)],
+        ["pathDiffSha256", "0".repeat(64)],
+        ["additions", 32],
+        ["removals", 1],
+        ["paths", [v25SealedPath]],
+        ["historyPaths", [v25SealedPath]],
+        ["pathCommits", [v25InstrumentationCommit]],
+        ["commitPaths", ["worker/index.ts"]],
+      ] as const) {
+        const bad = observation();
+        record(bad[half])[key] = value;
+        expect(validateV25SealedObservation(bad)).toBe(false);
+        delete record(bad[half])[key];
+        expect(validateV25SealedObservation(bad)).toBe(false);
+      }
+    expect(
+      validateV25SealedObservation({ ...observation(), trusted: true }),
+    ).toBe(false);
+  });
+  it("rejects incomplete action inventory, missing or copied proofs, stale CI and self-attestation", () => {
+    const omitted = evidence();
+    record(omitted.candidate).postCandidatePaths = proof.paths.slice(1);
+    expect(assess(omitted).allowed).toBe(false);
+    const stale = evidence();
+    Object.assign(record(stale.candidate), {
+      controlCommit: "a".repeat(40),
+      controlCiHead: "a".repeat(40),
+    });
+    expect(assess(stale).allowed).toBe(false);
+    for (const fake of [undefined, { ...proof }, observation(), w])
+      expect(
+        evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, evidence(), fake)
+          .allowed,
+      ).toBe(false);
+  });
+  it("proves historical v24 rejects the approved new instrumentation instead of accepting v25 bytes", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      await copyFile(
+        join(historical, "config/project/current-work.json"),
+        join(cwd, "config/project/current-work.json"),
+      );
+      commit(cwd, "config/project/current-work.json");
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+      });
+    });
+  });
+  it("rejects a history missing the approved instrumentation even with a genuine v25 manifest", async () => {
+    await v25WithChild(historical, async (cwd) => {
+      await copyFile(
+        join(fixture, "config/project/current-work.json"),
+        join(cwd, "config/project/current-work.json"),
+      );
+      commit(cwd, "config/project/current-work.json");
+      expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+    });
+  });
+  it("rejects real committed future edit-and-restore with matching final bytes", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const bytes = await readFile(join(cwd, v25SealedPath), "utf8");
+      await writeFile(
+        join(cwd, v25SealedPath),
+        bytes + "\n// synthetic unapproved future edit\n",
+      );
+      commit(cwd, v25SealedPath);
+      await writeFile(join(cwd, v25SealedPath), bytes);
+      commit(cwd, v25SealedPath);
+      expect(await readFile(join(cwd, v25SealedPath), "utf8")).toBe(bytes);
+      expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+    });
+  });
+  it.each([
+    "README.md",
+    "worker/index.ts",
+    "package.json",
+    "wrangler.jsonc",
+    ".github/workflows/ci.yml",
+  ])(
+    "rejects committed out-of-scope or runtime/config/dependency/workflow drift: %s",
+    async (path) => {
+      await v25WithChild(fixture, async (cwd) => {
+        const bytes = await readFile(join(cwd, path), "utf8");
+        await writeFile(
+          join(cwd, path),
+          bytes + "\nSYNTHETIC_UNAPPROVED_CHANGE\n",
+        );
+        commit(cwd, path);
+        expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+      });
+    },
+  );
+  it("rejects dirty sealed bytes and a modified artifact association", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      await writeFile(join(cwd, v25SealedPath), "// synthetic substitution\n");
+      expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+    });
+    const bad = evidence();
+    record(bad.candidate).artifactSha256 = "a".repeat(64);
+    expect(assess(bad).allowed).toBe(false);
+  });
+  it("rejects a substituted or malformed historical fixture and moving reference", async () => {
+    expect(() => v25AssertHistorical(historical, "HEAD")).toThrow(
+      "HISTORICAL_FIXTURE_COMMIT_INVALID",
+    );
+    await v25WithChild(historical, async (cwd) => {
+      await writeFile(join(cwd, "config/project/current-work.json"), "{}\n");
+      expect(() => v25AssertHistorical(cwd, v25HistoricalCommit, true)).toThrow(
+        "HISTORICAL_FIXTURE_DIGEST_MISMATCH",
+      );
+    });
+  });
+  it("detects HEAD, index and working-tree mutation in an isolated stand-in, never the operator", async () => {
+    await v25WithChild(historical, async (cwd) => {
+      const before = v25OperatorSnapshot(cwd);
+      await writeFile(join(cwd, "README.md"), "synthetic mutation\n");
+      expect(() => v25AssertUnchanged(before, cwd)).toThrow(
+        "ACTIVE_REPOSITORY_MUTATED",
+      );
+      const working = v25OperatorSnapshot(cwd);
+      v25Git(cwd, "add", "--", "README.md");
+      expect(() => v25AssertUnchanged(working, cwd)).toThrow(
+        "ACTIVE_REPOSITORY_MUTATED",
+      );
+      const staged = v25OperatorSnapshot(cwd);
+      v25Git(cwd, "commit", "--quiet", "-m", "synthetic active stand-in");
+      expect(() => v25AssertUnchanged(staged, cwd)).toThrow(
+        "ACTIVE_REPOSITORY_MUTATED",
+      );
+    });
+  });
+  it("cleans temporary fixtures in finally when assertions throw", async () => {
+    let removed: string | undefined;
+    await expect(
+      v25WithChild(historical, (cwd) => {
+        removed = cwd;
+        return Promise.reject(new Error("SYNTHETIC_ASSERTION_FAILURE"));
+      }),
+    ).rejects.toThrow("SYNTHETIC_ASSERTION_FAILURE");
+    expect(removed).toBeDefined();
+    expect(existsSync(removed!)).toBe(false);
+  });
+  it("denies new grants and an actual committed consumed-journal reset", async () => {
+    const bad = clone(w);
+    bad.wp8fV25OperationJournal = [];
+    expect(validateProjectControl(r, bad).errors.length).toBeGreaterThan(0);
+    await v25WithChild(fixture, async (cwd) => {
+      const used = clone(w);
+      used.wp8fV22OperationJournal = v22Deployed().journal;
+      await writeFile(
+        join(cwd, "config/project/current-work.json"),
+        JSON.stringify(used, null, 2) + "\n",
+      );
+      commit(cwd, "config/project/current-work.json");
+      await writeFile(
+        join(cwd, "config/project/current-work.json"),
+        JSON.stringify(w, null, 2) + "\n",
+      );
+      commit(cwd, "config/project/current-work.json");
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE",
+      });
+    });
+  });
+  it("preserves all remote target, fresh state and forbidden-operation gates", () => {
+    const stale = evidence();
+    record(stale.test).observedAt = Date.now() - 120001;
+    expect(assess(stale).allowed).toBe(false);
+    for (const action of [
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "ROLLBACK_TEST",
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+      "ALLOW_ALL",
+      "ACTIVATE_SUCCESSOR_V22",
+    ])
+      expect(assess(evidence(), proof, w, action).allowed).toBe(false);
+    for (const key of ["worker", "sourceCommit", "artifactSha256"])
+      expect(
+        evaluateProjectAction(
+          r,
+          w,
+          "DEPLOY_TEST",
+          { ...v22Target, [key]: "SUBSTITUTED" },
+          evidence(),
+          proof,
+        ).allowed,
+      ).toBe(false);
   });
 });

@@ -293,9 +293,14 @@ export function validateProjectControl(
 
   const roadmap = roadmapInput;
   const currentWork = currentWorkInput;
-  const v24 = roadmap.version === WP8F_V24_ENABLEMENT.version;
+  const v25 = roadmap.version === WP8F_V25_ADDENDUM.version;
+  const v24 = v25 || roadmap.version === WP8F_V24_ENABLEMENT.version;
   const v23 = v24 || roadmap.version === WP8F_V23_ADDENDUM.version;
-  const addendum = v24 ? WP8F_V24_ENABLEMENT : WP8F_V23_ADDENDUM;
+  const addendum = v25
+    ? WP8F_V25_ADDENDUM
+    : v24
+      ? WP8F_V24_ENABLEMENT
+      : WP8F_V23_ADDENDUM;
   const v22 = v23 || roadmap.version === WP8F_V22_AUTHORIZATION.version;
   const successor = v22 || roadmap.version === WP8F_V21_COMPLETION.version;
   const completion = v22 ? WP8F_V22_AUTHORIZATION : WP8F_V21_COMPLETION;
@@ -332,7 +337,13 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decidedAt,
-      v23 ? "2026-09-11" : successor ? "2026-09-10" : "2026-09-09",
+      v25
+        ? "2026-09-12"
+        : v23
+          ? "2026-09-11"
+          : successor
+            ? "2026-09-10"
+            : "2026-09-09",
       "OWNER_DECISION_DATE_INVALID",
     );
     expectEqual(
@@ -927,7 +938,7 @@ export function validateProjectControl(
     }
   }
 
-  if (successor) validateWp8fSuccessor(errors, currentWork, v22, v23, v24);
+  if (successor) validateWp8fSuccessor(errors, currentWork, v22, v23, v24, v25);
 
   const conflicts = Array.isArray(currentWork.conflicts)
     ? currentWork.conflicts
@@ -981,7 +992,8 @@ export function evaluateProjectAction(
     isRecord(roadmap) &&
     (roadmap.version === WP8F_V22_AUTHORIZATION.version ||
       roadmap.version === WP8F_V23_ADDENDUM.version ||
-      roadmap.version === WP8F_V24_ENABLEMENT.version)
+      roadmap.version === WP8F_V24_ENABLEMENT.version ||
+      roadmap.version === WP8F_V25_ADDENDUM.version)
   ) {
     return evaluateWp8fV22Action(
       currentWork,
@@ -989,7 +1001,8 @@ export function evaluateProjectAction(
       deploymentTarget,
       executionEvidence,
       roadmap.version === WP8F_V23_ADDENDUM.version ||
-        roadmap.version === WP8F_V24_ENABLEMENT.version,
+        roadmap.version === WP8F_V24_ENABLEMENT.version ||
+        roadmap.version === WP8F_V25_ADDENDUM.version,
       sealedCheckout,
     );
   }
@@ -1124,7 +1137,8 @@ export function validateSchemaDocuments(
     expectedVersion === WP8F_V21_COMPLETION.version ||
     expectedVersion === WP8F_V22_AUTHORIZATION.version ||
     expectedVersion === WP8F_V23_ADDENDUM.version ||
-    expectedVersion === WP8F_V24_ENABLEMENT.version
+    expectedVersion === WP8F_V24_ENABLEMENT.version ||
+    expectedVersion === WP8F_V25_ADDENDUM.version
   ) {
     if (
       !isRecord(currentWorkSchema) ||
@@ -1142,7 +1156,8 @@ export function validateSchemaDocuments(
     if (
       (expectedVersion === WP8F_V22_AUTHORIZATION.version ||
         expectedVersion === WP8F_V23_ADDENDUM.version ||
-        expectedVersion === WP8F_V24_ENABLEMENT.version) &&
+        expectedVersion === WP8F_V24_ENABLEMENT.version ||
+        expectedVersion === WP8F_V25_ADDENDUM.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1156,7 +1171,8 @@ export function validateSchemaDocuments(
       errors.push("V22_SCHEMA_NOT_CLOSED");
     if (
       (expectedVersion === WP8F_V23_ADDENDUM.version ||
-        expectedVersion === WP8F_V24_ENABLEMENT.version) &&
+        expectedVersion === WP8F_V24_ENABLEMENT.version ||
+        expectedVersion === WP8F_V25_ADDENDUM.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1169,7 +1185,8 @@ export function validateSchemaDocuments(
     )
       errors.push("V23_SCHEMA_NOT_CLOSED");
     if (
-      expectedVersion === WP8F_V24_ENABLEMENT.version &&
+      (expectedVersion === WP8F_V24_ENABLEMENT.version ||
+        expectedVersion === WP8F_V25_ADDENDUM.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1179,6 +1196,19 @@ export function validateSchemaDocuments(
         ) !== JSON.stringify({ const: WP8F_V24_ENABLEMENT }))
     )
       errors.push("V24_SCHEMA_NOT_CLOSED");
+    if (
+      expectedVersion === WP8F_V25_ADDENDUM.version &&
+      (!isRecord(currentWorkSchema) ||
+        !isRecord(currentWorkSchema.properties) ||
+        !Array.isArray(currentWorkSchema.required) ||
+        !currentWorkSchema.required.includes("wp8fV25WorkerTimingAddendum") ||
+        JSON.stringify(currentWorkSchema.properties.roadmapVersion) !==
+          JSON.stringify({ const: WP8F_V25_ADDENDUM.version }) ||
+        JSON.stringify(
+          currentWorkSchema.properties.wp8fV25WorkerTimingAddendum,
+        ) !== JSON.stringify({ const: WP8F_V25_ADDENDUM }))
+    )
+      errors.push("V25_SCHEMA_NOT_CLOSED");
   } else if (expectedVersion !== "2026.09.09-v19")
     errors.push("UNKNOWN_SCHEMA_VERSION");
   return uniqueSorted(errors);
@@ -3424,6 +3454,32 @@ export function validateWp8fOwnerDecisionRecord(
   version = "2026.09.09-v19",
 ): boolean {
   if (typeof record !== "string") return false;
+  if (version === WP8F_V25_ADDENDUM.version) {
+    const current = record
+      .split("## MP-OD-2026-09-12-V25 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof current === "string" &&
+      validateWp8fOwnerDecisionRecord(record, WP8F_V24_ENABLEMENT.version) &&
+      [
+        WP8F_V25_ADDENDUM.type,
+        WP8F_V25_ADDENDUM.commit,
+        WP8F_V25_ADDENDUM.path,
+        WP8F_V25_ADDENDUM.candidateFileSha256,
+        WP8F_V25_ADDENDUM.parentFileSha256,
+        WP8F_V25_ADDENDUM.instrumentedFileSha256,
+        WP8F_V25_ADDENDUM.pathDiffSha256,
+        WP8F_V22_AUTHORIZATION.sourceCommit,
+        WP8F_V22_AUTHORIZATION.artifactSha256,
+        "supersedes 2026.09.11-v24",
+        "no mint/reset/reissue grants",
+        "complete candidate-to-HEAD inventory",
+        "watchdog5000ms unchanged",
+        "ROOT_CAUSE_UNRESOLVED",
+        "Production NO_GO — NOT TOUCHED",
+      ].every((value) => current.includes(value))
+    );
+  }
   if (version === WP8F_V24_ENABLEMENT.version) {
     const current = record
       .split("## MP-OD-2026-09-11-V24 —")[1]
@@ -3580,7 +3636,8 @@ export function evaluateWp8fPaths(
         ? isRecord(roadmap) &&
           (roadmap.version === WP8F_V22_AUTHORIZATION.version ||
             roadmap.version === WP8F_V23_ADDENDUM.version ||
-            roadmap.version === WP8F_V24_ENABLEMENT.version)
+            roadmap.version === WP8F_V24_ENABLEMENT.version ||
+            roadmap.version === WP8F_V25_ADDENDUM.version)
           ? WP8F_V22_AUTHORIZATION.evidenceFiles
           : isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version
             ? WP8F_V21_COMPLETION.evidenceFiles
@@ -4301,13 +4358,92 @@ const WP8F_V24_ENABLEMENT = {
   production: "NO_GO_NOT_TOUCHED",
 } as const;
 const WP8F_V24_WORK_KEYS = [...WP8F_V23_WORK_KEYS, "wp8fV24LiveUatEnablement"];
+const WP8F_V25_ADDENDUM = {
+  version: "2026.09.12-v25",
+  ownerDecision: "MP-OD-2026-09-12-V25",
+  supersedes: "2026.09.11-v24",
+  type: "SEALED_WORKER_TIMING_ONLY_ADDENDUM_INHERITING_V24",
+  commit: "ce2ef9a9a75044a932d1d96ba2a8c0c633c23f4c",
+  path: "worker-tests/mp-06-pilot-control.test.ts",
+  candidateFileSha256:
+    "4498bc3159bb496a76632f7f6908f1d9a71b4dd5b7fb594d3b863a76f5b615ae",
+  parentFileSha256:
+    "dd3b6f206660d2bfab570086b088df069b9263d074cb1dce79ea6280a3166f6c",
+  instrumentedFileSha256:
+    "463db843c2cd64eeada1628f23c7e73dd3aefdf8167fba885c8f7b78b085621e",
+  pathDiffSha256:
+    "9b1b8ba2e389609a4a76d88cddee23e4f3057fd00d2176a4c1124659d2084f37",
+  additions: 31,
+  removals: 0,
+  test: "reproduces a provider hang through the webhook and leaves durable fail-closed checkpoints",
+  watchdogMs: 5000,
+  purpose:
+    "MONOTONIC_TIMING_ONLY_NO_ASSERTION_FAULT_CALL_ORDER_OR_RUNTIME_CHANGE",
+  residual: "ROOT_CAUSE_UNRESOLVED",
+  grants: "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE",
+  runtimeAndArtifact: "EXACT_UNCHANGED_V22_AUTHORIZATION",
+} as const;
+const WP8F_V25_WORK_KEYS = [
+  ...WP8F_V24_WORK_KEYS,
+  "wp8fV25WorkerTimingAddendum",
+];
 const v24ControlTiming = channel("mp06.v24.control-inspection-timing");
 
 /** Data validation is NOT provenance. Only the read-only repository inspector
  * issues the process-local object accepted by the action assessor. */
 export function validateV23SealedObservation(input: unknown): boolean {
+  return validateSealedObservation(
+    input,
+    WP8F_V23_ADDENDUM,
+    WP8F_V23_ADDENDUM.candidateFileSha256,
+    WP8F_V23_ADDENDUM.instrumentedFileSha256,
+    [WP8F_V23_ADDENDUM.commit],
+  );
+}
+
+/** Closed data validation only. Repository provenance still requires the private proof. */
+export function validateV25SealedObservation(input: unknown): boolean {
+  if (
+    !isRecord(input) ||
+    Object.keys(input).length !== 2 ||
+    !exactPaths(Object.keys(input), ["previous", "current"])
+  )
+    return false;
+  const history = [WP8F_V25_ADDENDUM.commit, WP8F_V23_ADDENDUM.commit];
+  const complete = (value: unknown) =>
+    isRecord(value) &&
+    Array.isArray(value.paths) &&
+    Array.isArray(value.historyPaths) &&
+    value.paths.length === WP8F_V18_ENVELOPE.controlFiles.length + 1 &&
+    value.historyPaths.length === WP8F_V18_ENVELOPE.controlFiles.length + 1;
+  return (
+    complete(input.previous) &&
+    complete(input.current) &&
+    validateSealedObservation(
+      input.previous,
+      WP8F_V23_ADDENDUM,
+      WP8F_V23_ADDENDUM.candidateFileSha256,
+      WP8F_V25_ADDENDUM.instrumentedFileSha256,
+      history,
+    ) &&
+    validateSealedObservation(
+      input.current,
+      WP8F_V25_ADDENDUM,
+      WP8F_V25_ADDENDUM.parentFileSha256,
+      WP8F_V25_ADDENDUM.instrumentedFileSha256,
+      history,
+    )
+  );
+}
+
+function validateSealedObservation(
+  input: unknown,
+  g: typeof WP8F_V23_ADDENDUM | typeof WP8F_V25_ADDENDUM,
+  parentDigest: string,
+  headDigest: string,
+  pathCommits: readonly string[],
+): boolean {
   if (!isRecord(input)) return false;
-  const g = WP8F_V23_ADDENDUM;
   const keys = [
     "commit",
     "path",
@@ -4331,10 +4467,10 @@ export function validateV23SealedObservation(input: unknown): boolean {
     input.commit === g.commit &&
     input.path === g.path &&
     input.candidateFileSha256 === g.candidateFileSha256 &&
-    input.parentFileSha256 === g.candidateFileSha256 &&
+    input.parentFileSha256 === parentDigest &&
     input.sealedFileSha256 === g.instrumentedFileSha256 &&
-    input.headFileSha256 === g.instrumentedFileSha256 &&
-    input.workingFileSha256 === g.instrumentedFileSha256 &&
+    input.headFileSha256 === headDigest &&
+    input.workingFileSha256 === headDigest &&
     input.pathDiffSha256 === g.pathDiffSha256 &&
     input.additions === g.additions &&
     input.removals === g.removals &&
@@ -4344,7 +4480,7 @@ export function validateV23SealedObservation(input: unknown): boolean {
     exactPaths(input.historyPaths, allowed) &&
     Array.isArray(input.historyPaths) &&
     input.historyPaths.includes(g.path) &&
-    JSON.stringify(input.pathCommits) === JSON.stringify([g.commit]) &&
+    JSON.stringify(input.pathCommits) === JSON.stringify(pathCommits) &&
     exactPaths(input.commitPaths, allowed) &&
     Array.isArray(input.commitPaths) &&
     input.commitPaths.includes(g.path)
@@ -4546,8 +4682,62 @@ export function inspectV23SealedRepository(
         return { ok: false, reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE" };
     }
     mark("v23_inspect.inherited_journal");
+    let sealValid = validateV23SealedObservation(observation);
+    if (committedWork.roadmapVersion === WP8F_V25_ADDENDUM.version) {
+      const next = WP8F_V25_ADDENDUM;
+      if (git("rev-parse", next.commit + "^{commit}").trim() !== next.commit)
+        return { ok: false, reason: "V25_SEALED_COMMIT_MISSING" };
+      git("merge-base", "--is-ancestor", g.commit, next.commit);
+      git("merge-base", "--is-ancestor", next.commit, head);
+      const nextParents = git("rev-list", "--parents", "-n", "1", next.commit)
+        .trim()
+        .split(" ");
+      if (nextParents.length !== 2)
+        return { ok: false, reason: "V25_SEALED_PARENT_INVALID" };
+      const nextStat = git(
+        ...diffArgs,
+        "--numstat",
+        nextParents[1]!,
+        next.commit,
+        "--",
+        next.path,
+      )
+        .trim()
+        .split("\t");
+      const nextObservation = {
+        ...observation,
+        commit: next.commit,
+        path: next.path,
+        parentFileSha256: hash(git("show", nextParents[1]! + ":" + next.path)),
+        sealedFileSha256: hash(git("show", next.commit + ":" + next.path)),
+        pathDiffSha256: hash(
+          git(
+            ...diffArgs,
+            "--src-prefix=a/",
+            "--dst-prefix=b/",
+            "--unified=3",
+            "--indent-heuristic",
+            nextParents[1]!,
+            next.commit,
+            "--",
+            next.path,
+          ),
+        ),
+        additions: Number(nextStat[0]),
+        removals: Number(nextStat[1]),
+        commitPaths: list(
+          git(...diffArgs, "--name-only", "-z", nextParents[1]!, next.commit),
+        ),
+      };
+      sealValid =
+        nextStat[2] === next.path &&
+        validateV25SealedObservation({
+          previous: observation,
+          current: nextObservation,
+        });
+    }
     if (
-      !validateV23SealedObservation(observation) ||
+      !sealValid ||
       numstat[2] !== g.path ||
       (dirty.length > 0 &&
         !exactPaths([...new Set(dirty)], WP8F_V18_ENVELOPE.controlFiles))
@@ -4765,14 +4955,17 @@ function validateWp8fSuccessor(
   v22 = false,
   v23 = false,
   v24 = false,
+  v25 = false,
 ): void {
-  const keys = v24
-    ? WP8F_V24_WORK_KEYS
-    : v23
-      ? WP8F_V23_WORK_KEYS
-      : v22
-        ? WP8F_V22_WORK_KEYS
-        : WP8F_V21_WORK_KEYS;
+  const keys = v25
+    ? WP8F_V25_WORK_KEYS
+    : v24
+      ? WP8F_V24_WORK_KEYS
+      : v23
+        ? WP8F_V23_WORK_KEYS
+        : v22
+          ? WP8F_V22_WORK_KEYS
+          : WP8F_V21_WORK_KEYS;
   if (
     JSON.stringify(work.wp8fSuccessorCompletion) !==
     JSON.stringify(WP8F_V21_COMPLETION)
@@ -4826,6 +5019,12 @@ function validateWp8fSuccessor(
       JSON.stringify(WP8F_V24_ENABLEMENT)
   )
     errors.push("V24_LIVE_UAT_ENABLEMENT_INVALID");
+  if (
+    v25 &&
+    JSON.stringify(work.wp8fV25WorkerTimingAddendum) !==
+      JSON.stringify(WP8F_V25_ADDENDUM)
+  )
+    errors.push("V25_SEALED_ADDENDUM_INVALID");
 }
 
 function successorTarget(target: unknown): boolean {
@@ -4877,16 +5076,19 @@ function successorCandidate(
     isFullSha(c.controlCommit, 40) &&
     c.controlCommit !== g.sourceCommit &&
     c.controlOwnerDecision ===
-      (isRecord(work) && work.roadmapVersion === WP8F_V24_ENABLEMENT.version
-        ? WP8F_V24_ENABLEMENT.ownerDecision
-        : v23
-          ? WP8F_V23_ADDENDUM.ownerDecision
-          : g.ownerDecision) &&
+      (isRecord(work) && work.roadmapVersion === WP8F_V25_ADDENDUM.version
+        ? WP8F_V25_ADDENDUM.ownerDecision
+        : isRecord(work) && work.roadmapVersion === WP8F_V24_ENABLEMENT.version
+          ? WP8F_V24_ENABLEMENT.ownerDecision
+          : v23
+            ? WP8F_V23_ADDENDUM.ownerDecision
+            : g.ownerDecision) &&
     c.controlTestsAndValidatorsPassed === true &&
     c.controlCiHead === c.controlCommit &&
     c.controlCiConclusion === "success" &&
     (!isRecord(work) ||
-      work.roadmapVersion !== WP8F_V24_ENABLEMENT.version ||
+      (work.roadmapVersion !== WP8F_V24_ENABLEMENT.version &&
+        work.roadmapVersion !== WP8F_V25_ADDENDUM.version) ||
       c.controlCiHead === c.evidenceHead) &&
     c.committedPushedAndClean === true &&
     c.exactDiffReviewed === true &&
@@ -5206,11 +5408,13 @@ function evaluateWp8fV22Action(
     !isRecord(evidence) ||
     evidence.provenance !== "INDEPENDENT_OPERATOR_VERIFICATION" ||
     evidence.ownerDecision !==
-      (work.roadmapVersion === WP8F_V24_ENABLEMENT.version
-        ? WP8F_V24_ENABLEMENT.ownerDecision
-        : v23
-          ? WP8F_V23_ADDENDUM.ownerDecision
-          : g.ownerDecision) ||
+      (work.roadmapVersion === WP8F_V25_ADDENDUM.version
+        ? WP8F_V25_ADDENDUM.ownerDecision
+        : work.roadmapVersion === WP8F_V24_ENABLEMENT.version
+          ? WP8F_V24_ENABLEMENT.ownerDecision
+          : v23
+            ? WP8F_V23_ADDENDUM.ownerDecision
+            : g.ownerDecision) ||
     !Array.isArray(work.wp8fV22OperationJournal)
   )
     return deny;
