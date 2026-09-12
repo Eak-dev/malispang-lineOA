@@ -1,4 +1,11 @@
-import { readFile, copyFile, mkdtemp, writeFile, rm } from "node:fs/promises";
+import {
+  readFile,
+  copyFile,
+  mkdtemp,
+  writeFile,
+  rm,
+  utimes,
+} from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -6008,7 +6015,16 @@ function v25OperatorSnapshot(cwd = fileURLToPath(root)): string {
       cwd,
       index,
       "working_diff_completed",
-      v25Git(cwd, "diff", "--no-ext-diff", "--no-textconv", "--binary", "HEAD"),
+      v25Git(
+        cwd,
+        "-c",
+        "diff.autoRefreshIndex=false",
+        "diff",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--binary",
+        "HEAD",
+      ),
     ),
     v25DiagnosticSnapshotStage(
       cwd,
@@ -6786,4 +6802,147 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
         ).allowed,
       ).toBe(false);
   });
+
+  it("snapshot regression: one stale-stat observation preserves raw index bytes", async () => {
+    await v25WithChild(historical, async (cwd) => {
+      const path = join(cwd, "README.md");
+      const bytes = await readFile(path);
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const before = await readFile(index);
+      await utimes(path, new Date(0), new Date(0));
+      v25OperatorSnapshot(cwd);
+      expect(await readFile(index)).toEqual(before);
+      expect(await readFile(path)).toEqual(bytes);
+      expect(existsSync(index + ".lock")).toBe(false);
+    });
+  });
+  it("snapshot regression: repeated stale-stat observations keep the same fingerprint", async () => {
+    await v25WithChild(historical, async (cwd) => {
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const before = await readFile(index);
+      await utimes(join(cwd, "README.md"), new Date(0), new Date(0));
+      const fingerprint = v25OperatorSnapshot(cwd);
+      expect(await readFile(index)).toEqual(before);
+      for (let i = 0; i < 3; i++) {
+        expect(v25OperatorSnapshot(cwd)).toBe(fingerprint);
+        expect(await readFile(index)).toEqual(before);
+      }
+      expect(existsSync(index + ".lock")).toBe(false);
+    });
+  });
+  it.each([
+    "raw-index",
+    "staged",
+    "working-tree",
+    "HEAD",
+    "untracked",
+  ] as const)(
+    "snapshot regression: a genuine %s mutation is still rejected",
+    async (component) => {
+      await v25WithChild(historical, async (cwd) => {
+        const index = resolve(
+          cwd,
+          v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+        );
+        const indexBefore = await readFile(index);
+        const headBefore = v25Git(cwd, "rev-parse", "HEAD");
+        const before = v25OperatorSnapshot(cwd);
+        expect(await readFile(index)).toEqual(indexBefore);
+        if (component === "raw-index") {
+          v25Git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
+          expect(await readFile(index)).not.toEqual(indexBefore);
+          expect(v25Git(cwd, "diff", "--cached", "--name-only", "HEAD")).toBe(
+            "",
+          );
+        } else if (component === "staged") {
+          await writeFile(
+            join(cwd, "README.md"),
+            "synthetic staged mutation\n",
+          );
+          v25Git(cwd, "add", "--", "README.md");
+          expect(await readFile(index)).not.toEqual(indexBefore);
+          expect(v25Git(cwd, "diff", "--cached", "--name-only", "HEAD")).toBe(
+            "README.md\n",
+          );
+        } else if (component === "working-tree") {
+          await writeFile(
+            join(cwd, "README.md"),
+            "synthetic unstaged mutation\n",
+          );
+          expect(await readFile(index)).toEqual(indexBefore);
+        } else if (component === "HEAD") {
+          v25Git(
+            cwd,
+            "commit",
+            "--quiet",
+            "--allow-empty",
+            "-m",
+            "synthetic HEAD mutation",
+          );
+          expect(v25Git(cwd, "rev-parse", "HEAD")).not.toBe(headBefore);
+        } else {
+          await writeFile(
+            join(cwd, "synthetic-untracked.txt"),
+            "synthetic untracked mutation\n",
+          );
+          expect(
+            v25Git(cwd, "ls-files", "--others", "--exclude-standard"),
+          ).toBe("synthetic-untracked.txt\n");
+          expect(await readFile(index)).toEqual(indexBefore);
+        }
+        const mutatedIndex = await readFile(index);
+        expect(() => v25AssertUnchanged(before, cwd)).toThrow(
+          "ACTIVE_REPOSITORY_MUTATED",
+        );
+        expect(await readFile(index)).toEqual(mutatedIndex);
+        expect(existsSync(index + ".lock")).toBe(false);
+      });
+    },
+  );
+  it.each(["success", "failure"] as const)(
+    "snapshot regression: isolated %s cleanup preserves the operator and leaves no lock or fixture",
+    async (outcome) => {
+      const cwd = fileURLToPath(root);
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const headBefore = v25Git(cwd, "rev-parse", "HEAD");
+      const indexBefore = await readFile(index);
+      const before = v25OperatorSnapshot(cwd);
+      expect(existsSync(index + ".lock")).toBe(false);
+      let removed: string | undefined;
+      const operation = v25WithChild(historical, async (child) => {
+        removed = child;
+        expect(child).not.toBe(cwd);
+        v25AssertHistorical(child, v25HistoricalCommit, true);
+        const childIndex = resolve(
+          child,
+          v25Git(child, "rev-parse", "--git-path", "index").trim(),
+        );
+        const childBefore = await readFile(childIndex);
+        await utimes(join(child, "README.md"), new Date(0), new Date(0));
+        v25OperatorSnapshot(child);
+        expect(await readFile(childIndex)).toEqual(childBefore);
+        expect(existsSync(childIndex + ".lock")).toBe(false);
+        if (outcome === "failure")
+          throw new Error("SYNTHETIC_ASSERTION_FAILURE");
+      });
+      if (outcome === "failure")
+        await expect(operation).rejects.toThrow("SYNTHETIC_ASSERTION_FAILURE");
+      else await expect(operation).resolves.toBeUndefined();
+      expect(removed).toBeDefined();
+      expect(existsSync(removed!)).toBe(false);
+      expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(headBefore);
+      expect(await readFile(index)).toEqual(indexBefore);
+      expect(v25OperatorSnapshot(cwd)).toBe(before);
+      expect(existsSync(index + ".lock")).toBe(false);
+    },
+  );
 });
