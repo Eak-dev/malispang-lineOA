@@ -5612,13 +5612,25 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     expect(git(fixture, "status", "--porcelain=v1")).toBe("");
   });
   it("rejects real committed future edit-and-restore even with matching final sealed bytes", async () => {
+    let timingPrevious = performance.now();
+    const timingMark = (phase: string) => {
+      const now = performance.now();
+      process.stdout.write(
+        JSON.stringify({ phase, milliseconds: now - timingPrevious }) + "\n",
+      );
+      timingPrevious = now;
+    };
+    timingMark("v24_future_drift.start");
     const child = await mkdtemp(join(tmpdir(), "mp06-v23-synthetic-drift-"));
+    timingMark("v24_future_drift.child_directory_created");
     try {
       git(fixture, "clone", "--quiet", "--shared", fixture, child);
+      timingMark("v24_future_drift.child_cloned");
       const proof = verified(child),
         e = evidence(proof),
         file = join(child, path),
         before = await readFile(file);
+      timingMark("v24_future_drift.proof_evidence_and_file_read");
       await writeFile(
         file,
         Buffer.concat([
@@ -5626,10 +5638,15 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
           Buffer.from("\n// synthetic unauthorized edit\n"),
         ]),
       );
+      timingMark("v24_future_drift.edit_written");
       git(child, "add", "--", path);
+      timingMark("v24_future_drift.edit_staged");
       git(child, "commit", "--quiet", "-m", "synthetic unauthorized edit");
+      timingMark("v24_future_drift.edit_committed");
       await writeFile(file, before);
+      timingMark("v24_future_drift.restore_written");
       git(child, "add", "--", path);
+      timingMark("v24_future_drift.restore_staged");
       git(
         child,
         "commit",
@@ -5637,15 +5654,21 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
         "-m",
         "synthetic restored bytes with forbidden history",
       );
+      timingMark("v24_future_drift.restore_committed");
       expect(await readFile(file)).toEqual(before);
+      timingMark("v24_future_drift.restored_bytes_asserted");
       expect(inspectV23SealedRepository(child)).toEqual({
         ok: false,
         reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
       });
+      timingMark("v24_future_drift.inspection_rejection_asserted");
       expect(assess(e, proof).allowed).toBe(false);
+      timingMark("v24_future_drift.action_rejection_asserted");
     } finally {
       await rm(child, { recursive: true, force: true });
+      timingMark("v24_future_drift.cleanup_completed");
     }
+    timingMark("v24_future_drift.completed");
   });
 });
 
