@@ -6908,41 +6908,66 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
   it.each(["success", "failure"] as const)(
     "snapshot regression: isolated %s cleanup preserves the operator and leaves no lock or fixture",
     async (outcome) => {
+      const started = performance.now();
+      const timing = (phase: string) => {
+        if (outcome === "success")
+          console.info(
+            JSON.stringify({
+              phase: "v25_success_cleanup." + phase,
+              milliseconds: performance.now() - started,
+            }),
+          );
+      };
+      timing("started");
       const cwd = fileURLToPath(root);
       const index = resolve(
         cwd,
         v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
       );
+      timing("operator_index_path_resolved");
       const headBefore = v25Git(cwd, "rev-parse", "HEAD");
       const indexBefore = await readFile(index);
+      timing("operator_head_and_index_sampled");
       const before = v25OperatorSnapshot(cwd);
       expect(existsSync(index + ".lock")).toBe(false);
+      timing("operator_baseline_and_lock_assertion_completed");
       let removed: string | undefined;
       const operation = v25WithChild(historical, async (child) => {
+        timing("child_callback_entered_after_clone");
         removed = child;
         expect(child).not.toBe(cwd);
         v25AssertHistorical(child, v25HistoricalCommit, true);
+        timing("historical_identity_and_digests_verified");
         const childIndex = resolve(
           child,
           v25Git(child, "rev-parse", "--git-path", "index").trim(),
         );
         const childBefore = await readFile(childIndex);
+        timing("child_index_sampled");
         await utimes(join(child, "README.md"), new Date(0), new Date(0));
+        timing("synthetic_stale_stat_prepared");
         v25OperatorSnapshot(child);
+        timing("child_snapshot_completed");
         expect(await readFile(childIndex)).toEqual(childBefore);
         expect(existsSync(childIndex + ".lock")).toBe(false);
+        timing("child_index_and_lock_assertions_completed");
         if (outcome === "failure")
           throw new Error("SYNTHETIC_ASSERTION_FAILURE");
       });
       if (outcome === "failure")
         await expect(operation).rejects.toThrow("SYNTHETIC_ASSERTION_FAILURE");
       else await expect(operation).resolves.toBeUndefined();
+      timing("operation_resolved_after_cleanup");
       expect(removed).toBeDefined();
       expect(existsSync(removed!)).toBe(false);
+      timing("removed_fixture_assertions_completed");
       expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(headBefore);
       expect(await readFile(index)).toEqual(indexBefore);
+      timing("operator_head_and_index_assertions_completed");
       expect(v25OperatorSnapshot(cwd)).toBe(before);
       expect(existsSync(index + ".lock")).toBe(false);
+      timing("operator_snapshot_and_lock_assertions_completed");
+      timing("completed");
     },
   );
 });

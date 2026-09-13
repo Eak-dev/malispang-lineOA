@@ -1875,3 +1875,37 @@ Read-only source inspection: the failing case is the `success` member of the exi
 Remote preflight stopped immediately on the exact CI failure, before preparing or executing new SQL. No Data Studio navigation/selector, Owner lookup, SELECT, Wrangler/Keychain/TEST_ADMIN_KEY access or TEST HTTP request. Query text/hash/receipt/RowsRead/candidate count and fresh schema/state **NOT_EXECUTED / NOT_OBSERVED**, not0/PASS. No new private binding, no clipboard use. Source-to-SQL preparation and the one-time re-resolution grant remain pending, not consumed or rejected by a remote result. Historical snapshots are not a fresh120second lease.
 
 No deploy/upload/version/traffic/activation/STOP/session/provider/LINE/U2/rollback/Production action. Deployment/activation/STOP **APPROVED_UNUSED0/1 each**, original journal/markers unchanged by this operator. Runtime1790da58635edcee154b60d76730248e8130c2d3/artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657/control45b3cd4d86c5bc4a67dd018ff23b5c6972a2021e unchanged. Only three append-only evidence files change; preserve all prior failures, U1 GAP/A1–A3 UNRESOLVED/billingUNKNOWN. Issue12 OPEN; no PR/merge/closure/MP07. Production **NO_GO — NOT TOUCHED**.
+
+### 2026-09-13 — standing TEST acceptance authority; isolated success-cleanup timing checkpoint
+
+Owner standing authorization permits continuous test/control/harness diagnostics and narrowly evidenced fixes, necessary sealed control-only addenda, and the original one-use retained-Owner resolution/deployment/activation/STOP sequence after all exact-head gates. No runtime/application, identity, budget, secret/role, Production or extra remote mutation is authorized. Per-test watchdog may rise only up to15000ms after complete-phase/assertion/no-hang evidence; no global timeout, retry, safety bypass or unsupported concurrency change. Conditional Issue12 closure now requires all mandatory TEST acceptance, including no mandatory U1 GAP, new-audit nonrecurrence, reconciliation, containment, recovery and final published summary. Historical A1-A3 remain limitations, not resolved. This append-only record is not a state/CI attestation and does not mint/reset/reissue grants.
+
+Actual starting feature branch local/remote **c53622e1ca995d25320edd995f47c307bde18054**, clean before the diagnostic edit, verified by feature-only fetch. It is a descendant of **91c6ce405a9cd434c8199f156d876b627c9ed154**, control45b3cd4 and snapshot-fix44740316; complete91c6-to-c536 diff is only the three evidence documents. No checkout/reset/rebase/stash/merge/backward synchronization occurred. Automatic CI **34736309382** on this exact starting HEAD is SUCCESS. Preserve failed91c6 automaticCI34735581569: isolated success-cleanup6220ms/5000ms, Node617/618, control187/188, later gates not reached. A later pass does not explain or erase that failure.
+
+Only **tests/project-control.test.ts** changes executable test content:25 added lines provide15 monotonic phase/milliseconds markers for the existing success-cleanup member; failure member logs nothing. No assertions, expected outcomes, synthetic fault, Git operations/helpers, order/concurrency, runtime, configuration, workflow, dependency or timeout change. Existing5000ms remains. Existing paired failure-cleanup and genuine HEAD/index/tracked/untracked mutation regressions retain negative coverage.
+
+Local focused run2026-09-13T04:01:46.853Z–04:01:57.659Z: **2/2 selected PASS**,186 intentionally non-selected, not a full-suite result. Control run04:02:43.336Z–04:04:24.377Z: **188/188 PASS**, no failed/skipped/cancelled. Operator HEAD/raw-index/tracked diff/staged diff/status fingerprints unchanged before/after each invocation; success/failure cleanup asserts no child fixture or index lock remains.
+
+| Completed phase                                 | Focused elapsed ms | Full control elapsed ms |
+| ----------------------------------------------- | -----------------: | ----------------------: |
+| started                                         |              0.045 |                   0.043 |
+| operator_index_path_resolved                    |             23.885 |                  23.287 |
+| operator_head_and_index_sampled                 |             47.847 |                  47.251 |
+| operator_baseline_and_lock_assertion_completed  |            200.599 |                 198.413 |
+| child_callback_entered_after_clone              |            665.286 |                 607.775 |
+| historical_identity_and_digests_verified        |            716.106 |                 659.094 |
+| child_index_sampled                             |            739.557 |                 682.163 |
+| synthetic_stale_stat_prepared                   |            739.880 |                 682.337 |
+| child_snapshot_completed                        |            973.355 |                 914.093 |
+| child_index_and_lock_assertions_completed       |           1055.766 |                 962.967 |
+| operation_resolved_after_cleanup                |           1235.203 |                1135.358 |
+| removed_fixture_assertions_completed            |           1235.533 |                1135.515 |
+| operator_head_and_index_assertions_completed    |           1323.058 |                1206.905 |
+| operator_snapshot_and_lock_assertions_completed |           1473.571 |                1359.996 |
+| completed                                       |           1473.613 |                1360.044 |
+
+Static formatting/lint/typecheck/control-private-Git-inventory/secret214/diff checks PASS. Complete post-candidate inventory remains11 paths; dirty test/evidence work is correctly not deployment approval. AST equivalence after removing only the17 instrumentation statements preserves all original assertions, Git/fault/order semantics. The first disposable AST checker did not recurse into child timing calls; its incomplete comparison was rejected and corrected locally, not accepted as proof or used to modify the test.
+
+**ROOT_CAUSE_UNRESOLVED / WIP — NOT_DEPLOYABLE** pending fresh complete clean-checkout validation and exact diagnostic-head automatic hosted CI. Completed local phases do not establish the cause or duration of the older hosted failure. No watchdog increase or manual CI rerun. Next: explicit-path checkpoint, exact clean/full/CI/artifact/inventory gates; only then one-use source-equivalent SELECT readiness and original remote sequence.
+
+Runtime **1790da58635edcee154b60d76730248e8130c2d3**, artifact **adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657**, v25 control **45b3cd4d86c5bc4a67dd018ff23b5c6972a2021e** unchanged. Re-resolution/deployment/activation/STOP each **APPROVED_UNUSED0/1**, inherited journal unchanged. No TEST navigation, SQL, credential/key access, HTTP, deployment/version/traffic/session/LINE/provider/STOP operation in this checkpoint. Owner noU2. U1 GAP/A1-A3 UNRESOLVED/billingUNKNOWN retained; Issue12 OPEN. PR14 remains INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW, not acceptance. Production **NO_GO — NOT TOUCHED**.
