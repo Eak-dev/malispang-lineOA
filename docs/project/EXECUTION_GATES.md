@@ -2126,3 +2126,40 @@ This is a TEST-only documentation/read-only request. Do not create or initialize
 The private technical-ticket route is unavailable in the observed portal. One proposed alternative, **not executed**, is to ask Owner whether the sanitized documentation question may be posted publicly to Cloudflare Community. Public publication is a different audience from the authorized private Support request and requires that explicit decision; no paid upgrade, misleading category or alternative access permission is inferred. No further browser retry or TEST action is authorized while awaiting that decision.
 
 No Data Studio navigation/Refresh/SQL, Owner re-resolution, Keychain/TEST_ADMIN_KEY/OAuth credential read, Worker/resource metadata query, deployment/upload/version/traffic mutation, activation/STOP, LINE/provider/U2 or Production action. Frozen runtime1790da58635edcee154b60d76730248e8130c2d3 and artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657 unchanged. Re-resolution/deployment/activation/STOP each **APPROVED_UNUSED0/1**; original coordinator SELECT1/1 and all historical journals intact. U1 GAP/A1-A3 UNRESOLVED/AUDIT_RETENTION_RECONCILIATION_GAP/historical billingUNKNOWN/Issue12 OPEN. Heartbeat PAUSED, no PR/merge/closure. Production **NO_GO — NOT TOUCHED**. Only three append-only evidence documents change; affected checks and the new exact-head automatic CI are recorded separately, never as a sent ticket or readiness PASS.
+
+### 2026-09-13 — one generic Community post authorized; account confirmation awaits Owner
+
+Owner authorizes exactly one public Cloudflare Community question using the English title/body below verbatim. This replaces both earlier project-specific Support drafts for any public publication. No real Worker/namespace/class/binding/instance names, project/repository/commit/issue/CI links, opaque identifiers, private references, SQL/schema names, screenshots/logs/credentials, control-grant details or actual Production information may appear in the public post. Follow-up replies are limited to generic explanations; any request for real-system evidence or access requires Owner disposition. Posting authority does not authorize Data Studio retries, SQL, Keychain, deployment, successor activation, U2 or any TEST mutation.
+
+Starting **fd12e0fe02ab983ea409a2830a39fa147200b27b** independently matches local/origin/remote, tree clean; v25/MP-06/Issue12/WP8F/TEST_ONLY complete11-path seal and unchanged journals PASS, #9/#12 receipts5652967280/5652967406 reconciled, heartbeat PAUSED. Exact automatic **CI34754383139/job103716176972 SUCCESS2026-09-13T11:30:22Z**, all13steps, **924/924=618Node+14benchmark+292Worker**, secret214/audit every severity0/generated stability PASS. All15 success-cleanup phases complete1485.020834ms, unchanged5000ms watchdog and unresolved historical root cause. No manual rerun or new local full-suite run for unchanged runtime/tests.
+
+By **2026-09-13T11:35:30Z**, the official Community sign-in flow using the existing Cloudflare browser session reached a pending new-account confirmation page and reported sending an activation email. Only the matching Community confirmation message was inspected; the message explicitly states that account activation confirms acceptance of the Community Terms of Use and Privacy Policy. **The confirmation link was not followed and those terms were not accepted by the operator.** Action-time Owner acceptance is required before that account step; the earlier approval of a generic post is not treated as acceptance of new legal terms. No public composer, draft or submit operation was reached. The Community page is retained for Owner handoff; temporary mail content was cleared without persisting an email address, message identifier, confirmation URL, token or raw email in project evidence. No credentials were entered or changed and no Keychain access occurred.
+
+**COMMUNITY_ACCOUNT_CONFIRMATION_REQUIRED / NOT_POSTED / topic_url NOT_CREATED / READINESS_BLOCKED / WIP — NOT_DEPLOYABLE.** This is a Community account prerequisite, not a TEST successor activation or a storage finding. The single authorized public post has not been attempted; no duplicate topic or follow-up was sent. Required next step: Owner opens the Community confirmation email and completes account confirmation after reviewing the linked terms, without sharing the activation link/code. Only then may the same approved one-post task resume. No new TEST grant is requested or implied.
+
+#### Approved public message — not yet posted
+
+**Title:** Read-only method to verify SQLite schema for one known Durable Object instance
+
+**Body:**
+
+I have a Worker using a SQLite-backed Durable Object. I know the expected Durable Object namespace and the exact logical instance name.
+
+Before performing a deployment, I need a strictly read-only way to verify that the name resolves to the intended existing instance and obtain only sanitized schema metadata, such as table and index counts.
+
+I do not want to enumerate other instances, read application rows, initialize a new object, run migrations, or mutate storage.
+
+Is there an officially supported Cloudflare API, Wrangler command, or Data Studio procedure that can:
+
+1. Resolve one known Durable Object name within one known namespace;
+2. Confirm whether the resolved instance already has SQLite storage;
+3. Return schema metadata or table/index counts without returning row data; and
+4. Guarantee that the inspection does not create or modify the object?
+
+If Data Studio is the only supported method, how can I distinguish an existing instance with no visible schemas from a newly resolved but uninitialized named instance?
+
+This is a TEST environment and not a production outage.
+
+#### Unchanged containment
+
+No Data Studio/selector retry, SQL/Owner lookup, Keychain/TEST_ADMIN_KEY, Worker/resource metadata query, deploy/upload/version/traffic mutation, TEST activation/STOP, LINE/provider/U2 or Production action. Frozen1790da58635edcee154b60d76730248e8130c2d3 / artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657 unchanged; re-resolution/deployment/activation/STOP each **APPROVED_UNUSED0/1**, original coordinator SELECT1/1 and all journals intact. Actual storage/claims/Registry remain NOT_OBSERVED; U1 GAP/A1-A3 UNRESOLVED/historical billingUNKNOWN/Issue12 OPEN, heartbeat PAUSED/coordinator monitor-only. No PR/merge/closure; Production **NO_GO — NOT TOUCHED**. Three append-only evidence paths only; affected checks/new automatic evidence-head CI are separate from the missing public-post receipt and do not establish readiness.
