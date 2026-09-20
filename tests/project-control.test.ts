@@ -7464,39 +7464,67 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
       });
     },
   );
-  it.each(["staged", "untracked"] as const)(
-    "rejects a real %s additional path while preserving the observed raw index",
-    async (kind) => {
-      await v25WithChild(fixture, async (cwd) => {
-        const path =
-          kind === "staged" ? "README.md" : "synthetic-v26-untracked.txt";
-        await writeFile(join(cwd, path), "synthetic additional path change\n");
-        if (kind === "staged") v25Git(cwd, "add", "--", path);
-        const index = resolve(
-          cwd,
-          v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
-        );
-        const before = await readFile(index);
-        const status = v25Git(
-          cwd,
-          "status",
-          "--porcelain=v1",
-          "-z",
-          "--untracked-files=all",
-          "--no-renames",
-          "--ignore-submodules=none",
-        );
-        expect(status).toBe((kind === "staged" ? "M  " : "?? ") + path + "\0");
-        expect(parseV26PorcelainStatus(status)).toEqual([path]);
-        expect(inspectV23SealedRepository(cwd)).toEqual({
-          ok: false,
-          reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+  for (const kind of ["staged", "untracked"] as const) {
+    it(
+      `rejects a real ${kind} additional path while preserving the observed raw index`,
+      async () => {
+        const started = performance.now();
+        const timing = (phase: string) => {
+          if (kind === "staged")
+            process.stdout.write(
+              JSON.stringify({
+                phase: "v26_staged_additional_path." + phase,
+                milliseconds: performance.now() - started,
+              }) + "\n",
+            );
+        };
+        timing("started");
+        await v25WithChild(fixture, async (cwd) => {
+          timing("isolated_fixture_ready");
+          const path =
+            kind === "staged" ? "README.md" : "synthetic-v26-untracked.txt";
+          await writeFile(
+            join(cwd, path),
+            "synthetic additional path change\n",
+          );
+          timing("synthetic_write_complete");
+          if (kind === "staged") v25Git(cwd, "add", "--", path);
+          timing("staged_add_complete");
+          const index = resolve(
+            cwd,
+            v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+          );
+          const before = await readFile(index);
+          timing("raw_index_baseline_sampled");
+          const status = v25Git(
+            cwd,
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--no-renames",
+            "--ignore-submodules=none",
+          );
+          timing("status_complete");
+          expect(status).toBe(
+            (kind === "staged" ? "M  " : "?? ") + path + "\0",
+          );
+          expect(parseV26PorcelainStatus(status)).toEqual([path]);
+          timing("parser_assertions_complete");
+          expect(inspectV23SealedRepository(cwd)).toEqual({
+            ok: false,
+            reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+          });
+          timing("inspector_return_and_assertion_complete");
+          expect(await readFile(index)).toEqual(before);
+          expect(existsSync(index + ".lock")).toBe(false);
+          timing("raw_index_and_lock_assertions_complete");
         });
-        expect(await readFile(index)).toEqual(before);
-        expect(existsSync(index + ".lock")).toBe(false);
-      });
-    },
-  );
+        timing("child_cleanup_and_operator_guard_complete");
+      },
+      kind === "staged" ? 15_000 : 5_000,
+    );
+  }
   it("rejects dirty workflow bytes before issuing deployment authority", async () => {
     const started = performance.now();
     const timing = (phase: string) =>
@@ -7542,7 +7570,7 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
       timing("assertions_complete");
     });
     timing("cleanup_and_operator_guard_complete");
-  });
+  }, 15_000);
   it("accepts content-identical tracked-file rewrite through the real v26 inspector without refreshing raw index bytes", async () => {
     const started = performance.now();
     const timing = (phase: string) =>
