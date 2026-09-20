@@ -7499,20 +7499,36 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
     },
   );
   it("rejects a real committed workflow edit-and-restore even with exact final bytes and blobs", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_workflow_restore." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
     await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
       const path = join(cwd, v26WorkflowPath);
       const bytes = await readFile(path, "utf8");
+      timing("original_bytes_read");
       await writeFile(path, bytes + "\n# synthetic unapproved edit\n");
       commit(cwd, v26WorkflowPath);
+      timing("synthetic_edit_committed");
       await writeFile(path, bytes);
       commit(cwd, v26WorkflowPath);
+      timing("original_bytes_recommitted");
       expect(await readFile(path, "utf8")).toBe(bytes);
       expect(v25Git(cwd, "rev-parse", "HEAD:" + v26WorkflowPath).trim()).toBe(
         "d50d858ad3972fa1fc88fe086535d56382d05935",
       );
+      timing("restored_bytes_and_blob_asserted");
       expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+      timing("unapproved_history_rejection_asserted");
     });
-  });
+    timing("cleanup_and_operator_guard_complete");
+  }, 15_000);
   it.each(["README.md", "worker/index.ts", "wrangler.jsonc", "package.json"])(
     "rejects additional or runtime/configuration/dependency path drift: %s",
     async (path) => {
@@ -7756,22 +7772,39 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
     });
   });
   it("rejects a genuine proof after raw-index-only mutation without normalizing the index", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_raw_index_proof." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
     await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
       const genuine = checked(cwd);
+      timing("genuine_proof_collected");
       const index = resolve(
         cwd,
         v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
       );
       const before = await readFile(index);
+      timing("raw_index_baseline_sampled");
       v25Git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
       const mutated = await readFile(index);
+      timing("synthetic_index_mutation_sampled");
       expect(mutated).not.toEqual(before);
       expect(v25Git(cwd, "diff", "--cached", "--name-only", "HEAD")).toBe("");
+      timing("raw_only_mutation_asserted");
       expect(assess(evidence(genuine), genuine).allowed).toBe(false);
+      timing("stale_proof_rejection_asserted");
       expect(await readFile(index)).toEqual(mutated);
       expect(existsSync(index + ".lock")).toBe(false);
+      timing("no_normalization_and_lock_asserted");
     });
-  });
+    timing("cleanup_and_operator_guard_complete");
+  }, 15_000);
   it("rejects substituted historical v25 fixture bytes or a moving reference and cleans failure fixtures", async () => {
     let removed: string | undefined;
     await expect(
@@ -7848,12 +7881,23 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
     },
   );
   it("rejects replacement grants and real consumed-journal reset while preserving original target and freshness gates", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_consumed_journal." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
     const replacement = clone(w);
     replacement.wp8fV26OperationJournal = [];
     expect(
       validateProjectControl(r, replacement).errors.length,
     ).toBeGreaterThan(0);
+    timing("replacement_grant_rejection_asserted");
     await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
       const used = clone(w);
       used.wp8fV22OperationJournal = v22Deployed().journal;
       await writeFile(
@@ -7861,22 +7905,28 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
         JSON.stringify(used, null, 2) + "\n",
       );
       commit(cwd, "config/project/current-work.json");
+      timing("synthetic_consumed_journal_committed");
       await writeFile(
         join(cwd, "config/project/current-work.json"),
         JSON.stringify(w, null, 2) + "\n",
       );
       commit(cwd, "config/project/current-work.json");
+      timing("synthetic_journal_reset_committed");
       expect(inspectV23SealedRepository(cwd)).toEqual({
         ok: false,
         reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE",
       });
+      timing("journal_reset_rejection_asserted");
     });
+    timing("cleanup_and_operator_guard_complete");
     const stale = evidence();
     record(stale.test).observedAt = Date.now() - 120001;
     expect(assess(stale).allowed).toBe(false);
+    timing("stale_observation_rejection_asserted");
     const artifact = evidence();
     record(artifact.candidate).artifactSha256 = "0".repeat(64);
     expect(assess(artifact).allowed).toBe(false);
+    timing("artifact_substitution_rejection_asserted");
     for (const action of [
       "QUERY_PRODUCTION",
       "CHANGE_PRODUCTION",
@@ -7887,7 +7937,8 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
       "ACTIVATE_SUCCESSOR_V22",
     ])
       expect(assess(evidence(), proof, w, action).allowed).toBe(false);
-  });
+    timing("forbidden_actions_asserted");
+  }, 15_000);
 });
 
 describe("v27 exact provider-hang chain with immutable v26 history", () => {
