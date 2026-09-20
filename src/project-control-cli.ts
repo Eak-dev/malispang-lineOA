@@ -275,6 +275,13 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "CHANGE_PRODUCTION",
   ] as const) {
     const decision = evaluateProjectAction(roadmap, currentWork, action);
+    if (action === "LOCAL_IMPLEMENTATION" && version === "2026.09.20-v31") {
+      if (!decision.allowed)
+        throw new Error(
+          "ROADMAP_UNVERIFIED: exact v31 local remediation must be authorized",
+        );
+      continue;
+    }
     if (decision.allowed) {
       throw new Error(`ROADMAP_UNVERIFIED: ${action} must remain blocked`);
     }
@@ -286,7 +293,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
     inheritsV22
-      ? `Project control validation passed: ${version}, MP-06 (#12), exact frozen TEST_ONLY; separate one-use deployment/successor grants; historical and current journals verified; U1 GAP/A1-A3 UNRESOLVED retained; no handoff-close/rollback/PR/merge/closure/Production/MP07; ${warningSuffix}`
+      ? `Project control validation passed: ${version}, MP-06 (#12), exact TEST_ONLY; separate one-use deployment/successor grants; historical and current journals verified; U1 GAP/A1-A3 UNRESOLVED retained; no remote handoff-close/rollback/PR/merge/closure/Production/MP07; ${warningSuffix}`
       : version === "2026.09.10-v21"
         ? `Project control validation passed: ${version}, MP-06 (#12), frozen successor TEST_ONLY; independent exact deployment/close/continuation/UAT/review/integration gates required; append-only operation history verified; historical PR14 is not acceptance; Production NO_GO, MP07 blocked; ${warningSuffix}`
         : `Project control validation passed: ${version}, historical preparation only; no remote mutation; ${warningSuffix}`,
