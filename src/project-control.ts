@@ -7574,7 +7574,7 @@ export const GREPTILE_PUSH_DRAFT_CONTROL = {
   priorFileSha256:
     "5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61",
   fileSha256:
-    "b098e926169c9a94ec6847048d1249732a5c5d53bfa76379b0b2bbe4bf9ed94f",
+    "3cd6a3ab140a230736ac0c2b76f9a75204afc6545a125bf6371468bb69c015b1",
   automaticReview: ["open", "push"],
   reviewDrafts: true,
   reviewRebase: false,

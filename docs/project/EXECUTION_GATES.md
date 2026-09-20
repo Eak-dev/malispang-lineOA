@@ -3031,7 +3031,7 @@ Authorized non-control paths: worker/durable-objects.ts, worker-tests/durable-st
 
 Control version 2026.09.21-v32 (MP-OD-2026-09-21-V32, supersedes 2026.09.20-v31) is REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31 under mandate OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21. Repository Eak-dev/malispang-lineOA, headBranch codex/mp-06-guardrailed-ai, baseBranch codex/phase-1a-foundation.
 
-The only inherited merge accepted is 88deb90a58369923f11a7266ec63fa8fd5f293c2 with ordered parents aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c and tree 57259355a0877677e5a88ca0c91fa0cf4f37f2ab. The only non-control path is greptile.json, predecessor 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61 and successor b098e926169c9a94ec6847048d1249732a5c5d53bfa76379b0b2bbe4bf9ed94f.
+The only inherited merge accepted is 88deb90a58369923f11a7266ec63fa8fd5f293c2 with ordered parents aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c and tree 57259355a0877677e5a88ca0c91fa0cf4f37f2ab. The only non-control path is greptile.json, predecessor 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61 and successor 3cd6a3ab140a230736ac0c2b76f9a75204afc6545a125bf6371468bb69c015b1.
 
 The exact inherited base merge is aad8c5e0ef41c5e47df3d93ae462b9122368c15d with ordered parents 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f and tree 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb. No other merge commit is admitted.
 
