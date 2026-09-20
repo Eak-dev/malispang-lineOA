@@ -976,6 +976,8 @@ export class ConversationStateDO extends DurableObject<Env> {
           "SELECT * FROM handoff_close_operation WHERE id = 1",
         )
         .toArray()[0];
+      const current = this.handoffObservation();
+      const mode = this.state();
       if (
         !receipt ||
         !row ||
@@ -984,8 +986,11 @@ export class ConversationStateDO extends DurableObject<Env> {
         row.receipt_id !== receipt.receiptId ||
         row.generation !== receipt.generation ||
         row.closed_at !== receipt.closedAt ||
-        this.handoffObservation()?.generation !== row.generation ||
-        this.state() !== "BOT_ACTIVE" ||
+        !current ||
+        current.generation < row.generation ||
+        (current.generation === row.generation && mode !== "BOT_ACTIVE") ||
+        (current.generation > row.generation &&
+          (mode !== "HUMAN_HANDOFF" || row.status !== "CONVERSATION_CLOSED")) ||
         !Number.isSafeInteger(attempt) ||
         attempt < 1 ||
         attempt > row.attempts
@@ -3738,9 +3743,12 @@ export class HandoffRegistryDO extends DurableObject<Env> {
       if (fence === null) return null;
       if (
         fence &&
-        (fence.generation > receipt.generation ||
+        (fence.generation < receipt.generation ||
           fence.closed_generation > receipt.generation ||
-          (fence.close_receipt_id !== null &&
+          (fence.closed_generation === receipt.generation &&
+            fence.close_receipt_id !== receipt.receiptId) ||
+          (fence.closed_generation < receipt.generation &&
+            fence.close_receipt_id !== null &&
             fence.close_receipt_id !== receipt.receiptId))
       )
         return null;
@@ -3751,21 +3759,25 @@ export class HandoffRegistryDO extends DurableObject<Env> {
             conversationRef,
           )
           .one().count;
-        return active === 0 && fence.close_receipt_id === receipt.receiptId
+        return (fence.generation > receipt.generation || active === 0) &&
+          fence.close_receipt_id === receipt.receiptId
           ? receipt
           : null;
       }
       sql.exec(
-        "INSERT INTO handoff_registry_fences VALUES (?, ?, ?, ?) ON CONFLICT(conversation_ref) DO UPDATE SET generation = excluded.generation, closed_generation = excluded.closed_generation, close_receipt_id = excluded.close_receipt_id",
+        "INSERT INTO handoff_registry_fences VALUES (?, ?, ?, ?) ON CONFLICT(conversation_ref) DO UPDATE SET closed_generation = excluded.closed_generation, close_receipt_id = excluded.close_receipt_id",
         conversationRef,
         receipt.generation,
         receipt.generation,
         receipt.receiptId,
       );
-      sql.exec(
-        "DELETE FROM active_handoffs WHERE conversation_ref = ?",
-        conversationRef,
-      );
+      // A delayed generation-N close may complete after generation N+1 became
+      // active. Record only the older receipt; never remove the newer handoff.
+      if (!fence || fence.generation === receipt.generation)
+        sql.exec(
+          "DELETE FROM active_handoffs WHERE conversation_ref = ?",
+          conversationRef,
+        );
       return receipt;
     });
   }

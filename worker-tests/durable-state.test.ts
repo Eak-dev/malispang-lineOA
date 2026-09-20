@@ -1259,10 +1259,85 @@ describe("successor durable one-logical handoff close", () => {
       code: "HANDOFF_GENERATION_CHANGED",
     });
     expect(await stub.acknowledgeHandoffClose(first.receipt, 1)).toBe(false);
-    expect(await registry.reconcileClose(name, first.receipt)).toBeNull();
+    expect(await registry.reconcileClose(name, first.receipt)).toEqual(
+      first.receipt,
+    );
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
     expect(await registry.listActive()).toEqual([
       { conversationRef: name, createdAt: baseInput.now + 2 },
+    ]);
+  });
+  it("reconciles the retained older close without removing a newer active generation", async () => {
+    const { name, stub } = await fixture("late-old-close");
+    const registry = env.HANDOFF_REGISTRY.getByName(
+      "successor-late-old-close-registry",
+    );
+    expect(await registry.activate(name, baseInput.now, 1)).toBe(true);
+    const close = await stub.closeHandoff(input);
+    if (!close.accepted) throw new Error("EXPECTED_CLOSE");
+
+    const successorNow = baseInput.now + 2;
+    const successor = await stub.processEvent({
+      ...baseInput,
+      eventRef: "fd".repeat(32),
+      now: successorNow,
+    });
+    if (successor.status !== "RESPOND")
+      throw new Error("EXPECTED_SUCCESSOR_HANDOFF");
+    expect(
+      await stub.markDelivered(successor.deliveryClaim.eventRef, {
+        ...successor.deliveryClaim,
+      }),
+    ).toBe("ACKNOWLEDGED");
+    expect(await registry.activate(name, successorNow, 2)).toBe(true);
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 2,
+      pendingClose: true,
+      closeState: "CONVERSATION_CLOSED",
+    });
+
+    expect(await registry.reconcileClose(name, close.receipt)).toEqual(
+      close.receipt,
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(close.receipt, close.attempt),
+    ).toBe(true);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 2,
+      pendingClose: false,
+      closeState: "COMPLETE",
+      technicalAttempts: 1,
+    });
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: name, createdAt: successorNow },
+    ]);
+    expect(
+      await runInDurableObject(registry, (_i, s) =>
+        s.storage.sql
+          .exec(
+            "SELECT generation, closed_generation, close_receipt_id FROM handoff_registry_fences WHERE conversation_ref = ?",
+            name,
+          )
+          .one(),
+      ),
+    ).toEqual({
+      generation: 2,
+      closed_generation: 1,
+      close_receipt_id: close.receipt.receiptId,
+    });
+
+    await evictDurableObject(stub);
+    await evictDurableObject(registry);
+    expect(await registry.reconcileClose(name, close.receipt)).toEqual(
+      close.receipt,
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(close.receipt, close.attempt),
+    ).toBe(false);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: name, createdAt: successorNow },
     ]);
   });
   it("fences delayed registry activation and cannot reconcile another conversation", async () => {

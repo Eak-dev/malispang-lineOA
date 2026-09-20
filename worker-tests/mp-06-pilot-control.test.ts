@@ -1183,6 +1183,82 @@ describe("successor Owner-only HTTP handoff close", () => {
     },
   );
 
+  it("completes an older close across a deterministic newer-generation barrier without deleting the new handoff", async () => {
+    const reachedReconciliation = v18Deferred<void>();
+    const releaseReconciliation = v18Deferred<void>();
+    const label = "generation-interleave";
+    const f = await closeHttpFixture(label, async (invoke) => {
+      reachedReconciliation.resolve(undefined);
+      await releaseReconciliation.promise;
+      return invoke();
+    });
+    const network = vi.fn<typeof fetch>((input) => {
+      if (requestUrl(input) !== "https://api.line.me/v2/bot/message/reply")
+        throw new Error("UNEXPECTED_NETWORK_DESTINATION");
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    vi.stubGlobal("fetch", network);
+    try {
+      const close = f.call();
+      await reachedReconciliation.promise;
+      await v17Send(
+        `U_SYNTHETIC_CONTINUATION_close-${label}`,
+        "ขอคุยกับพนักงาน",
+        "v31-generation-interleave",
+        f.localEnv,
+      );
+      expect(await f.conversation.state()).toBe("HUMAN_HANDOFF");
+      expect(await f.conversation.handoffObservation()).toMatchObject({
+        generation: 2,
+        pendingClose: true,
+        closeState: "CONVERSATION_CLOSED",
+        technicalAttempts: 1,
+      });
+      expect(await f.registry.listActive()).toHaveLength(1);
+
+      releaseReconciliation.resolve(undefined);
+      const response = await close;
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        closed: true,
+        receipt: {
+          generation: 1,
+          result: "CLOSED",
+        },
+      });
+      expect(await f.conversation.state()).toBe("HUMAN_HANDOFF");
+      expect(await f.conversation.handoffObservation()).toMatchObject({
+        generation: 2,
+        pendingClose: false,
+        closeState: "COMPLETE",
+        technicalAttempts: 1,
+      });
+      const active = await f.registry.listActive();
+      expect(active).toHaveLength(1);
+      expect(active[0]?.conversationRef).toBe(f.owner);
+      expect(network).toHaveBeenCalledTimes(1);
+
+      await evictDurableObject(f.conversation);
+      await evictDurableObject(f.registry);
+      expect(await f.conversation.state()).toBe("HUMAN_HANDOFF");
+      expect(await f.conversation.handoffObservation()).toMatchObject({
+        generation: 2,
+        pendingClose: false,
+        closeState: "COMPLETE",
+        technicalAttempts: 1,
+      });
+      expect(await f.registry.listActive()).toEqual(active);
+      const replay = await f.call();
+      expect(replay.status).toBe(409);
+      expect(await replay.json()).toEqual({
+        code: "HANDOFF_GENERATION_CHANGED",
+      });
+    } finally {
+      releaseReconciliation.resolve(undefined);
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("stops after three unresolved technical attempts and rejects replacement keys", async () => {
     const f = await closeHttpFixture("three-failures", () =>
       Promise.reject(new Error("SIMULATED_REGISTRY_UNAVAILABLE")),

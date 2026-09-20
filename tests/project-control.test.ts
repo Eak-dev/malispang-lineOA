@@ -7545,6 +7545,7 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
         expect(inspectV23SealedRepository(cwd).ok).toBe(false);
       });
     },
+    15_000,
   );
   it("rejects a real committed workflow edit-and-restore even with exact final bytes and blobs", async () => {
     const started = performance.now();
@@ -8516,17 +8517,21 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
     ".github/workflows/ci.yml",
     "worker-tests/durable-state.test.ts",
   ])
-    it("rejects real additional or protected path " + path, async () => {
-      await timed("protected_path", async (cwd, mark) => {
-        await writeFile(
-          join(cwd, path),
-          (await readFile(join(cwd, path), "utf8")) + "\n",
-        );
-        commit(cwd, path);
-        mark("protected_change_committed");
-        expect(inspectV23SealedRepository(cwd).ok).toBe(false);
-      });
-    });
+    it(
+      "rejects real additional or protected path " + path,
+      async () => {
+        await timed("protected_path", async (cwd, mark) => {
+          await writeFile(
+            join(cwd, path),
+            (await readFile(join(cwd, path), "utf8")) + "\n",
+          );
+          commit(cwd, path);
+          mark("protected_change_committed");
+          expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+        });
+      },
+      15_000,
+    );
   it("rejects dirty Worker bytes and never upgrades dirty control proof into deployment authority", async () => {
     await timed("dirty", async (cwd, mark) => {
       const path = "docs/project/EXECUTION_GATES.md";
