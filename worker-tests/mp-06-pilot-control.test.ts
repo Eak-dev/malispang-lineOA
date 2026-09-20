@@ -4392,6 +4392,19 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
   });
 
   it("reproduces a provider hang through the webhook and leaves durable fail-closed checkpoints", async () => {
+    const globalsBefore = {
+      fetch: globalThis.fetch,
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+      checkpoint: Object.getOwnPropertyDescriptor(
+        ConversationStateDO.prototype,
+        "recordMp06PilotLifecycleCheckpoint",
+      )?.value as unknown,
+      settle: Object.getOwnPropertyDescriptor(
+        ConversationStateDO.prototype,
+        "settleMp06PilotAttempt",
+      )?.value as unknown,
+    };
     const timingNow = performance.now.bind(performance);
     const timingStartedAt = timingNow();
     const timingMarker = (phase: string) => {
@@ -4412,102 +4425,190 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     const coordinator = env.CONVERSATION_STATE.getByName(
       MP06_PILOT_CONTROL_OBJECT_NAME,
     );
-    const initialCheckpointKeys = new Set(
-      (
-        await coordinator.mp06PilotLifecycleCheckpointSnapshot()
-      ).checkpoints.map(
-        (checkpoint) => `${checkpoint.clientRequestId}:${checkpoint.phase}`,
-      ),
-    );
-    timingMarker("baseline_lifecycle_snapshot_complete");
-    expect(
-      await coordinator.activateMp06Pilot({
-        sessionRef: hexRef(884),
-        testerRefs: [await hashReference(senderId)],
-        now: Date.now(),
-        limits,
-      }),
-    ).toMatchObject({ activated: true });
-    timingMarker("pilot_activation_asserted");
-    let targetSignal: AbortSignal | undefined;
-    let fetchCheckpointCompleted = false;
-    let targetDeadline: ReturnType<typeof setTimeout> | undefined;
-    let targetDeadlineFired = false;
-    let targetDeadlineCleared = false;
-    let targetAbortObserved = false;
-    const fakeSetTimeout = globalThis.setTimeout;
-    const fakeClearTimeout = globalThis.clearTimeout;
-    const observedSetTimeout: typeof setTimeout = (
-      callback,
-      delay,
-      ...args
-    ) => {
-      const directCaller = (new Error().stack ?? "").split("\n")[2] ?? "";
-      const callbackText = Function.prototype.toString.call(callback);
-      const target =
-        delay === 8_000 &&
-        targetSignal !== undefined &&
-        /\/worker\/mp-06-ai-nlu\.ts:\d+:\d+\)?$/.test(directCaller) &&
-        /controller\.abort\(\)/.test(callbackText) &&
-        /type:\s*["']DEADLINE["']/.test(callbackText);
-      const handle = fakeSetTimeout(
-        (...values) => {
-          if (target) {
-            targetDeadlineFired = true;
-            timingMarker("target_deadline_firing");
-          }
-          callback(...values);
-          if (target) {
-            targetAbortObserved = targetSignal?.aborted === true;
-            timingMarker("target_deadline_callback_returned");
-          }
-        },
-        delay,
-        ...args,
-      );
-      if (target) {
-        targetDeadline = handle;
-        timingMarker("target_deadline_registered");
-      }
-      return handle;
-    };
-    vi.stubGlobal("setTimeout", observedSetTimeout);
-    vi.stubGlobal("clearTimeout", (handle: ReturnType<typeof setTimeout>) => {
-      if (handle === targetDeadline) {
-        targetDeadlineCleared = true;
-        timingMarker("target_deadline_cleared");
-      }
-      return fakeClearTimeout(handle);
-    });
-    await runInDurableObject(coordinator, (instance) => {
-      const original = instance.recordMp06PilotLifecycleCheckpoint;
-      vi.spyOn(
-        ConversationStateDO.prototype,
-        "recordMp06PilotLifecycleCheckpoint",
-      ).mockImplementation(function (input) {
-        const result = original.call(this, input);
-        if (input.sessionRef === hexRef(884) && result.accepted) {
-          if (input.phase === "FETCH_PROMISE_CREATED") {
-            fetchCheckpointCompleted = true;
-            timingMarker("fetch_checkpoint_storage_complete");
-          } else if (input.phase === "SETTLEMENT_STARTED") {
-            timingMarker("settlement_checkpoint_storage_complete");
-          }
-        }
-        return result;
-      });
-    });
-    const network = vi.fn<typeof fetch>((input, init) => {
-      if (requestUrl(input).startsWith("https://api.openai.com/")) {
-        targetSignal = init?.signal ?? undefined;
-        timingMarker("provider_hang_entered");
-        return new Promise<Response>(() => undefined);
-      }
-      return Promise.reject(new Error("LINE must not be called after timeout"));
-    });
-    vi.stubGlobal("fetch", network);
-    timingMarker("provider_hang_mock_installed");
     try {
+      const initialCheckpointKeys = new Set(
+        (
+          await coordinator.mp06PilotLifecycleCheckpointSnapshot()
+        ).checkpoints.map(
+          (checkpoint) => `${checkpoint.clientRequestId}:${checkpoint.phase}`,
+        ),
+      );
+      timingMarker("baseline_lifecycle_snapshot_complete");
+      expect(
+        await coordinator.activateMp06Pilot({
+          sessionRef: hexRef(884),
+          testerRefs: [await hashReference(senderId)],
+          now: Date.now(),
+          limits,
+        }),
+      ).toMatchObject({ activated: true });
+      timingMarker("pilot_activation_asserted");
+      let targetSignal: AbortSignal | undefined;
+      let fetchCheckpointCompleted = false;
+      let targetDeadline: ReturnType<typeof setTimeout> | undefined;
+      let targetDeadlineFired = false;
+      let targetDeadlineCleared = false;
+      let targetAbortObserved = false;
+      let targetRegistrations = 0;
+      let targetAttempt: string | undefined;
+      let settlementStarted = false;
+      let settlementCompleted = false;
+      const fakeSetTimeout = globalThis.setTimeout;
+      const fakeClearTimeout = globalThis.clearTimeout;
+      const isTargetDeadline = (
+        callback: unknown,
+        delay: unknown,
+        directCaller: unknown,
+        signal: AbortSignal | undefined,
+        checkpointCompleted: boolean,
+      ): boolean =>
+        typeof callback === "function" &&
+        delay === 8_000 &&
+        signal !== undefined &&
+        checkpointCompleted &&
+        typeof directCaller === "string" &&
+        /\/worker\/mp-06-ai-nlu\.ts:\d+:\d+\)?$/.test(directCaller) &&
+        /controller\.abort\(\)/.test(
+          Function.prototype.toString.call(callback),
+        ) &&
+        /type:\s*["']DEADLINE["']/.test(
+          Function.prototype.toString.call(callback),
+        );
+      const controller = new AbortController();
+      const resolve = (value: unknown) => void value;
+      const deadlineProbe = () => {
+        controller.abort();
+        resolve({ type: "DEADLINE" });
+      };
+      const probeFrame = "at deadline (/worker/mp-06-ai-nlu.ts:677:21)";
+      expect(
+        isTargetDeadline(
+          deadlineProbe,
+          8_000,
+          probeFrame,
+          controller.signal,
+          true,
+        ),
+      ).toBe(true);
+      for (const [callback, delay, caller, signal, completed] of [
+        [deadlineProbe, 8_000, probeFrame, undefined, true],
+        [deadlineProbe, 8_000, probeFrame, controller.signal, false],
+        [deadlineProbe, "8000", probeFrame, controller.signal, true],
+        [deadlineProbe, 2_000, probeFrame, controller.signal, true],
+        [
+          deadlineProbe,
+          8_000,
+          "at test (/worker-tests/mp-06-pilot-control.test.ts:1:1)",
+          controller.signal,
+          true,
+        ],
+        [() => undefined, 8_000, probeFrame, controller.signal, true],
+        [undefined, 8_000, probeFrame, controller.signal, true],
+      ] as const) {
+        expect(
+          isTargetDeadline(callback, delay, caller, signal, completed),
+        ).toBe(false);
+      }
+      expect(controller.signal.aborted).toBe(false);
+      timingMarker("target_deadline_classifier_regressions_complete");
+      const observedSetTimeout = (
+        callback: (...args: unknown[]) => void,
+        delay?: number,
+        ...args: unknown[]
+      ): ReturnType<typeof setTimeout> => {
+        const directCaller = (new Error().stack ?? "").split("\n")[2] ?? "";
+        const target = isTargetDeadline(
+          callback,
+          delay,
+          directCaller,
+          targetSignal,
+          fetchCheckpointCompleted,
+        );
+        const handle = fakeSetTimeout(
+          (...values: unknown[]) => {
+            if (target) {
+              targetDeadlineFired = true;
+              timingMarker("target_deadline_firing");
+            }
+            callback(...values);
+            if (target) {
+              targetAbortObserved = targetSignal?.aborted === true;
+              timingMarker("target_deadline_callback_returned");
+            }
+          },
+          delay,
+          ...args,
+        );
+        if (target) {
+          targetRegistrations += 1;
+          targetDeadline = handle;
+          timingMarker("target_deadline_registered");
+        }
+        return handle;
+      };
+      vi.stubGlobal("setTimeout", observedSetTimeout);
+      vi.stubGlobal("clearTimeout", (handle: ReturnType<typeof setTimeout>) => {
+        if (handle === targetDeadline) {
+          targetDeadlineCleared = true;
+          timingMarker("target_deadline_cleared");
+        }
+        return fakeClearTimeout(handle);
+      });
+      await runInDurableObject(coordinator, (instance) => {
+        const original =
+          instance.recordMp06PilotLifecycleCheckpoint.bind(instance);
+        vi.spyOn(
+          ConversationStateDO.prototype,
+          "recordMp06PilotLifecycleCheckpoint",
+        ).mockImplementation(function (input) {
+          const result = original(input);
+          if (input.sessionRef === hexRef(884) && result.accepted) {
+            if (input.phase === "FETCH_PROMISE_CREATED") {
+              fetchCheckpointCompleted = true;
+              targetAttempt = input.attemptRef;
+              timingMarker("fetch_checkpoint_storage_complete");
+            }
+          }
+          return result;
+        });
+        const settle = instance.settleMp06PilotAttempt.bind(instance);
+        vi.spyOn(
+          ConversationStateDO.prototype,
+          "settleMp06PilotAttempt",
+        ).mockImplementation((input) => {
+          const target =
+            input.sessionRef === hexRef(884) &&
+            input.attemptRef === targetAttempt;
+          if (target) {
+            settlementStarted = true;
+            timingMarker("target_settlement_entered");
+          }
+          const result = settle(input);
+          if (target && result.accepted) {
+            settlementCompleted = true;
+            timingMarker("target_settlement_storage_complete");
+          }
+          return result;
+        });
+      });
+      const network = vi.fn<typeof fetch>((input, init) => {
+        if (requestUrl(input).startsWith("https://api.openai.com/")) {
+          targetSignal = init?.signal ?? undefined;
+          timingMarker("provider_hang_entered");
+          const irrelevant = setTimeout(deadlineProbe, 8_000);
+          expect(vi.getTimerCount()).toBeGreaterThan(0);
+          expect(targetRegistrations).toBe(0);
+          expect(targetDeadline).toBeUndefined();
+          clearTimeout(irrelevant);
+          timingMarker("fetch_and_irrelevant_timer_rejected_as_readiness");
+          return new Promise<Response>(() => undefined);
+        }
+        return Promise.reject(
+          new Error("LINE must not be called after timeout"),
+        );
+      });
+      vi.stubGlobal("fetch", network);
+      timingMarker("provider_hang_mock_installed");
       const payload = JSON.stringify({
         destination: env.LINE_BOT_USER_ID,
         events: [
@@ -4541,6 +4642,12 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       timingMarker("signed_webhook_accepted");
       await vi.waitFor(() => expect(network).toHaveBeenCalledTimes(1));
       timingMarker("single_provider_call_observed");
+      await vi.waitFor(() => {
+        expect(fetchCheckpointCompleted).toBe(true);
+        expect(targetRegistrations).toBe(1);
+        expect(targetDeadline).toBeDefined();
+      });
+      timingMarker("target_deadline_barrier_complete");
       await vi.advanceTimersByTimeAsync(8_000);
       timingMarker("deadline_clock_advance_complete");
       timingMarker("execution_context_settlement_started");
@@ -4587,15 +4694,39 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       expect(targetDeadlineFired).toBe(true);
       expect(targetDeadlineCleared).toBe(true);
       expect(targetAbortObserved).toBe(true);
+      expect(targetRegistrations).toBe(1);
+      expect(settlementStarted).toBe(true);
+      expect(settlementCompleted).toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
       timingMarker("target_timer_identity_and_abort_asserted");
     } finally {
-      await runInDurableObject(coordinator, () => vi.restoreAllMocks());
-      timingMarker("checkpoint_observer_restored");
-      vi.unstubAllGlobals();
-      timingMarker("globals_restored");
-      vi.useRealTimers();
-      timingMarker("real_timers_restored");
+      try {
+        await runInDurableObject(coordinator, () => vi.restoreAllMocks());
+        timingMarker("checkpoint_observer_restored");
+      } finally {
+        vi.unstubAllGlobals();
+        timingMarker("globals_restored");
+        vi.useRealTimers();
+        timingMarker("real_timers_restored");
+      }
     }
+    expect(vi.isFakeTimers()).toBe(false);
+    expect(globalThis.fetch === globalsBefore.fetch).toBe(true);
+    expect(globalThis.setTimeout === globalsBefore.setTimeout).toBe(true);
+    expect(globalThis.clearTimeout === globalsBefore.clearTimeout).toBe(true);
+    expect(
+      Object.getOwnPropertyDescriptor(
+        ConversationStateDO.prototype,
+        "recordMp06PilotLifecycleCheckpoint",
+      )?.value === globalsBefore.checkpoint,
+    ).toBe(true);
+    expect(
+      Object.getOwnPropertyDescriptor(
+        ConversationStateDO.prototype,
+        "settleMp06PilotAttempt",
+      )?.value === globalsBefore.settle,
+    ).toBe(true);
+    timingMarker("timer_global_and_fixture_restoration_asserted");
     timingMarker("test_completed");
   });
 
