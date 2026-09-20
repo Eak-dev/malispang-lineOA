@@ -49,7 +49,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v26" ||
     version === "2026.09.20-v27" ||
     version === "2026.09.20-v28" ||
-    version === "2026.09.20-v29";
+    version === "2026.09.20-v29" ||
+    version === "2026.09.20-v30";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -62,7 +63,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       version === "2026.09.20-v26" ||
       version === "2026.09.20-v27" ||
       version === "2026.09.20-v28" ||
-      version === "2026.09.20-v29";
+      version === "2026.09.20-v29" ||
+      version === "2026.09.20-v30";
     let newerSuccessorJournal = journal;
     let newerV22Journal =
       "wp8fV22OperationJournal" in currentWork
@@ -111,7 +113,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v26" ||
           historical.roadmapVersion === "2026.09.20-v27" ||
           historical.roadmapVersion === "2026.09.20-v28" ||
-          historical.roadmapVersion === "2026.09.20-v29")
+          historical.roadmapVersion === "2026.09.20-v29" ||
+          historical.roadmapVersion === "2026.09.20-v30")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -135,7 +138,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v26" ||
           historical.roadmapVersion === "2026.09.20-v27" ||
           historical.roadmapVersion === "2026.09.20-v28" ||
-          historical.roadmapVersion === "2026.09.20-v29")
+          historical.roadmapVersion === "2026.09.20-v29" ||
+          historical.roadmapVersion === "2026.09.20-v30")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -172,7 +176,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v26" ||
     version === "2026.09.20-v27" ||
     version === "2026.09.20-v28" ||
-    version === "2026.09.20-v29"
+    version === "2026.09.20-v29" ||
+    version === "2026.09.20-v30"
   ) {
     const sealed = inspectV23SealedRepository(fileURLToPath(root));
     if (!sealed.ok) throw new Error(sealed.reason);
@@ -298,7 +303,7 @@ export async function runPullRequestControlValidation(
     await import("node:fs/promises");
   const os = await import("node:os");
   const path = await import("node:path");
-  const { PR15_CI_CONTROL, validatePr15MergeReceipt } =
+  const { PR15_CI_CONTROL, PR15_CI_TIMEOUT_CONTROL, validatePr15MergeReceipt } =
     await import("./project-control.js");
   if (
     process.env.GITHUB_EVENT_NAME !== "pull_request" ||
@@ -333,10 +338,11 @@ export async function runPullRequestControlValidation(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
   if (
-    work.roadmapVersion !== PR15_CI_CONTROL.version ||
-    JSON.stringify(work.wp8fV29PrCi) !== JSON.stringify(PR15_CI_CONTROL)
+    work.roadmapVersion !== PR15_CI_TIMEOUT_CONTROL.version ||
+    JSON.stringify(work.wp8fV30CiTimeout) !==
+      JSON.stringify(PR15_CI_TIMEOUT_CONTROL)
   )
-    throw new Error("V29_EXACT_CONTROL_INVALID");
+    throw new Error("V30_EXACT_CONTROL_INVALID");
   const controlPaths = [
     "config/project/roadmap.json",
     "config/project/current-work.json",

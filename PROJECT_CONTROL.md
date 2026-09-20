@@ -1,5 +1,9 @@
 # MalisPang Project Control
 
+## Current effective control — v30 / PR15 CI hard timeout 20 minutes
+
+Roadmap2026.09.20-v30 supersedes v29 only for the Owner-requested exact `timeout-minutes: 10` to `20` successor in `.github/workflows/ci.yml`, sealed by wp8fV30CiTimeout. The single authorized rerun of unchanged head40d2fa2 subsequently passed every step in7m54s; that result does not erase attempt1's exact10m0s hard-timeout evidence or the Owner-requested headroom. All v29 source-head/synthetic-merge separation, checks, ordering, assertions, runtime/artifact/grants/journals/holds and Draft review-only restrictions remain unchanged. A timeout increase is not a failed-check waiver or authority to rerun until green. No runtime/test edit, rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, issue closure or MP07.
+
 ## Current effective control — v29 / PR15 CI repair
 
 Roadmap2026.09.20-v29 supersedes v28 for the Owner-approved existing Draft PR15 review and exact sealed CI repair. Source-head history remains merge-free and fully sealed; synthetic merge integration tests remain mandatory. Ten control paths plus the exact ci.yml digest in wp8fV29PrCi only. All prior runtime/artifact/grants/journals/holds remain unchanged. No rebase, force-push, merge, deploy, Production, issue closure or MP07. Earlier current headings are immutable history.

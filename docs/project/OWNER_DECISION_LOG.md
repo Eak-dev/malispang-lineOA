@@ -883,4 +883,31 @@ Owner approved the diagnosed repair in this session (จัดการต่อ
 - prAuthority: EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_REVIEW
 - inheritedState: FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION
 
-Ten exact control paths plus the single SHA-256 sealed workflow patch only. No application edit, rebase, force-push, merge, deploy, Production access, Data Studio release, issue closure or MP07. Preserve all prior failure evidence. Greptile P1 remains unverified pending triage, not authorized runtime remediation. CI must test the synthetic merge fully and validate the actual source head in an isolated checkout; no synthetic commit may acquire a deployment proof.
+Ten exact control paths plus the single SHA-256 sealed workflow patch only. No application edit, rebase, force-push, merge, deploy, Production access, Data Studio release, issue closure or MP07. Preserve all prior failure evidence. Greptile P1 remains unverified pending triage, not authorized runtime remediation. CI must test the synthetic merge fully and validate the actual source head in an isolated checkout; no synthetic commit may acquire a deployment proof. +
+
+## MP-OD-2026-09-20-V30 — PR15 CI hard timeout 20 minutes
+
+Owner explicitly requested a 20-minute hard timeout after exact-head run35510889934 attempt1 was cancelled by GitHub's “maximum execution time of10m0s” annotation during validate:mp-06-test-readiness. The single authorized rerun of unchanged head40d2fa2 subsequently passed every step in7m54s; that result does not erase attempt1's hard-timeout evidence or the Owner-requested headroom. Supersedes only the v29 CI time ceiling; this is not a waiver for a failed check and does not authorize rerun loops.
+
+- version: 2026.09.20-v30
+- ownerDecision: MP-OD-2026-09-20-V30
+- supersedes: 2026.09.20-v29
+- type: PR15_CI_HARD_TIMEOUT_20_MINUTES_ONLY_INHERITING_V29
+- mandate: OWNER_PR15_HARD_TIMEOUT_20_MINUTES_2026_09_20
+- repository: Eak-dev/malispang-lineOA
+- pullRequest: 15
+- headBranch: codex/greptile-reviewer-setup
+- baseBranch: codex/phase-1a-foundation
+- baseline: 40d2fa26ad4e78c7422985a52acc4ddf156ad28a
+- path: .github/workflows/ci.yml
+- priorFileSha256: 649bb59905f0dbdf5759f3b3351e6a987c9b035a1c6e97ed286428b81b3861ac
+- fileSha256: 869125fb4e3bafa03f6757328c4fa221103b625f48d35a491926a5beedbebbd5
+- previousTimeoutMinutes: 10
+- timeoutMinutes: 20
+- evidenceRun: 35510889934
+- evidence: GITHUB_JOB_ANNOTATION_MAXIMUM_EXECUTION_TIME_10M0S_FULL_GATES_INCOMPLETE
+- mode: SAME_CHECKS_SAME_SYNTHETIC_MERGE_AND_SOURCE_SEAL_HARD_TIMEOUT_ONLY
+- prAuthority: EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_REVIEW
+- inheritedState: FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION
+
+Only the exact `timeout-minutes: 10` to `20` workflow successor is authorized beyond the ten control paths. Preserve the source-head seal adapter, synthetic-merge tests, test ordering, retries, assertions, all checks and historical cancellation evidence. No application/runtime/test change, rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal change, Data Studio hold release, issue closure or MP-07.

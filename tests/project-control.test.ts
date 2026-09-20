@@ -5139,6 +5139,17 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.20-v30") {
+      r.version = "2026.09.20-v29";
+      w.roadmapVersion = r.version;
+      delete w.wp8fV30CiTimeout;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV30CiTimeout",
+      );
+      delete record(s.properties).wp8fV30CiTimeout;
+      record(record(s.properties).roadmapVersion).const = r.version;
+    }
     if (r.version === "2026.09.20-v29") {
       r.version = "2026.09.20-v28";
       w.roadmapVersion = r.version;
@@ -8189,6 +8200,17 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
           ),
         ),
       );
+      if (currentRoadmap.version === "2026.09.20-v30") {
+        currentRoadmap.version = "2026.09.20-v29";
+        currentWork.roadmapVersion = currentRoadmap.version;
+        delete currentWork.wp8fV30CiTimeout;
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "wp8fV30CiTimeout",
+        );
+        delete record(currentSchema.properties).wp8fV30CiTimeout;
+        record(record(currentSchema.properties).roadmapVersion).const =
+          currentRoadmap.version;
+      }
       if (currentRoadmap.version === "2026.09.20-v29") {
         currentRoadmap.version = "2026.09.20-v28";
         currentWork.roadmapVersion = currentRoadmap.version;
@@ -8728,8 +8750,9 @@ describe("v29 PR15 source and integration separation", () => {
       expect(validatePr15MergeReceipt(changed, observed), field).toBeNull();
     }
   });
-  it("validates the exact v29 layer and preserves every inherited grant and journal", async () => {
-    const { PR15_CI_CONTROL } = await import("../src/project-control.js");
+  it("validates the exact v30 timeout layer and preserves every inherited grant and journal", async () => {
+    const { PR15_CI_TIMEOUT_CONTROL } =
+      await import("../src/project-control.js");
     const r = record(
       JSON.parse(
         await readFile(
@@ -8746,7 +8769,7 @@ describe("v29 PR15 source and integration separation", () => {
         ),
       ),
     );
-    expect(r.version).toBe(PR15_CI_CONTROL.version);
+    expect(r.version).toBe(PR15_CI_TIMEOUT_CONTROL.version);
     expect(validateProjectControl(r, w).errors).toEqual([]);
     for (const key of [
       "path",
@@ -8756,9 +8779,9 @@ describe("v29 PR15 source and integration separation", () => {
       "prAuthority",
     ]) {
       const changed = structuredClone(w);
-      record(changed.wp8fV29PrCi)[key] = "unexpected";
+      record(changed.wp8fV30CiTimeout)[key] = "unexpected";
       expect(validateProjectControl(r, changed).errors).toContain(
-        "V29_EXACT_CONTROL_INVALID",
+        "V30_EXACT_CONTROL_INVALID",
       );
     }
     for (const action of [
