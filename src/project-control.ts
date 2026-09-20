@@ -4682,6 +4682,63 @@ type V23CheckoutProof = Readonly<{
 }>;
 const v23CheckoutProofs = new WeakSet<object>();
 
+/** Decode only the root-relative, NUL-terminated porcelain-v1 format produced
+ * with --no-renames. This parser is not a checkout proof or authorization. */
+export function parseV26PorcelainStatus(raw: unknown): string[] | null {
+  if (typeof raw !== "string") return null;
+  if (raw === "") return [];
+  if (!raw.endsWith("\0")) return null;
+  const statuses = new Set([
+    " M",
+    " T",
+    " D",
+    " A",
+    "M ",
+    "MM",
+    "MT",
+    "MD",
+    "T ",
+    "TM",
+    "TT",
+    "TD",
+    "A ",
+    "AM",
+    "AT",
+    "AD",
+    "D ",
+    "DD",
+    "AU",
+    "UD",
+    "UA",
+    "DU",
+    "AA",
+    "UU",
+    "??",
+  ]);
+  const paths: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw.slice(0, -1).split("\0")) {
+    if (
+      entry.length < 4 ||
+      entry[2] !== " " ||
+      !statuses.has(entry.slice(0, 2))
+    )
+      return null;
+    const path = entry.slice(3);
+    if (
+      path.startsWith("/") ||
+      path
+        .split("/")
+        .some((part) => part === "" || part === "." || part === "..") ||
+      seen.has(path)
+    )
+      return null;
+    seen.add(path);
+    paths.push(path);
+  }
+  return paths;
+}
+
 /** Local read-only Git inspection: no remote, supplied digest/reader, credential,
  * hook or external diff. Dirty control files permit validation, never deployment. */
 export function inspectV23SealedRepository(
@@ -4834,12 +4891,6 @@ export function inspectV23SealedRepository(
       ),
     };
     mark("v23_inspect.sealed_bytes_diff");
-    const dirty = [
-      ...list(git(...diffArgs, "--name-only", "-z", "HEAD")),
-      ...list(git(...diffArgs, "--cached", "--name-only", "-z", "HEAD")),
-      ...list(git("ls-files", "--others", "--exclude-standard", "-z")),
-    ];
-    mark("v23_inspect.dirty_state");
     const currentWorkText = git(
       "show",
       head + ":config/project/current-work.json",
@@ -4851,6 +4902,33 @@ export function inspectV23SealedRepository(
     )
       return { ok: false, reason: "V23_INHERITED_JOURNAL_UNVERIFIED" };
     const v26 = committedWork.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version;
+    let dirty: string[];
+    if (v26) {
+      // Worktree diff may refresh real index stat metadata even with optional
+      // locks disabled. Status inspects identical-content rewrites without that
+      // write. Disable rename folding so every NUL record has one root path;
+      // both sides of a staged rename remain independently visible.
+      const status = git(
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all",
+        "--no-renames",
+        "--ignore-submodules=none",
+      );
+      const statusPaths = parseV26PorcelainStatus(status);
+      if (statusPaths === null)
+        return { ok: false, reason: "V26_STATUS_FORMAT_UNVERIFIED" };
+      dirty = statusPaths;
+    } else {
+      // Preserve the historical v23-v25 observation contract unchanged.
+      dirty = [
+        ...list(git(...diffArgs, "--name-only", "-z", "HEAD")),
+        ...list(git(...diffArgs, "--cached", "--name-only", "-z", "HEAD")),
+        ...list(git("ls-files", "--others", "--exclude-standard", "-z")),
+      ];
+    }
+    mark("v23_inspect.dirty_state");
     // A stable index fingerprint is necessary but not sufficient: pre-existing
     // flags can hide working-file edits from Git's ordinary dirty checks.
     if (

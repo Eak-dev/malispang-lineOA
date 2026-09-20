@@ -39,6 +39,7 @@ import {
   validateV23SealedObservation,
   validateV25SealedObservation,
   validateV26SealedObservation,
+  parseV26PorcelainStatus,
 } from "../src/project-control.js";
 import { runProjectControlValidation } from "../src/project-control-cli.js";
 
@@ -7463,6 +7464,39 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
       });
     },
   );
+  it.each(["staged", "untracked"] as const)(
+    "rejects a real %s additional path while preserving the observed raw index",
+    async (kind) => {
+      await v25WithChild(fixture, async (cwd) => {
+        const path =
+          kind === "staged" ? "README.md" : "synthetic-v26-untracked.txt";
+        await writeFile(join(cwd, path), "synthetic additional path change\n");
+        if (kind === "staged") v25Git(cwd, "add", "--", path);
+        const index = resolve(
+          cwd,
+          v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+        );
+        const before = await readFile(index);
+        const status = v25Git(
+          cwd,
+          "status",
+          "--porcelain=v1",
+          "-z",
+          "--untracked-files=all",
+          "--no-renames",
+          "--ignore-submodules=none",
+        );
+        expect(status).toBe((kind === "staged" ? "M  " : "?? ") + path + "\0");
+        expect(parseV26PorcelainStatus(status)).toEqual([path]);
+        expect(inspectV23SealedRepository(cwd)).toEqual({
+          ok: false,
+          reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+        });
+        expect(await readFile(index)).toEqual(before);
+        expect(existsSync(index + ".lock")).toBe(false);
+      });
+    },
+  );
   it("rejects dirty workflow bytes before issuing deployment authority", async () => {
     const started = performance.now();
     const timing = (phase: string) =>
@@ -7506,6 +7540,84 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
       expect(dirty.clean).toBe(false);
       expect(assess(evidence(dirty), dirty).allowed).toBe(false);
       timing("assertions_complete");
+    });
+    timing("cleanup_and_operator_guard_complete");
+  });
+  it("accepts content-identical tracked-file rewrite through the real v26 inspector without refreshing raw index bytes", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_stale_stat_inspector." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
+    await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
+      const path = join(cwd, "README.md");
+      const bytes = await readFile(path);
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const before = await readFile(index);
+      await writeFile(path, bytes);
+      // Deterministic stale stat, without sleeping or changing tracked content.
+      await utimes(path, new Date(0), new Date(0));
+      expect(await readFile(path)).toEqual(bytes);
+      expect(await readFile(index)).toEqual(before);
+      timing("content_identical_stale_stat_prepared");
+      const observed = inspectV23SealedRepository(cwd);
+      timing("inspection_complete");
+      expect(observed.ok).toBe(true);
+      if (!observed.ok) throw new Error(observed.reason);
+      expect(observed.proof.clean).toBe(true);
+      expect(observed.proof.rawIndexSha256).toBe(v25Hash(before));
+      expect(await readFile(index)).toEqual(before);
+      expect(await readFile(path)).toEqual(bytes);
+      expect(existsSync(index + ".lock")).toBe(false);
+      timing("clean_proof_and_raw_index_assertions_complete");
+    });
+    timing("cleanup_and_operator_guard_complete");
+  });
+  it("accepts content-identical tracked-file rewrite through the real control CLI without refreshing raw index bytes", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_stale_stat_cli." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
+    await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
+      const path = join(cwd, "README.md");
+      const bytes = await readFile(path);
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const before = await readFile(index);
+      await writeFile(path, bytes);
+      await utimes(path, new Date(0), new Date(0));
+      expect(await readFile(path)).toEqual(bytes);
+      expect(await readFile(index)).toEqual(before);
+      timing("content_identical_stale_stat_prepared");
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await expect(
+          runProjectControlValidation(pathToFileURL(cwd + "/")),
+        ).resolves.toBeUndefined();
+      } finally {
+        log.mockRestore();
+      }
+      timing("cli_validation_complete");
+      expect(await readFile(index)).toEqual(before);
+      expect(await readFile(path)).toEqual(bytes);
+      expect(existsSync(index + ".lock")).toBe(false);
+      timing("raw_index_and_content_assertions_complete");
     });
     timing("cleanup_and_operator_guard_complete");
   });
@@ -7684,5 +7796,128 @@ describe("v26 exact workflow seal with immutable v25 history", () => {
       "ACTIVATE_SUCCESSOR_V22",
     ])
       expect(assess(evidence(), proof, w, action).allowed).toBe(false);
+  });
+});
+
+describe("v26 closed NUL-delimited porcelain status parser", () => {
+  it("accepts an empty clean observation and every explicitly supported status pair", () => {
+    expect(parseV26PorcelainStatus("")).toEqual([]);
+    for (const status of [
+      " M",
+      " T",
+      " D",
+      " A",
+      "M ",
+      "MM",
+      "MT",
+      "MD",
+      "T ",
+      "TM",
+      "TT",
+      "TD",
+      "A ",
+      "AM",
+      "AT",
+      "AD",
+      "D ",
+      "DD",
+      "AU",
+      "UD",
+      "UA",
+      "DU",
+      "AA",
+      "UU",
+      "??",
+    ])
+      expect(parseV26PorcelainStatus(status + " synthetic/file.txt\0")).toEqual(
+        ["synthetic/file.txt"],
+      );
+  });
+  it("retains staged, unstaged, untracked and both delete/add rename paths without folding or dropping entries", () => {
+    expect(
+      parseV26PorcelainStatus(
+        "M  staged.txt\0 M unstaged.txt\0?? untracked.txt\0D  old-name.txt\0A  new-name.txt\0",
+      ),
+    ).toEqual([
+      "staged.txt",
+      "unstaged.txt",
+      "untracked.txt",
+      "old-name.txt",
+      "new-name.txt",
+    ]);
+    expect(parseV26PorcelainStatus("MM same.txt\0")).toEqual(["same.txt"]);
+  });
+  it("rejects duplicate same-status and contradictory-status path records", () => {
+    for (const raw of [
+      "M  same.txt\0M  same.txt\0",
+      "?? same.txt\0?? same.txt\0",
+      "M  same.txt\0 M same.txt\0",
+      "D  same.txt\0A  same.txt\0",
+    ])
+      expect(parseV26PorcelainStatus(raw)).toBeNull();
+  });
+  it("preserves ordinary whitespace and newline path bytes rather than trimming or parsing them as metadata", () => {
+    expect(
+      parseV26PorcelainStatus(
+        " M notes/with spaces.txt\0?? newline\nname.txt\0??   \0",
+      ),
+    ).toEqual(["notes/with spaces.txt", "newline\nname.txt", "  "]);
+  });
+  it("rejects non-string, truncated, unterminated, NUL-only and interior-empty observations", () => {
+    for (const raw of [
+      null,
+      undefined,
+      0,
+      false,
+      {},
+      [],
+      Buffer.from(" M file.txt\0"),
+      " M file.txt",
+      " M file.txt\0?? other.txt",
+      "\0",
+      "\0 M file.txt\0",
+      " M file.txt\0\0",
+      " M file.txt\0\0?? other.txt\0",
+      "M\0",
+      " M\0",
+      " M \0",
+      " M\tfile.txt\0",
+    ])
+      expect(parseV26PorcelainStatus(raw)).toBeNull();
+  });
+  it("rejects ignored, rename/copy, lowercase, spaces-only and unsupported status pairs", () => {
+    for (const status of [
+      "!!",
+      "R ",
+      "C ",
+      "RM",
+      "CM",
+      " m",
+      "m ",
+      "  ",
+      "M?",
+      "? ",
+      " ?",
+      "ZZ",
+      " U",
+    ])
+      expect(parseV26PorcelainStatus(status + " synthetic.txt\0")).toBeNull();
+    expect(
+      parseV26PorcelainStatus("R  new-name.txt\0old-name.txt\0"),
+    ).toBeNull();
+  });
+  it("rejects absolute, empty-component, current-directory and parent-traversal paths without normalizing them", () => {
+    for (const path of [
+      "/absolute.txt",
+      "../outside.txt",
+      "./relative.txt",
+      "dir/../outside.txt",
+      "dir/./same.txt",
+      "dir//empty.txt",
+      "dir/",
+      ".",
+      "..",
+    ])
+      expect(parseV26PorcelainStatus("?? " + path + "\0")).toBeNull();
   });
 });
