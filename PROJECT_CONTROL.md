@@ -1,5 +1,11 @@
 # MalisPang Project Control
 
+## Current effective control — v27 / exact provider-hang test-only seal
+
+Roadmap2026.09.20-v27 / MP-OD-2026-09-20-V27 supersedes v26 under Owner-adopted Issue12 PO review section12. Earlier current headings are immutable history. Seal only provider-hang diagnostic7ad01bf623e0c6b74df579e2a39b6f94040023c3 and correction74d893dc2a7d1db13e1c4553c4a2d1e3e3914341 in worker-tests/mp-06-pilot-control.test.ts, with their exact parents/blobs/file/diff/counts/commit inventories compiled in wp8fV27ProviderHangSeal. All twelve candidate-to-HEAD/history paths must be accounted for before projecting the immutable v26/v25/v23 layers; future edits, additional paths, runtime/config/dependency/workflow/artifact drift and self-attestation remain denied.
+
+Preserve runtime1790da58635edcee154b60d76730248e8130c2d3 / artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657/252715bytes, original hang fault/assertions/5000ms watchdog, original grants/journals and all live-state/CI gates. Bounded causal evidence supports the test-only target-deadline barrier; HISTORICAL_RUN_CAUSALITY_NOT_ESTABLISHED_NO_GREEN_RUN_WAIVER remains for35469493106. No new remote authority or replacement grant. Current scope is local diagnostic/control/validation only; Data Studio hold and retained pendingTemplate=null/T-C01 mismatch remain independent blockers. No state repair, SQL, credential/TEST action, U2, PR/merge/closure/MP07 or Production. Exact final-head CI/full gates required; a seal is not deployment approval or live readiness. Production NO_GO — NOT TOUCHED.
+
 ## Current effective control — v26 / PO-2026-09-20-01
 
 Roadmap2026.09.20-v26 / MP-OD-2026-09-20-V26 supersedes2026.09.12-v25 under the Owner-adopted six-stage handoff in Issue12. MP-06 / WP8F_TEST_ACCEPTANCE_COMPLETION / TEST_ONLY remains current. Earlier “Current” headings below are immutable historical records, not the effective version. No Production query/mutation, PR/merge/issue closure or MP07.
