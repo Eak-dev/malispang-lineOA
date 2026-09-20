@@ -705,3 +705,9 @@ Only the exact `timeout-minutes: 10` to `20` workflow successor is authorized be
 - paths: tests/project-control.test.ts, worker/durable-objects.ts, worker-tests/durable-state.test.ts, worker-tests/mp-06-pilot-control.test.ts
 - evidence: run35513480785/job106085364845 four default5000ms timeouts; focused local seven cases passed at approximately2364–3127ms
 - restrictions: existing Draft PR only; no merge/deploy/remote TEST/Production/grant/journal/hold/Issue/MP07 action
+
+## 2026-09-21 — v32 Greptile push and Draft review trigger
+
+Owner decision MP-OD-2026-09-21-V32 supersedes 2026.09.20-v31 only for repository-scoped reviewer behavior. It seals exact merge 88deb90a58369923f11a7266ec63fa8fd5f293c2 (parents aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c; tree 57259355a0877677e5a88ca0c91fa0cf4f37f2ab) and authorizes the exact successor greptile.json from SHA-256 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61 to b098e926169c9a94ec6847048d1249732a5c5d53bfa76379b0b2bbe4bf9ed94f.
+
+The control is REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31 under OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21 for Eak-dev/malispang-lineOA, head codex/mp-06-guardrailed-ai and base codex/phase-1a-foundation. automaticReview is open,push; reviewDrafts true; reviewRebase false. Dashboard is PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED, repositoryScope EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF, automation AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF. Proof is NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT under ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE. V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED.

@@ -1013,6 +1013,35 @@ export function evaluateProjectAction(
   }
   if (
     isRecord(roadmap) &&
+    roadmap.version === GREPTILE_PUSH_DRAFT_CONTROL.version
+  ) {
+    if (action === "LOCAL_IMPLEMENTATION")
+      return {
+        allowed: true,
+        reason: "V32_EXACT_GREPTILE_REVIEW_TRIGGER_CONFIG_ONLY",
+      };
+    if (action === "CREATE_DRAFT_PR")
+      return {
+        allowed: true,
+        reason: "V32_ONE_EXACT_DRAFT_PR_FOR_TRIGGER_PROOF_ONLY",
+      };
+    if (
+      ![
+        "UPDATE_GITHUB_ROADMAP",
+        "PREPARE_EXACT_TEST_DEPLOYMENT",
+        "COMMIT",
+        "PUSH_BRANCH",
+      ].includes(action)
+    )
+      return {
+        allowed: false,
+        reason: "V32_GREPTILE_TRIGGER_CONTROL_ONLY_NO_REMOTE_PRODUCT_AUTHORITY",
+      };
+    const projected = projectV32(roadmap, currentWork);
+    return evaluateProjectAction(projected.roadmap, projected.work, action);
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === PR15_P1_REMEDIATION_CONTROL.version
   ) {
     if (action === "LOCAL_IMPLEMENTATION")
@@ -3852,6 +3881,16 @@ export function evaluateWp8fPaths(
   if (validateProjectControl(roadmap, currentWork).errors.length)
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   if (
+    phase === "GREPTILE_REVIEW_TRIGGER_CONFIG" &&
+    isRecord(roadmap) &&
+    roadmap.version === GREPTILE_PUSH_DRAFT_CONTROL.version
+  )
+    return samePathSet(Array.isArray(paths) ? (paths as string[]) : [], [
+      GREPTILE_PUSH_DRAFT_CONTROL.path,
+    ])
+      ? { allowed: true, reason: "V32_EXACT_GREPTILE_CONFIG_PATH" }
+      : { allowed: false, reason: "UNKNOWN_OR_OUT_OF_SCOPE_PATH" };
+  if (
     phase === "PR15_P1_REMEDIATION" &&
     isRecord(roadmap) &&
     roadmap.version === PR15_P1_REMEDIATION_CONTROL.version
@@ -5220,10 +5259,61 @@ export function inspectV23SealedRepository(
       git("rev-parse", g.commit + "^{commit}").trim() !== g.commit
     )
       return { ok: false, reason: "V23_SEALED_COMMIT_MISSING" };
+    const currentWorkText = git(
+      "show",
+      head + ":config/project/current-work.json",
+    );
+    const committedWork: unknown = JSON.parse(currentWorkText);
+    if (
+      !isRecord(committedWork) ||
+      !validateV22OperationJournal(committedWork.wp8fV22OperationJournal)
+    )
+      return { ok: false, reason: "V23_INHERITED_JOURNAL_UNVERIFIED" };
+    const v32 =
+      committedWork.roadmapVersion === GREPTILE_PUSH_DRAFT_CONTROL.version;
     git("merge-base", "--is-ancestor", candidate, g.commit);
     git("merge-base", "--is-ancestor", g.commit, head);
-    if (git("rev-list", "--min-parents=2", candidate + ".." + head).trim())
+    const mergeCommits = git(
+      "rev-list",
+      "--min-parents=2",
+      candidate + ".." + head,
+    )
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+    if (
+      (!v32 && mergeCommits.length > 0) ||
+      (v32 &&
+        (mergeCommits.length !== 1 ||
+          mergeCommits[0] !== GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit))
+    )
       return { ok: false, reason: "V23_UNAUTHORIZED_MERGE_HISTORY" };
+    if (v32) {
+      const mergeIdentity = git(
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit,
+      )
+        .trim()
+        .split(" ");
+      if (
+        mergeIdentity[0] !== GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit ||
+        !samePathSet(mergeIdentity.slice(1), [
+          ...GREPTILE_PUSH_DRAFT_CONTROL.mergeParents,
+        ]) ||
+        mergeIdentity.slice(1).join(" ") !==
+          GREPTILE_PUSH_DRAFT_CONTROL.mergeParents.join(" ") ||
+        git(
+          "show",
+          "-s",
+          "--format=%T",
+          GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit,
+        ).trim() !== GREPTILE_PUSH_DRAFT_CONTROL.mergeTree
+      )
+        return { ok: false, reason: "V32_OWNER_MERGE_IDENTITY_MISMATCH" };
+    }
     const parents = git("rev-list", "--parents", "-n", "1", g.commit)
       .trim()
       .split(" ");
@@ -5303,17 +5393,8 @@ export function inspectV23SealedRepository(
       ),
     };
     mark("v23_inspect.sealed_bytes_diff");
-    const currentWorkText = git(
-      "show",
-      head + ":config/project/current-work.json",
-    );
-    const committedWork: unknown = JSON.parse(currentWorkText);
-    if (
-      !isRecord(committedWork) ||
-      !validateV22OperationJournal(committedWork.wp8fV22OperationJournal)
-    )
-      return { ok: false, reason: "V23_INHERITED_JOURNAL_UNVERIFIED" };
     const v31 =
+      v32 ||
       committedWork.roadmapVersion === PR15_P1_REMEDIATION_CONTROL.version;
     const v30 =
       v31 || committedWork.roadmapVersion === PR15_CI_TIMEOUT_CONTROL.version;
@@ -5324,23 +5405,114 @@ export function inspectV23SealedRepository(
     let v29WorkflowCommit = "";
     let v30WorkflowCommit = "";
     let v31ProviderCommits: string[] = [];
-    if (v31) {
-      const c = PR15_P1_REMEDIATION_CONTROL;
+    if (v32) {
+      const c = GREPTILE_PUSH_DRAFT_CONTROL;
       if (
-        JSON.stringify(committedWork.wp8fV31Pr15Remediation) !==
+        JSON.stringify(committedWork.wp8fV32GreptilePushDraft) !==
         JSON.stringify(c)
       )
+        return { ok: false, reason: "V32_EXACT_CONTROL_INVALID" };
+      git("merge-base", "--is-ancestor", c.mergeCommit, head);
+      const allowed = new Set<string>([
+        ...WP8F_V18_ENVELOPE.controlFiles,
+        c.path,
+      ]);
+      const changed = list(
+        git(...diffArgs, "--name-only", "-z", c.mergeCommit, head),
+      );
+      const history = list(
+        git(
+          "log",
+          "--format=",
+          "--name-only",
+          "-z",
+          c.mergeCommit + ".." + head,
+        ),
+      );
+      if (
+        changed.some((path) => !allowed.has(path)) ||
+        history.some((path) => !allowed.has(path)) ||
+        !WP8F_V18_ENVELOPE.controlFiles.every((path) => changed.includes(path))
+      )
+        return { ok: false, reason: "V32_SCOPE_DRIFT" };
+      const configCommits = git(
+        "log",
+        "--full-history",
+        "--format=%H",
+        c.mergeCommit + ".." + head,
+        "--",
+        c.path,
+      )
+        .trim()
+        .split("\n")
+        .filter(Boolean);
+      if (configCommits.length > 1)
+        return { ok: false, reason: "V32_GREPTILE_CONFIG_HISTORY_DRIFT" };
+      if (configCommits.length === 0) {
+        if (
+          hash(git("show", head + ":" + c.path)) !== c.priorFileSha256 ||
+          hash(readFileSync(join(cwd, c.path))) !== c.priorFileSha256
+        )
+          return { ok: false, reason: "V32_GREPTILE_PREDECESSOR_MISMATCH" };
+      } else {
+        const configCommit = configCommits[0]!;
+        const configParents = git(
+          "rev-list",
+          "--parents",
+          "-n",
+          "1",
+          configCommit,
+        )
+          .trim()
+          .split(" ");
+        if (
+          configParents.length !== 2 ||
+          !samePathSet(
+            list(
+              git(
+                ...diffArgs,
+                "--name-only",
+                "-z",
+                configParents[1]!,
+                configCommit,
+              ),
+            ),
+            [c.path],
+          ) ||
+          hash(git("show", configParents[1]! + ":" + c.path)) !==
+            c.priorFileSha256 ||
+          hash(git("show", head + ":" + c.path)) !== c.fileSha256 ||
+          hash(readFileSync(join(cwd, c.path))) !== c.fileSha256
+        )
+          return { ok: false, reason: "V32_GREPTILE_CONFIG_SEAL_MISMATCH" };
+      }
+    }
+    if (v31) {
+      const c = PR15_P1_REMEDIATION_CONTROL;
+      const v31Head = v32 ? GREPTILE_PUSH_DRAFT_CONTROL.mergeParents[1] : head;
+      const v31Work = v32
+        ? (JSON.parse(
+            git("show", v31Head + ":config/project/current-work.json"),
+          ) as Record<string, unknown>)
+        : committedWork;
+      if (JSON.stringify(v31Work.wp8fV31Pr15Remediation) !== JSON.stringify(c))
         return { ok: false, reason: "V31_EXACT_CONTROL_INVALID" };
-      git("merge-base", "--is-ancestor", c.baseline, head);
+      git("merge-base", "--is-ancestor", c.baseline, v31Head);
       const allowed = new Set<string>([
         ...WP8F_V18_ENVELOPE.controlFiles,
         ...c.remediationPaths,
       ]);
       const changed = list(
-        git(...diffArgs, "--name-only", "-z", c.baseline, head),
+        git(...diffArgs, "--name-only", "-z", c.baseline, v31Head),
       );
       const history = list(
-        git("log", "--format=", "--name-only", "-z", c.baseline + ".." + head),
+        git(
+          "log",
+          "--format=",
+          "--name-only",
+          "-z",
+          c.baseline + ".." + v31Head,
+        ),
       );
       if (
         changed.some((path) => !allowed.has(path)) ||
@@ -5352,7 +5524,7 @@ export function inspectV23SealedRepository(
         "log",
         "--full-history",
         "--format=%H",
-        c.baseline + ".." + head,
+        c.baseline + ".." + v31Head,
         "--",
         WP8F_V27_PROVIDER_SEAL.path,
       )
@@ -6019,7 +6191,8 @@ function v23VerifiedPaths(
         work.roadmapVersion !== WP8F_V28_GREPTILE_REVIEWER.version &&
         work.roadmapVersion !== PR15_CI_CONTROL.version &&
         work.roadmapVersion !== PR15_CI_TIMEOUT_CONTROL.version &&
-        work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version) ||
+        work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version &&
+        work.roadmapVersion !== GREPTILE_PUSH_DRAFT_CONTROL.version) ||
       (typeof input.rawIndexSha256 === "string" &&
         input.rawIndexSha256 === fresh.proof.rawIndexSha256)) &&
     candidate.evidenceHead === fresh.proof.head &&
@@ -7337,6 +7510,41 @@ export const PR15_P1_REMEDIATION_CONTROL = {
     "NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07",
 } as const;
 
+export const GREPTILE_PUSH_DRAFT_CONTROL = {
+  version: "2026.09.21-v32",
+  ownerDecision: "MP-OD-2026-09-21-V32",
+  supersedes: "2026.09.20-v31",
+  type: "REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31",
+  mandate: "OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21",
+  repository: "Eak-dev/malispang-lineOA",
+  headBranch: "codex/mp-06-guardrailed-ai",
+  baseBranch: "codex/phase-1a-foundation",
+  mergeCommit: "88deb90a58369923f11a7266ec63fa8fd5f293c2",
+  mergeParents: [
+    "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+    "d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c",
+  ],
+  mergeTree: "57259355a0877677e5a88ca0c91fa0cf4f37f2ab",
+  path: "greptile.json",
+  priorFileSha256:
+    "5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61",
+  fileSha256:
+    "b098e926169c9a94ec6847048d1249732a5c5d53bfa76379b0b2bbe4bf9ed94f",
+  automaticReview: ["open", "push"],
+  reviewDrafts: true,
+  reviewRebase: false,
+  dashboard:
+    "PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED",
+  repositoryScope: "EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF",
+  automation: "AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF",
+  triggerProof:
+    "NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT",
+  draftPrAuthority:
+    "ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE",
+  inheritedState:
+    "V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED",
+} as const;
+
 function projectV29(
   roadmap: Record<string, unknown>,
   work: Record<string, unknown>,
@@ -7440,7 +7648,7 @@ function projectV31(
   return { roadmap: r, work: w };
 }
 
-export function validateProjectControl(
+function validateProjectControlV31(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
@@ -7465,6 +7673,51 @@ export function validateProjectControl(
       })
   )
     result.errors.push("V31_EXACT_CONTROL_INVALID");
+  return result;
+}
+
+function projectV32(
+  roadmap: Record<string, unknown>,
+  work: Record<string, unknown>,
+) {
+  const r = structuredClone(roadmap),
+    w = structuredClone(work);
+  r.version = PR15_P1_REMEDIATION_CONTROL.version;
+  r.ownerDecision = {
+    decisionId: PR15_P1_REMEDIATION_CONTROL.ownerDecision,
+    decidedAt: "2026-09-20",
+    supersedes: PR15_P1_REMEDIATION_CONTROL.supersedes,
+  };
+  w.roadmapVersion = r.version;
+  delete w.wp8fV32GreptilePushDraft;
+  return { roadmap: r, work: w };
+}
+
+export function validateProjectControl(
+  roadmap: unknown,
+  work: unknown,
+): ProjectControlValidation {
+  if (
+    !isRecord(roadmap) ||
+    roadmap.version !== GREPTILE_PUSH_DRAFT_CONTROL.version
+  )
+    return validateProjectControlV31(roadmap, work);
+  if (!isRecord(work))
+    return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+  const projected = projectV32(roadmap, work);
+  const result = validateProjectControlV31(projected.roadmap, projected.work);
+  if (
+    work.roadmapVersion !== GREPTILE_PUSH_DRAFT_CONTROL.version ||
+    JSON.stringify(work.wp8fV32GreptilePushDraft) !==
+      JSON.stringify(GREPTILE_PUSH_DRAFT_CONTROL) ||
+    JSON.stringify(roadmap.ownerDecision) !==
+      JSON.stringify({
+        decisionId: GREPTILE_PUSH_DRAFT_CONTROL.ownerDecision,
+        decidedAt: "2026-09-21",
+        supersedes: GREPTILE_PUSH_DRAFT_CONTROL.supersedes,
+      })
+  )
+    result.errors.push("V32_EXACT_CONTROL_INVALID");
   return result;
 }
 
@@ -7538,7 +7791,7 @@ function validateSchemaDocumentsV30(
   );
 }
 
-export function validateSchemaDocuments(
+function validateSchemaDocumentsV31(
   roadmapSchema: unknown,
   schema: unknown,
   version = "2026.09.09-v19",
@@ -7570,6 +7823,41 @@ export function validateSchemaDocuments(
     roadmapSchema,
     projected,
     PR15_CI_TIMEOUT_CONTROL.version,
+  );
+}
+
+export function validateSchemaDocuments(
+  roadmapSchema: unknown,
+  schema: unknown,
+  version = "2026.09.09-v19",
+): string[] {
+  if (version !== GREPTILE_PUSH_DRAFT_CONTROL.version)
+    return validateSchemaDocumentsV31(roadmapSchema, schema, version);
+  if (
+    !isRecord(schema) ||
+    !isRecord(schema.properties) ||
+    !Array.isArray(schema.required)
+  )
+    return ["V32_SCHEMA_NOT_CLOSED"];
+  if (
+    !schema.required.includes("wp8fV32GreptilePushDraft") ||
+    JSON.stringify(schema.properties.wp8fV32GreptilePushDraft) !==
+      JSON.stringify({ const: GREPTILE_PUSH_DRAFT_CONTROL }) ||
+    JSON.stringify(schema.properties.roadmapVersion) !==
+      JSON.stringify({ const: version })
+  )
+    return ["V32_SCHEMA_NOT_CLOSED"];
+  const projected = structuredClone(schema);
+  projected.required = (schema.required as unknown[]).filter(
+    (key) => key !== "wp8fV32GreptilePushDraft",
+  );
+  const properties = projected.properties as Record<string, unknown>;
+  delete properties.wp8fV32GreptilePushDraft;
+  properties.roadmapVersion = { const: PR15_P1_REMEDIATION_CONTROL.version };
+  return validateSchemaDocumentsV31(
+    roadmapSchema,
+    projected,
+    PR15_P1_REMEDIATION_CONTROL.version,
   );
 }
 
@@ -7611,7 +7899,7 @@ function validateWp8fOwnerDecisionRecordV30(
   );
 }
 
-export function validateWp8fOwnerDecisionRecord(
+function validateWp8fOwnerDecisionRecordV31(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
@@ -7627,6 +7915,28 @@ export function validateWp8fOwnerDecisionRecord(
       section.includes(String(value)),
     ) &&
     validateWp8fOwnerDecisionRecordV30(record, PR15_CI_TIMEOUT_CONTROL.version)
+  );
+}
+
+export function validateWp8fOwnerDecisionRecord(
+  record: unknown,
+  version = "2026.09.09-v19",
+): boolean {
+  if (version !== GREPTILE_PUSH_DRAFT_CONTROL.version)
+    return validateWp8fOwnerDecisionRecordV31(record, version);
+  if (typeof record !== "string") return false;
+  const section = record
+    .split("## MP-OD-2026-09-21-V32 —")[1]
+    ?.split("\n## ")[0];
+  return (
+    typeof section === "string" &&
+    Object.values(GREPTILE_PUSH_DRAFT_CONTROL).every((value) =>
+      section.includes(String(value)),
+    ) &&
+    validateWp8fOwnerDecisionRecordV31(
+      record,
+      PR15_P1_REMEDIATION_CONTROL.version,
+    )
   );
 }
 
@@ -7668,4 +7978,47 @@ export function validatePr15MergeReceipt(
   )
     return null;
   return { head: pr.head.sha, base: pr.base.sha };
+}
+
+/** Exact Draft-PR identity for the v32 Greptile push-trigger proof. */
+export function validateV32DraftPrMergeReceipt(
+  event: unknown,
+  observed: { sha: unknown; ref: unknown; merge: unknown; parents: unknown },
+): { head: string; base: string; number: number } | null {
+  if (
+    !isRecord(event) ||
+    !Number.isInteger(event.number) ||
+    Number(event.number) < 1 ||
+    !isRecord(event.repository) ||
+    event.repository.full_name !== GREPTILE_PUSH_DRAFT_CONTROL.repository ||
+    !isRecord(event.pull_request)
+  )
+    return null;
+  const pr = event.pull_request;
+  if (
+    pr.draft !== true ||
+    !isRecord(pr.head) ||
+    !isRecord(pr.base) ||
+    !isRecord(pr.head.repo) ||
+    !isRecord(pr.base.repo) ||
+    pr.head.repo.full_name !== GREPTILE_PUSH_DRAFT_CONTROL.repository ||
+    pr.base.repo.full_name !== GREPTILE_PUSH_DRAFT_CONTROL.repository ||
+    pr.head.ref !== GREPTILE_PUSH_DRAFT_CONTROL.headBranch ||
+    pr.base.ref !== GREPTILE_PUSH_DRAFT_CONTROL.baseBranch ||
+    !isFullSha(pr.head.sha, 40) ||
+    pr.base.sha !== GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit ||
+    !isFullSha(observed.merge, 40)
+  )
+    return null;
+  const number = Number(event.number);
+  if (
+    observed.sha !== observed.merge ||
+    observed.ref !== `refs/pull/${number}/merge` ||
+    !Array.isArray(observed.parents) ||
+    observed.parents.length !== 2 ||
+    observed.parents[0] !== pr.base.sha ||
+    observed.parents[1] !== pr.head.sha
+  )
+    return null;
+  return { head: pr.head.sha, base: pr.base.sha, number };
 }

@@ -941,3 +941,31 @@ Owner explicitly authorized both remaining PR15 actions after evidence on exact 
 - remoteState: NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07
 
 This authorization is local implementation, regression validation, commit and normal push to the existing Draft PR only. It does not make the PR merge-ready and does not authorize resolving the Greptile thread before exact-head evidence is reviewed.
+
+## MP-OD-2026-09-21-V32 — Greptile push and Draft review trigger
+
+- version: 2026.09.21-v32
+- ownerDecision: MP-OD-2026-09-21-V32
+- supersedes: 2026.09.20-v31
+- type: REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31
+- mandate: OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/mp-06-guardrailed-ai
+- baseBranch: codex/phase-1a-foundation
+- mergeCommit: 88deb90a58369923f11a7266ec63fa8fd5f293c2
+- mergeParents: aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c
+- mergeTree: 57259355a0877677e5a88ca0c91fa0cf4f37f2ab
+- path: greptile.json
+- priorFileSha256: 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61
+- fileSha256: b098e926169c9a94ec6847048d1249732a5c5d53bfa76379b0b2bbe4bf9ed94f
+- automaticReview: open,push
+- reviewDrafts: true
+- reviewRebase: false
+- dashboard: PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED
+- repositoryScope: EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF
+- automation: AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF
+- triggerProof: NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT
+- draftPrAuthority: ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE
+- inheritedState: V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED
+
+The exact Owner-created merge 88deb90 is sealed without broadly allowing merge history. One Draft PR and the next real greptile.json push are authorized solely to prove review-on-push for the exact reviewed SHA. No application/runtime, deployment, Production, grant, journal, hold, Ready, merge, Issue or MP-07 authority is added.

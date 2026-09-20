@@ -268,3 +268,31 @@ Roadmap2026.09.12-v25 / MP-OD-2026-09-12-V25 supersedes v24 as a sealed control-
 Historical v24 fixture is pinned to046eff1d72edeea539623a9bbe9e006ba241a7ae with compiled SHA256 per path checked before use and after local isolated checkout. Tests preserve historical assertions, prove v24 rejection of the new bytes and v25 acceptance only of the approved chain, prohibit network protocols other than local file clone, cleanup in finally and check operator HEAD/index/working-tree invariance. Negative guard tests mutate isolated stand-ins, never the operator. No operator checkout/reset/restore is authorized.
 
 All ten control paths only; original runtime1790da58635edcee154b60d76730248e8130c2d3/artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657, TEST account/Worker/OA,120second fresh-state gates, original operations/session/caps and journals remain unchanged. No mint/reset/replace/reissue grants; deployment/activation/STOP stayAPPROVED_UNUSED0/1 until original authorized starts. Exact final control CI SUCCESS, full clean validation and artifact reproduction are prerequisites, not inferred from this text. Rejected/timeout/unknown outcome consumes its invoked grant and stops without retry. U1 GAP, A1–A3 UNRESOLVED, billingUNKNOWN, Issue12 OPEN; no PR/merge/closure or Production. Production NO_GO — NOT TOUCHED.
+
+## MP-OD-2026-09-21-V32 — Greptile push and Draft review trigger
+
+- version: 2026.09.21-v32
+- ownerDecision: MP-OD-2026-09-21-V32
+- supersedes: 2026.09.20-v31
+- type: REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31
+- mandate: OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/mp-06-guardrailed-ai
+- baseBranch: codex/phase-1a-foundation
+- mergeCommit: 88deb90a58369923f11a7266ec63fa8fd5f293c2
+- mergeParents: aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c
+- mergeTree: 57259355a0877677e5a88ca0c91fa0cf4f37f2ab
+- path: greptile.json
+- priorFileSha256: 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61
+- fileSha256: b098e926169c9a94ec6847048d1249732a5c5d53bfa76379b0b2bbe4bf9ed94f
+- automaticReview: open,push
+- reviewDrafts: true
+- reviewRebase: false
+- dashboard: PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED
+- repositoryScope: EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF
+- automation: AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF
+- triggerProof: NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT
+- draftPrAuthority: ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE
+- inheritedState: V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED
+
+Owner records the already-completed PR #15 merge as exact immutable history and authorizes one Draft PR with the exact head/base above solely to prove the Greptile push trigger. The repository config successor changes automatic review from open-only to open+push and permits Draft reviews; rebase review remains off. Dashboard values must agree with the repository file, only this repository may be enabled, and auto-enable new repositories stays off. No empty commit, duplicate PR, Ready transition, merge, deploy, remote TEST, Production, application/runtime edit, model change, grant/journal/hold mutation, Issue closure or MP-07 is authorized.

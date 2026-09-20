@@ -5139,6 +5139,17 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.21-v32") {
+      r.version = "2026.09.20-v31";
+      w.roadmapVersion = r.version;
+      delete w.wp8fV32GreptilePushDraft;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV32GreptilePushDraft",
+      );
+      delete record(s.properties).wp8fV32GreptilePushDraft;
+      record(record(s.properties).roadmapVersion).const = r.version;
+    }
     if (r.version === "2026.09.20-v31") {
       r.version = "2026.09.20-v30";
       w.roadmapVersion = r.version;
@@ -8212,6 +8223,17 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
           ),
         ),
       );
+      if (currentRoadmap.version === "2026.09.21-v32") {
+        currentRoadmap.version = "2026.09.20-v31";
+        currentWork.roadmapVersion = currentRoadmap.version;
+        delete currentWork.wp8fV32GreptilePushDraft;
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "wp8fV32GreptilePushDraft",
+        );
+        delete record(currentSchema.properties).wp8fV32GreptilePushDraft;
+        record(record(currentSchema.properties).roadmapVersion).const =
+          currentRoadmap.version;
+      }
       if (currentRoadmap.version === "2026.09.20-v31") {
         currentRoadmap.version = "2026.09.20-v30";
         currentWork.roadmapVersion = currentRoadmap.version;
@@ -8777,8 +8799,8 @@ describe("v29 PR15 source and integration separation", () => {
       expect(validatePr15MergeReceipt(changed, observed), field).toBeNull();
     }
   });
-  it("validates the exact v31 remediation layer and preserves every inherited grant and journal", async () => {
-    const { PR15_P1_REMEDIATION_CONTROL } =
+  it("validates the exact v32 Greptile layer and preserves every inherited grant and journal", async () => {
+    const { GREPTILE_PUSH_DRAFT_CONTROL } =
       await import("../src/project-control.js");
     const r = record(
       JSON.parse(
@@ -8796,20 +8818,22 @@ describe("v29 PR15 source and integration separation", () => {
         ),
       ),
     );
-    expect(r.version).toBe(PR15_P1_REMEDIATION_CONTROL.version);
+    expect(r.version).toBe(GREPTILE_PUSH_DRAFT_CONTROL.version);
     expect(validateProjectControl(r, w).errors).toEqual([]);
     for (const key of [
-      "recoveryContract",
-      "targetedTestTimeoutMs",
-      "remediationPaths",
-      "baseline",
-      "pullRequest",
-      "prAuthority",
+      "mergeCommit",
+      "mergeParents",
+      "priorFileSha256",
+      "fileSha256",
+      "automaticReview",
+      "reviewDrafts",
+      "reviewRebase",
+      "draftPrAuthority",
     ]) {
       const changed = structuredClone(w);
-      record(changed.wp8fV31Pr15Remediation)[key] = "unexpected";
+      record(changed.wp8fV32GreptilePushDraft)[key] = "unexpected";
       expect(validateProjectControl(r, changed).errors).toContain(
-        "V31_EXACT_CONTROL_INVALID",
+        "V32_EXACT_CONTROL_INVALID",
       );
     }
     for (const action of [
@@ -8821,22 +8845,71 @@ describe("v29 PR15 source and integration separation", () => {
       expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
     expect(evaluateProjectAction(r, w, "LOCAL_IMPLEMENTATION")).toEqual({
       allowed: true,
-      reason: "V31_EXACT_LOCAL_P1_AND_TEST_WATCHDOG_REMEDIATION_ONLY",
+      reason: "V32_EXACT_GREPTILE_REVIEW_TRIGGER_CONFIG_ONLY",
+    });
+    expect(evaluateProjectAction(r, w, "CREATE_DRAFT_PR")).toEqual({
+      allowed: true,
+      reason: "V32_ONE_EXACT_DRAFT_PR_FOR_TRIGGER_PROOF_ONLY",
     });
     expect(
-      evaluateWp8fPaths(
-        r,
-        w,
-        "PR15_P1_REMEDIATION",
-        PR15_P1_REMEDIATION_CONTROL.remediationPaths,
-      ).allowed,
+      evaluateWp8fPaths(r, w, "GREPTILE_REVIEW_TRIGGER_CONFIG", [
+        GREPTILE_PUSH_DRAFT_CONTROL.path,
+      ]).allowed,
     ).toBe(true);
     expect(
-      evaluateWp8fPaths(r, w, "PR15_P1_REMEDIATION", ["worker/index.ts"])
-        .allowed,
+      evaluateWp8fPaths(r, w, "GREPTILE_REVIEW_TRIGGER_CONFIG", [
+        "worker/index.ts",
+      ]).allowed,
     ).toBe(false);
     const changed = structuredClone(w);
     changed.wp8fV22OperationJournal = [{ action: "forged" }];
     expect(validateProjectControl(r, changed).errors.length).toBeGreaterThan(0);
+  });
+  it("binds the v32 proof to one exact-repository Draft PR and synthetic merge", async () => {
+    const { GREPTILE_PUSH_DRAFT_CONTROL, validateV32DraftPrMergeReceipt } =
+      await import("../src/project-control.js");
+    const head = "a".repeat(40);
+    const merge = "b".repeat(40);
+    const repository = { full_name: GREPTILE_PUSH_DRAFT_CONTROL.repository };
+    const event = {
+      number: 16,
+      repository,
+      pull_request: {
+        draft: true,
+        head: {
+          sha: head,
+          ref: GREPTILE_PUSH_DRAFT_CONTROL.headBranch,
+          repo: repository,
+        },
+        base: {
+          sha: GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit,
+          ref: GREPTILE_PUSH_DRAFT_CONTROL.baseBranch,
+          repo: repository,
+        },
+      },
+    };
+    const observed = {
+      sha: merge,
+      merge,
+      ref: "refs/pull/16/merge",
+      parents: [GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit, head],
+    };
+    expect(validateV32DraftPrMergeReceipt(event, observed)).toEqual({
+      head,
+      base: GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit,
+      number: 16,
+    });
+    for (const changed of [
+      { ...event, number: 0 },
+      { ...event, pull_request: { ...event.pull_request, draft: false } },
+      {
+        ...event,
+        pull_request: {
+          ...event.pull_request,
+          base: { ...event.pull_request.base, sha: "c".repeat(40) },
+        },
+      },
+    ])
+      expect(validateV32DraftPrMergeReceipt(changed, observed)).toBeNull();
   });
 });

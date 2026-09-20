@@ -51,7 +51,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v28" ||
     version === "2026.09.20-v29" ||
     version === "2026.09.20-v30" ||
-    version === "2026.09.20-v31";
+    version === "2026.09.20-v31" ||
+    version === "2026.09.21-v32";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -66,7 +67,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       version === "2026.09.20-v28" ||
       version === "2026.09.20-v29" ||
       version === "2026.09.20-v30" ||
-      version === "2026.09.20-v31";
+      version === "2026.09.20-v31" ||
+      version === "2026.09.21-v32";
     let newerSuccessorJournal = journal;
     let newerV22Journal =
       "wp8fV22OperationJournal" in currentWork
@@ -117,7 +119,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v28" ||
           historical.roadmapVersion === "2026.09.20-v29" ||
           historical.roadmapVersion === "2026.09.20-v30" ||
-          historical.roadmapVersion === "2026.09.20-v31")
+          historical.roadmapVersion === "2026.09.20-v31" ||
+          historical.roadmapVersion === "2026.09.21-v32")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -143,7 +146,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v28" ||
           historical.roadmapVersion === "2026.09.20-v29" ||
           historical.roadmapVersion === "2026.09.20-v30" ||
-          historical.roadmapVersion === "2026.09.20-v31")
+          historical.roadmapVersion === "2026.09.20-v31" ||
+          historical.roadmapVersion === "2026.09.21-v32")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -182,7 +186,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v28" ||
     version === "2026.09.20-v29" ||
     version === "2026.09.20-v30" ||
-    version === "2026.09.20-v31"
+    version === "2026.09.20-v31" ||
+    version === "2026.09.21-v32"
   ) {
     const sealed = inspectV23SealedRepository(fileURLToPath(root));
     if (!sealed.ok) throw new Error(sealed.reason);
@@ -275,10 +280,14 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "CHANGE_PRODUCTION",
   ] as const) {
     const decision = evaluateProjectAction(roadmap, currentWork, action);
-    if (action === "LOCAL_IMPLEMENTATION" && version === "2026.09.20-v31") {
+    if (
+      (action === "LOCAL_IMPLEMENTATION" &&
+        (version === "2026.09.20-v31" || version === "2026.09.21-v32")) ||
+      (action === "CREATE_DRAFT_PR" && version === "2026.09.21-v32")
+    ) {
       if (!decision.allowed)
         throw new Error(
-          "ROADMAP_UNVERIFIED: exact v31 local remediation must be authorized",
+          "ROADMAP_UNVERIFIED: exact scoped v31/v32 action must be authorized",
         );
       continue;
     }
@@ -316,9 +325,11 @@ export async function runPullRequestControlValidation(
   const os = await import("node:os");
   const path = await import("node:path");
   const {
+    GREPTILE_PUSH_DRAFT_CONTROL,
     PR15_CI_CONTROL,
     PR15_P1_REMEDIATION_CONTROL,
     validatePr15MergeReceipt,
+    validateV32DraftPrMergeReceipt,
   } = await import("./project-control.js");
   if (
     process.env.GITHUB_EVENT_NAME !== "pull_request" ||
@@ -338,24 +349,38 @@ export async function runPullRequestControlValidation(
   const parents = git("rev-list", "--parents", "-n", "1", merge)
     .split(" ")
     .slice(1);
-  const receipt = validatePr15MergeReceipt(event, {
+  const work = JSON.parse(
+    await readFile(new URL("config/project/current-work.json", root), "utf8"),
+  ) as Record<string, unknown>;
+  const isV32 =
+    work.roadmapVersion === GREPTILE_PUSH_DRAFT_CONTROL.version &&
+    JSON.stringify(work.wp8fV32GreptilePushDraft) ===
+      JSON.stringify(GREPTILE_PUSH_DRAFT_CONTROL);
+  const receipt = (
+    isV32 ? validateV32DraftPrMergeReceipt : validatePr15MergeReceipt
+  )(event, {
     sha: process.env.GITHUB_SHA,
     ref: process.env.GITHUB_REF,
     merge,
     parents,
   });
   if (!receipt) throw new Error("V29_PR_MERGE_IDENTITY_MISMATCH");
+  if (isV32)
+    git(
+      "merge-base",
+      "--is-ancestor",
+      GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit,
+      receipt.head,
+    );
   const status = git("status", "--porcelain=v1", "--untracked-files=all");
   if (status) throw new Error("V29_PR_CHECKOUT_DIRTY");
   // Integration control code/data must be identical to the source that will
   // validate its history. A base-branch control conflict cannot silently pass.
-  const work = JSON.parse(
-    await readFile(new URL("config/project/current-work.json", root), "utf8"),
-  ) as Record<string, unknown>;
   if (
-    work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version ||
-    JSON.stringify(work.wp8fV31Pr15Remediation) !==
-      JSON.stringify(PR15_P1_REMEDIATION_CONTROL)
+    !isV32 &&
+    (work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version ||
+      JSON.stringify(work.wp8fV31Pr15Remediation) !==
+        JSON.stringify(PR15_P1_REMEDIATION_CONTROL))
   )
     throw new Error("V31_EXACT_CONTROL_INVALID");
   const controlPaths = [
@@ -379,7 +404,7 @@ export async function runPullRequestControlValidation(
   ];
   if (git("diff", "--name-only", receipt.head, merge, "--", ...controlPaths))
     throw new Error("V29_INTEGRATION_CONTROL_DIVERGENCE");
-  const temporary = await mkdtemp(path.join(os.tmpdir(), "mp06-pr15-control-"));
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "mp06-pr-control-"));
   const source = path.join(temporary, "source");
   let created = false;
   try {
@@ -404,7 +429,7 @@ export async function runPullRequestControlValidation(
     )
       throw new Error("V29_INTEGRATION_CHECKOUT_CHANGED");
     console.log(
-      `PR15 source seal PASS head=${receipt.head}; integration=${merge}; base=${receipt.base}; control bytes identical; not merge/deployment approval`,
+      `PR source seal PASS head=${receipt.head}; integration=${merge}; base=${receipt.base}; control bytes identical; not merge/deployment approval`,
     );
   } finally {
     if (created) git("worktree", "remove", source);
