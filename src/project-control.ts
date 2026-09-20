@@ -5439,8 +5439,8 @@ export function inspectV23SealedRepository(
           ),
           additions: Number(stat[0]),
           removals: Number(stat[1]),
-          paths,
-          historyPaths,
+          paths: observation.paths,
+          historyPaths: observation.historyPaths,
           pathCommits: git(
             "log",
             "--full-history",
