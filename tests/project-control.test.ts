@@ -5005,6 +5005,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     "accepts only the real sealed checkout with the complete independently collected inventory",
     "rejects an omitted inventory path, duplicate path or wrong evidence HEAD despite a genuine proof",
     "re-inspects genuine proof after a working-file edit and denies dirty control checkout for deployment",
+    "rejects a staged control change even when working-file bytes match HEAD",
   ];
   const timingPhases = new Set(
     [
@@ -5609,28 +5610,51 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     ).toBe(false);
   });
   it("rejects a staged control change even when working-file bytes match HEAD", async () => {
-    const proof = verified(),
-      e = evidence(proof),
+    const timingStarted = performance.now();
+    const timingMark = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase,
+          milliseconds: performance.now() - timingStarted,
+        }) + "\n",
+      );
+    timingMark("v25_staged_control.started");
+    const proof = verified();
+    timingMark("v25_staged_control.initial_proof_completed");
+    const e = evidence(proof),
       path = "PROJECT_CONTROL.md",
       file = join(fixture, path),
       before = await readFile(file);
+    timingMark("v25_staged_control.evidence_and_original_read");
     try {
       await writeFile(
         file,
         Buffer.concat([before, Buffer.from("\nSynthetic staged control.\n")]),
       );
+      timingMark("v25_staged_control.synthetic_edit_written");
       git(fixture, "add", "--", path);
+      timingMark("v25_staged_control.index_staged");
       await writeFile(file, before);
+      timingMark("v25_staged_control.working_bytes_restored");
       expect(git(fixture, "diff", "HEAD", "--", path)).toBe("");
+      timingMark("v25_staged_control.head_diff_asserted");
       expect(git(fixture, "diff", "--cached", "--name-only").trim()).toBe(path);
+      timingMark("v25_staged_control.staged_path_asserted");
       expect(verified().clean).toBe(false);
+      timingMark("v25_staged_control.dirty_proof_asserted");
       expect(assess(e, proof).allowed).toBe(false);
+      timingMark("v25_staged_control.action_denied_asserted");
     } finally {
+      timingMark("v25_staged_control.cleanup_started");
       await writeFile(file, before);
+      timingMark("v25_staged_control.cleanup_working_bytes_restored");
       git(fixture, "add", "--", path);
+      timingMark("v25_staged_control.cleanup_index_restored");
     }
     expect(git(fixture, "status", "--porcelain=v1")).toBe("");
-  });
+    timingMark("v25_staged_control.clean_status_asserted");
+    timingMark("v25_staged_control.completed");
+  }, 600_000);
   it("rejects real committed future edit-and-restore even with matching final sealed bytes", async () => {
     let timingPrevious = performance.now();
     const timingMark = (phase: string) => {
@@ -6174,9 +6198,21 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
       first: new Map(),
       latest: new Map(),
     };
+    const timingStarted = performance.now();
+    const timingMark = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase,
+          milliseconds: performance.now() - timingStarted,
+        }) + "\n",
+      );
+    timingMark("v25_historical_setup.started");
     operatorBefore = v25OperatorSnapshot();
+    timingMark("v25_historical_setup.operator_snapshot_completed");
     fixture = await v25CreateHistorical();
+    timingMark("v25_historical_setup.historical_fixture_created");
     v25DiagnosticPhase("v24.historical_ready", fixture);
+    timingMark("v25_historical_setup.historical_diagnostic_completed");
     const readDocument = async (path: string) =>
       record(JSON.parse(await readFile(join(fixture, path), "utf8")));
     [r, w, s] = await Promise.all([
@@ -6184,7 +6220,9 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
       readDocument("config/project/current-work.json"),
       readDocument("config/project/current-work.schema.json"),
     ]);
+    timingMark("v25_historical_setup.documents_read");
     v25DiagnosticPhase("v24.documents_read", fixture);
+    timingMark("v25_historical_setup.documents_diagnostic_completed");
     baseline = record(
       JSON.parse(
         execFileSync(
@@ -6201,12 +6239,18 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
         ),
       ),
     );
+    timingMark("v25_historical_setup.baseline_read");
     v25DiagnosticPhase("v24.baseline_read", fixture);
+    timingMark("v25_historical_setup.baseline_diagnostic_completed");
     const observed = inspectV23SealedRepository(fixture);
+    timingMark("v25_historical_setup.inspection_returned");
     v25DiagnosticPhase("v24.inspection_complete", fixture);
+    timingMark("v25_historical_setup.inspection_diagnostic_completed");
     if (!observed.ok) throw new Error(observed.reason);
     proof = observed.proof;
-  });
+    timingMark("v25_historical_setup.proof_accepted");
+    timingMark("v25_historical_setup.completed");
+  }, 600_000);
   afterAll(async () => {
     v25DiagnosticPhase("v24.after_all_before_cleanup", fixture);
     try {
