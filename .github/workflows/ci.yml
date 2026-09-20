@@ -1,0 +1,94 @@
+name: MP-06 validation
+
+on:
+  push:
+    branches: [codex/mp-06-guardrailed-ai]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Frozen toolchain / full validation
+    # The tracked Rich Menu SVG uses the system Thonburi font. Preserve the
+    # authoring platform and byte-for-byte generated-asset gate; do not replace
+    # the approved asset with a Linux font-fallback rendering.
+    runs-on: macos-15-intel
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      WRANGLER_SEND_METRICS: "false"
+      CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "false"
+    steps:
+      - name: Checkout exact event commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, immutable pin
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pinned Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6, immutable pin
+        with:
+          node-version: "24.19.0"
+          package-manager-cache: false
+      - name: Pinned pnpm
+        run: npm install --global pnpm@11.19.0
+      - name: Clean frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Authoring-platform font precondition
+        run: |
+          test -f /System/Library/Fonts/Supplemental/Thonburi.ttc
+          shasum -a 256 /System/Library/Fonts/Supplemental/Thonburi.ttc
+      - name: Full local-only project gates
+        # Includes format/lint/types/build, all Node and Worker/SQLite tests,
+        # every project validator, frozen 5,000-case benchmark and local dry-run.
+        # validate:production-readiness reads committed documents, not Production.
+        # No Cloudflare/LINE/OpenAI credentials or remote bindings are supplied.
+        # Serialize only Worker test FILES to isolate RPC-heavy tests from other
+        # Miniflare instances. In-test Promise.all races, isolation, assertions,
+        # the 5,000ms test timeout and zero retries remain unchanged.
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, existsSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'));
+          const commands = scripts.check.split(' && ');
+          if (
+            commands.some(command => !/^pnpm [a-z0-9:-]+$/.test(command)) ||
+            commands.filter(command => command === 'pnpm test').length !== 1 ||
+            scripts.test !== 'pnpm test:node && pnpm test:worker' ||
+            scripts['test:worker'] !== 'vitest run --config vitest.worker.config.ts' ||
+            ['.dev.vars', '.env'].some(path => existsSync(path))
+          ) throw new Error('CI_GATE_CONTRACT_OR_LOCAL_CREDENTIAL_FILE_CHANGED');
+          for (const command of commands) {
+            console.log(`::group::${command}`);
+            if (command === 'pnpm test') {
+              execFileSync('pnpm', ['test:node'], { stdio: 'inherit' });
+              execFileSync('pnpm', ['test:worker', '--no-file-parallelism'], { stdio: 'inherit' });
+            } else if (command === 'pnpm validate:project-control' && process.env.GITHUB_EVENT_NAME === 'pull_request') {
+              execFileSync('node', ['--import', 'tsx', '--input-type=module', '-e',
+                "import { runPullRequestControlValidation } from './src/project-control-cli.ts'; await runPullRequestControlValidation(new URL('./', import.meta.url), process.env.GITHUB_EVENT_PATH);"
+              ], { stdio: 'inherit' });
+            } else {
+              execFileSync('pnpm', [command.slice('pnpm '.length)], { stdio: 'inherit' });
+            }
+            console.log('::endgroup::');
+          }
+          NODE
+      - name: Secret scan
+        run: pnpm secret:scan
+      - name: Dependency audit - zero at every severity
+        run: |
+          pnpm audit --json | node --input-type=module -e '
+            let raw = "";
+            for await (const chunk of process.stdin) raw += chunk;
+            const report = JSON.parse(raw);
+            const counts = report.metadata?.vulnerabilities;
+            if (!counts || !["info", "low", "moderate", "high", "critical"].every(level => counts[level] === 0)) {
+              console.error("Dependency audit gate failed", counts ?? "MISSING_METADATA");
+              process.exit(1);
+            }
+            console.log("Dependency audit PASS", counts);
+          '
+      - name: Generated evidence and tracked input stability
+        run: git diff --exit-code

@@ -22,18 +22,18 @@
 
 Snapshot นี้อ้างอิงข้อมูลที่ commit แล้วบน branch `codex/mp-06-guardrailed-ai` ณ 9 กันยายน 2026
 
-| รายการ | สถานะ |
-| --- | --- |
-| Current work | MP-06 / Issue #12 / WP8F TEST acceptance completion |
-| Committed control | `2026.09.09-v18` |
-| Evidence anchor ก่อนการอัปเดต README | `42026b22069e4299dfc8ff5f73b5077e3b0856fb` |
-| Runtime candidate | `c59eb5e12bb96a34da38759a5585be67d8c2ab6e` |
-| Candidate artifact SHA-256 | `2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308` |
-| Candidate TEST deployment | **NOT PERFORMED — 0/1** |
-| Persistent deployment control | v19 ยังต้องสร้าง, validate, commit และ push ก่อน deploy |
-| Issue #12 | **OPEN** |
-| PR / merge | ยังไม่มีและยังไม่ได้รับอนุญาต |
-| Production | **NO_GO — NOT TOUCHED** |
+| รายการ                               | สถานะ                                                              |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| Current work                         | MP-06 / Issue #12 / WP8F TEST acceptance completion                |
+| Committed control                    | `2026.09.09-v18`                                                   |
+| Evidence anchor ก่อนการอัปเดต README | `42026b22069e4299dfc8ff5f73b5077e3b0856fb`                         |
+| Runtime candidate                    | `c59eb5e12bb96a34da38759a5585be67d8c2ab6e`                         |
+| Candidate artifact SHA-256           | `2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308` |
+| Candidate TEST deployment            | **NOT PERFORMED — 0/1**                                            |
+| Persistent deployment control        | v19 ยังต้องสร้าง, validate, commit และ push ก่อน deploy            |
+| Issue #12                            | **OPEN**                                                           |
+| PR / merge                           | ยังไม่มีและยังไม่ได้รับอนุญาต                                      |
+| Production                           | **NO_GO — NOT TOUCHED**                                            |
 
 การอัปเดต README เป็น documentation-only commit ไม่เปลี่ยน runtime candidate หรือ artifact ข้างต้น และไม่ทำให้ v19 มีผลโดยอัตโนมัติ
 
@@ -41,21 +41,21 @@ Snapshot นี้อ้างอิงข้อมูลที่ commit แล
 
 Fresh read-only observation ล่าสุดที่บันทึกไว้: 9 กันยายน 2026 เวลา 08:01:36 น. (Asia/Bangkok)
 
-| รายการ | ค่าที่ตรวจพบ |
-| --- | --- |
-| Worker | `malispang-lineoa-test` |
-| Active version | `8486019d-9b62-4de9-ae15-6299909a23d9` |
-| Deployed source | `8a5b6547b4713ff50ad6b08ee58682e129641b6a` |
-| Deployed artifact | `15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64` |
-| Traffic | 100% |
-| Bot model | `gpt-5.6-terra` |
-| AI admission / pilot | OFF / STOPPED |
-| Events / provider attempts | 6 / 6 |
-| Consumed / reserved | 34,082 / 0 micro-USD |
-| In-flight / pending attempts | 0 / 0 |
-| Owner conversation | HUMAN_HANDOFF |
-| Draft | EXPIRED_PURGED, non-blocking |
-| Historical provider billing | UNKNOWN |
+| รายการ                       | ค่าที่ตรวจพบ                                                       |
+| ---------------------------- | ------------------------------------------------------------------ |
+| Worker                       | `malispang-lineoa-test`                                            |
+| Active version               | `8486019d-9b62-4de9-ae15-6299909a23d9`                             |
+| Deployed source              | `8a5b6547b4713ff50ad6b08ee58682e129641b6a`                         |
+| Deployed artifact            | `15680c5cecc85203ef9adcc4e8c519a5c22b0d50e83e451ffc4e0133a6574c64` |
+| Traffic                      | 100%                                                               |
+| Bot model                    | `gpt-5.6-terra`                                                    |
+| AI admission / pilot         | OFF / STOPPED                                                      |
+| Events / provider attempts   | 6 / 6                                                              |
+| Consumed / reserved          | 34,082 / 0 micro-USD                                               |
+| In-flight / pending attempts | 0 / 0                                                              |
+| Owner conversation           | HUMAN_HANDOFF                                                      |
+| Draft                        | EXPIRED_PURGED, non-blocking                                       |
+| Historical provider billing  | UNKNOWN                                                            |
 
 Snapshot เป็นหลักฐาน ณ เวลาที่ระบุ ไม่ใช่ continuous monitoring และต้องตรวจ fresh state ใหม่ก่อน remote action ทุกครั้ง
 
@@ -74,15 +74,15 @@ LINE webhook
 
 องค์ประกอบหลัก:
 
-| ส่วน | หน้าที่ |
-| --- | --- |
-| `worker/index.ts` | รับ webhook, บังคับ delivery ownership และเชื่อม acknowledgement |
-| `worker/mp-06-wp1.ts` | deterministic routing, mixed-intent precedence และ response plan |
+| ส่วน                        | หน้าที่                                                                  |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `worker/index.ts`           | รับ webhook, บังคับ delivery ownership และเชื่อม acknowledgement         |
+| `worker/mp-06-wp1.ts`       | deterministic routing, mixed-intent precedence และ response plan         |
 | `worker/durable-objects.ts` | conversation/session/accounting state, atomic delivery claim และ fencing |
-| `config/` | policy, approved knowledge, product catalog และ project control |
-| `benchmark/mp-06/` | benchmark generator, oracle, evaluator และ safety checks |
-| `tests/`, `worker-tests/` | Node, webhook, Worker, Durable Objects และ SQLite regressions |
-| `docs/line-oa/mp-06/` | specification, runbook, acceptance และ evidence แบบละเอียด |
+| `config/`                   | policy, approved knowledge, product catalog และ project control          |
+| `benchmark/mp-06/`          | benchmark generator, oracle, evaluator และ safety checks                 |
+| `tests/`, `worker-tests/`   | Node, webhook, Worker, Durable Objects และ SQLite regressions            |
+| `docs/line-oa/mp-06/`       | specification, runbook, acceptance และ evidence แบบละเอียด               |
 
 Durable Object bindings ที่ใช้ใน TEST:
 
@@ -112,28 +112,28 @@ Durable Object bindings ที่ใช้ใน TEST:
 
 Candidate `c59eb5e…` ผ่าน local gates ที่ commit evidence แล้ว:
 
-| Gate | ผล |
-| --- | --- |
-| Full suite | **733/733 ผ่าน**, ไม่มี failed/skipped/cancelled |
-| Node unit | 500 |
-| Benchmark test inventory | 14 |
-| Worker/SQLite | 219 |
-| MP-06 benchmark | 5,000 PII-free cases |
-| AUTO correctness | 100% |
-| Risky fail-closed | 100% |
-| False AUTO / unsupported claim / PII leakage | 0 |
-| Control tests | 70/70 |
-| Formatting, lint, typecheck, build, validators, secret scan | PASS |
-| Empty-store frozen-lockfile clean install | PASS |
-| Reproducible artifact | checksum ตรงกันสาม build |
-| Dependency audit | 0 ทุกระดับใน scoped remediation |
+| Gate                                                        | ผล                                               |
+| ----------------------------------------------------------- | ------------------------------------------------ |
+| Full suite                                                  | **733/733 ผ่าน**, ไม่มี failed/skipped/cancelled |
+| Node unit                                                   | 500                                              |
+| Benchmark test inventory                                    | 14                                               |
+| Worker/SQLite                                               | 219                                              |
+| MP-06 benchmark                                             | 5,000 PII-free cases                             |
+| AUTO correctness                                            | 100%                                             |
+| Risky fail-closed                                           | 100%                                             |
+| False AUTO / unsupported claim / PII leakage                | 0                                                |
+| Control tests                                               | 70/70                                            |
+| Formatting, lint, typecheck, build, validators, secret scan | PASS                                             |
+| Empty-store frozen-lockfile clean install                   | PASS                                             |
+| Reproducible artifact                                       | checksum ตรงกันสาม build                         |
+| Dependency audit                                            | 0 ทุกระดับใน scoped remediation                  |
 
 Dependency remediation ที่รวมอยู่ใน candidate:
 
-| Dependency | ก่อน | หลัง |
-| --- | ---: | ---: |
-| Sharp | 0.35.2 | 0.35.4 |
-| js-yaml | 4.3.1 | 4.3.2 |
+| Dependency              |   ก่อน |   หลัง |
+| ----------------------- | -----: | -----: |
+| Sharp                   | 0.35.2 | 0.35.4 |
+| js-yaml                 |  4.3.1 |  4.3.2 |
 | Vitest / @vitest/mocker | 4.1.10 | 4.1.11 |
 
 Wrangler/Miniflare ไม่ได้เปลี่ยน และ native Sharp กับ Worker/SQLite ถูกทดสอบจริง
@@ -142,19 +142,19 @@ Wrangler/Miniflare ไม่ได้เปลี่ยน และ native Shar
 
 ## Acceptance และสิ่งที่ยังไม่ผ่าน
 
-| Gate | สถานะ |
-| --- | --- |
-| Local safety, precedence, delivery fencing และ dependencies | PASS |
-| Exact candidate artifact reproduction | PASS |
-| v19 persistent deployment authorization | PENDING |
-| Candidate deployment ไป TEST | NOT PERFORMED |
-| Post-deploy schema/claim/egress verification | NOT PERFORMED |
-| Remaining controlled Owner UAT | BLOCKED |
-| New-session kill-switch acceptance | GAP |
-| Rollback/redeploy acceptance | GAP |
-| Final security/release review | BLOCKED |
-| PR/default-branch integration | BLOCKED |
-| Production | NO_GO — NOT TOUCHED |
+| Gate                                                        | สถานะ               |
+| ----------------------------------------------------------- | ------------------- |
+| Local safety, precedence, delivery fencing และ dependencies | PASS                |
+| Exact candidate artifact reproduction                       | PASS                |
+| v19 persistent deployment authorization                     | PENDING             |
+| Candidate deployment ไป TEST                                | NOT PERFORMED       |
+| Post-deploy schema/claim/egress verification                | NOT PERFORMED       |
+| Remaining controlled Owner UAT                              | BLOCKED             |
+| New-session kill-switch acceptance                          | GAP                 |
+| Rollback/redeploy acceptance                                | GAP                 |
+| Final security/release review                               | BLOCKED             |
+| PR/default-branch integration                               | BLOCKED             |
+| Production                                                  | NO_GO — NOT TOUCHED |
 
 Schema ของ candidate เป็น additive แต่ schema compatibility ไม่เท่ากับ rollback safety รุ่นเก่าไม่มี delivery fencing จึงห้าม automatic rollback และต้องมี independent containment/fix-forward plan
 

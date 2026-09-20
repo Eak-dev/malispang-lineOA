@@ -276,26 +276,36 @@ describe("Durable Object persistence and webhook security", () => {
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
-  it("allows an authenticated and authorized Test staff close", async () => {
+  it("requires retained Owner lineage even for an authenticated authorized Test staff close", async () => {
     const conversationRef = "c".repeat(64);
     const stub = env.CONVERSATION_STATE.getByName(conversationRef);
     await stub.processEvent(baseInput);
+    const handoff = await stub.handoffObservation();
+    if (!handoff) throw new Error("EXPECTED_HANDOFF_GENERATION");
     await env.HANDOFF_REGISTRY.getByName("test-active-handoffs").activate(
       conversationRef,
       baseInput.now,
+      handoff.generation,
     );
     const response = await exports.default.fetch(
-      new Request("https://test.invalid/admin/handoff/close", {
-        method: "POST",
-        headers: {
-          authorization: "Bearer unit-test-admin-key",
-          "content-type": "application/json",
+      new Request(
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev/admin/handoff/close",
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            operationRef: "1".repeat(64),
+            expectedGeneration: 1,
+            staffId: "OWNER_TEST",
+          }),
         },
-        body: JSON.stringify({ conversationRef, staffId: "OWNER_TEST" }),
-      }),
+      ),
     );
-    expect(response.status).toBe(200);
-    expect(await stub.state()).toBe("BOT_ACTIVE");
+    expect(response.status).toBe(409);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
   });
 
   it("rejects unauthorized staff-close and keeps handoff active", async () => {
@@ -303,14 +313,21 @@ describe("Durable Object persistence and webhook security", () => {
     const stub = env.CONVERSATION_STATE.getByName(conversationRef);
     await stub.processEvent(baseInput);
     const response = await exports.default.fetch(
-      new Request("https://test.invalid/admin/handoff/close", {
-        method: "POST",
-        headers: {
-          authorization: "Bearer unit-test-admin-key",
-          "content-type": "application/json",
+      new Request(
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev/admin/handoff/close",
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer unit-test-admin-key",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            operationRef: "2".repeat(64),
+            expectedGeneration: 1,
+            staffId: "UNKNOWN_STAFF",
+          }),
         },
-        body: JSON.stringify({ conversationRef, staffId: "UNKNOWN_STAFF" }),
-      }),
+      ),
     );
     expect(response.status).toBe(403);
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
@@ -523,8 +540,14 @@ describe("Durable Object persistence and webhook security", () => {
     });
     expect(await stub.state()).toBe("HUMAN_HANDOFF");
     expect(
-      await stub.closeHandoff("staff-ref", baseInput.now + 1, 604_800),
-    ).toBe(true);
+      await stub.closeHandoff({
+        operationRef: "3".repeat(64),
+        actorRef: "4".repeat(64),
+        expectedGeneration: 1,
+        now: baseInput.now + 1,
+        auditRetentionSeconds: 604_800,
+      }),
+    ).toMatchObject({ accepted: true });
     const afterClose = await stub.processEvent({
       ...baseInput,
       eventRef: "f2".repeat(32),
@@ -618,6 +641,154 @@ function actualClaim(result: ProcessEventResult) {
   expect(result.deliveryClaim.revision).toBeGreaterThan(0);
   return result.deliveryClaim;
 }
+
+describe("v22 read-only retained clarification and delivery inventory", () => {
+  const fixture = async (name: string) => {
+    const stub = env.CONVERSATION_STATE.getByName(`v22-observation:${name}`);
+    const now = Date.now();
+    const anchor = "a9".repeat(32),
+      pending = "b9".repeat(32);
+    const safe: ProcessEventInput = {
+      ...baseInput,
+      now,
+      eventRef: anchor,
+      decision: {
+        replyKind: "LOCATION",
+        reasonCode: "MP06_AUTO",
+        handoff: false,
+        allowDuringHandoff: false,
+      },
+      responseFingerprint: "c9".repeat(32),
+    };
+    const first = await stub.processEvent(safe);
+    expect(await stub.markDelivered(anchor, actualClaim(first))).toBe(
+      "ACKNOWLEDGED",
+    );
+    const clarify = await stub.processEvent({
+      ...safe,
+      eventRef: pending,
+      decision: {
+        ...safe.decision,
+        replyKind: "NONE",
+        reasonCode: "MP06_CLARIFY_T-C01",
+      },
+      clarificationTemplateId: "T-C01",
+    });
+    expect(await stub.markDelivered(pending, actualClaim(clarify))).toBe(
+      "ACKNOWLEDGED",
+    );
+    return { stub, anchor, pending, safe };
+  };
+
+  it("never clears clarification, writes rows/alarms/audit or grants delivery during reads/restart", async () => {
+    const f = await fixture("preserve");
+    const before = await deliverySnapshot(f.stub);
+    const observed = await f.stub.ownerUatSuccessorConversationObservation(
+      f.anchor,
+    );
+    expect(observed).toMatchObject({
+      context: {
+        mode: "BOT_ACTIVE",
+        clarificationUsed: true,
+        pendingTemplate: "T-C01",
+        pendingReplies: 0,
+      },
+      delivery: {
+        claims: 2,
+        deliveredClaims: 2,
+        pendingOrUnknownClaims: 0,
+        malformedClaims: 0,
+        inconsistentLinks: 0,
+      },
+      retainedClarificationReady: false,
+    });
+    // An observation of a different history is not the exact approved activation baseline.
+    expect(
+      await f.stub.ownerUatSuccessorConversationObservation(f.anchor),
+    ).toEqual(observed);
+    await evictDurableObject(f.stub);
+    expect(
+      await f.stub.ownerUatSuccessorConversationObservation(f.anchor),
+    ).toEqual(observed);
+    expect(await f.stub.mp06Context()).toEqual({
+      pendingClarificationTemplateId: "T-C01",
+    });
+    expect(await deliverySnapshot(f.stub)).toEqual(before);
+    expect(observed && "deliveryClaim" in observed).toBe(false);
+    const safeFollowUp = await f.stub.processEvent({
+      ...f.safe,
+      eventRef: "d9".repeat(32),
+    });
+    expect(safeFollowUp.status).toBe("RESPOND");
+    expect(
+      await f.stub.markDelivered("d9".repeat(32), actualClaim(safeFollowUp)),
+    ).toBe("ACKNOWLEDGED");
+    expect(
+      await f.stub.ownerUatConversationObservation(f.anchor),
+    ).toMatchObject({ clarificationUsed: true, pendingTemplate: null });
+    const secondClarification = await f.stub.processEvent({
+      ...f.safe,
+      eventRef: "e9".repeat(32),
+      clarificationTemplateId: "T-C01",
+    });
+    expect(secondClarification).toMatchObject({
+      status: "RESPOND",
+      replyKind: "HANDOFF_ACK",
+      enteredHandoff: true,
+    });
+    expect(await f.stub.state()).toBe("HUMAN_HANDOFF");
+  });
+
+  it.each([
+    "UPDATE delivery_claims SET owner_token = 'malformed' WHERE revision = 1",
+    "UPDATE delivery_claims SET acknowledged_at = NULL WHERE revision = 1",
+    "UPDATE delivery_claims SET state = 'DELIVERY_UNKNOWN' WHERE revision = 1",
+    "DELETE FROM processed_events WHERE event_ref = (SELECT event_ref FROM delivery_claims WHERE revision = 1)",
+    "UPDATE mp06_response_plans SET delivered = 0",
+  ])(
+    "never repairs malformed/unknown/orphan delivery state during observation (%#)",
+    async (mutation) => {
+      const f = await fixture(mutation);
+      await runInDurableObject(f.stub, (_i, s) => {
+        s.storage.sql.exec(mutation);
+      });
+      const before = await deliverySnapshot(f.stub);
+      const observed = await f.stub.ownerUatSuccessorConversationObservation(
+        f.anchor,
+      );
+      expect(observed?.retainedClarificationReady ?? false).toBe(false);
+      if (observed)
+        expect(
+          observed.delivery.malformedClaims +
+            observed.delivery.pendingOrUnknownClaims +
+            observed.delivery.inconsistentLinks +
+            observed.context.pendingReplies,
+        ).toBeGreaterThan(0);
+      expect(await deliverySnapshot(f.stub)).toEqual(before);
+    },
+  );
+
+  it("empty-state deployment/restart/readiness never creates a successor marker or an activation capability", async () => {
+    const stub = env.CONVERSATION_STATE.getByName("v22-empty-readiness");
+    const before = await deliverySnapshot(stub);
+    expect(await stub.ownerUatPilotObservation()).toBeNull();
+    expect(
+      await stub.ownerUatSuccessorConversationObservation("1".repeat(64)),
+    ).toBeNull();
+    await evictDurableObject(stub);
+    expect(await stub.ownerUatPilotObservation()).toBeNull();
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql
+          .exec(
+            "SELECT name FROM sqlite_schema WHERE name = 'mp06_wp8f_v22_successor'",
+          )
+          .toArray(),
+      ),
+    ).toEqual([]);
+  });
+});
 
 describe("v18 persistent delivery ownership and fenced acknowledgement", () => {
   const responseInput: ProcessEventInput = {
@@ -892,3 +1063,430 @@ async function deliverySnapshot(
     alarm: await state.storage.getAlarm(),
   }));
 }
+
+describe("successor durable one-logical handoff close", () => {
+  const input = {
+    operationRef: "ab".repeat(32),
+    actorRef: "cd".repeat(32),
+    expectedGeneration: 1,
+    now: baseInput.now + 1,
+    auditRetentionSeconds: 604800,
+  };
+  const fixture = async (label: string) => {
+    const ref = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`synthetic-close:${label}`),
+    );
+    const name = Array.from(new Uint8Array(ref), (v) =>
+      v.toString(16).padStart(2, "0"),
+    ).join("");
+    const stub = env.CONVERSATION_STATE.getByName(name);
+    const event = await stub.processEvent(baseInput);
+    await stub.markDelivered(baseInput.eventRef, actualClaim(event));
+    return { name, stub };
+  };
+  it.each([
+    "UPDATE handoff_registry_fences SET generation = 'unknown'",
+    "UPDATE handoff_registry_fences SET closed_generation = 2",
+    "UPDATE handoff_registry_fences SET close_receipt_id = 'forged'",
+    "DELETE FROM handoff_registry_fences",
+  ])(
+    "denies corrupt registry lineage without normalizing retained state: %s",
+    async (corrupt) => {
+      const { name, stub } = await fixture(corrupt);
+      const registry = env.HANDOFF_REGISTRY.getByName(
+        `synthetic-corrupt:${corrupt}`,
+      );
+      await registry.activate(name, baseInput.now, 1);
+      const close = await stub.closeHandoff(input);
+      if (!close.accepted) throw new Error("EXPECTED_CLOSE");
+      await runInDurableObject(registry, (_i, s) => {
+        s.storage.sql.exec(corrupt);
+      });
+      const snapshot = () =>
+        runInDurableObject(registry, (_i, s) => ({
+          active: s.storage.sql.exec("SELECT * FROM active_handoffs").toArray(),
+          fences: s.storage.sql
+            .exec("SELECT * FROM handoff_registry_fences")
+            .toArray(),
+        }));
+      const before = await snapshot();
+      expect(await registry.reconcileClose(name, close.receipt)).toBeNull();
+      expect(await registry.activate(name, baseInput.now, 2)).toBe(false);
+      await evictDurableObject(registry);
+      expect(await registry.reconcileClose(name, close.receipt)).toBeNull();
+      expect(await registry.activate(name, baseInput.now, 2)).toBe(false);
+      expect(await snapshot()).toEqual(before);
+      expect(await stub.handoffObservation()).toMatchObject({
+        pendingClose: true,
+      });
+    },
+  );
+  it("one concurrent mutation, three counted attempts, stable receipt and durable replay ceiling", async () => {
+    const { stub } = await fixture("concurrent");
+    const before = await deliverySnapshot(stub);
+    const results = await Promise.all(
+      Array.from({ length: 3 }, () => stub.closeHandoff(input)),
+    );
+    for (const result of results)
+      expect(result).toMatchObject({ accepted: true });
+    const first = results[0]!;
+    if (!first.accepted) throw new Error("EXPECTED_CLOSE_RECEIPT");
+    for (const result of results) {
+      if (!result.accepted) throw new Error("EXPECTED_REPLAY_RECEIPT");
+      expect(result.receipt).toEqual(first.receipt);
+    }
+    expect(results.map((r) => (r.accepted ? r.attempt : 0)).sort()).toEqual([
+      1, 2, 3,
+    ]);
+    expect(await stub.state()).toBe("BOT_ACTIVE");
+    const after = await deliverySnapshot(stub);
+    expect(after.processed).toEqual(before.processed);
+    expect(after.claims).toEqual(before.claims);
+    expect(after.plans).toEqual(before.plans);
+    expect(after.audit.slice(0, before.audit.length)).toEqual(before.audit);
+    expect(
+      after.audit.filter((r) => r.outcome === "HANDOFF_CLOSED"),
+    ).toHaveLength(1);
+    await evictDurableObject(stub);
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 1,
+      technicalAttempts: 3,
+      pendingClose: true,
+    });
+    expect(await stub.closeHandoff(input)).toEqual({
+      accepted: false,
+      code: "HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED",
+    });
+    expect(
+      await stub.closeHandoff({ ...input, operationRef: "ef".repeat(32) }),
+    ).toMatchObject({
+      accepted: false,
+      code: "HANDOFF_CLOSE_OPERATION_CONFLICT",
+    });
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql
+          .exec("SELECT outcome FROM handoff_close_attempts ORDER BY id")
+          .toArray(),
+      ),
+    ).toEqual([
+      { outcome: "CONVERSATION_CLOSED" },
+      { outcome: "SAME_OPERATION_REPLAY" },
+      { outcome: "SAME_OPERATION_REPLAY" },
+      { outcome: "HANDOFF_CLOSE_ATTEMPTS_EXHAUSTED" },
+      { outcome: "HANDOFF_CLOSE_OPERATION_CONFLICT" },
+    ]);
+  });
+  it("reports missing generation as unavailable without repairing or granting a close after restart", async () => {
+    const { stub } = await fixture("missing-generation");
+    await runInDurableObject(stub, (_i, s) => {
+      s.storage.sql.exec("DELETE FROM handoff_generation");
+    });
+    const before = await deliverySnapshot(stub);
+    expect(await stub.handoffObservation()).toBeNull();
+    await evictDurableObject(stub);
+    expect(await stub.handoffObservation()).toBeNull();
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    expect(await stub.closeHandoff(input)).toEqual({
+      accepted: false,
+      code: "HANDOFF_CLOSE_STATE_INVALID",
+    });
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql.exec("SELECT * FROM handoff_generation").toArray(),
+      ),
+    ).toEqual([]);
+  });
+  it("recovers a lost response, fences wrong ACK, persists completion and prevents generation ABA", async () => {
+    const { name, stub } = await fixture("lost-response");
+    const registry = env.HANDOFF_REGISTRY.getByName("successor-close-registry");
+    await registry.activate(name, baseInput.now, 1);
+    const first = await stub.closeHandoff(input);
+    if (!first.accepted) throw new Error("EXPECTED_CLOSE");
+    expect(
+      await stub.acknowledgeHandoffClose(
+        { ...first.receipt, receiptId: crypto.randomUUID() },
+        1,
+      ),
+    ).toBe(false);
+    // Registry performed its own transaction; its response is intentionally discarded.
+    expect(await registry.reconcileClose(name, first.receipt)).toEqual(
+      first.receipt,
+    );
+    await evictDurableObject(stub);
+    await evictDurableObject(registry);
+    const replay = await stub.closeHandoff(input);
+    if (!replay.accepted) throw new Error("EXPECTED_REPLAY");
+    expect(replay.receipt).toEqual(first.receipt);
+    expect(await registry.reconcileClose(name, replay.receipt)).toEqual(
+      first.receipt,
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(replay.receipt, replay.attempt),
+    ).toBe(true);
+    const stable = await runInDurableObject(stub, (_i, s) =>
+      s.storage.sql
+        .exec("SELECT * FROM handoff_close_attempts ORDER BY id")
+        .toArray(),
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(replay.receipt, replay.attempt),
+    ).toBe(true);
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql
+          .exec("SELECT * FROM handoff_close_attempts ORDER BY id")
+          .toArray(),
+      ),
+    ).toEqual(stable);
+    const finalReplay = await stub.closeHandoff(input);
+    expect(finalReplay).toMatchObject({
+      accepted: true,
+      complete: true,
+      receipt: first.receipt,
+    });
+    await stub.processEvent({
+      ...baseInput,
+      eventRef: "fe".repeat(32),
+      now: baseInput.now + 2,
+    });
+    expect(await stub.handoffObservation()).toMatchObject({ generation: 2 });
+    await registry.activate(name, baseInput.now + 2, 2);
+    expect(await stub.closeHandoff(input)).toMatchObject({
+      accepted: false,
+      code: "HANDOFF_GENERATION_CHANGED",
+    });
+    expect(await stub.acknowledgeHandoffClose(first.receipt, 1)).toBe(false);
+    expect(await registry.reconcileClose(name, first.receipt)).toEqual(
+      first.receipt,
+    );
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: name, createdAt: baseInput.now + 2 },
+    ]);
+  });
+  it("reconciles the retained older close without removing a newer active generation", async () => {
+    const { name, stub } = await fixture("late-old-close");
+    const registry = env.HANDOFF_REGISTRY.getByName(
+      "successor-late-old-close-registry",
+    );
+    expect(await registry.activate(name, baseInput.now, 1)).toBe(true);
+    const close = await stub.closeHandoff(input);
+    if (!close.accepted) throw new Error("EXPECTED_CLOSE");
+
+    const successorNow = baseInput.now + 2;
+    const successor = await stub.processEvent({
+      ...baseInput,
+      eventRef: "fd".repeat(32),
+      now: successorNow,
+    });
+    if (successor.status !== "RESPOND")
+      throw new Error("EXPECTED_SUCCESSOR_HANDOFF");
+    expect(
+      await stub.markDelivered(successor.deliveryClaim.eventRef, {
+        ...successor.deliveryClaim,
+      }),
+    ).toBe("ACKNOWLEDGED");
+    expect(await registry.activate(name, successorNow, 2)).toBe(true);
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 2,
+      pendingClose: true,
+      closeState: "CONVERSATION_CLOSED",
+    });
+
+    expect(await registry.reconcileClose(name, close.receipt)).toEqual(
+      close.receipt,
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(close.receipt, close.attempt),
+    ).toBe(true);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 2,
+      pendingClose: false,
+      closeState: "COMPLETE",
+      technicalAttempts: 1,
+    });
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: name, createdAt: successorNow },
+    ]);
+    expect(
+      await runInDurableObject(registry, (_i, s) =>
+        s.storage.sql
+          .exec(
+            "SELECT generation, closed_generation, close_receipt_id FROM handoff_registry_fences WHERE conversation_ref = ?",
+            name,
+          )
+          .one(),
+      ),
+    ).toEqual({
+      generation: 2,
+      closed_generation: 1,
+      close_receipt_id: close.receipt.receiptId,
+    });
+
+    await evictDurableObject(stub);
+    await evictDurableObject(registry);
+    expect(await registry.reconcileClose(name, close.receipt)).toEqual(
+      close.receipt,
+    );
+    expect(
+      await stub.acknowledgeHandoffClose(close.receipt, close.attempt),
+    ).toBe(false);
+    expect(await stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: name, createdAt: successorNow },
+    ]);
+  });
+  it("fences delayed registry activation and cannot reconcile another conversation", async () => {
+    const a = await fixture("isolated-a"),
+      b = await fixture("isolated-b");
+    const registry = env.HANDOFF_REGISTRY.getByName(
+      "successor-isolated-registry",
+    );
+    await registry.activate(b.name, baseInput.now, 1);
+    const close = await a.stub.closeHandoff(input);
+    if (!close.accepted) throw new Error("EXPECTED_CLOSE");
+    expect(await registry.reconcileClose(b.name, close.receipt)).toBeNull();
+    expect(await b.stub.acknowledgeHandoffClose(close.receipt, 1)).toBe(false);
+    expect(await registry.reconcileClose(a.name, close.receipt)).toEqual(
+      close.receipt,
+    );
+    await registry.activate(a.name, baseInput.now, 1);
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: b.name, createdAt: baseInput.now },
+    ]);
+    expect(await b.stub.state()).toBe("HUMAN_HANDOFF");
+    expect(await b.stub.handoffObservation()).toMatchObject({
+      closeState: "UNUSED",
+      technicalAttempts: 0,
+    });
+  });
+  it.each([
+    { operationRef: "malformed" },
+    { actorRef: "malformed" },
+    { expectedGeneration: 2 },
+    { expectedGeneration: 0 },
+  ])(
+    "rejects invalid or stale close inputs without state changes: %j",
+    async (change) => {
+      const { stub } = await fixture(JSON.stringify(change));
+      const before = await deliverySnapshot(stub);
+      expect(await stub.closeHandoff({ ...input, ...change })).toMatchObject({
+        accepted: false,
+      });
+      const after = await deliverySnapshot(stub);
+      expect(after.claims).toEqual(before.claims);
+      expect(after.processed).toEqual(before.processed);
+      expect(after.plans).toEqual(before.plans);
+      expect(after.audit).toEqual(before.audit);
+      expect(after.alarm).toEqual(before.alarm);
+      expect(
+        after.sequence.filter((r) => r.name !== "handoff_close_attempts"),
+      ).toEqual(before.sequence);
+      expect(
+        after.sequence.filter((r) => r.name === "handoff_close_attempts"),
+      ).toEqual([{ name: "handoff_close_attempts", seq: 1 }]);
+      expect(await stub.state()).toBe("HUMAN_HANDOFF");
+      expect(await stub.handoffObservation()).toMatchObject({
+        technicalAttempts: 0,
+        closeState: "UNUSED",
+      });
+    },
+  );
+  it("retained-state additive backfill is idempotent; empty state and read-only observations grant no close", async () => {
+    const { stub } = await fixture("migration");
+    // Model the exact pre-successor schema locally, not a remote rollback.
+    await runInDurableObject(stub, (_i, s) => {
+      s.storage.sql.exec(
+        "DROP TABLE handoff_generation; DROP TABLE handoff_close_operation; DROP TABLE handoff_close_attempts",
+      );
+    });
+    const before = await deliverySnapshot(stub);
+    await evictDurableObject(stub);
+    expect(await stub.handoffObservation()).toMatchObject({
+      generation: 1,
+      closeState: "UNUSED",
+    });
+    expect(await deliverySnapshot(stub)).toEqual(before);
+    const migrated = await runInDurableObject(stub, (_i, s) =>
+      s.storage.sql.exec("SELECT * FROM handoff_generation").toArray(),
+    );
+    await evictDurableObject(stub);
+    expect(
+      await runInDurableObject(stub, (_i, s) =>
+        s.storage.sql.exec("SELECT * FROM handoff_generation").toArray(),
+      ),
+    ).toEqual(migrated);
+    const empty = env.CONVERSATION_STATE.getByName("successor-empty");
+    const snapshot = await deliverySnapshot(empty);
+    expect(await empty.handoffObservation()).toMatchObject({
+      generation: 0,
+      closeState: "UNUSED",
+      pendingClose: false,
+    });
+    expect(await deliverySnapshot(empty)).toEqual(snapshot);
+    expect(await empty.closeHandoff(input)).toMatchObject({ accepted: false });
+    expect(await empty.state()).toBe("BOT_ACTIVE");
+  });
+  it("backfills retained legacy registry entries once and preserves other conversations across close and restart", async () => {
+    const a = await fixture("registry-migration-owner");
+    const b = await fixture("registry-migration-other");
+    const registry = env.HANDOFF_REGISTRY.getByName(
+      "registry-legacy-migration",
+    );
+    expect(await registry.activate(a.name, baseInput.now, 1)).toBe(true);
+    expect(await registry.activate(b.name, baseInput.now + 1, 1)).toBe(true);
+    const before = await registry.listActive();
+    // Synthetic retained pre-successor registry: only the legacy table exists.
+    await runInDurableObject(registry, (_i, s) => {
+      s.storage.sql.exec("DROP TABLE handoff_registry_fences");
+    });
+    await evictDurableObject(registry);
+    expect(await registry.listActive()).toEqual(before);
+    const snapshot = () =>
+      runInDurableObject(registry, async (_i, s) => ({
+        rows: s.storage.sql
+          .exec(
+            "SELECT conversation_ref, generation, closed_generation, close_receipt_id FROM handoff_registry_fences ORDER BY conversation_ref",
+          )
+          .toArray(),
+        alarm: await s.storage.getAlarm(),
+      }));
+    const migrated = await snapshot();
+    expect(migrated.rows).toEqual(
+      [a.name, b.name].sort().map((conversation_ref) => ({
+        conversation_ref,
+        generation: 1,
+        closed_generation: 0,
+        close_receipt_id: null,
+      })),
+    );
+    expect(migrated.alarm).toBeNull();
+    await evictDurableObject(registry);
+    expect((await snapshot()).rows).toEqual(migrated.rows);
+    expect(await registry.listActive()).toEqual(before);
+    const result = await a.stub.closeHandoff(input);
+    if (!result.accepted) throw new Error("EXPECTED_CLOSE");
+    expect(await registry.reconcileClose(a.name, result.receipt)).toEqual(
+      result.receipt,
+    );
+    const closed = await snapshot();
+    await evictDurableObject(registry);
+    expect((await snapshot()).rows).toEqual(closed.rows);
+    expect(await registry.activate(a.name, baseInput.now + 2, 1)).toBe(false);
+    expect(await registry.listActive()).toEqual([
+      { conversationRef: b.name, createdAt: baseInput.now + 1 },
+    ]);
+    expect(await b.stub.state()).toBe("HUMAN_HANDOFF");
+    const empty = env.HANDOFF_REGISTRY.getByName("registry-empty-migration");
+    expect(await empty.listActive()).toEqual([]);
+    expect(
+      await runInDurableObject(empty, (_i, s) =>
+        s.storage.sql.exec("SELECT * FROM handoff_registry_fences").toArray(),
+      ),
+    ).toEqual([]);
+  });
+});
