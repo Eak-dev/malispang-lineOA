@@ -5740,6 +5740,10 @@ export function inspectV23SealedRepository(
         (commit) => !v31ProviderCommits.includes(commit),
       );
     }
+    if (v32)
+      observation.pathCommits = observation.pathCommits.filter(
+        (commit) => !mergeCommits.includes(commit),
+      );
     if (v28) {
       observation.paths = v31InheritedPaths.filter(
         (path) => path !== WP8F_V28_GREPTILE_REVIEWER.path,
@@ -5985,6 +5989,11 @@ export function inspectV23SealedRepository(
                 commit !== v29WorkflowCommit && commit !== v30WorkflowCommit,
             );
         }
+        if (v32)
+          workflowObservation.pathCommits =
+            workflowObservation.pathCommits.filter(
+              (commit) => !mergeCommits.includes(commit),
+            );
         const inheritedObservation = {
           previous: { previous: observation, current: nextObservation },
           workflow: workflowObservation,
@@ -6150,17 +6159,20 @@ export function inspectV23SealedRepository(
           hash(readFileSync(join(cwd, reviewer.path))) === reviewer.fileSha256;
       }
     }
-    if (
-      !sealValid ||
-      !v28Valid ||
-      numstat[2] !== g.path ||
-      (dirty.length > 0 &&
-        !exactPaths([...new Set(dirty)], WP8F_V18_ENVELOPE.controlFiles))
-    )
+    if (!sealValid)
       return {
         ok: false,
-        reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+        reason: "V23_INHERITED_SEAL_MISMATCH",
       };
+    if (!v28Valid)
+      return { ok: false, reason: "V28_INHERITED_REVIEWER_SEAL_MISMATCH" };
+    if (numstat[2] !== g.path)
+      return { ok: false, reason: "V23_SEALED_STAT_MISMATCH" };
+    if (
+      dirty.length > 0 &&
+      !exactPaths([...new Set(dirty)], WP8F_V18_ENVELOPE.controlFiles)
+    )
+      return { ok: false, reason: "V23_DIRTY_SCOPE_MISMATCH" };
     if (git("rev-parse", "HEAD").trim() !== head)
       return { ok: false, reason: "V23_CHECKOUT_CHANGED_DURING_INSPECTION" };
     if (
