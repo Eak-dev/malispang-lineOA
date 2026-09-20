@@ -911,3 +911,33 @@ Owner explicitly requested a 20-minute hard timeout after exact-head run35510889
 - inheritedState: FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION
 
 Only the exact `timeout-minutes: 10` to `20` workflow successor is authorized beyond the ten control paths. Preserve the source-head seal adapter, synthetic-merge tests, test ordering, retries, assertions, all checks and historical cancellation evidence. No application/runtime/test change, rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal change, Data Studio hold release, issue closure or MP-07.
+
+## MP-OD-2026-09-20-V31 — PR15 P1 and targeted test-watchdog remediation
+
+Owner explicitly authorized both remaining PR15 actions after evidence on exact baseline7218d5311be43ae9416fe774d549e8117c0038b7: (1) raise only the seven Git-fixture control tests from the default5000ms to15000ms without changing assertions, ordering, concurrency or global/Worker/workflow timeouts; and (2) implement the minimum Greptile P1 fix with deterministic HTTP/Durable Object/SQLite regression coverage. The recovery must reconcile and acknowledge the original close without deleting or closing a newer active handoff. It may not reset the retained operation, remove generation fencing, create a new close grant or add automatic retry.
+
+- version: 2026.09.20-v31
+- ownerDecision: MP-OD-2026-09-20-V31
+- supersedes: 2026.09.20-v30
+- type: PR15_P1_HANDOFF_AND_TARGETED_TEST_WATCHDOG_REMEDIATION_ONLY_INHERITING_V30
+- mandate: OWNER_AUTHORIZED_ALL_OUTSTANDING_PR15_REMEDIATIONS_2026_09_20
+- repository: Eak-dev/malispang-lineOA
+- pullRequest: 15
+- headBranch: codex/greptile-reviewer-setup
+- baseBranch: codex/phase-1a-foundation
+- baseline: 7218d5311be43ae9416fe774d549e8117c0038b7
+- finding: discussion_r4056893918
+- triage: issuecomment-5749830752
+- evidenceRun: 35513480785
+- evidenceJob: 106085364845
+- priorDefaultTestTimeoutMs: 5000
+- targetedTestTimeoutMs: 15000
+- testTimeoutScope: V26_LATER_WORKFLOW_TWO_CASES_AND_V27_PROTECTED_PATH_FIVE_CASES_ONLY
+- p1Result: REPRODUCED_HTTP_DURABLE_OBJECT_SQLITE_DETERMINISTIC_BARRIER_ON_BASELINE
+- remediationPaths: tests/project-control.test.ts,worker/durable-objects.ts,worker-tests/durable-state.test.ts,worker-tests/mp-06-pilot-control.test.ts
+- recoveryContract: OLDER_CLOSE_RECONCILES_WITHOUT_REMOVING_NEWER_ACTIVE_HANDOFF_AND_ACK_COMPLETES_ORIGINAL_RECEIPT
+- invariants: GENERATION_FENCE_RETAINED_OPERATION_NO_RESET_NO_AUTOMATIC_RETRY_NO_NEW_CLOSE_GRANT
+- prAuthority: EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_GREPTILE_REVIEW
+- remoteState: NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07
+
+This authorization is local implementation, regression validation, commit and normal push to the existing Draft PR only. It does not make the PR merge-ready and does not authorize resolving the Greptile thread before exact-head evidence is reviewed.

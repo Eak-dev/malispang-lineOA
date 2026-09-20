@@ -693,3 +693,15 @@ Owner explicitly requested a 20-minute hard timeout after exact-head run35510889
 - inheritedState: FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION
 
 Only the exact `timeout-minutes: 10` to `20` workflow successor is authorized beyond the ten control paths. Preserve the source-head seal adapter, synthetic-merge tests, test ordering, retries, assertions, all checks and historical cancellation evidence. No application/runtime/test change, rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal change, Data Studio hold release, issue closure or MP-07.
+
+## MP-OD-2026-09-20-V31 — PR15 P1 and targeted test-watchdog remediation
+
+- version: 2026.09.20-v31
+- ownerDecision: MP-OD-2026-09-20-V31
+- supersedes: 2026.09.20-v30
+- baseline: 7218d5311be43ae9416fe774d549e8117c0038b7
+- scope: local-only Greptile P1 remediation plus 15000ms on the exact two v26 and five v27 Git-fixture tests
+- runtime contract: reconcile/ACK the older close receipt without removing the newer active handoff; retain generation fence and operation; no retry/reset/new close grant
+- paths: tests/project-control.test.ts, worker/durable-objects.ts, worker-tests/durable-state.test.ts, worker-tests/mp-06-pilot-control.test.ts
+- evidence: run35513480785/job106085364845 four default5000ms timeouts; focused local seven cases passed at approximately2364–3127ms
+- restrictions: existing Draft PR only; no merge/deploy/remote TEST/Production/grant/journal/hold/Issue/MP07 action

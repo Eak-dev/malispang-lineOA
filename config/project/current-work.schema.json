@@ -54,9 +54,42 @@
     "wp8fV27ProviderHangSeal",
     "wp8fV28GreptileReviewer",
     "wp8fV29PrCi",
-    "wp8fV30CiTimeout"
+    "wp8fV30CiTimeout",
+    "wp8fV31Pr15Remediation"
   ],
   "properties": {
+    "wp8fV31Pr15Remediation": {
+      "const": {
+        "version": "2026.09.20-v31",
+        "ownerDecision": "MP-OD-2026-09-20-V31",
+        "supersedes": "2026.09.20-v30",
+        "type": "PR15_P1_HANDOFF_AND_TARGETED_TEST_WATCHDOG_REMEDIATION_ONLY_INHERITING_V30",
+        "mandate": "OWNER_AUTHORIZED_ALL_OUTSTANDING_PR15_REMEDIATIONS_2026_09_20",
+        "repository": "Eak-dev/malispang-lineOA",
+        "pullRequest": 15,
+        "headBranch": "codex/greptile-reviewer-setup",
+        "baseBranch": "codex/phase-1a-foundation",
+        "baseline": "7218d5311be43ae9416fe774d549e8117c0038b7",
+        "finding": "discussion_r4056893918",
+        "triage": "issuecomment-5749830752",
+        "evidenceRun": 35513480785,
+        "evidenceJob": 106085364845,
+        "priorDefaultTestTimeoutMs": 5000,
+        "targetedTestTimeoutMs": 15000,
+        "testTimeoutScope": "V26_LATER_WORKFLOW_TWO_CASES_AND_V27_PROTECTED_PATH_FIVE_CASES_ONLY",
+        "p1Result": "REPRODUCED_HTTP_DURABLE_OBJECT_SQLITE_DETERMINISTIC_BARRIER_ON_BASELINE",
+        "remediationPaths": [
+          "tests/project-control.test.ts",
+          "worker/durable-objects.ts",
+          "worker-tests/durable-state.test.ts",
+          "worker-tests/mp-06-pilot-control.test.ts"
+        ],
+        "recoveryContract": "OLDER_CLOSE_RECONCILES_WITHOUT_REMOVING_NEWER_ACTIVE_HANDOFF_AND_ACK_COMPLETES_ORIGINAL_RECEIPT",
+        "invariants": "GENERATION_FENCE_RETAINED_OPERATION_NO_RESET_NO_AUTOMATIC_RETRY_NO_NEW_CLOSE_GRANT",
+        "prAuthority": "EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_GREPTILE_REVIEW",
+        "remoteState": "NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07"
+      }
+    },
     "wp8fV30CiTimeout": {
       "const": {
         "version": "2026.09.20-v30",
@@ -471,7 +504,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.20-v30" },
+    "roadmapVersion": { "const": "2026.09.20-v31" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {

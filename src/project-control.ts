@@ -1013,6 +1013,27 @@ export function evaluateProjectAction(
   }
   if (
     isRecord(roadmap) &&
+    roadmap.version === PR15_P1_REMEDIATION_CONTROL.version
+  ) {
+    if (action === "LOCAL_IMPLEMENTATION")
+      return {
+        allowed: true,
+        reason: "V31_EXACT_LOCAL_P1_AND_TEST_WATCHDOG_REMEDIATION_ONLY",
+      };
+    if (
+      ![
+        "UPDATE_GITHUB_ROADMAP",
+        "PREPARE_EXACT_TEST_DEPLOYMENT",
+        "COMMIT",
+        "PUSH_BRANCH",
+      ].includes(action)
+    )
+      return { allowed: false, reason: "V31_REVIEW_ONLY_NO_REMOTE_AUTHORITY" };
+    const projected = projectV31(roadmap, currentWork);
+    return evaluateProjectAction(projected.roadmap, projected.work, action);
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === PR15_CI_TIMEOUT_CONTROL.version
   ) {
     if (
@@ -3831,6 +3852,20 @@ export function evaluateWp8fPaths(
   if (validateProjectControl(roadmap, currentWork).errors.length)
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   if (
+    phase === "PR15_P1_REMEDIATION" &&
+    isRecord(roadmap) &&
+    roadmap.version === PR15_P1_REMEDIATION_CONTROL.version
+  )
+    return samePathSet(
+      Array.isArray(paths) ? (paths as string[]) : [],
+      PR15_P1_REMEDIATION_CONTROL.remediationPaths,
+    )
+      ? {
+          allowed: true,
+          reason: "V31_EXACT_LOCAL_P1_AND_TEST_WATCHDOG_PATHS",
+        }
+      : { allowed: false, reason: "UNKNOWN_OR_OUT_OF_SCOPE_PATH" };
+  if (
     phase === "PR15_CI_WORKFLOW" &&
     isRecord(roadmap) &&
     (roadmap.version === PR15_CI_CONTROL.version ||
@@ -5278,24 +5313,77 @@ export function inspectV23SealedRepository(
       !validateV22OperationJournal(committedWork.wp8fV22OperationJournal)
     )
       return { ok: false, reason: "V23_INHERITED_JOURNAL_UNVERIFIED" };
+    const v31 =
+      committedWork.roadmapVersion === PR15_P1_REMEDIATION_CONTROL.version;
     const v30 =
-      committedWork.roadmapVersion === PR15_CI_TIMEOUT_CONTROL.version;
+      v31 || committedWork.roadmapVersion === PR15_CI_TIMEOUT_CONTROL.version;
     const v29 = v30 || committedWork.roadmapVersion === PR15_CI_CONTROL.version;
     const v28 =
       v29 ||
       committedWork.roadmapVersion === WP8F_V28_GREPTILE_REVIEWER.version;
     let v29WorkflowCommit = "";
     let v30WorkflowCommit = "";
-    if (v30) {
-      const c = PR15_CI_TIMEOUT_CONTROL;
-      if (JSON.stringify(committedWork.wp8fV30CiTimeout) !== JSON.stringify(c))
-        return { ok: false, reason: "V30_EXACT_CONTROL_INVALID" };
+    let v31ProviderCommits: string[] = [];
+    if (v31) {
+      const c = PR15_P1_REMEDIATION_CONTROL;
+      if (
+        JSON.stringify(committedWork.wp8fV31Pr15Remediation) !==
+        JSON.stringify(c)
+      )
+        return { ok: false, reason: "V31_EXACT_CONTROL_INVALID" };
       git("merge-base", "--is-ancestor", c.baseline, head);
+      const allowed = new Set<string>([
+        ...WP8F_V18_ENVELOPE.controlFiles,
+        ...c.remediationPaths,
+      ]);
       const changed = list(
         git(...diffArgs, "--name-only", "-z", c.baseline, head),
       );
       const history = list(
         git("log", "--format=", "--name-only", "-z", c.baseline + ".." + head),
+      );
+      if (
+        changed.some((path) => !allowed.has(path)) ||
+        history.some((path) => !allowed.has(path)) ||
+        !WP8F_V18_ENVELOPE.controlFiles.every((path) => changed.includes(path))
+      )
+        return { ok: false, reason: "V31_SCOPE_DRIFT" };
+      v31ProviderCommits = git(
+        "log",
+        "--full-history",
+        "--format=%H",
+        c.baseline + ".." + head,
+        "--",
+        WP8F_V27_PROVIDER_SEAL.path,
+      )
+        .trim()
+        .split("\n")
+        .filter(Boolean);
+      if (v31ProviderCommits.length > 1)
+        return { ok: false, reason: "V31_PROVIDER_TEST_HISTORY_DRIFT" };
+    }
+    if (v30) {
+      const c = PR15_CI_TIMEOUT_CONTROL;
+      const v30Head = v31 ? PR15_P1_REMEDIATION_CONTROL.baseline : head;
+      const v30Work = v31
+        ? (JSON.parse(
+            git("show", v30Head + ":config/project/current-work.json"),
+          ) as Record<string, unknown>)
+        : committedWork;
+      if (JSON.stringify(v30Work.wp8fV30CiTimeout) !== JSON.stringify(c))
+        return { ok: false, reason: "V30_EXACT_CONTROL_INVALID" };
+      git("merge-base", "--is-ancestor", c.baseline, v30Head);
+      const changed = list(
+        git(...diffArgs, "--name-only", "-z", c.baseline, v30Head),
+      );
+      const history = list(
+        git(
+          "log",
+          "--format=",
+          "--name-only",
+          "-z",
+          c.baseline + ".." + v30Head,
+        ),
       );
       if (
         !exactPaths(changed, [...WP8F_V18_ENVELOPE.controlFiles, c.path]) ||
@@ -5309,7 +5397,7 @@ export function inspectV23SealedRepository(
         "log",
         "--full-history",
         "--format=%H",
-        c.baseline + ".." + head,
+        c.baseline + ".." + v30Head,
         "--",
         c.path,
       )
@@ -5320,8 +5408,8 @@ export function inspectV23SealedRepository(
         return { ok: false, reason: "V30_WORKFLOW_HISTORY_DRIFT" };
       if (changes.length === 0) {
         if (
-          hash(git("show", head + ":" + c.path)) !== c.priorFileSha256 ||
-          hash(readFileSync(join(cwd, c.path))) !== c.priorFileSha256
+          hash(git("show", v30Head + ":" + c.path)) !== c.priorFileSha256 ||
+          (!v31 && hash(readFileSync(join(cwd, c.path))) !== c.priorFileSha256)
         )
           return { ok: false, reason: "V30_WORKFLOW_PREDECESSOR_MISMATCH" };
       } else {
@@ -5345,8 +5433,8 @@ export function inspectV23SealedRepository(
             [c.path],
           ) ||
           hash(git("show", parent + ":" + c.path)) !== c.priorFileSha256 ||
-          hash(git("show", head + ":" + c.path)) !== c.fileSha256 ||
-          hash(readFileSync(join(cwd, c.path))) !== c.fileSha256
+          hash(git("show", v30Head + ":" + c.path)) !== c.fileSha256 ||
+          (!v31 && hash(readFileSync(join(cwd, c.path))) !== c.fileSha256)
         )
           return { ok: false, reason: "V30_WORKFLOW_SEAL_MISMATCH" };
       }
@@ -5433,13 +5521,39 @@ export function inspectV23SealedRepository(
       v28 || committedWork.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version;
     const v26 =
       v27 || committedWork.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version;
+    const v31InheritedPaths = v31
+      ? paths.filter(
+          (path) =>
+            path !== "worker/durable-objects.ts" &&
+            path !== "worker-tests/durable-state.test.ts",
+        )
+      : paths;
+    const v31InheritedHistoryPaths = v31
+      ? historyPaths.filter(
+          (path) =>
+            path !== "worker/durable-objects.ts" &&
+            path !== "worker-tests/durable-state.test.ts",
+        )
+      : historyPaths;
+    if (v31 && v31ProviderCommits.length === 1) {
+      observation.headFileSha256 =
+        WP8F_V27_PROVIDER_SEAL.correction.sealedFileSha256;
+      observation.workingFileSha256 =
+        WP8F_V27_PROVIDER_SEAL.correction.sealedFileSha256;
+      observation.pathCommits = observation.pathCommits.filter(
+        (commit) => !v31ProviderCommits.includes(commit),
+      );
+    }
     if (v28) {
-      observation.paths = paths.filter(
+      observation.paths = v31InheritedPaths.filter(
         (path) => path !== WP8F_V28_GREPTILE_REVIEWER.path,
       );
-      observation.historyPaths = historyPaths.filter(
+      observation.historyPaths = v31InheritedHistoryPaths.filter(
         (path) => path !== WP8F_V28_GREPTILE_REVIEWER.path,
       );
+    } else if (v31) {
+      observation.paths = v31InheritedPaths;
+      observation.historyPaths = v31InheritedHistoryPaths;
     }
     let dirty: string[];
     if (v26) {
@@ -5750,7 +5864,10 @@ export function inspectV23SealedRepository(
                 "rev-parse",
                 seal.commit + ":" + provider.path,
               ).trim(),
-              headBlobOid: git("rev-parse", head + ":" + provider.path).trim(),
+              headBlobOid:
+                v31 && v31ProviderCommits.length === 1
+                  ? provider.correction.sealedBlobOid
+                  : git("rev-parse", head + ":" + provider.path).trim(),
             };
           };
           sealValid =
@@ -5772,13 +5889,13 @@ export function inspectV23SealedRepository(
         WP8F_V27_PROVIDER_SEAL.path,
         WP8F_V26_WORKFLOW_SEAL.path,
       ];
-      const configured = paths.includes(reviewer.path);
+      const configured = v31InheritedPaths.includes(reviewer.path);
       const expectedInventory = configured
         ? [...inheritedInventory, reviewer.path]
         : inheritedInventory;
       v28Valid =
-        samePathSet(paths, expectedInventory) &&
-        samePathSet(historyPaths, expectedInventory);
+        samePathSet(v31InheritedPaths, expectedInventory) &&
+        samePathSet(v31InheritedHistoryPaths, expectedInventory);
       if (v28Valid && configured) {
         const configCommits = git(
           "log",
@@ -5899,7 +6016,10 @@ function v23VerifiedPaths(
     (!isRecord(work) ||
       (work.roadmapVersion !== WP8F_V26_WORKFLOW_SEAL.version &&
         work.roadmapVersion !== WP8F_V27_PROVIDER_SEAL.version &&
-        work.roadmapVersion !== WP8F_V28_GREPTILE_REVIEWER.version) ||
+        work.roadmapVersion !== WP8F_V28_GREPTILE_REVIEWER.version &&
+        work.roadmapVersion !== PR15_CI_CONTROL.version &&
+        work.roadmapVersion !== PR15_CI_TIMEOUT_CONTROL.version &&
+        work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version) ||
       (typeof input.rawIndexSha256 === "string" &&
         input.rawIndexSha256 === fresh.proof.rawIndexSha256)) &&
     candidate.evidenceHead === fresh.proof.head &&
@@ -7180,6 +7300,43 @@ export const PR15_CI_TIMEOUT_CONTROL = {
     "FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION",
 } as const;
 
+export const PR15_P1_REMEDIATION_CONTROL = {
+  version: "2026.09.20-v31",
+  ownerDecision: "MP-OD-2026-09-20-V31",
+  supersedes: "2026.09.20-v30",
+  type: "PR15_P1_HANDOFF_AND_TARGETED_TEST_WATCHDOG_REMEDIATION_ONLY_INHERITING_V30",
+  mandate: "OWNER_AUTHORIZED_ALL_OUTSTANDING_PR15_REMEDIATIONS_2026_09_20",
+  repository: "Eak-dev/malispang-lineOA",
+  pullRequest: 15,
+  headBranch: "codex/greptile-reviewer-setup",
+  baseBranch: "codex/phase-1a-foundation",
+  baseline: "7218d5311be43ae9416fe774d549e8117c0038b7",
+  finding: "discussion_r4056893918",
+  triage: "issuecomment-5749830752",
+  evidenceRun: 35513480785,
+  evidenceJob: 106085364845,
+  priorDefaultTestTimeoutMs: 5000,
+  targetedTestTimeoutMs: 15000,
+  testTimeoutScope:
+    "V26_LATER_WORKFLOW_TWO_CASES_AND_V27_PROTECTED_PATH_FIVE_CASES_ONLY",
+  p1Result:
+    "REPRODUCED_HTTP_DURABLE_OBJECT_SQLITE_DETERMINISTIC_BARRIER_ON_BASELINE",
+  remediationPaths: [
+    "tests/project-control.test.ts",
+    "worker/durable-objects.ts",
+    "worker-tests/durable-state.test.ts",
+    "worker-tests/mp-06-pilot-control.test.ts",
+  ],
+  recoveryContract:
+    "OLDER_CLOSE_RECONCILES_WITHOUT_REMOVING_NEWER_ACTIVE_HANDOFF_AND_ACK_COMPLETES_ORIGINAL_RECEIPT",
+  invariants:
+    "GENERATION_FENCE_RETAINED_OPERATION_NO_RESET_NO_AUTOMATIC_RETRY_NO_NEW_CLOSE_GRANT",
+  prAuthority:
+    "EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_GREPTILE_REVIEW",
+  remoteState:
+    "NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07",
+} as const;
+
 function projectV29(
   roadmap: Record<string, unknown>,
   work: Record<string, unknown>,
@@ -7241,7 +7398,7 @@ function projectV30(
   return { roadmap: r, work: w };
 }
 
-export function validateProjectControl(
+function validateProjectControlV30(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
@@ -7263,6 +7420,51 @@ export function validateProjectControl(
       })
   )
     result.errors.push("V30_EXACT_CONTROL_INVALID");
+  return result;
+}
+
+function projectV31(
+  roadmap: Record<string, unknown>,
+  work: Record<string, unknown>,
+) {
+  const r = structuredClone(roadmap),
+    w = structuredClone(work);
+  r.version = PR15_CI_TIMEOUT_CONTROL.version;
+  r.ownerDecision = {
+    decisionId: PR15_CI_TIMEOUT_CONTROL.ownerDecision,
+    decidedAt: "2026-09-20",
+    supersedes: PR15_CI_TIMEOUT_CONTROL.supersedes,
+  };
+  w.roadmapVersion = r.version;
+  delete w.wp8fV31Pr15Remediation;
+  return { roadmap: r, work: w };
+}
+
+export function validateProjectControl(
+  roadmap: unknown,
+  work: unknown,
+): ProjectControlValidation {
+  if (
+    !isRecord(roadmap) ||
+    roadmap.version !== PR15_P1_REMEDIATION_CONTROL.version
+  )
+    return validateProjectControlV30(roadmap, work);
+  if (!isRecord(work))
+    return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+  const projected = projectV31(roadmap, work);
+  const result = validateProjectControlV30(projected.roadmap, projected.work);
+  if (
+    work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version ||
+    JSON.stringify(work.wp8fV31Pr15Remediation) !==
+      JSON.stringify(PR15_P1_REMEDIATION_CONTROL) ||
+    JSON.stringify(roadmap.ownerDecision) !==
+      JSON.stringify({
+        decisionId: PR15_P1_REMEDIATION_CONTROL.ownerDecision,
+        decidedAt: "2026-09-20",
+        supersedes: PR15_P1_REMEDIATION_CONTROL.supersedes,
+      })
+  )
+    result.errors.push("V31_EXACT_CONTROL_INVALID");
   return result;
 }
 
@@ -7301,7 +7503,7 @@ function validateSchemaDocumentsV29(
   );
 }
 
-export function validateSchemaDocuments(
+function validateSchemaDocumentsV30(
   roadmapSchema: unknown,
   schema: unknown,
   version = "2026.09.09-v19",
@@ -7336,6 +7538,41 @@ export function validateSchemaDocuments(
   );
 }
 
+export function validateSchemaDocuments(
+  roadmapSchema: unknown,
+  schema: unknown,
+  version = "2026.09.09-v19",
+): string[] {
+  if (version !== PR15_P1_REMEDIATION_CONTROL.version)
+    return validateSchemaDocumentsV30(roadmapSchema, schema, version);
+  if (
+    !isRecord(schema) ||
+    !isRecord(schema.properties) ||
+    !Array.isArray(schema.required)
+  )
+    return ["V31_SCHEMA_NOT_CLOSED"];
+  if (
+    !schema.required.includes("wp8fV31Pr15Remediation") ||
+    JSON.stringify(schema.properties.wp8fV31Pr15Remediation) !==
+      JSON.stringify({ const: PR15_P1_REMEDIATION_CONTROL }) ||
+    JSON.stringify(schema.properties.roadmapVersion) !==
+      JSON.stringify({ const: version })
+  )
+    return ["V31_SCHEMA_NOT_CLOSED"];
+  const projected = structuredClone(schema);
+  projected.required = (schema.required as unknown[]).filter(
+    (key) => key !== "wp8fV31Pr15Remediation",
+  );
+  const properties = projected.properties as Record<string, unknown>;
+  delete properties.wp8fV31Pr15Remediation;
+  properties.roadmapVersion = { const: PR15_CI_TIMEOUT_CONTROL.version };
+  return validateSchemaDocumentsV30(
+    roadmapSchema,
+    projected,
+    PR15_CI_TIMEOUT_CONTROL.version,
+  );
+}
+
 function validateWp8fOwnerDecisionRecordV29(
   record: unknown,
   version = "2026.09.09-v19",
@@ -7355,7 +7592,7 @@ function validateWp8fOwnerDecisionRecordV29(
   );
 }
 
-export function validateWp8fOwnerDecisionRecord(
+function validateWp8fOwnerDecisionRecordV30(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
@@ -7371,6 +7608,25 @@ export function validateWp8fOwnerDecisionRecord(
       section.includes(String(value)),
     ) &&
     validateWp8fOwnerDecisionRecordV29(record, PR15_CI_CONTROL.version)
+  );
+}
+
+export function validateWp8fOwnerDecisionRecord(
+  record: unknown,
+  version = "2026.09.09-v19",
+): boolean {
+  if (version !== PR15_P1_REMEDIATION_CONTROL.version)
+    return validateWp8fOwnerDecisionRecordV30(record, version);
+  if (typeof record !== "string") return false;
+  const section = record
+    .split("## MP-OD-2026-09-20-V31 —")[1]
+    ?.split("\n## ")[0];
+  return (
+    typeof section === "string" &&
+    Object.values(PR15_P1_REMEDIATION_CONTROL).every((value) =>
+      section.includes(String(value)),
+    ) &&
+    validateWp8fOwnerDecisionRecordV30(record, PR15_CI_TIMEOUT_CONTROL.version)
   );
 }
 

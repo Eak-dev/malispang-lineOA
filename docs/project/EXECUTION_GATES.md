@@ -3016,3 +3016,13 @@ Owner explicitly requested a 20-minute hard timeout after exact-head run35510889
 - inheritedState: FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION
 
 Only the exact `timeout-minutes: 10` to `20` workflow successor is authorized beyond the ten control paths. Preserve the source-head seal adapter, synthetic-merge tests, test ordering, retries, assertions, all checks and historical cancellation evidence. No application/runtime/test change, rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal change, Data Studio hold release, issue closure or MP-07.
+
+## MP-OD-2026-09-20-V31 — PR15 P1 and targeted test-watchdog remediation
+
+Exact baseline7218d5311be43ae9416fe774d549e8117c0038b7 reproduces Greptile discussion_r4056893918 through the real admin HTTP route, ConversationStateDO, HandoffRegistryDO and SQLite with a deterministic barrier before registry reconciliation: generation1 becomes BOT_ACTIVE with its retained close operation; an incoming signed event starts generation2; the original registry receipt and conversation acknowledgement then fail, leaving generation1 pending while generation2 remains active. This is a local TEST-only proof, not a Production incident claim.
+
+The minimum authorized correction is generation-aware late completion: Registry may record a valid older receipt while keeping a strictly newer fence and active row; Conversation may acknowledge that exact retained receipt while the strictly newer generation remains HUMAN_HANDOFF. Same-generation completion still requires BOT_ACTIVE and removal of its active Registry row. Reject future, foreign, mismatched, already-newer-closed or corrupt receipts. Do not reset or replace the operation, close the newer generation, remove fencing or add retry. Deterministic regression must prove receipt/generation/operation/audit persistence and newer active handoff survival before and after object eviction.
+
+Hosted run35513480785/job106085364845 completed in7m42s under the new20-minute job limit and failed only four default5000ms test watchdogs. The exact selected v26 parameterized pair and v27 protected-path five cases passed locally in approximately2364–3127ms. Only those seven tests may receive15000ms; assertions, Git operations, order, concurrency, global test timeout, Worker watchdog and workflow remain unchanged.
+
+Authorized non-control paths: worker/durable-objects.ts, worker-tests/durable-state.test.ts and worker-tests/mp-06-pilot-control.test.ts. tests/project-control.test.ts is both an existing exact control path and the only test-watchdog path. Keep PR15 Draft. No remote TEST, deployment, Production, artifact/grant/journal/hold mutation, merge, Issue closure or MP07.

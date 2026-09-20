@@ -5139,6 +5139,17 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.20-v31") {
+      r.version = "2026.09.20-v30";
+      w.roadmapVersion = r.version;
+      delete w.wp8fV31Pr15Remediation;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV31Pr15Remediation",
+      );
+      delete record(s.properties).wp8fV31Pr15Remediation;
+      record(record(s.properties).roadmapVersion).const = r.version;
+    }
     if (r.version === "2026.09.20-v30") {
       r.version = "2026.09.20-v29";
       w.roadmapVersion = r.version;
@@ -8200,6 +8211,17 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
           ),
         ),
       );
+      if (currentRoadmap.version === "2026.09.20-v31") {
+        currentRoadmap.version = "2026.09.20-v30";
+        currentWork.roadmapVersion = currentRoadmap.version;
+        delete currentWork.wp8fV31Pr15Remediation;
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "wp8fV31Pr15Remediation",
+        );
+        delete record(currentSchema.properties).wp8fV31Pr15Remediation;
+        record(record(currentSchema.properties).roadmapVersion).const =
+          currentRoadmap.version;
+      }
       if (currentRoadmap.version === "2026.09.20-v30") {
         currentRoadmap.version = "2026.09.20-v29";
         currentWork.roadmapVersion = currentRoadmap.version;
@@ -8750,8 +8772,8 @@ describe("v29 PR15 source and integration separation", () => {
       expect(validatePr15MergeReceipt(changed, observed), field).toBeNull();
     }
   });
-  it("validates the exact v30 timeout layer and preserves every inherited grant and journal", async () => {
-    const { PR15_CI_TIMEOUT_CONTROL } =
+  it("validates the exact v31 remediation layer and preserves every inherited grant and journal", async () => {
+    const { PR15_P1_REMEDIATION_CONTROL } =
       await import("../src/project-control.js");
     const r = record(
       JSON.parse(
@@ -8769,19 +8791,20 @@ describe("v29 PR15 source and integration separation", () => {
         ),
       ),
     );
-    expect(r.version).toBe(PR15_CI_TIMEOUT_CONTROL.version);
+    expect(r.version).toBe(PR15_P1_REMEDIATION_CONTROL.version);
     expect(validateProjectControl(r, w).errors).toEqual([]);
     for (const key of [
-      "path",
-      "fileSha256",
+      "recoveryContract",
+      "targetedTestTimeoutMs",
+      "remediationPaths",
       "baseline",
       "pullRequest",
       "prAuthority",
     ]) {
       const changed = structuredClone(w);
-      record(changed.wp8fV30CiTimeout)[key] = "unexpected";
+      record(changed.wp8fV31Pr15Remediation)[key] = "unexpected";
       expect(validateProjectControl(r, changed).errors).toContain(
-        "V30_EXACT_CONTROL_INVALID",
+        "V31_EXACT_CONTROL_INVALID",
       );
     }
     for (const action of [
@@ -8789,9 +8812,24 @@ describe("v29 PR15 source and integration separation", () => {
       "ACTIVATE_SUCCESSOR_V22",
       "MERGE_DEFAULT_BRANCH",
       "CHANGE_PRODUCTION",
-      "LOCAL_IMPLEMENTATION",
     ] as const)
       expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+    expect(evaluateProjectAction(r, w, "LOCAL_IMPLEMENTATION")).toEqual({
+      allowed: true,
+      reason: "V31_EXACT_LOCAL_P1_AND_TEST_WATCHDOG_REMEDIATION_ONLY",
+    });
+    expect(
+      evaluateWp8fPaths(
+        r,
+        w,
+        "PR15_P1_REMEDIATION",
+        PR15_P1_REMEDIATION_CONTROL.remediationPaths,
+      ).allowed,
+    ).toBe(true);
+    expect(
+      evaluateWp8fPaths(r, w, "PR15_P1_REMEDIATION", ["worker/index.ts"])
+        .allowed,
+    ).toBe(false);
     const changed = structuredClone(w);
     changed.wp8fV22OperationJournal = [{ action: "forged" }];
     expect(validateProjectControl(r, changed).errors.length).toBeGreaterThan(0);

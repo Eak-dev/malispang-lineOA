@@ -50,7 +50,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v27" ||
     version === "2026.09.20-v28" ||
     version === "2026.09.20-v29" ||
-    version === "2026.09.20-v30";
+    version === "2026.09.20-v30" ||
+    version === "2026.09.20-v31";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -64,7 +65,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       version === "2026.09.20-v27" ||
       version === "2026.09.20-v28" ||
       version === "2026.09.20-v29" ||
-      version === "2026.09.20-v30";
+      version === "2026.09.20-v30" ||
+      version === "2026.09.20-v31";
     let newerSuccessorJournal = journal;
     let newerV22Journal =
       "wp8fV22OperationJournal" in currentWork
@@ -114,7 +116,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v27" ||
           historical.roadmapVersion === "2026.09.20-v28" ||
           historical.roadmapVersion === "2026.09.20-v29" ||
-          historical.roadmapVersion === "2026.09.20-v30")
+          historical.roadmapVersion === "2026.09.20-v30" ||
+          historical.roadmapVersion === "2026.09.20-v31")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -139,7 +142,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v27" ||
           historical.roadmapVersion === "2026.09.20-v28" ||
           historical.roadmapVersion === "2026.09.20-v29" ||
-          historical.roadmapVersion === "2026.09.20-v30")
+          historical.roadmapVersion === "2026.09.20-v30" ||
+          historical.roadmapVersion === "2026.09.20-v31")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -177,7 +181,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v27" ||
     version === "2026.09.20-v28" ||
     version === "2026.09.20-v29" ||
-    version === "2026.09.20-v30"
+    version === "2026.09.20-v30" ||
+    version === "2026.09.20-v31"
   ) {
     const sealed = inspectV23SealedRepository(fileURLToPath(root));
     if (!sealed.ok) throw new Error(sealed.reason);
@@ -303,8 +308,11 @@ export async function runPullRequestControlValidation(
     await import("node:fs/promises");
   const os = await import("node:os");
   const path = await import("node:path");
-  const { PR15_CI_CONTROL, PR15_CI_TIMEOUT_CONTROL, validatePr15MergeReceipt } =
-    await import("./project-control.js");
+  const {
+    PR15_CI_CONTROL,
+    PR15_P1_REMEDIATION_CONTROL,
+    validatePr15MergeReceipt,
+  } = await import("./project-control.js");
   if (
     process.env.GITHUB_EVENT_NAME !== "pull_request" ||
     !eventPath ||
@@ -338,11 +346,11 @@ export async function runPullRequestControlValidation(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
   if (
-    work.roadmapVersion !== PR15_CI_TIMEOUT_CONTROL.version ||
-    JSON.stringify(work.wp8fV30CiTimeout) !==
-      JSON.stringify(PR15_CI_TIMEOUT_CONTROL)
+    work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version ||
+    JSON.stringify(work.wp8fV31Pr15Remediation) !==
+      JSON.stringify(PR15_P1_REMEDIATION_CONTROL)
   )
-    throw new Error("V30_EXACT_CONTROL_INVALID");
+    throw new Error("V31_EXACT_CONTROL_INVALID");
   const controlPaths = [
     "config/project/roadmap.json",
     "config/project/current-work.json",
@@ -360,6 +368,7 @@ export async function runPullRequestControlValidation(
     "pnpm-lock.yaml",
     "greptile.json",
     PR15_CI_CONTROL.path,
+    ...PR15_P1_REMEDIATION_CONTROL.remediationPaths,
   ];
   if (git("diff", "--name-only", receipt.head, merge, "--", ...controlPaths))
     throw new Error("V29_INTEGRATION_CONTROL_DIVERGENCE");
