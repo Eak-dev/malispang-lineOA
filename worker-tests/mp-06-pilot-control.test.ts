@@ -4429,8 +4429,77 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       }),
     ).toMatchObject({ activated: true });
     timingMarker("pilot_activation_asserted");
-    const network = vi.fn<typeof fetch>((input) => {
+    let targetSignal: AbortSignal | undefined;
+    let fetchCheckpointCompleted = false;
+    let targetDeadline: ReturnType<typeof setTimeout> | undefined;
+    let targetDeadlineFired = false;
+    let targetDeadlineCleared = false;
+    let targetAbortObserved = false;
+    const fakeSetTimeout = globalThis.setTimeout;
+    const fakeClearTimeout = globalThis.clearTimeout;
+    const observedSetTimeout: typeof setTimeout = (
+      callback,
+      delay,
+      ...args
+    ) => {
+      const directCaller = (new Error().stack ?? "").split("\n")[2] ?? "";
+      const callbackText = Function.prototype.toString.call(callback);
+      const target =
+        delay === 8_000 &&
+        targetSignal !== undefined &&
+        /\/worker\/mp-06-ai-nlu\.ts:\d+:\d+\)?$/.test(directCaller) &&
+        /controller\.abort\(\)/.test(callbackText) &&
+        /type:\s*["']DEADLINE["']/.test(callbackText);
+      const handle = fakeSetTimeout(
+        (...values) => {
+          if (target) {
+            targetDeadlineFired = true;
+            timingMarker("target_deadline_firing");
+          }
+          callback(...values);
+          if (target) {
+            targetAbortObserved = targetSignal?.aborted === true;
+            timingMarker("target_deadline_callback_returned");
+          }
+        },
+        delay,
+        ...args,
+      );
+      if (target) {
+        targetDeadline = handle;
+        timingMarker("target_deadline_registered");
+      }
+      return handle;
+    };
+    vi.stubGlobal("setTimeout", observedSetTimeout);
+    vi.stubGlobal("clearTimeout", (handle: ReturnType<typeof setTimeout>) => {
+      if (handle === targetDeadline) {
+        targetDeadlineCleared = true;
+        timingMarker("target_deadline_cleared");
+      }
+      return fakeClearTimeout(handle);
+    });
+    await runInDurableObject(coordinator, (instance) => {
+      const original = instance.recordMp06PilotLifecycleCheckpoint;
+      vi.spyOn(
+        ConversationStateDO.prototype,
+        "recordMp06PilotLifecycleCheckpoint",
+      ).mockImplementation(function (input) {
+        const result = original.call(this, input);
+        if (input.sessionRef === hexRef(884) && result.accepted) {
+          if (input.phase === "FETCH_PROMISE_CREATED") {
+            fetchCheckpointCompleted = true;
+            timingMarker("fetch_checkpoint_storage_complete");
+          } else if (input.phase === "SETTLEMENT_STARTED") {
+            timingMarker("settlement_checkpoint_storage_complete");
+          }
+        }
+        return result;
+      });
+    });
+    const network = vi.fn<typeof fetch>((input, init) => {
       if (requestUrl(input).startsWith("https://api.openai.com/")) {
+        targetSignal = init?.signal ?? undefined;
         timingMarker("provider_hang_entered");
         return new Promise<Response>(() => undefined);
       }
@@ -4474,6 +4543,7 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
       timingMarker("single_provider_call_observed");
       await vi.advanceTimersByTimeAsync(8_000);
       timingMarker("deadline_clock_advance_complete");
+      timingMarker("execution_context_settlement_started");
       await waitOnExecutionContext(ctx);
       timingMarker("execution_context_settled");
 
@@ -4512,7 +4582,15 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
         latestLifecycle: { outcomeCode: "PROVIDER_DEADLINE" },
       });
       timingMarker("provider_deadline_diagnostics_asserted");
+      expect(fetchCheckpointCompleted).toBe(true);
+      expect(targetDeadline).toBeDefined();
+      expect(targetDeadlineFired).toBe(true);
+      expect(targetDeadlineCleared).toBe(true);
+      expect(targetAbortObserved).toBe(true);
+      timingMarker("target_timer_identity_and_abort_asserted");
     } finally {
+      await runInDurableObject(coordinator, () => vi.restoreAllMocks());
+      timingMarker("checkpoint_observer_restored");
       vi.unstubAllGlobals();
       timingMarker("globals_restored");
       vi.useRealTimers();
