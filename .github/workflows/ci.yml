@@ -15,7 +15,7 @@ jobs:
     # authoring platform and byte-for-byte generated-asset gate; do not replace
     # the approved asset with a Linux font-fallback rendering.
     runs-on: macos-15-intel
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       CI: "true"
       WRANGLER_SEND_METRICS: "false"
