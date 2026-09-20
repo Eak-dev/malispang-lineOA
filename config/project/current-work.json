@@ -2,7 +2,7 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.20-v28",
+  "roadmapVersion": "2026.09.20-v29",
   "wp8fV28GreptileReviewer": {
     "version": "2026.09.20-v28",
     "ownerDecision": "MP-OD-2026-09-20-V28",
@@ -1503,5 +1503,22 @@
     "residual": "ROOT_CAUSE_UNRESOLVED",
     "grants": "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE",
     "runtimeAndArtifact": "EXACT_UNCHANGED_V22_AUTHORIZATION"
+  },
+  "wp8fV29PrCi": {
+    "version": "2026.09.20-v29",
+    "ownerDecision": "MP-OD-2026-09-20-V29",
+    "supersedes": "2026.09.20-v28",
+    "type": "PR15_SOURCE_SEAL_AND_SYNTHETIC_MERGE_VALIDATION_ONLY",
+    "mandate": "OWNER_PR15_CI_REPAIR_2026_09_20",
+    "repository": "Eak-dev/malispang-lineOA",
+    "pullRequest": 15,
+    "headBranch": "codex/greptile-reviewer-setup",
+    "baseBranch": "codex/phase-1a-foundation",
+    "baseline": "c04c87f490003f042b4d18ac6729a973a2b3401b",
+    "path": ".github/workflows/ci.yml",
+    "fileSha256": "649bb59905f0dbdf5759f3b3351e6a987c9b035a1c6e97ed286428b81b3861ac",
+    "mode": "SEALED_SOURCE_HEAD_CONTROL_PLUS_FULL_SYNTHETIC_MERGE_TESTS",
+    "prAuthority": "EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_REVIEW",
+    "inheritedState": "FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION"
   }
 }

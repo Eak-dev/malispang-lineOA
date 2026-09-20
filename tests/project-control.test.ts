@@ -5139,6 +5139,17 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.20-v29") {
+      r.version = "2026.09.20-v28";
+      w.roadmapVersion = r.version;
+      delete w.wp8fV29PrCi;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV29PrCi",
+      );
+      delete record(s.properties).wp8fV29PrCi;
+      record(record(s.properties).roadmapVersion).const = r.version;
+    }
     if (r.version === "2026.09.20-v28") {
       r.version = "2026.09.20-v27";
       delete w.wp8fV28GreptileReviewer;
@@ -8178,6 +8189,17 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
           ),
         ),
       );
+      if (currentRoadmap.version === "2026.09.20-v29") {
+        currentRoadmap.version = "2026.09.20-v28";
+        currentWork.roadmapVersion = currentRoadmap.version;
+        delete currentWork.wp8fV29PrCi;
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "wp8fV29PrCi",
+        );
+        delete record(currentSchema.properties).wp8fV29PrCi;
+        record(record(currentSchema.properties).roadmapVersion).const =
+          currentRoadmap.version;
+      }
       if (currentRoadmap.version === "2026.09.20-v28") {
         currentRoadmap.version = version;
         currentRoadmap.ownerDecision = {
@@ -8636,5 +8658,119 @@ describe("v26 closed NUL-delimited porcelain status parser", () => {
       "..",
     ])
       expect(parseV26PorcelainStatus("?? " + path + "\0")).toBeNull();
+  });
+});
+
+describe("v29 PR15 source and integration separation", () => {
+  const head = "c04c87f490003f042b4d18ac6729a973a2b3401b";
+  const base = "aad8c5e0ef41c5e47df3d93ae462b9122368c15d";
+  const merge = "383e60b6028d4b4c6ae919cd6f8ca7652ff249e3";
+  const repository = { full_name: "Eak-dev/malispang-lineOA" };
+  const event = {
+    number: 15,
+    repository,
+    pull_request: {
+      head: {
+        sha: head,
+        ref: "codex/greptile-reviewer-setup",
+        repo: repository,
+      },
+      base: { sha: base, ref: "codex/phase-1a-foundation", repo: repository },
+    },
+  };
+  const observed = {
+    sha: merge,
+    merge,
+    ref: "refs/pull/15/merge",
+    parents: [base, head],
+  };
+  it("binds source and base to the actual two-parent PR merge", async () => {
+    const { validatePr15MergeReceipt } =
+      await import("../src/project-control.js");
+    expect(validatePr15MergeReceipt(event, observed)).toEqual({ head, base });
+  });
+  it("rejects wrong refs, SHA, parents, octopus and source-only checkouts", async () => {
+    const { validatePr15MergeReceipt } =
+      await import("../src/project-control.js");
+    for (const override of [
+      { ref: "refs/heads/main" },
+      { sha: head },
+      { merge: head },
+      { parents: [head, base] },
+      { parents: [base, head, merge] },
+      { parents: [head] },
+      { parents: [] },
+    ])
+      expect(
+        validatePr15MergeReceipt(event, { ...observed, ...override }),
+      ).toBeNull();
+  });
+  it("rejects foreign repositories, wrong PR or branches and malformed SHAs", async () => {
+    const { validatePr15MergeReceipt } =
+      await import("../src/project-control.js");
+    for (const field of [
+      "number",
+      "repository",
+      "headRepo",
+      "headRef",
+      "baseRef",
+      "headSha",
+    ]) {
+      const changed = structuredClone(event);
+      if (field === "number") changed.number = 16;
+      if (field === "repository") changed.repository.full_name = "other/repo";
+      if (field === "headRepo")
+        changed.pull_request.head.repo.full_name = "other/repo";
+      if (field === "headRef")
+        changed.pull_request.head.ref = "codex/mp-06-guardrailed-ai";
+      if (field === "baseRef") changed.pull_request.base.ref = "main";
+      if (field === "headSha") changed.pull_request.head.sha = "HEAD";
+      expect(validatePr15MergeReceipt(changed, observed), field).toBeNull();
+    }
+  });
+  it("validates the exact v29 layer and preserves every inherited grant and journal", async () => {
+    const { PR15_CI_CONTROL } = await import("../src/project-control.js");
+    const r = record(
+      JSON.parse(
+        await readFile(
+          new URL("../config/project/roadmap.json", import.meta.url),
+          "utf8",
+        ),
+      ),
+    );
+    const w = record(
+      JSON.parse(
+        await readFile(
+          new URL("../config/project/current-work.json", import.meta.url),
+          "utf8",
+        ),
+      ),
+    );
+    expect(r.version).toBe(PR15_CI_CONTROL.version);
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    for (const key of [
+      "path",
+      "fileSha256",
+      "baseline",
+      "pullRequest",
+      "prAuthority",
+    ]) {
+      const changed = structuredClone(w);
+      record(changed.wp8fV29PrCi)[key] = "unexpected";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V29_EXACT_CONTROL_INVALID",
+      );
+    }
+    for (const action of [
+      "DEPLOY_TEST",
+      "ACTIVATE_SUCCESSOR_V22",
+      "MERGE_DEFAULT_BRANCH",
+      "CHANGE_PRODUCTION",
+      "LOCAL_IMPLEMENTATION",
+    ] as const)
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+    const changed = structuredClone(w);
+    changed.wp8fV22OperationJournal = [{ action: "forged" }];
+    expect(validateProjectControl(r, changed).errors.length).toBeGreaterThan(0);
   });
 });

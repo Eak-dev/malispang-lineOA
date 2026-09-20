@@ -48,7 +48,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.12-v25" ||
     version === "2026.09.20-v26" ||
     version === "2026.09.20-v27" ||
-    version === "2026.09.20-v28";
+    version === "2026.09.20-v28" ||
+    version === "2026.09.20-v29";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -60,7 +61,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     const v26 =
       version === "2026.09.20-v26" ||
       version === "2026.09.20-v27" ||
-      version === "2026.09.20-v28";
+      version === "2026.09.20-v28" ||
+      version === "2026.09.20-v29";
     let newerSuccessorJournal = journal;
     let newerV22Journal =
       "wp8fV22OperationJournal" in currentWork
@@ -108,7 +110,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.12-v25" ||
           historical.roadmapVersion === "2026.09.20-v26" ||
           historical.roadmapVersion === "2026.09.20-v27" ||
-          historical.roadmapVersion === "2026.09.20-v28")
+          historical.roadmapVersion === "2026.09.20-v28" ||
+          historical.roadmapVersion === "2026.09.20-v29")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -131,7 +134,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.12-v25" ||
           historical.roadmapVersion === "2026.09.20-v26" ||
           historical.roadmapVersion === "2026.09.20-v27" ||
-          historical.roadmapVersion === "2026.09.20-v28")
+          historical.roadmapVersion === "2026.09.20-v28" ||
+          historical.roadmapVersion === "2026.09.20-v29")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -167,7 +171,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.12-v25" ||
     version === "2026.09.20-v26" ||
     version === "2026.09.20-v27" ||
-    version === "2026.09.20-v28"
+    version === "2026.09.20-v28" ||
+    version === "2026.09.20-v29"
   ) {
     const sealed = inspectV23SealedRepository(fileURLToPath(root));
     if (!sealed.ok) throw new Error(sealed.reason);
@@ -280,4 +285,107 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
 
 async function readJson(root: URL, path: string): Promise<unknown> {
   return JSON.parse(await readFile(new URL(path, root), "utf8")) as unknown;
+}
+
+/** PR-only adapter: integration code is tested in the caller's checkout; the
+ * sealed-history CLI is executed from the exact source checkout. It never
+ * changes inspectV23SealedRepository's merge rejection or issues a live proof. */
+export async function runPullRequestControlValidation(
+  root: URL,
+  eventPath: string | undefined,
+): Promise<void> {
+  const { mkdtemp, mkdir, readdir, symlink, rm } =
+    await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const { PR15_CI_CONTROL, validatePr15MergeReceipt } =
+    await import("./project-control.js");
+  if (
+    process.env.GITHUB_EVENT_NAME !== "pull_request" ||
+    !eventPath ||
+    process.env.GITHUB_REPOSITORY !== PR15_CI_CONTROL.repository
+  )
+    throw new Error("V29_PR_EVENT_REQUIRED");
+  const event: unknown = JSON.parse(await readFile(eventPath, "utf8"));
+  const cwd = fileURLToPath(root);
+  const git = (...args: string[]) =>
+    execFileSync(
+      "git",
+      ["--no-replace-objects", "--no-optional-locks", ...args],
+      { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    ).trim();
+  const merge = git("rev-parse", "HEAD");
+  const parents = git("rev-list", "--parents", "-n", "1", merge)
+    .split(" ")
+    .slice(1);
+  const receipt = validatePr15MergeReceipt(event, {
+    sha: process.env.GITHUB_SHA,
+    ref: process.env.GITHUB_REF,
+    merge,
+    parents,
+  });
+  if (!receipt) throw new Error("V29_PR_MERGE_IDENTITY_MISMATCH");
+  const status = git("status", "--porcelain=v1", "--untracked-files=all");
+  if (status) throw new Error("V29_PR_CHECKOUT_DIRTY");
+  // Integration control code/data must be identical to the source that will
+  // validate its history. A base-branch control conflict cannot silently pass.
+  const work = JSON.parse(
+    await readFile(new URL("config/project/current-work.json", root), "utf8"),
+  ) as Record<string, unknown>;
+  if (
+    work.roadmapVersion !== PR15_CI_CONTROL.version ||
+    JSON.stringify(work.wp8fV29PrCi) !== JSON.stringify(PR15_CI_CONTROL)
+  )
+    throw new Error("V29_EXACT_CONTROL_INVALID");
+  const controlPaths = [
+    "config/project/roadmap.json",
+    "config/project/current-work.json",
+    "config/project/current-work.schema.json",
+    "src/project-control.ts",
+    "src/project-control-cli.ts",
+    "tests/project-control.test.ts",
+    "PROJECT_CONTROL.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "config/project/roadmap.schema.json",
+    "scripts/validate-project-control.mjs",
+    "package.json",
+    "pnpm-lock.yaml",
+    "greptile.json",
+    PR15_CI_CONTROL.path,
+  ];
+  if (git("diff", "--name-only", receipt.head, merge, "--", ...controlPaths))
+    throw new Error("V29_INTEGRATION_CONTROL_DIVERGENCE");
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "mp06-pr15-control-"));
+  const source = path.join(temporary, "source");
+  let created = false;
+  try {
+    git("worktree", "add", "--detach", source, receipt.head);
+    created = true;
+    // Keep node_modules a real ignored directory: a root symlink is not
+    // covered by the repository's node_modules/ ignore rule.
+    await mkdir(path.join(source, "node_modules"));
+    for (const name of await readdir(path.join(cwd, "node_modules")))
+      await symlink(
+        path.join(cwd, "node_modules", name),
+        path.join(source, "node_modules", name),
+      );
+    execFileSync(
+      process.execPath,
+      ["--import", "tsx", "scripts/validate-project-control.mjs"],
+      { cwd: source, stdio: "inherit" },
+    );
+    if (
+      git("rev-parse", "HEAD") !== merge ||
+      git("status", "--porcelain=v1", "--untracked-files=all") !== status
+    )
+      throw new Error("V29_INTEGRATION_CHECKOUT_CHANGED");
+    console.log(
+      `PR15 source seal PASS head=${receipt.head}; integration=${merge}; base=${receipt.base}; control bytes identical; not merge/deployment approval`,
+    );
+  } finally {
+    if (created) git("worktree", "remove", source);
+    await rm(temporary, { recursive: true, force: true });
+  }
 }

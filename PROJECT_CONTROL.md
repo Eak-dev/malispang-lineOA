@@ -1,5 +1,9 @@
 # MalisPang Project Control
 
+## Current effective control — v29 / PR15 CI repair
+
+Roadmap2026.09.20-v29 supersedes v28 for the Owner-approved existing Draft PR15 review and exact sealed CI repair. Source-head history remains merge-free and fully sealed; synthetic merge integration tests remain mandatory. Ten control paths plus the exact ci.yml digest in wp8fV29PrCi only. All prior runtime/artifact/grants/journals/holds remain unchanged. No rebase, force-push, merge, deploy, Production, issue closure or MP07. Earlier current headings are immutable history.
+
 ## Current effective control — v28 / repository-scoped Greptile reviewer
 
 Roadmap2026.09.20-v28 / MP-OD-2026-09-20-V28 supersedes 2026.09.20-v27 under OWNER_GREPTILE_INDEPENDENT_REVIEWER_REQUEST_2026_09_20. This is REPOSITORY_SCOPED_INDEPENDENT_GREPTILE_REVIEWER_CONTROL_ONLY_INHERITING_V27 for Eak-dev/malispang-lineOA. It authorizes only greptile.json with SHA-256 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61 in addition to the ten exact control paths.

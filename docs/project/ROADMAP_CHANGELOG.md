@@ -644,3 +644,25 @@ Controlv27 seals exact7ad/74d Worker history and original workflow chain; runtim
 Owner requested an independent Greptile reviewer for Eak-dev/malispang-lineOA. v28 supersedes v27 only to authorize one digest-pinned root greptile.json plus necessary control/schema/tests/evidence. Reviews are findings-only on PR open; no push/rebase/draft review, style, PR-description rewrite, auto-approve, auto-fix, auto-merge, Greptile Codex plugin, greploop, required-check promotion, cross-repository context or automatic new-repository enablement. Logic+Syntax, strictness2, summary, issue table and confidence are on; diagrams are off.
 
 No current authorized PR exists, and the inherited PR prohibition remains, so no review is triggered by this transition. Frozen runtime/artifact, grants, journals, pendingTemplate mismatch, Data Studio hold and every MP-06 restriction remain unchanged. No Production, deploy, grant change, merge, issue closure or MP-07. WIP — NOT_DEPLOYABLE.
+
+## MP-OD-2026-09-20-V29 — PR15 CI source and integration separation
+
+Owner approved the diagnosed repair in this session (จัดการต่อ ได้เลย). Supersedes only review/CI restrictions for existing PR15; inherited remote grants and journals are unchanged, not consumed or reset.
+
+- version: 2026.09.20-v29
+- ownerDecision: MP-OD-2026-09-20-V29
+- supersedes: 2026.09.20-v28
+- type: PR15_SOURCE_SEAL_AND_SYNTHETIC_MERGE_VALIDATION_ONLY
+- mandate: OWNER_PR15_CI_REPAIR_2026_09_20
+- repository: Eak-dev/malispang-lineOA
+- pullRequest: 15
+- headBranch: codex/greptile-reviewer-setup
+- baseBranch: codex/phase-1a-foundation
+- baseline: c04c87f490003f042b4d18ac6729a973a2b3401b
+- path: .github/workflows/ci.yml
+- fileSha256: 649bb59905f0dbdf5759f3b3351e6a987c9b035a1c6e97ed286428b81b3861ac
+- mode: SEALED_SOURCE_HEAD_CONTROL_PLUS_FULL_SYNTHETIC_MERGE_TESTS
+- prAuthority: EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_REVIEW
+- inheritedState: FROZEN_RUNTIME_ARTIFACT_GRANTS_JOURNALS_AND_HOLDS_UNCHANGED_NO_REMOTE_ACTION
+
+Ten exact control paths plus the single SHA-256 sealed workflow patch only. No application edit, rebase, force-push, merge, deploy, Production access, Data Studio release, issue closure or MP07. Preserve all prior failure evidence. Greptile P1 remains unverified pending triage, not authorized runtime remediation. CI must test the synthetic merge fully and validate the actual source head in an isolated checkout; no synthetic commit may acquire a deployment proof.
