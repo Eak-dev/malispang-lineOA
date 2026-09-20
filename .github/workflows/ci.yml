@@ -65,6 +65,10 @@ jobs:
             if (command === 'pnpm test') {
               execFileSync('pnpm', ['test:node'], { stdio: 'inherit' });
               execFileSync('pnpm', ['test:worker', '--no-file-parallelism'], { stdio: 'inherit' });
+            } else if (command === 'pnpm validate:project-control' && process.env.GITHUB_EVENT_NAME === 'pull_request') {
+              execFileSync('node', ['--import', 'tsx', '--input-type=module', '-e',
+                "import { runPullRequestControlValidation } from './src/project-control-cli.ts'; await runPullRequestControlValidation(new URL('./', import.meta.url), process.env.GITHUB_EVENT_PATH);"
+              ], { stdio: 'inherit' });
             } else {
               execFileSync('pnpm', [command.slice('pnpm '.length)], { stdio: 'inherit' });
             }
