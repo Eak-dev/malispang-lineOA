@@ -45,7 +45,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.10-v22" ||
     version === "2026.09.11-v23" ||
     version === "2026.09.11-v24" ||
-    version === "2026.09.12-v25";
+    version === "2026.09.12-v25" ||
+    version === "2026.09.20-v26";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -54,6 +55,12 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     )
       throw new Error("V21_OPERATION_JOURNAL_MISSING");
     const journal = currentWork.wp8fSuccessorOperationJournal;
+    const v26 = version === "2026.09.20-v26";
+    let newerSuccessorJournal = journal;
+    let newerV22Journal =
+      "wp8fV22OperationJournal" in currentWork
+        ? currentWork.wp8fV22OperationJournal
+        : undefined;
     const cwd = fileURLToPath(root);
     if (
       execFileSync("git", ["rev-parse", "--is-shallow-repository"], {
@@ -93,16 +100,18 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.10-v22" ||
           historical.roadmapVersion === "2026.09.11-v23" ||
           historical.roadmapVersion === "2026.09.11-v24" ||
-          historical.roadmapVersion === "2026.09.12-v25")
+          historical.roadmapVersion === "2026.09.12-v25" ||
+          historical.roadmapVersion === "2026.09.20-v26")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
           !validateSuccessorOperationJournal(
-            journal,
+            v26 ? newerSuccessorJournal : journal,
             historical.wp8fSuccessorOperationJournal,
           )
         )
           throw new Error("V21_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED");
+        newerSuccessorJournal = historical.wp8fSuccessorOperationJournal;
       }
       if (
         inheritsV22 &&
@@ -112,17 +121,26 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
         (historical.roadmapVersion === "2026.09.10-v22" ||
           historical.roadmapVersion === "2026.09.11-v23" ||
           historical.roadmapVersion === "2026.09.11-v24" ||
-          historical.roadmapVersion === "2026.09.12-v25")
+          historical.roadmapVersion === "2026.09.12-v25" ||
+          historical.roadmapVersion === "2026.09.20-v26")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
           !("wp8fV22OperationJournal" in historical) ||
           !validateV22OperationJournal(
-            currentWork.wp8fV22OperationJournal,
+            v26 ? newerV22Journal : currentWork.wp8fV22OperationJournal,
             historical.wp8fV22OperationJournal,
           )
         )
           throw new Error("V22_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED");
+        newerV22Journal = historical.wp8fV22OperationJournal;
+        if (
+          v26 &&
+          (!("wp8fSuccessorOperationJournal" in historical) ||
+            JSON.stringify(historical.wp8fSuccessorOperationJournal) !==
+              JSON.stringify(journal))
+        )
+          throw new Error("V21_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED");
       }
     }
     if (!validateSuccessorOperationJournal(journal))
@@ -137,7 +155,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
   if (
     version === "2026.09.11-v23" ||
     version === "2026.09.11-v24" ||
-    version === "2026.09.12-v25"
+    version === "2026.09.12-v25" ||
+    version === "2026.09.20-v26"
   ) {
     const sealed = inspectV23SealedRepository(fileURLToPath(root));
     if (!sealed.ok) throw new Error(sealed.reason);

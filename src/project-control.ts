@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { channel } from "node:diagnostics_channel";
 
 export const CANONICAL_GITHUB_ISSUES = {
@@ -293,14 +293,17 @@ export function validateProjectControl(
 
   const roadmap = roadmapInput;
   const currentWork = currentWorkInput;
-  const v25 = roadmap.version === WP8F_V25_ADDENDUM.version;
+  const v26 = roadmap.version === WP8F_V26_WORKFLOW_SEAL.version;
+  const v25 = v26 || roadmap.version === WP8F_V25_ADDENDUM.version;
   const v24 = v25 || roadmap.version === WP8F_V24_ENABLEMENT.version;
   const v23 = v24 || roadmap.version === WP8F_V23_ADDENDUM.version;
-  const addendum = v25
-    ? WP8F_V25_ADDENDUM
-    : v24
-      ? WP8F_V24_ENABLEMENT
-      : WP8F_V23_ADDENDUM;
+  const addendum = v26
+    ? WP8F_V26_WORKFLOW_SEAL
+    : v25
+      ? WP8F_V25_ADDENDUM
+      : v24
+        ? WP8F_V24_ENABLEMENT
+        : WP8F_V23_ADDENDUM;
   const v22 = v23 || roadmap.version === WP8F_V22_AUTHORIZATION.version;
   const successor = v22 || roadmap.version === WP8F_V21_COMPLETION.version;
   const completion = v22 ? WP8F_V22_AUTHORIZATION : WP8F_V21_COMPLETION;
@@ -337,13 +340,15 @@ export function validateProjectControl(
     expectEqual(
       errors,
       roadmap.ownerDecision.decidedAt,
-      v25
-        ? "2026-09-12"
-        : v23
-          ? "2026-09-11"
-          : successor
-            ? "2026-09-10"
-            : "2026-09-09",
+      v26
+        ? "2026-09-20"
+        : v25
+          ? "2026-09-12"
+          : v23
+            ? "2026-09-11"
+            : successor
+              ? "2026-09-10"
+              : "2026-09-09",
       "OWNER_DECISION_DATE_INVALID",
     );
     expectEqual(
@@ -938,7 +943,8 @@ export function validateProjectControl(
     }
   }
 
-  if (successor) validateWp8fSuccessor(errors, currentWork, v22, v23, v24, v25);
+  if (successor)
+    validateWp8fSuccessor(errors, currentWork, v22, v23, v24, v25, v26);
 
   const conflicts = Array.isArray(currentWork.conflicts)
     ? currentWork.conflicts
@@ -993,7 +999,8 @@ export function evaluateProjectAction(
     (roadmap.version === WP8F_V22_AUTHORIZATION.version ||
       roadmap.version === WP8F_V23_ADDENDUM.version ||
       roadmap.version === WP8F_V24_ENABLEMENT.version ||
-      roadmap.version === WP8F_V25_ADDENDUM.version)
+      roadmap.version === WP8F_V25_ADDENDUM.version ||
+      roadmap.version === WP8F_V26_WORKFLOW_SEAL.version)
   ) {
     return evaluateWp8fV22Action(
       currentWork,
@@ -1002,7 +1009,8 @@ export function evaluateProjectAction(
       executionEvidence,
       roadmap.version === WP8F_V23_ADDENDUM.version ||
         roadmap.version === WP8F_V24_ENABLEMENT.version ||
-        roadmap.version === WP8F_V25_ADDENDUM.version,
+        roadmap.version === WP8F_V25_ADDENDUM.version ||
+        roadmap.version === WP8F_V26_WORKFLOW_SEAL.version,
       sealedCheckout,
     );
   }
@@ -1138,7 +1146,8 @@ export function validateSchemaDocuments(
     expectedVersion === WP8F_V22_AUTHORIZATION.version ||
     expectedVersion === WP8F_V23_ADDENDUM.version ||
     expectedVersion === WP8F_V24_ENABLEMENT.version ||
-    expectedVersion === WP8F_V25_ADDENDUM.version
+    expectedVersion === WP8F_V25_ADDENDUM.version ||
+    expectedVersion === WP8F_V26_WORKFLOW_SEAL.version
   ) {
     if (
       !isRecord(currentWorkSchema) ||
@@ -1157,7 +1166,8 @@ export function validateSchemaDocuments(
       (expectedVersion === WP8F_V22_AUTHORIZATION.version ||
         expectedVersion === WP8F_V23_ADDENDUM.version ||
         expectedVersion === WP8F_V24_ENABLEMENT.version ||
-        expectedVersion === WP8F_V25_ADDENDUM.version) &&
+        expectedVersion === WP8F_V25_ADDENDUM.version ||
+        expectedVersion === WP8F_V26_WORKFLOW_SEAL.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1172,7 +1182,8 @@ export function validateSchemaDocuments(
     if (
       (expectedVersion === WP8F_V23_ADDENDUM.version ||
         expectedVersion === WP8F_V24_ENABLEMENT.version ||
-        expectedVersion === WP8F_V25_ADDENDUM.version) &&
+        expectedVersion === WP8F_V25_ADDENDUM.version ||
+        expectedVersion === WP8F_V26_WORKFLOW_SEAL.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1186,7 +1197,8 @@ export function validateSchemaDocuments(
       errors.push("V23_SCHEMA_NOT_CLOSED");
     if (
       (expectedVersion === WP8F_V24_ENABLEMENT.version ||
-        expectedVersion === WP8F_V25_ADDENDUM.version) &&
+        expectedVersion === WP8F_V25_ADDENDUM.version ||
+        expectedVersion === WP8F_V26_WORKFLOW_SEAL.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1197,18 +1209,29 @@ export function validateSchemaDocuments(
     )
       errors.push("V24_SCHEMA_NOT_CLOSED");
     if (
-      expectedVersion === WP8F_V25_ADDENDUM.version &&
+      (expectedVersion === WP8F_V25_ADDENDUM.version ||
+        expectedVersion === WP8F_V26_WORKFLOW_SEAL.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
         !currentWorkSchema.required.includes("wp8fV25WorkerTimingAddendum") ||
         JSON.stringify(currentWorkSchema.properties.roadmapVersion) !==
-          JSON.stringify({ const: WP8F_V25_ADDENDUM.version }) ||
+          JSON.stringify({ const: expectedVersion }) ||
         JSON.stringify(
           currentWorkSchema.properties.wp8fV25WorkerTimingAddendum,
         ) !== JSON.stringify({ const: WP8F_V25_ADDENDUM }))
     )
       errors.push("V25_SCHEMA_NOT_CLOSED");
+    if (
+      expectedVersion === WP8F_V26_WORKFLOW_SEAL.version &&
+      (!isRecord(currentWorkSchema) ||
+        !isRecord(currentWorkSchema.properties) ||
+        !Array.isArray(currentWorkSchema.required) ||
+        !currentWorkSchema.required.includes("wp8fV26WorkflowSeal") ||
+        JSON.stringify(currentWorkSchema.properties.wp8fV26WorkflowSeal) !==
+          JSON.stringify({ const: WP8F_V26_WORKFLOW_SEAL }))
+    )
+      errors.push("V26_SCHEMA_NOT_CLOSED");
   } else if (expectedVersion !== "2026.09.09-v19")
     errors.push("UNKNOWN_SCHEMA_VERSION");
   return uniqueSorted(errors);
@@ -3454,6 +3477,36 @@ export function validateWp8fOwnerDecisionRecord(
   version = "2026.09.09-v19",
 ): boolean {
   if (typeof record !== "string") return false;
+  if (version === WP8F_V26_WORKFLOW_SEAL.version) {
+    const g = WP8F_V26_WORKFLOW_SEAL;
+    const current = record
+      .split("## MP-OD-2026-09-20-V26 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof current === "string" &&
+      validateWp8fOwnerDecisionRecord(record, WP8F_V25_ADDENDUM.version) &&
+      [
+        g.mandate,
+        g.type,
+        g.commit,
+        g.parent,
+        g.path,
+        g.parentFileSha256,
+        g.sealedFileSha256,
+        g.pathDiffSha256,
+        g.parentBlobOid,
+        g.sealedBlobOid,
+        WP8F_V22_AUTHORIZATION.sourceCommit,
+        WP8F_V22_AUTHORIZATION.artifactSha256,
+        "supersedes 2026.09.12-v25",
+        "no mint/reset/reissue grants",
+        "complete candidate-to-HEAD inventory",
+        "35469493106",
+        "Data Studio hold",
+        "Production NO_GO — NOT TOUCHED",
+      ].every((value) => current.includes(value))
+    );
+  }
   if (version === WP8F_V25_ADDENDUM.version) {
     const current = record
       .split("## MP-OD-2026-09-12-V25 —")[1]
@@ -3637,7 +3690,8 @@ export function evaluateWp8fPaths(
           (roadmap.version === WP8F_V22_AUTHORIZATION.version ||
             roadmap.version === WP8F_V23_ADDENDUM.version ||
             roadmap.version === WP8F_V24_ENABLEMENT.version ||
-            roadmap.version === WP8F_V25_ADDENDUM.version)
+            roadmap.version === WP8F_V25_ADDENDUM.version ||
+            roadmap.version === WP8F_V26_WORKFLOW_SEAL.version)
           ? WP8F_V22_AUTHORIZATION.evidenceFiles
           : isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version
             ? WP8F_V21_COMPLETION.evidenceFiles
@@ -4387,6 +4441,48 @@ const WP8F_V25_WORK_KEYS = [
   ...WP8F_V24_WORK_KEYS,
   "wp8fV25WorkerTimingAddendum",
 ];
+const WP8F_V26_WORKFLOW_SEAL = {
+  version: "2026.09.20-v26",
+  ownerDecision: "MP-OD-2026-09-20-V26",
+  supersedes: "2026.09.12-v25",
+  type: "SEALED_WORKFLOW_DEADLINE_CONTROL_ONLY_INHERITING_V25",
+  mandate: "PO-2026-09-20-01",
+  commit: "29efa9507604793a925f61cb81d8474c3a0983ad",
+  parent: "0797acb37cec63fe56f0abd81cfd2b6ec50f8add",
+  path: ".github/workflows/ci.yml",
+  candidateFileSha256:
+    "5eca6308342c218bd7502ece4c70e087f647ef5cd487a3becbb6a1a5d936a60f",
+  parentFileSha256:
+    "5eca6308342c218bd7502ece4c70e087f647ef5cd487a3becbb6a1a5d936a60f",
+  sealedFileSha256:
+    "a96043e3fde50251f5be4fa697e779f3ebc2575f94d75e49342f97ca5b34697d",
+  pathDiffSha256:
+    "1cb589b963f78d0d2645d11ef4a4d9f0a0d94ac3107a95a6fc5c9910c372b909",
+  parentBlobOid: "e48f248435f06886ad9c38caa51910c416da273e",
+  sealedBlobOid: "d50d858ad3972fa1fc88fe086535d56382d05935",
+  additions: 1,
+  removals: 1,
+  commitPaths: [
+    ".github/workflows/ci.yml",
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "tests/project-control.test.ts",
+  ],
+  purpose: "EXACT_EXISTING_VALIDATION_JOB_TIMEOUT_30_TO_10_MINUTES_ONLY",
+  controlTestWatchdogsMs: [30000, 60000],
+  jobTimeoutMinutes: 10,
+  futureJobTimeout:
+    "15_OR_20_ONLY_WITH_BOUNDED_HEALTHY_WORK_EVIDENCE_AND_NEW_EXACT_SEAL",
+  grants: "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE",
+  runtimeAndArtifact: "EXACT_UNCHANGED_V22_AUTHORIZATION",
+  providerHang:
+    "CASE_35469493106_REQUIRES_DISTINCT_RESOLUTION_OR_OWNER_DISPOSITION_BEFORE_DEPLOY",
+  credential:
+    "INHERIT_EXACT_ITEM_SCOPE_AFTER_CONTROL_CI_PASSES_SUBJECT_TO_TOOL_REVIEW",
+  dataStudio: "INDEPENDENT_REVIEW_HOLD_NO_RETRY_OR_ALTERNATE_CHANNEL_BYPASS",
+} as const;
+const WP8F_V26_WORK_KEYS = [...WP8F_V25_WORK_KEYS, "wp8fV26WorkflowSeal"];
 const v24ControlTiming = channel("mp06.v24.control-inspection-timing");
 
 /** Data validation is NOT provenance. Only the read-only repository inspector
@@ -4433,6 +4529,95 @@ export function validateV25SealedObservation(input: unknown): boolean {
       WP8F_V25_ADDENDUM.instrumentedFileSha256,
       history,
     )
+  );
+}
+
+/** Closed workflow data validation is not execution authority. The full inventories
+ * are checked before projecting the immutable v25 layer, so no path is hidden. */
+export function validateV26SealedObservation(input: unknown): boolean {
+  if (
+    !isRecord(input) ||
+    !samePathSet(Object.keys(input), ["previous", "workflow"])
+  )
+    return false;
+  const g = WP8F_V26_WORKFLOW_SEAL;
+  const completePaths = [
+    ...WP8F_V18_ENVELOPE.controlFiles,
+    WP8F_V25_ADDENDUM.path,
+    g.path,
+  ];
+  const previous = input.previous;
+  const w = input.workflow;
+  if (
+    !isRecord(previous) ||
+    !samePathSet(Object.keys(previous), ["previous", "current"]) ||
+    !isRecord(previous.previous) ||
+    !isRecord(previous.current) ||
+    !isRecord(w)
+  )
+    return false;
+  for (const row of [previous.previous, previous.current, w])
+    if (
+      !samePathSet(row.paths, completePaths) ||
+      !samePathSet(row.historyPaths, completePaths)
+    )
+      return false;
+  const project = (row: Record<string, unknown>) => ({
+    ...row,
+    paths: (row.paths as string[]).filter((path) => path !== g.path),
+    historyPaths: (row.historyPaths as string[]).filter(
+      (path) => path !== g.path,
+    ),
+  });
+  return (
+    validateV25SealedObservation({
+      previous: project(previous.previous),
+      current: project(previous.current),
+    }) &&
+    samePathSet(Object.keys(w), [
+      "commit",
+      "parent",
+      "path",
+      "candidateFileSha256",
+      "parentFileSha256",
+      "sealedFileSha256",
+      "headFileSha256",
+      "workingFileSha256",
+      "pathDiffSha256",
+      "additions",
+      "removals",
+      "paths",
+      "historyPaths",
+      "pathCommits",
+      "commitPaths",
+      "parentBlobOid",
+      "sealedBlobOid",
+      "headBlobOid",
+    ]) &&
+    w.commit === g.commit &&
+    w.parent === g.parent &&
+    w.path === g.path &&
+    w.candidateFileSha256 === g.candidateFileSha256 &&
+    w.parentFileSha256 === g.parentFileSha256 &&
+    w.sealedFileSha256 === g.sealedFileSha256 &&
+    w.headFileSha256 === g.sealedFileSha256 &&
+    w.workingFileSha256 === g.sealedFileSha256 &&
+    w.pathDiffSha256 === g.pathDiffSha256 &&
+    w.parentBlobOid === g.parentBlobOid &&
+    w.sealedBlobOid === g.sealedBlobOid &&
+    w.headBlobOid === g.sealedBlobOid &&
+    w.additions === g.additions &&
+    w.removals === g.removals &&
+    JSON.stringify(w.pathCommits) === JSON.stringify([g.commit]) &&
+    samePathSet(w.commitPaths, g.commitPaths)
+  );
+}
+
+function samePathSet(input: unknown, expected: readonly string[]): boolean {
+  return (
+    Array.isArray(input) &&
+    input.length === expected.length &&
+    exactPaths(input, expected)
   );
 }
 
@@ -4493,6 +4678,7 @@ type V23CheckoutProof = Readonly<{
   paths: readonly string[];
   clean: boolean;
   currentWorkDigest: string;
+  rawIndexSha256?: string;
 }>;
 const v23CheckoutProofs = new WeakSet<object>();
 
@@ -4545,6 +4731,12 @@ export function inspectV23SealedRepository(
     const list = (raw: string) => raw.split("\0").filter(Boolean);
     const hash = (raw: string | Buffer) =>
       createHash("sha256").update(raw).digest("hex");
+    const indexPath = resolve(
+      cwd,
+      git("rev-parse", "--git-path", "index").trim(),
+    );
+    const rawIndexBefore = hash(readFileSync(indexPath));
+    const indexLockedBefore = existsSync(indexPath + ".lock");
     const g = WP8F_V23_ADDENDUM,
       candidate = WP8F_V22_AUTHORIZATION.sourceCommit;
     if (
@@ -4658,6 +4850,36 @@ export function inspectV23SealedRepository(
       !validateV22OperationJournal(committedWork.wp8fV22OperationJournal)
     )
       return { ok: false, reason: "V23_INHERITED_JOURNAL_UNVERIFIED" };
+    const v26 = committedWork.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version;
+    // A stable index fingerprint is necessary but not sufficient: pre-existing
+    // flags can hide working-file edits from Git's ordinary dirty checks.
+    if (
+      v26 &&
+      list(git("ls-files", "-v", "-z")).some((entry) => !entry.startsWith("H "))
+    )
+      return { ok: false, reason: "V26_INDEX_FLAGS_UNQUALIFIED" };
+    if (v26) {
+      const gitDir = resolve(cwd, git("rev-parse", "--git-dir").trim());
+      if (
+        [
+          "MERGE_HEAD",
+          "CHERRY_PICK_HEAD",
+          "REVERT_HEAD",
+          "REBASE_HEAD",
+          "rebase-merge",
+          "rebase-apply",
+          "sequencer",
+        ].some((marker) => existsSync(join(gitDir, marker)))
+      )
+        return { ok: false, reason: "V26_GIT_OPERATION_IN_PROGRESS" };
+    }
+    if (
+      v26 &&
+      JSON.stringify(committedWork.wp8fSuccessorOperationJournal) !==
+        JSON.stringify(WP8F_V21_CONSUMED_JOURNAL)
+    )
+      return { ok: false, reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE" };
+    let newerV22Journal = committedWork.wp8fV22OperationJournal;
     for (const revision of git(
       "log",
       "--format=%H",
@@ -4675,15 +4897,21 @@ export function inspectV23SealedRepository(
       if (
         !isRecord(previous) ||
         !validateV22OperationJournal(
-          committedWork.wp8fV22OperationJournal,
+          v26 ? newerV22Journal : committedWork.wp8fV22OperationJournal,
           previous.wp8fV22OperationJournal,
-        )
+        ) ||
+        (v26 &&
+          JSON.stringify(previous.wp8fSuccessorOperationJournal) !==
+            JSON.stringify(WP8F_V21_CONSUMED_JOURNAL))
       )
         return { ok: false, reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE" };
+      // Git log is newest-first. Compare adjacent revisions so a reset followed
+      // by restoration cannot pass merely because the final prefix is intact.
+      newerV22Journal = previous.wp8fV22OperationJournal;
     }
     mark("v23_inspect.inherited_journal");
     let sealValid = validateV23SealedObservation(observation);
-    if (committedWork.roadmapVersion === WP8F_V25_ADDENDUM.version) {
+    if (v26 || committedWork.roadmapVersion === WP8F_V25_ADDENDUM.version) {
       const next = WP8F_V25_ADDENDUM;
       if (git("rev-parse", next.commit + "^{commit}").trim() !== next.commit)
         return { ok: false, reason: "V25_SEALED_COMMIT_MISSING" };
@@ -4735,6 +4963,99 @@ export function inspectV23SealedRepository(
           previous: observation,
           current: nextObservation,
         });
+      if (v26) {
+        const workflow = WP8F_V26_WORKFLOW_SEAL;
+        if (
+          git("rev-parse", workflow.commit + "^{commit}").trim() !==
+          workflow.commit
+        )
+          return { ok: false, reason: "V26_SEALED_COMMIT_MISSING" };
+        if (
+          git("rev-list", "--parents", "-n", "1", workflow.commit).trim() !==
+          workflow.commit + " " + workflow.parent
+        )
+          return { ok: false, reason: "V26_SEALED_PARENT_INVALID" };
+        git("merge-base", "--is-ancestor", next.commit, workflow.parent);
+        git("merge-base", "--is-ancestor", workflow.commit, head);
+        const stat = git(
+          ...diffArgs,
+          "--numstat",
+          workflow.parent,
+          workflow.commit,
+          "--",
+          workflow.path,
+        )
+          .trim()
+          .split("\t");
+        const workflowObservation = {
+          commit: workflow.commit,
+          parent: workflow.parent,
+          path: workflow.path,
+          candidateFileSha256: hash(
+            git("show", candidate + ":" + workflow.path),
+          ),
+          parentFileSha256: hash(
+            git("show", workflow.parent + ":" + workflow.path),
+          ),
+          sealedFileSha256: hash(
+            git("show", workflow.commit + ":" + workflow.path),
+          ),
+          headFileSha256: hash(git("show", head + ":" + workflow.path)),
+          workingFileSha256: hash(readFileSync(join(cwd, workflow.path))),
+          pathDiffSha256: hash(
+            git(
+              ...diffArgs,
+              "--src-prefix=a/",
+              "--dst-prefix=b/",
+              "--unified=3",
+              "--indent-heuristic",
+              workflow.parent,
+              workflow.commit,
+              "--",
+              workflow.path,
+            ),
+          ),
+          additions: Number(stat[0]),
+          removals: Number(stat[1]),
+          paths,
+          historyPaths,
+          pathCommits: git(
+            "log",
+            "--full-history",
+            "--format=%H",
+            candidate + ".." + head,
+            "--",
+            workflow.path,
+          )
+            .trim()
+            .split("\n"),
+          commitPaths: list(
+            git(
+              ...diffArgs,
+              "--name-only",
+              "-z",
+              workflow.parent,
+              workflow.commit,
+            ),
+          ),
+          parentBlobOid: git(
+            "rev-parse",
+            workflow.parent + ":" + workflow.path,
+          ).trim(),
+          sealedBlobOid: git(
+            "rev-parse",
+            workflow.commit + ":" + workflow.path,
+          ).trim(),
+          headBlobOid: git("rev-parse", head + ":" + workflow.path).trim(),
+        };
+        sealValid =
+          nextStat[2] === next.path &&
+          stat[2] === workflow.path &&
+          validateV26SealedObservation({
+            previous: { previous: observation, current: nextObservation },
+            workflow: workflowObservation,
+          });
+      }
     }
     if (
       !sealValid ||
@@ -4748,6 +5069,13 @@ export function inspectV23SealedRepository(
       };
     if (git("rev-parse", "HEAD").trim() !== head)
       return { ok: false, reason: "V23_CHECKOUT_CHANGED_DURING_INSPECTION" };
+    if (
+      v26 &&
+      (indexLockedBefore ||
+        existsSync(indexPath + ".lock") ||
+        hash(readFileSync(indexPath)) !== rawIndexBefore)
+    )
+      return { ok: false, reason: "V26_RAW_INDEX_CHANGED_OR_LOCKED" };
     mark("v23_inspect.final_head");
     const proof = Object.freeze({
       root: cwd,
@@ -4755,6 +5083,7 @@ export function inspectV23SealedRepository(
       paths: Object.freeze(paths),
       clean: dirty.length === 0,
       currentWorkDigest: hash(JSON.stringify(committedWork)),
+      ...(v26 ? { rawIndexSha256: rawIndexBefore } : {}),
     });
     v23CheckoutProofs.add(proof);
     mark("v23_inspect.proof_created");
@@ -4789,6 +5118,10 @@ function v23VerifiedPaths(
     fresh.ok &&
     fresh.proof.clean &&
     input.head === fresh.proof.head &&
+    (!isRecord(work) ||
+      work.roadmapVersion !== WP8F_V26_WORKFLOW_SEAL.version ||
+      (typeof input.rawIndexSha256 === "string" &&
+        input.rawIndexSha256 === fresh.proof.rawIndexSha256)) &&
     candidate.evidenceHead === fresh.proof.head &&
     createHash("sha256").update(JSON.stringify(work)).digest("hex") ===
       fresh.proof.currentWorkDigest &&
@@ -4956,16 +5289,19 @@ function validateWp8fSuccessor(
   v23 = false,
   v24 = false,
   v25 = false,
+  v26 = false,
 ): void {
-  const keys = v25
-    ? WP8F_V25_WORK_KEYS
-    : v24
-      ? WP8F_V24_WORK_KEYS
-      : v23
-        ? WP8F_V23_WORK_KEYS
-        : v22
-          ? WP8F_V22_WORK_KEYS
-          : WP8F_V21_WORK_KEYS;
+  const keys = v26
+    ? WP8F_V26_WORK_KEYS
+    : v25
+      ? WP8F_V25_WORK_KEYS
+      : v24
+        ? WP8F_V24_WORK_KEYS
+        : v23
+          ? WP8F_V23_WORK_KEYS
+          : v22
+            ? WP8F_V22_WORK_KEYS
+            : WP8F_V21_WORK_KEYS;
   if (
     JSON.stringify(work.wp8fSuccessorCompletion) !==
     JSON.stringify(WP8F_V21_COMPLETION)
@@ -5025,6 +5361,12 @@ function validateWp8fSuccessor(
       JSON.stringify(WP8F_V25_ADDENDUM)
   )
     errors.push("V25_SEALED_ADDENDUM_INVALID");
+  if (
+    v26 &&
+    JSON.stringify(work.wp8fV26WorkflowSeal) !==
+      JSON.stringify(WP8F_V26_WORKFLOW_SEAL)
+  )
+    errors.push("V26_SEALED_ADDENDUM_INVALID");
 }
 
 function successorTarget(target: unknown): boolean {
@@ -5076,19 +5418,23 @@ function successorCandidate(
     isFullSha(c.controlCommit, 40) &&
     c.controlCommit !== g.sourceCommit &&
     c.controlOwnerDecision ===
-      (isRecord(work) && work.roadmapVersion === WP8F_V25_ADDENDUM.version
-        ? WP8F_V25_ADDENDUM.ownerDecision
-        : isRecord(work) && work.roadmapVersion === WP8F_V24_ENABLEMENT.version
-          ? WP8F_V24_ENABLEMENT.ownerDecision
-          : v23
-            ? WP8F_V23_ADDENDUM.ownerDecision
-            : g.ownerDecision) &&
+      (isRecord(work) && work.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version
+        ? WP8F_V26_WORKFLOW_SEAL.ownerDecision
+        : isRecord(work) && work.roadmapVersion === WP8F_V25_ADDENDUM.version
+          ? WP8F_V25_ADDENDUM.ownerDecision
+          : isRecord(work) &&
+              work.roadmapVersion === WP8F_V24_ENABLEMENT.version
+            ? WP8F_V24_ENABLEMENT.ownerDecision
+            : v23
+              ? WP8F_V23_ADDENDUM.ownerDecision
+              : g.ownerDecision) &&
     c.controlTestsAndValidatorsPassed === true &&
     c.controlCiHead === c.controlCommit &&
     c.controlCiConclusion === "success" &&
     (!isRecord(work) ||
       (work.roadmapVersion !== WP8F_V24_ENABLEMENT.version &&
-        work.roadmapVersion !== WP8F_V25_ADDENDUM.version) ||
+        work.roadmapVersion !== WP8F_V25_ADDENDUM.version &&
+        work.roadmapVersion !== WP8F_V26_WORKFLOW_SEAL.version) ||
       c.controlCiHead === c.evidenceHead) &&
     c.committedPushedAndClean === true &&
     c.exactDiffReviewed === true &&
@@ -5408,13 +5754,15 @@ function evaluateWp8fV22Action(
     !isRecord(evidence) ||
     evidence.provenance !== "INDEPENDENT_OPERATOR_VERIFICATION" ||
     evidence.ownerDecision !==
-      (work.roadmapVersion === WP8F_V25_ADDENDUM.version
-        ? WP8F_V25_ADDENDUM.ownerDecision
-        : work.roadmapVersion === WP8F_V24_ENABLEMENT.version
-          ? WP8F_V24_ENABLEMENT.ownerDecision
-          : v23
-            ? WP8F_V23_ADDENDUM.ownerDecision
-            : g.ownerDecision) ||
+      (work.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version
+        ? WP8F_V26_WORKFLOW_SEAL.ownerDecision
+        : work.roadmapVersion === WP8F_V25_ADDENDUM.version
+          ? WP8F_V25_ADDENDUM.ownerDecision
+          : work.roadmapVersion === WP8F_V24_ENABLEMENT.version
+            ? WP8F_V24_ENABLEMENT.ownerDecision
+            : v23
+              ? WP8F_V23_ADDENDUM.ownerDecision
+              : g.ownerDecision) ||
     !Array.isArray(work.wp8fV22OperationJournal)
   )
     return deny;

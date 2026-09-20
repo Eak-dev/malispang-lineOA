@@ -7,7 +7,7 @@ import {
   utimes,
 } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { channel } from "node:diagnostics_channel";
@@ -38,7 +38,9 @@ import {
   inspectV23SealedRepository,
   validateV23SealedObservation,
   validateV25SealedObservation,
+  validateV26SealedObservation,
 } from "../src/project-control.js";
+import { runProjectControlValidation } from "../src/project-control-cli.js";
 
 const root = new URL("../", import.meta.url);
 
@@ -5135,6 +5137,15 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.20-v26") {
+      r.version = "2026.09.12-v25";
+      delete w.wp8fV26WorkflowSeal;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV26WorkflowSeal",
+      );
+      delete record(s.properties).wp8fV26WorkflowSeal;
+    }
     if (r.version === "2026.09.12-v25") {
       r.version = "2026.09.11-v24";
       delete w.wp8fV25WorkerTimingAddendum;
@@ -6451,6 +6462,60 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
   });
 });
 
+// Preserve the historical v25 assertions against immutable v25 bytes after
+// the separately approved workflow commit and successor control transition.
+const v26HistoricalV25Commit = "0797acb37cec63fe56f0abd81cfd2b6ec50f8add";
+const v26HistoricalV25Hashes: Readonly<Record<string, string>> = {
+  "PROJECT_CONTROL.md":
+    "b1e760afbc82ad35f393589be3458c49fd120907040a472d9fa4ca1c146bb4c8",
+  "config/project/roadmap.json":
+    "15277ad5c86242f3a0f21b61f3c315986932dcefbf6bbc7de99d2de83cd6c6e2",
+  "config/project/current-work.json":
+    "c317a7296a464b7447950f6cfac9871aeb9003e22e112ac9afa76063f81acf6b",
+  "config/project/current-work.schema.json":
+    "5af3942777e1304bf5166c1252e7a0bf1e6120698e89214533044ba990af82c8",
+  "src/project-control.ts":
+    "56df28de06cceeda26ac547c0c1e198039e2eb522e8b15f5020a94afbd301bfe",
+  "src/project-control-cli.ts":
+    "b47b2111b63fb1b92e6d13a583b8c4051fc82e064941b6147460ffd284a0f182",
+  "tests/project-control.test.ts":
+    "9e134994c5da9de1574909b9d213a4249b6153e8f8c88650caf62faaf6ace22e",
+  "docs/project/OWNER_DECISION_LOG.md":
+    "0bc4f9660c45f37d6271d2fc397a91add52184acd50b72fbc5a7730a4cce5633",
+  "docs/project/ROADMAP_CHANGELOG.md":
+    "75c3302edac8d415bf55b09dd6fe3231f6b873560cb761b13e490f60019fb096",
+  "docs/project/EXECUTION_GATES.md":
+    "120cbbce73a2737d9200224f3bd3f8d4810450bbae453ea84b034f8488c62198",
+  [v25SealedPath]:
+    "463db843c2cd64eeada1628f23c7e73dd3aefdf8167fba885c8f7b78b085621e",
+  ".github/workflows/ci.yml":
+    "5eca6308342c218bd7502ece4c70e087f647ef5cd487a3becbb6a1a5d936a60f",
+};
+const v26WorkflowPath = ".github/workflows/ci.yml";
+const v26WorkflowCommit = "29efa9507604793a925f61cb81d8474c3a0983ad";
+function v26AssertHistoricalV25(
+  cwd: string,
+  commit = v26HistoricalV25Commit,
+  working = false,
+) {
+  if (
+    commit !== v26HistoricalV25Commit ||
+    v25Git(cwd, "rev-parse", "--verify", commit + "^{commit}").trim() !== commit
+  )
+    throw new Error("V25_HISTORICAL_FIXTURE_COMMIT_INVALID");
+  if (working && v25Git(cwd, "rev-parse", "HEAD").trim() !== commit)
+    throw new Error("V25_HISTORICAL_FIXTURE_HEAD_INVALID");
+  for (const [path, digest] of Object.entries(v26HistoricalV25Hashes)) {
+    if (working && !lstatSync(join(cwd, path)).isFile())
+      throw new Error("V25_HISTORICAL_FIXTURE_PATH_INVALID");
+    const bytes = working
+      ? readFileSync(join(cwd, path))
+      : Buffer.from(v25Git(cwd, "show", commit + ":" + path));
+    if (v25Hash(bytes) !== digest)
+      throw new Error("V25_HISTORICAL_FIXTURE_DIGEST_MISMATCH");
+  }
+}
+
 describe("v25 exact two-commit seal and isolated historical fixture", () => {
   const version = "2026.09.12-v25",
     decision = "MP-OD-2026-09-12-V25";
@@ -6504,6 +6569,7 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
       throw new Error("INSTRUMENTATION_COMMIT_NOT_UNIQUE");
     fixture = await mkdtemp(join(tmpdir(), "mp06-v25-current-"));
     try {
+      v26AssertHistoricalV25(fileURLToPath(root));
       v25Git(
         fileURLToPath(root),
         "clone",
@@ -6512,17 +6578,14 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
         fileURLToPath(root),
         fixture,
       );
-      for (const p of v25ControlPaths)
-        await copyFile(new URL(p, root), join(fixture, p));
-      v25Git(fixture, "add", "--", ...v25ControlPaths);
-      if (v25Git(fixture, "diff", "--cached", "--name-only").trim())
-        v25Git(
-          fixture,
-          "commit",
-          "--quiet",
-          "-m",
-          "synthetic complete v25 control",
-        );
+      v25Git(
+        fixture,
+        "checkout",
+        "--quiet",
+        "--detach",
+        v26HistoricalV25Commit,
+      );
+      v26AssertHistoricalV25(fixture, v26HistoricalV25Commit, true);
       const readDocument = async (p: string) =>
         record(JSON.parse(await readFile(join(fixture, p), "utf8")));
       [r, w, s] = await Promise.all([
@@ -7014,4 +7077,612 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
       timing("completed");
     },
   );
+});
+
+describe("v26 exact workflow seal with immutable v25 history", () => {
+  const version = "2026.09.20-v26";
+  const decision = "MP-OD-2026-09-20-V26";
+  const inventory = [...v25ControlPaths, v25SealedPath, v26WorkflowPath];
+  const workflowCommitPaths = [
+    v26WorkflowPath,
+    "docs/project/EXECUTION_GATES.md",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "tests/project-control.test.ts",
+  ];
+  let fixture: string;
+  let operatorBefore: string;
+  let r: Record<string, unknown>,
+    w: Record<string, unknown>,
+    s: Record<string, unknown>;
+  let proof: Extract<
+    ReturnType<typeof inspectV23SealedRepository>,
+    { ok: true }
+  >["proof"];
+  const checked = (cwd: string) => {
+    const result = inspectV23SealedRepository(cwd);
+    if (!result.ok) throw new Error(result.reason);
+    return result.proof;
+  };
+  const commit = (cwd: string, path: string) => {
+    v25Git(cwd, "add", "--", path);
+    v25Git(cwd, "commit", "--quiet", "-m", "synthetic v26 negative proof");
+  };
+  const evidence = (p = proof) => {
+    const e = v22Evidence();
+    e.ownerDecision = decision;
+    Object.assign(record(e.candidate), {
+      controlOwnerDecision: decision,
+      evidenceHead: p.head,
+      controlCommit: p.head,
+      controlCiHead: p.head,
+      postCandidatePaths: [...p.paths],
+    });
+    record(e.test).observedAt = Date.now();
+    return e;
+  };
+  const assess = (
+    e = evidence(),
+    p: unknown = proof,
+    work = w,
+    action = "DEPLOY_TEST",
+  ) => evaluateProjectAction(r, work, action, v22Target, e, p);
+  function observation(): Record<string, unknown> {
+    const old = record(w.wp8fV23InstrumentationAddendum);
+    const next = record(w.wp8fV25WorkerTimingAddendum);
+    const worker = (seal: Record<string, unknown>, parent: unknown) => ({
+      commit: seal.commit,
+      path: seal.path,
+      candidateFileSha256: seal.candidateFileSha256,
+      parentFileSha256: parent,
+      sealedFileSha256: seal.instrumentedFileSha256,
+      headFileSha256: next.instrumentedFileSha256,
+      workingFileSha256: next.instrumentedFileSha256,
+      pathDiffSha256: seal.pathDiffSha256,
+      additions: seal.additions,
+      removals: seal.removals,
+      paths: [...inventory],
+      historyPaths: [...inventory],
+      pathCommits: [next.commit, old.commit],
+      commitPaths: [v25SealedPath, ...workflowCommitPaths.slice(1, 4)],
+    });
+    // Literal external seal values, not a manifest-issued execution proof.
+    const workflow = {
+      commit: v26WorkflowCommit,
+      parent: v26HistoricalV25Commit,
+      path: v26WorkflowPath,
+      candidateFileSha256:
+        "5eca6308342c218bd7502ece4c70e087f647ef5cd487a3becbb6a1a5d936a60f",
+      parentFileSha256:
+        "5eca6308342c218bd7502ece4c70e087f647ef5cd487a3becbb6a1a5d936a60f",
+      sealedFileSha256:
+        "a96043e3fde50251f5be4fa697e779f3ebc2575f94d75e49342f97ca5b34697d",
+      headFileSha256:
+        "a96043e3fde50251f5be4fa697e779f3ebc2575f94d75e49342f97ca5b34697d",
+      workingFileSha256:
+        "a96043e3fde50251f5be4fa697e779f3ebc2575f94d75e49342f97ca5b34697d",
+      pathDiffSha256:
+        "1cb589b963f78d0d2645d11ef4a4d9f0a0d94ac3107a95a6fc5c9910c372b909",
+      additions: 1,
+      removals: 1,
+      paths: [...inventory],
+      historyPaths: [...inventory],
+      pathCommits: [v26WorkflowCommit],
+      commitPaths: [...workflowCommitPaths],
+      parentBlobOid: "e48f248435f06886ad9c38caa51910c416da273e",
+      sealedBlobOid: "d50d858ad3972fa1fc88fe086535d56382d05935",
+      headBlobOid: "d50d858ad3972fa1fc88fe086535d56382d05935",
+    };
+    return {
+      previous: {
+        previous: worker(old, old.candidateFileSha256),
+        current: worker(next, next.parentFileSha256),
+      },
+      workflow,
+    };
+  }
+  beforeAll(async () => {
+    operatorBefore = v25OperatorSnapshot();
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v26-current-"));
+    try {
+      v26AssertHistoricalV25(fileURLToPath(root));
+      v25Git(
+        fileURLToPath(root),
+        "clone",
+        "--quiet",
+        "--shared",
+        fileURLToPath(root),
+        fixture,
+      );
+      for (const path of v25ControlPaths)
+        await copyFile(new URL(path, root), join(fixture, path));
+      v25Git(fixture, "add", "--", ...v25ControlPaths);
+      if (v25Git(fixture, "diff", "--cached", "--name-only").trim())
+        v25Git(
+          fixture,
+          "commit",
+          "--quiet",
+          "-m",
+          "synthetic complete v26 control",
+        );
+      const readDocument = async (path: string) =>
+        record(JSON.parse(await readFile(join(fixture, path), "utf8")));
+      [r, w, s] = await Promise.all([
+        readDocument("config/project/roadmap.json"),
+        readDocument("config/project/current-work.json"),
+        readDocument("config/project/current-work.schema.json"),
+      ]);
+      proof = checked(fixture);
+    } catch (error) {
+      try {
+        throw error;
+      } finally {
+        await rm(fixture, { recursive: true, force: true });
+      }
+    } finally {
+      v25AssertUnchanged(operatorBefore);
+    }
+  });
+  beforeEach(() => v25AssertUnchanged(operatorBefore));
+  afterEach(() => v25AssertUnchanged(operatorBefore));
+  afterAll(async () => {
+    try {
+      if (operatorBefore) v25AssertUnchanged(operatorBefore);
+    } finally {
+      try {
+        if (fixture) await rm(fixture, { recursive: true, force: true });
+      } finally {
+        if (operatorBefore) v25AssertUnchanged(operatorBefore);
+      }
+    }
+  });
+
+  it("accepts the exact workflow seal and complete twelve-path repository proof without changing inherited grants", () => {
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(validateSchemaDocuments(roadmapSchema, s, version)).toEqual([]);
+    expect(validateV26SealedObservation(observation())).toBe(true);
+    expect([...proof.paths].sort()).toEqual([...inventory].sort());
+    const historical = record(
+      JSON.parse(
+        v25Git(
+          fixture,
+          "show",
+          v26HistoricalV25Commit + ":config/project/current-work.json",
+        ),
+      ),
+    );
+    const inherited = clone(w);
+    delete inherited.wp8fV26WorkflowSeal;
+    inherited.roadmapVersion = "2026.09.12-v25";
+    expect(inherited).toEqual(historical);
+    expect(w.wp8fV22OperationJournal).toEqual([]);
+    expect(w.wp8fSuccessorOperationJournal).toEqual(
+      historical.wp8fSuccessorOperationJournal,
+    );
+    expect(assess()).toEqual({
+      allowed: true,
+      reason: "V22_ONE_EXACT_TEST_DEPLOYMENT_READY",
+    });
+  });
+  it("requires the exact v26 Owner record and closed immutable manifest and schema", async () => {
+    const log = await readFile(
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
+      "utf8",
+    );
+    expect(validateWp8fOwnerDecisionRecord(log, version)).toBe(true);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        log.replaceAll(v26WorkflowCommit, "REMOVED"),
+        version,
+      ),
+    ).toBe(false);
+    expect(validateWp8fOwnerDecisionRecord(JSON.stringify(w), version)).toBe(
+      false,
+    );
+    for (const key of Object.keys(record(w.wp8fV26WorkflowSeal))) {
+      const bad = clone(w);
+      record(bad.wp8fV26WorkflowSeal)[key] = "SUBSTITUTED";
+      expect(validateProjectControl(r, bad).errors.length).toBeGreaterThan(0);
+      delete record(bad.wp8fV26WorkflowSeal)[key];
+      expect(validateProjectControl(r, bad).errors.length).toBeGreaterThan(0);
+    }
+    for (const key of ["roadmapVersion", "wp8fV26WorkflowSeal"]) {
+      const bad = clone(s);
+      record(bad.properties)[key] = { type: "object" };
+      expect(
+        validateSchemaDocuments(roadmapSchema, bad, version).length,
+      ).toBeGreaterThan(0);
+    }
+  });
+  it("rejects missing or wrong workflow commit, parent, blob and file hashes, diff and numstat", () => {
+    for (const [key, value] of [
+      ["commit", "0".repeat(40)],
+      ["parent", "0".repeat(40)],
+      ["path", ".github/workflows/other.yml"],
+      ...[
+        "candidateFileSha256",
+        "parentFileSha256",
+        "sealedFileSha256",
+        "headFileSha256",
+        "workingFileSha256",
+        "pathDiffSha256",
+      ].map((key) => [key, "0".repeat(64)]),
+      ...["parentBlobOid", "sealedBlobOid", "headBlobOid"].map((key) => [
+        key,
+        "0".repeat(40),
+      ]),
+      ["additions", 2],
+      ["removals", 0],
+      ["pathCommits", []],
+    ] as [string, unknown][]) {
+      const bad = observation();
+      record(bad.workflow)[key] = value;
+      expect(validateV26SealedObservation(bad)).toBe(false);
+      delete record(bad.workflow)[key];
+      expect(validateV26SealedObservation(bad)).toBe(false);
+    }
+  });
+  it("rejects omitted, duplicated or additional inventory paths before projecting the v25 layer", () => {
+    for (const half of ["previous", "current", "workflow"])
+      for (const key of ["paths", "historyPaths"])
+        for (const paths of [
+          inventory.slice(1),
+          [...inventory, inventory[0]],
+          [...inventory, "README.md"],
+          inventory.map((p) => (p === v26WorkflowPath ? "worker/index.ts" : p)),
+        ]) {
+          const bad = observation();
+          const row =
+            half === "workflow"
+              ? record(bad.workflow)
+              : record(record(bad.previous)[half]);
+          row[key] = paths;
+          expect(validateV26SealedObservation(bad)).toBe(false);
+        }
+    for (const paths of [
+      workflowCommitPaths.slice(1),
+      [...workflowCommitPaths, workflowCommitPaths[0]],
+      [...workflowCommitPaths, "README.md"],
+    ]) {
+      const bad = observation();
+      record(bad.workflow).commitPaths = paths;
+      expect(validateV26SealedObservation(bad)).toBe(false);
+    }
+    const reordered = observation();
+    record(reordered.workflow).commitPaths = [...workflowCommitPaths].reverse();
+    expect(validateV26SealedObservation(reordered)).toBe(true);
+  });
+  it("preserves both original Worker seals and rejects a valid workflow coupled to altered Worker proof", () => {
+    for (const half of ["previous", "current"])
+      for (const key of [
+        "commit",
+        "parentFileSha256",
+        "sealedFileSha256",
+        "pathDiffSha256",
+        "pathCommits",
+        "additions",
+      ]) {
+        const bad = observation();
+        record(record(bad.previous)[half])[key] = "SUBSTITUTED";
+        expect(validateV26SealedObservation(bad)).toBe(false);
+      }
+    for (const location of ["outer", "previous", "workflow"]) {
+      const bad = observation();
+      const row = location === "outer" ? bad : record(bad[location]);
+      row.trusted = true;
+      expect(validateV26SealedObservation(bad)).toBe(false);
+    }
+  });
+  it("rejects copied or manifest-only execution proofs, missing inventory and wrong evidence HEAD", () => {
+    for (const fake of [undefined, { ...proof }, observation(), w])
+      expect(
+        evaluateProjectAction(r, w, "DEPLOY_TEST", v22Target, evidence(), fake)
+          .allowed,
+      ).toBe(false);
+    for (const key of ["evidenceHead", "controlCommit", "controlCiHead"]) {
+      const stale = evidence();
+      record(stale.candidate)[key] = "a".repeat(40);
+      expect(assess(stale).allowed).toBe(false);
+    }
+    const omitted = evidence();
+    record(omitted.candidate).postCandidatePaths = inventory.filter(
+      (p) => p !== v26WorkflowPath,
+    );
+    expect(assess(omitted).allowed).toBe(false);
+  });
+  it("proves historical v25 rejects the actual approved workflow rather than waiving it", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const original = v25Git(
+        cwd,
+        "show",
+        v26HistoricalV25Commit + ":config/project/current-work.json",
+      );
+      await writeFile(join(cwd, "config/project/current-work.json"), original);
+      commit(cwd, "config/project/current-work.json");
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+      });
+    });
+  });
+  it("rejects a genuine v26 manifest on history missing the exact workflow commit", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      v25Git(cwd, "checkout", "--quiet", "--detach", v26HistoricalV25Commit);
+      v26AssertHistoricalV25(cwd, v26HistoricalV25Commit, true);
+      await copyFile(
+        join(fixture, "config/project/current-work.json"),
+        join(cwd, "config/project/current-work.json"),
+      );
+      commit(cwd, "config/project/current-work.json");
+      expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+    });
+  });
+  it.each(["deadline", "behavior"] as const)(
+    "rejects a later workflow %s edit even when the original approved commit remains an ancestor",
+    async (kind) => {
+      await v25WithChild(fixture, async (cwd) => {
+        const path = join(cwd, v26WorkflowPath);
+        const original = await readFile(path, "utf8");
+        const changed =
+          kind === "deadline"
+            ? original.replace("timeout-minutes: 10", "timeout-minutes: 15")
+            : original.replace("contents: read", "contents: write");
+        expect(changed).not.toBe(original);
+        await writeFile(path, changed);
+        commit(cwd, v26WorkflowPath);
+        expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+      });
+    },
+  );
+  it("rejects a real committed workflow edit-and-restore even with exact final bytes and blobs", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = join(cwd, v26WorkflowPath);
+      const bytes = await readFile(path, "utf8");
+      await writeFile(path, bytes + "\n# synthetic unapproved edit\n");
+      commit(cwd, v26WorkflowPath);
+      await writeFile(path, bytes);
+      commit(cwd, v26WorkflowPath);
+      expect(await readFile(path, "utf8")).toBe(bytes);
+      expect(v25Git(cwd, "rev-parse", "HEAD:" + v26WorkflowPath).trim()).toBe(
+        "d50d858ad3972fa1fc88fe086535d56382d05935",
+      );
+      expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+    });
+  });
+  it.each(["README.md", "worker/index.ts", "wrangler.jsonc", "package.json"])(
+    "rejects additional or runtime/configuration/dependency path drift: %s",
+    async (path) => {
+      await v25WithChild(fixture, async (cwd) => {
+        await writeFile(
+          join(cwd, path),
+          (await readFile(join(cwd, path), "utf8")) +
+            "\nSYNTHETIC_UNAPPROVED_CHANGE\n",
+        );
+        commit(cwd, path);
+        expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+      });
+    },
+  );
+  it("rejects dirty workflow bytes before issuing deployment authority", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_dirty_workflow." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
+    await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
+      await writeFile(join(cwd, v26WorkflowPath), "# synthetic substitution\n");
+      timing("dirty_bytes_prepared");
+      expect(inspectV23SealedRepository(cwd).ok).toBe(false);
+      timing("inspection_and_assertion_complete");
+    });
+    timing("cleanup_and_operator_guard_complete");
+  });
+  it("never upgrades dirty control proof to deployment authority", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      process.stdout.write(
+        JSON.stringify({
+          phase: "v26_dirty_control." + phase,
+          milliseconds: performance.now() - started,
+        }) + "\n",
+      );
+    timing("started");
+    await v25WithChild(fixture, async (cwd) => {
+      timing("isolated_fixture_ready");
+      const path = "docs/project/EXECUTION_GATES.md";
+      await writeFile(
+        join(cwd, path),
+        (await readFile(join(cwd, path), "utf8")) +
+          "\nsynthetic dirty control\n",
+      );
+      timing("dirty_bytes_prepared");
+      const dirty = checked(cwd);
+      timing("inspection_complete");
+      expect(dirty.clean).toBe(false);
+      expect(assess(evidence(dirty), dirty).allowed).toBe(false);
+      timing("assertions_complete");
+    });
+    timing("cleanup_and_operator_guard_complete");
+  });
+  it.each(["--assume-unchanged", "--skip-worktree"] as const)(
+    "rejects a pre-existing %s index flag before the first repository proof",
+    async (flag) => {
+      await v25WithChild(fixture, async (cwd) => {
+        v25Git(cwd, "update-index", flag, "--", "README.md");
+        const index = resolve(
+          cwd,
+          v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+        );
+        const flagged = await readFile(index);
+        expect(v25Git(cwd, "diff", "--cached", "--name-only", "HEAD")).toBe("");
+        expect(inspectV23SealedRepository(cwd)).toEqual({
+          ok: false,
+          reason: "V26_INDEX_FLAGS_UNQUALIFIED",
+        });
+        expect(await readFile(index)).toEqual(flagged);
+        expect(existsSync(index + ".lock")).toBe(false);
+      });
+    },
+  );
+  it("rejects an in-progress merge with no tracked-tree or index delta", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const before = await readFile(index);
+      const head = v25Git(cwd, "rev-parse", "HEAD");
+      const marker = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "MERGE_HEAD").trim(),
+      );
+      await writeFile(marker, head);
+      expect(v25Git(cwd, "diff", "--name-only", "HEAD")).toBe("");
+      expect(await readFile(index)).toEqual(before);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V26_GIT_OPERATION_IN_PROGRESS",
+      });
+      expect(await readFile(index)).toEqual(before);
+      expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(head);
+    });
+  });
+  it("rejects a genuine proof after raw-index-only mutation without normalizing the index", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const genuine = checked(cwd);
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const before = await readFile(index);
+      v25Git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
+      const mutated = await readFile(index);
+      expect(mutated).not.toEqual(before);
+      expect(v25Git(cwd, "diff", "--cached", "--name-only", "HEAD")).toBe("");
+      expect(assess(evidence(genuine), genuine).allowed).toBe(false);
+      expect(await readFile(index)).toEqual(mutated);
+      expect(existsSync(index + ".lock")).toBe(false);
+    });
+  });
+  it("rejects substituted historical v25 fixture bytes or a moving reference and cleans failure fixtures", async () => {
+    let removed: string | undefined;
+    await expect(
+      v25WithChild(fixture, async (cwd) => {
+        removed = cwd;
+        v25Git(cwd, "checkout", "--quiet", "--detach", v26HistoricalV25Commit);
+        v26AssertHistoricalV25(cwd, v26HistoricalV25Commit, true);
+        expect(() => v26AssertHistoricalV25(cwd, "HEAD")).toThrow(
+          "V25_HISTORICAL_FIXTURE_COMMIT_INVALID",
+        );
+        await writeFile(join(cwd, "config/project/current-work.json"), "{}\n");
+        expect(() =>
+          v26AssertHistoricalV25(cwd, v26HistoricalV25Commit, true),
+        ).toThrow("V25_HISTORICAL_FIXTURE_DIGEST_MISMATCH");
+        throw new Error("SYNTHETIC_V26_FIXTURE_FAILURE");
+      }),
+    ).rejects.toThrow("SYNTHETIC_V26_FIXTURE_FAILURE");
+    expect(removed).toBeDefined();
+    expect(existsSync(removed!)).toBe(false);
+  });
+  it.each(["V22", "successor"] as const)(
+    "rejects a committed %s journal reset then restore in both inspector and CLI validation",
+    async (journal) => {
+      await v25WithChild(fixture, async (cwd) => {
+        const key =
+          journal === "V22"
+            ? "wp8fV22OperationJournal"
+            : "wp8fSuccessorOperationJournal";
+        const before = clone(w);
+        if (journal === "V22") before[key] = v22Deployed().journal;
+        const reduced = clone(before);
+        reduced[key] = (before[key] as unknown[]).slice(0, -1);
+        expect((before[key] as unknown[]).length).toBe(
+          journal === "V22" ? 1 : 3,
+        );
+        for (const state of [before, reduced, before]) {
+          await writeFile(
+            join(cwd, "config/project/current-work.json"),
+            JSON.stringify(state, null, 2) + "\n",
+          );
+          // The successor's first state already equals the base; its two
+          // actual transitions are the reduction and exact restoration.
+          v25Git(cwd, "add", "--", "config/project/current-work.json");
+          if (v25Git(cwd, "diff", "--cached", "--name-only").trim())
+            v25Git(
+              cwd,
+              "commit",
+              "--quiet",
+              "-m",
+              "synthetic journal reset restore history",
+            );
+        }
+        const final = record(
+          JSON.parse(
+            await readFile(
+              join(cwd, "config/project/current-work.json"),
+              "utf8",
+            ),
+          ),
+        );
+        expect(final[key]).toEqual(before[key]);
+        expect(inspectV23SealedRepository(cwd)).toEqual({
+          ok: false,
+          reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE",
+        });
+        await expect(
+          runProjectControlValidation(pathToFileURL(cwd + "/")),
+        ).rejects.toThrow(
+          journal === "V22"
+            ? "V22_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED"
+            : "V21_OPERATION_HISTORY_RESET_OR_REWRITE_DENIED",
+        );
+      });
+    },
+  );
+  it("rejects replacement grants and real consumed-journal reset while preserving original target and freshness gates", async () => {
+    const replacement = clone(w);
+    replacement.wp8fV26OperationJournal = [];
+    expect(
+      validateProjectControl(r, replacement).errors.length,
+    ).toBeGreaterThan(0);
+    await v25WithChild(fixture, async (cwd) => {
+      const used = clone(w);
+      used.wp8fV22OperationJournal = v22Deployed().journal;
+      await writeFile(
+        join(cwd, "config/project/current-work.json"),
+        JSON.stringify(used, null, 2) + "\n",
+      );
+      commit(cwd, "config/project/current-work.json");
+      await writeFile(
+        join(cwd, "config/project/current-work.json"),
+        JSON.stringify(w, null, 2) + "\n",
+      );
+      commit(cwd, "config/project/current-work.json");
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE",
+      });
+    });
+    const stale = evidence();
+    record(stale.test).observedAt = Date.now() - 120001;
+    expect(assess(stale).allowed).toBe(false);
+    const artifact = evidence();
+    record(artifact.candidate).artifactSha256 = "0".repeat(64);
+    expect(assess(artifact).allowed).toBe(false);
+    for (const action of [
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "ROLLBACK_TEST",
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CLOSE_ISSUE",
+      "ACTIVATE_SUCCESSOR_V22",
+    ])
+      expect(assess(evidence(), proof, w, action).allowed).toBe(false);
+  });
 });
