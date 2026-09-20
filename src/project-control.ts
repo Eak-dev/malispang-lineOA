@@ -5284,8 +5284,10 @@ export function inspectV23SealedRepository(
     if (
       (!v32 && mergeCommits.length > 0) ||
       (v32 &&
-        (mergeCommits.length !== 1 ||
-          mergeCommits[0] !== GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit))
+        (mergeCommits.length !== 2 ||
+          mergeCommits[0] !== GREPTILE_PUSH_DRAFT_CONTROL.mergeCommit ||
+          mergeCommits[1] !==
+            GREPTILE_PUSH_DRAFT_CONTROL.inheritedBaseMergeCommit))
     )
       return { ok: false, reason: "V23_UNAUTHORIZED_MERGE_HISTORY" };
     if (v32) {
@@ -5313,6 +5315,28 @@ export function inspectV23SealedRepository(
         ).trim() !== GREPTILE_PUSH_DRAFT_CONTROL.mergeTree
       )
         return { ok: false, reason: "V32_OWNER_MERGE_IDENTITY_MISMATCH" };
+      const baseMergeIdentity = git(
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        GREPTILE_PUSH_DRAFT_CONTROL.inheritedBaseMergeCommit,
+      )
+        .trim()
+        .split(" ");
+      if (
+        baseMergeIdentity[0] !==
+          GREPTILE_PUSH_DRAFT_CONTROL.inheritedBaseMergeCommit ||
+        baseMergeIdentity.slice(1).join(" ") !==
+          GREPTILE_PUSH_DRAFT_CONTROL.inheritedBaseMergeParents.join(" ") ||
+        git(
+          "show",
+          "-s",
+          "--format=%T",
+          GREPTILE_PUSH_DRAFT_CONTROL.inheritedBaseMergeCommit,
+        ).trim() !== GREPTILE_PUSH_DRAFT_CONTROL.inheritedBaseMergeTree
+      )
+        return { ok: false, reason: "V32_BASE_MERGE_IDENTITY_MISMATCH" };
     }
     const parents = git("rev-list", "--parents", "-n", "1", g.commit)
       .trim()
@@ -7525,6 +7549,12 @@ export const GREPTILE_PUSH_DRAFT_CONTROL = {
     "d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c",
   ],
   mergeTree: "57259355a0877677e5a88ca0c91fa0cf4f37f2ab",
+  inheritedBaseMergeCommit: "aad8c5e0ef41c5e47df3d93ae462b9122368c15d",
+  inheritedBaseMergeParents: [
+    "30b79f791e276fa5f420d08ffff208a231780281",
+    "ca4904ef3f316f8e381e57e4757f3fe173dbeb1f",
+  ],
+  inheritedBaseMergeTree: "21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb",
   path: "greptile.json",
   priorFileSha256:
     "5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61",
