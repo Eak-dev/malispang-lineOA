@@ -2705,3 +2705,45 @@ Exact patch identity against parent0797acb37cec63fe56f0abd81cfd2b6ec50f8add, SHA
 Single narrow next control proposal, NOT_IMPLEMENTED: seal only this committed workflow deadline1/1diff against the exact parent/result file and diff digests, preserving complete candidate-to-HEAD inventory, immutable historical seals and no replacement grants. Add positive exact-patch and negative missing/wrong commit, deadline/other-workflow drift, future edit-and-restore, additional path, runtime/config/dependency/artifact drift, incomplete inventory and self-attestation tests. Do not add workflow to a generic historical control allowlist or relax the action gate. The ten-minute workflow edit is authorized, but this checkpoint does not claim an independently reviewed new seal exists.
 
 Two implementation paths plus three append-only evidence paths only; external OAuth helpers/native execution pins unchanged. Frozen1790da58635edcee154b60d76730248e8130c2d3/adc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657/252715bytes retained; no Worker/build-input/runtime/config/dependency change. No Keychain/OAuth/TEST metadata/readiness/SQL/Owner lookup/startup/deployment/activation/STOP/LINE/U2 action. Four grantsAPPROVED_UNUSED0/1, empty wp8fV22OperationJournal and three historical journal entries remain intact, U1 GAP/A1-A3 UNRESOLVED/billingUNKNOWN/Issue12 OPEN/heartbeat PAUSED. LOCAL_INSTRUMENTED_RUN_PASS / ACTION_GATE_BLOCKED / WIP — NOT_DEPLOYABLE; Production NO_GO — NOT TOUCHED.
+
+### 2026-09-20 — evidence-based30/60second watchdogs; hosted workflow-inventory blocker confirmed
+
+Timing checkpoint29efa9507604793a925f61cb81d8474c3a0983ad pushed local=remote/clean, #9 receipt5747210069 / #12 receipt5747210181. Its automaticCI35485560025 attempt1 FAILED, job106011159987 duration173seconds. Both newly timed points completed all15/12 outer phases and assertions, but v25 fixture setup at tests/project-control.test.ts:6467/6533 rejects the actual committed workflow path with V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH. Node591passed/27skipped out of618,1suite failed/18passed; control161passed/27skipped out of188, setup failure rather than a timed test assertion failure. Benchmark and Worker NOT_REACHED; hosted secret/audit/generated-stability SKIPPED. Do not call this INSTRUMENTED_RUN_PASS for the entire run, reuse the parent13/13 pass, or equate skipped work to zero failures. No timeout, manual rerun or cancellation occurred.
+
+Owner then delegates realistic duration design and expressly permits an overall15/20minute CI cap when actual healthy work needs it. Selected final staged-test30000ms and historical-beforeAll60000ms, instead of600000ms each; preserve markers/assertions/Git calls/order/reinspection/isolation/cleanup exactly. The last complete successful hosted job used310seconds, so the existing whole-job10minute cap remains appropriate now; the173second failed job does not estimate full-suite duration. Permission for15/20minutes is recorded, not used unnecessarily. New scoped ceilings have headroom over observed hosted2.547/6.919seconds and historical5.374second test timeout/12.149second hook inspection. Neither headroom nor a completed timing run establishes ROOT_CAUSE_RESOLVED.
+
+Final30/60second local control run at10:07:37 local time:54.72seconds, control161passed/27skipped/188 and1setup failure, same explicit committed-workflow seal rejection. No timeout occurred; the two approved points complete all15/12 outer phases. Unlike the prior local188/188 run cloning parent0797, this run uses committed29efa containing the workflow change, so the different result is explained by the inherited inventory path, not presented as a new runtime or timing defect. Log retained at /private/tmp/mp06-bounded-two-point-control.log. No skipped assertion is claimed executed. Cumulative monotonic milliseconds for every outer phase:
+
+| Point / phase                              | Hosted29efa (600000ms ceilings) | Local final (30000/60000ms ceilings) |
+| ------------------------------------------ | ------------------------------: | -----------------------------------: |
+| staged.started                             |                           0.038 |                                0.041 |
+| staged.initial_proof_completed             |                         766.109 |                              654.551 |
+| staged.evidence_and_original_read          |                         767.035 |                              655.345 |
+| staged.synthetic_edit_written              |                         767.890 |                              655.958 |
+| staged.index_staged                        |                         785.377 |                              675.872 |
+| staged.working_bytes_restored              |                         786.285 |                              676.444 |
+| staged.head_diff_asserted                  |                         803.403 |                              696.047 |
+| staged.staged_path_asserted                |                         817.615 |                              713.308 |
+| staged.dirty_proof_asserted                |                        1617.734 |                             1366.532 |
+| staged.action_denied_asserted              |                        2495.176 |                             2020.718 |
+| staged.cleanup_started                     |                        2495.206 |                             2020.743 |
+| staged.cleanup_working_bytes_restored      |                        2496.911 |                             2021.241 |
+| staged.cleanup_index_restored              |                        2521.847 |                             2039.638 |
+| staged.clean_status_asserted               |                        2547.388 |                             2061.113 |
+| staged.completed                           |                        2547.468 |                             2061.167 |
+| historical.started                         |                           0.050 |                                0.037 |
+| historical.operator_snapshot_completed     |                         319.297 |                              156.548 |
+| historical.historical_fixture_created      |                        3935.986 |                             2601.046 |
+| historical.historical_diagnostic_completed |                        4445.372 |                             2913.780 |
+| historical.documents_read                  |                        4447.758 |                             2916.003 |
+| historical.documents_diagnostic_completed  |                        4911.916 |                             3225.563 |
+| historical.baseline_read                   |                        4929.901 |                             3243.176 |
+| historical.baseline_diagnostic_completed   |                        5464.272 |                             3554.395 |
+| historical.inspection_returned             |                        6337.214 |                             4243.369 |
+| historical.inspection_diagnostic_completed |                        6919.119 |                             4552.123 |
+| historical.proof_accepted                  |                        6919.180 |                             4552.171 |
+| historical.completed                       |                        6919.196 |                             4552.185 |
+
+Independent in-memory review normalizes the two final timeout literals back to600000 and reproduces the29efa test file byte-for-byte. No global/Worker timeout, extra operation, assertion/guard/cleanup change, network or credentials. This deadline-only follow-up changes tests/project-control.test.ts by2additions/2removals; final file SHA25653a234c20d4112ee1e07a00fa4019ea497a7b215ce5a8f9d9e407059be3b1251; exact29efa→result path-diff SHA2560542ff935a9a326b30e9f2ecbe1a11e3418e8de1ee74052f2ea9850a4581a0bd; cumulative0797→result path-diff SHA256405c980e55aad3ef664cdbdf36a19b21a646707846cb4b0ec79ab4e691dddbce. Workflow remains exactly the prior1/1deadline-only patch and its recorded hashes are unchanged.
+
+The single exact workflow-seal proposal above remains NOT_IMPLEMENTED; preserve its complete12-path inventory rejection rather than modifying gate semantics in a timing-only patch. Further evidence-head CI is automatic and must retain any same-blocker result without manual rerun or a redundant empty evidence commit. One test path plus three append-only evidence paths in this follow-up; no runtime/artifact/config/dependency/native/TEST/SQL/deployment/activation/STOP/U2/Production action. Four grantsAPPROVED_UNUSED0/1 and original journals/candidate/artifact/limitations/Issue12 OPEN/paused heartbeat/Data Studio hold unchanged. TWO_TARGETED_PHASES_COMPLETE / CONTROL_AND_CI_BLOCKED_BY_WORKFLOW_SEAL / WIP — NOT_DEPLOYABLE.

@@ -5654,7 +5654,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     expect(git(fixture, "status", "--porcelain=v1")).toBe("");
     timingMark("v25_staged_control.clean_status_asserted");
     timingMark("v25_staged_control.completed");
-  }, 600_000);
+  }, 30_000);
   it("rejects real committed future edit-and-restore even with matching final sealed bytes", async () => {
     let timingPrevious = performance.now();
     const timingMark = (phase: string) => {
@@ -6250,7 +6250,7 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
     proof = observed.proof;
     timingMark("v25_historical_setup.proof_accepted");
     timingMark("v25_historical_setup.completed");
-  }, 600_000);
+  }, 60_000);
   afterAll(async () => {
     v25DiagnosticPhase("v24.after_all_before_cleanup", fixture);
     try {
