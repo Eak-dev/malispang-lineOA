@@ -6093,11 +6093,14 @@ export function inspectV23SealedRepository(
         samePathSet(v31InheritedPaths, expectedInventory) &&
         samePathSet(v31InheritedHistoryPaths, expectedInventory);
       if (v28Valid && configured) {
+        const v28Head = v32
+          ? GREPTILE_PUSH_DRAFT_CONTROL.mergeParents[1]
+          : head;
         const configCommits = git(
           "log",
           "--full-history",
           "--format=%H",
-          candidate + ".." + head,
+          candidate + ".." + v28Head,
           "--",
           reviewer.path,
         )
@@ -6142,7 +6145,7 @@ export function inspectV23SealedRepository(
           parentWork.roadmapVersion === reviewer.version &&
           JSON.stringify(parentWork.wp8fV28GreptileReviewer) ===
             JSON.stringify(reviewer) &&
-          hash(git("show", head + ":" + reviewer.path)) ===
+          hash(git("show", v28Head + ":" + reviewer.path)) ===
             reviewer.fileSha256 &&
           hash(readFileSync(join(cwd, reviewer.path))) === reviewer.fileSha256;
       }
