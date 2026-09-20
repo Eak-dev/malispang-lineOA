@@ -1,0 +1,117 @@
+{
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax"],
+  "autoReview": ["open"],
+  "triggerOnUpdates": false,
+  "triggerOnDrafts": false,
+  "shouldUpdateDescription": false,
+  "updateSummaryOnly": false,
+  "fixWithAI": false,
+  "statusCheck": true,
+  "statusCommentsEnabled": true,
+  "autoApprove": {
+    "enabled": false
+  },
+  "summarySection": {
+    "included": true,
+    "collapsible": false,
+    "defaultOpen": true
+  },
+  "issuesTableSection": {
+    "included": true,
+    "collapsible": false,
+    "defaultOpen": true
+  },
+  "confidenceScoreSection": {
+    "included": true,
+    "collapsible": false,
+    "defaultOpen": true
+  },
+  "sequenceDiagramSection": {
+    "included": false,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "customContext": {
+    "rules": [
+      {
+        "rule": "Act only as an independent reviewer: report findings and evidence. Do not edit code, auto-fix, approve, merge, change a PR description, or recommend bypassing review controls.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Treat TEST_ONLY as the default. Flag any Production change unless an explicit current Owner approval exists, especially LINE OA, webhook, secrets, Rich Menu, Reward Card, Apps Script, Worker bindings, and deployment targets.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Do not treat passing CI as proof of readiness, Owner UAT, recovery verification, or Production approval. Report each missing gate separately.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Check event and accounting paths for idempotency, lost events, duplicate events, duplicate replies, repeated charges, reservations, refunds, or other duplicate accounting effects.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Check for secret and personal-data exposure, but never reproduce secret values, tokens, credentials, raw personal data, or unnecessary identifying details in a review comment.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Behavior changes require relevant tests. Identify any required check that is failing, missing, skipped, cancelled, or not tied to the reviewed commit.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Treat authentication, authorization, migrations, GitHub Actions, routing, budgets, and AI spending controls as high-risk review areas.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Never propose force-push, destructive operations, history rewriting, bypassing branch protection, or weakening required checks as a resolution.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Assess remote actions only against the exact authority recorded in current Project Control. Do not ask for already-recorded authority again and do not infer or expand authority.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Use AGENTS.md, PROJECT_CONTROL.md, config/project/roadmap.json, config/project/current-work.json, docs/project/OWNER_DECISION_LOG.md, docs/project/EXECUTION_GATES.md, and docs/project/ROADMAP_CHANGELOG.md as governing context. If evidence is insufficient or conflicting, label the conclusion UNKNOWN.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Preserve the frozen MP-06 runtime, artifact, grants, journals, pendingTemplate mismatch, Data Studio hold, and existing scope restrictions unless a newer valid Project Control decision explicitly changes them.",
+        "scope": ["**/*"]
+      },
+      {
+        "rule": "Flag any attempt to touch Production, deploy, change grants, release the Data Studio hold, merge, close Issue #9 or #12, or begin MP-07 without separate explicit authority.",
+        "scope": ["**/*"]
+      }
+    ],
+    "files": [
+      {
+        "path": "AGENTS.md",
+        "description": "Repository operating and safety instructions"
+      },
+      {
+        "path": "PROJECT_CONTROL.md",
+        "description": "Current project-control entry point and precedence"
+      },
+      {
+        "path": "config/project/roadmap.json",
+        "description": "Versioned current roadmap"
+      },
+      {
+        "path": "config/project/current-work.json",
+        "description": "Exact current work authorization and restrictions"
+      },
+      {
+        "path": "docs/project/OWNER_DECISION_LOG.md",
+        "description": "Owner decisions and control transitions"
+      },
+      {
+        "path": "docs/project/EXECUTION_GATES.md",
+        "description": "Readiness, execution, and stop gates"
+      },
+      {
+        "path": "docs/project/ROADMAP_CHANGELOG.md",
+        "description": "Roadmap transition history"
+      }
+    ]
+  }
+}
