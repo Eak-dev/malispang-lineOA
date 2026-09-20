@@ -5429,6 +5429,8 @@ export function inspectV23SealedRepository(
     let v29WorkflowCommit = "";
     let v30WorkflowCommit = "";
     let v31ProviderCommits: string[] = [];
+    let v32GreptileConfigCommitCount = -1;
+    let v32GreptileWorkingSha256 = "";
     if (v32) {
       const c = GREPTILE_PUSH_DRAFT_CONTROL;
       if (
@@ -5470,12 +5472,14 @@ export function inspectV23SealedRepository(
         .trim()
         .split("\n")
         .filter(Boolean);
+      v32GreptileConfigCommitCount = configCommits.length;
+      v32GreptileWorkingSha256 = hash(readFileSync(join(cwd, c.path)));
       if (configCommits.length > 1)
         return { ok: false, reason: "V32_GREPTILE_CONFIG_HISTORY_DRIFT" };
       if (configCommits.length === 0) {
         if (
           hash(git("show", head + ":" + c.path)) !== c.priorFileSha256 ||
-          hash(readFileSync(join(cwd, c.path))) !== c.priorFileSha256
+          v32GreptileWorkingSha256 !== c.priorFileSha256
         )
           return { ok: false, reason: "V32_GREPTILE_PREDECESSOR_MISMATCH" };
       } else {
@@ -5506,7 +5510,7 @@ export function inspectV23SealedRepository(
           hash(git("show", configParents[1]! + ":" + c.path)) !==
             c.priorFileSha256 ||
           hash(git("show", head + ":" + c.path)) !== c.fileSha256 ||
-          hash(readFileSync(join(cwd, c.path))) !== c.fileSha256
+          v32GreptileWorkingSha256 !== c.fileSha256
         )
           return { ok: false, reason: "V32_GREPTILE_CONFIG_SEAL_MISMATCH" };
       }
@@ -6156,7 +6160,15 @@ export function inspectV23SealedRepository(
             JSON.stringify(reviewer) &&
           hash(git("show", v28Head + ":" + reviewer.path)) ===
             reviewer.fileSha256 &&
-          hash(readFileSync(join(cwd, reviewer.path))) === reviewer.fileSha256;
+          (v32
+            ? (v32GreptileConfigCommitCount === 0 &&
+                v32GreptileWorkingSha256 ===
+                  GREPTILE_PUSH_DRAFT_CONTROL.priorFileSha256) ||
+              (v32GreptileConfigCommitCount === 1 &&
+                v32GreptileWorkingSha256 ===
+                  GREPTILE_PUSH_DRAFT_CONTROL.fileSha256)
+            : hash(readFileSync(join(cwd, reviewer.path))) ===
+              reviewer.fileSha256);
       }
     }
     if (!sealValid)
