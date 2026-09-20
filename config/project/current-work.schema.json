@@ -51,9 +51,32 @@
     "failureMode",
     "wp8fV25WorkerTimingAddendum",
     "wp8fV26WorkflowSeal",
-    "wp8fV27ProviderHangSeal"
+    "wp8fV27ProviderHangSeal",
+    "wp8fV28GreptileReviewer"
   ],
   "properties": {
+    "wp8fV28GreptileReviewer": {
+      "const": {
+        "version": "2026.09.20-v28",
+        "ownerDecision": "MP-OD-2026-09-20-V28",
+        "supersedes": "2026.09.20-v27",
+        "type": "REPOSITORY_SCOPED_INDEPENDENT_GREPTILE_REVIEWER_CONTROL_ONLY_INHERITING_V27",
+        "mandate": "OWNER_GREPTILE_INDEPENDENT_REVIEWER_REQUEST_2026_09_20",
+        "repository": "Eak-dev/malispang-lineOA",
+        "path": "greptile.json",
+        "fileSha256": "5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61",
+        "reviewMode": "FINDINGS_ONLY_NO_EDIT_APPROVE_OR_MERGE",
+        "automaticReview": "PR_OPENED_ONLY_NO_PUSH_REBASE_OR_DRAFT",
+        "strictness": 2,
+        "commentTypes": ["logic", "syntax"],
+        "output": "SUMMARY_CONFIDENCE_ISSUE_TABLE_ON_SEQUENCE_DIAGRAM_OFF_COMMENTS_NO_DESCRIPTION_REWRITE",
+        "automation": "AUTO_APPROVE_AUTO_FIX_AUTO_MERGE_GREPTILE_CODEX_PLUGIN_GRELOOP_OFF_NOT_REQUIRED_CHECK",
+        "repositoryScope": "EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF_NO_CROSS_REPOSITORY_CONTEXT",
+        "prAuthority": "NO_PR_CREATION_NO_DRAFT_READY_TRANSITION_REVIEW_ONLY_EXISTING_AUTHORIZED_PR",
+        "production": "NO_PRODUCTION_DEPLOY_GRANT_DATA_STUDIO_HOLD_RELEASE_ISSUE_CLOSE_OR_MP07",
+        "inheritedState": "EXACT_V27_RUNTIME_ARTIFACT_GRANTS_JOURNALS_PENDING_TEMPLATE_AND_DATA_STUDIO_HOLD_UNCHANGED"
+      }
+    },
     "wp8fV27ProviderHangSeal": {
       "const": {
         "version": "2026.09.20-v27",
@@ -403,7 +426,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.20-v27" },
+    "roadmapVersion": { "const": "2026.09.20-v28" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {

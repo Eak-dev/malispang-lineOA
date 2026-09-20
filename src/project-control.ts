@@ -293,20 +293,23 @@ export function validateProjectControl(
 
   const roadmap = roadmapInput;
   const currentWork = currentWorkInput;
-  const v27 = roadmap.version === WP8F_V27_PROVIDER_SEAL.version;
+  const v28 = roadmap.version === WP8F_V28_GREPTILE_REVIEWER.version;
+  const v27 = v28 || roadmap.version === WP8F_V27_PROVIDER_SEAL.version;
   const v26 = v27 || roadmap.version === WP8F_V26_WORKFLOW_SEAL.version;
   const v25 = v26 || roadmap.version === WP8F_V25_ADDENDUM.version;
   const v24 = v25 || roadmap.version === WP8F_V24_ENABLEMENT.version;
   const v23 = v24 || roadmap.version === WP8F_V23_ADDENDUM.version;
-  const addendum = v27
-    ? WP8F_V27_PROVIDER_SEAL
-    : v26
-      ? WP8F_V26_WORKFLOW_SEAL
-      : v25
-        ? WP8F_V25_ADDENDUM
-        : v24
-          ? WP8F_V24_ENABLEMENT
-          : WP8F_V23_ADDENDUM;
+  const addendum = v28
+    ? WP8F_V28_GREPTILE_REVIEWER
+    : v27
+      ? WP8F_V27_PROVIDER_SEAL
+      : v26
+        ? WP8F_V26_WORKFLOW_SEAL
+        : v25
+          ? WP8F_V25_ADDENDUM
+          : v24
+            ? WP8F_V24_ENABLEMENT
+            : WP8F_V23_ADDENDUM;
   const v22 = v23 || roadmap.version === WP8F_V22_AUTHORIZATION.version;
   const successor = v22 || roadmap.version === WP8F_V21_COMPLETION.version;
   const completion = v22 ? WP8F_V22_AUTHORIZATION : WP8F_V21_COMPLETION;
@@ -793,11 +796,13 @@ export function validateProjectControl(
   const allowedScope = Array.isArray(currentWork.allowedScope)
     ? currentWork.allowedScope
     : [];
-  const requiredScope = v22
-    ? WP8F_V22_SCOPE
-    : successor
-      ? WP8F_V21_SCOPE
-      : REQUIRED_WP8F_SCOPE;
+  const requiredScope = v28
+    ? WP8F_V28_SCOPE
+    : v22
+      ? WP8F_V22_SCOPE
+      : successor
+        ? WP8F_V21_SCOPE
+        : REQUIRED_WP8F_SCOPE;
   if (
     allowedScope.length !== requiredScope.length ||
     requiredScope.some((scope) => !allowedScope.includes(scope))
@@ -947,7 +952,17 @@ export function validateProjectControl(
   }
 
   if (successor)
-    validateWp8fSuccessor(errors, currentWork, v22, v23, v24, v25, v26, v27);
+    validateWp8fSuccessor(
+      errors,
+      currentWork,
+      v22,
+      v23,
+      v24,
+      v25,
+      v26,
+      v27,
+      v28,
+    );
 
   const conflicts = Array.isArray(currentWork.conflicts)
     ? currentWork.conflicts
@@ -1004,7 +1019,8 @@ export function evaluateProjectAction(
       roadmap.version === WP8F_V24_ENABLEMENT.version ||
       roadmap.version === WP8F_V25_ADDENDUM.version ||
       roadmap.version === WP8F_V26_WORKFLOW_SEAL.version ||
-      roadmap.version === WP8F_V27_PROVIDER_SEAL.version)
+      roadmap.version === WP8F_V27_PROVIDER_SEAL.version ||
+      roadmap.version === WP8F_V28_GREPTILE_REVIEWER.version)
   ) {
     return evaluateWp8fV22Action(
       currentWork,
@@ -1015,7 +1031,8 @@ export function evaluateProjectAction(
         roadmap.version === WP8F_V24_ENABLEMENT.version ||
         roadmap.version === WP8F_V25_ADDENDUM.version ||
         roadmap.version === WP8F_V26_WORKFLOW_SEAL.version ||
-        roadmap.version === WP8F_V27_PROVIDER_SEAL.version,
+        roadmap.version === WP8F_V27_PROVIDER_SEAL.version ||
+        roadmap.version === WP8F_V28_GREPTILE_REVIEWER.version,
       sealedCheckout,
     );
   }
@@ -1153,7 +1170,8 @@ export function validateSchemaDocuments(
     expectedVersion === WP8F_V24_ENABLEMENT.version ||
     expectedVersion === WP8F_V25_ADDENDUM.version ||
     expectedVersion === WP8F_V26_WORKFLOW_SEAL.version ||
-    expectedVersion === WP8F_V27_PROVIDER_SEAL.version
+    expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+    expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version
   ) {
     if (
       !isRecord(currentWorkSchema) ||
@@ -1174,7 +1192,8 @@ export function validateSchemaDocuments(
         expectedVersion === WP8F_V24_ENABLEMENT.version ||
         expectedVersion === WP8F_V25_ADDENDUM.version ||
         expectedVersion === WP8F_V26_WORKFLOW_SEAL.version ||
-        expectedVersion === WP8F_V27_PROVIDER_SEAL.version) &&
+        expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+        expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1191,7 +1210,8 @@ export function validateSchemaDocuments(
         expectedVersion === WP8F_V24_ENABLEMENT.version ||
         expectedVersion === WP8F_V25_ADDENDUM.version ||
         expectedVersion === WP8F_V26_WORKFLOW_SEAL.version ||
-        expectedVersion === WP8F_V27_PROVIDER_SEAL.version) &&
+        expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+        expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1207,7 +1227,8 @@ export function validateSchemaDocuments(
       (expectedVersion === WP8F_V24_ENABLEMENT.version ||
         expectedVersion === WP8F_V25_ADDENDUM.version ||
         expectedVersion === WP8F_V26_WORKFLOW_SEAL.version ||
-        expectedVersion === WP8F_V27_PROVIDER_SEAL.version) &&
+        expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+        expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1220,7 +1241,8 @@ export function validateSchemaDocuments(
     if (
       (expectedVersion === WP8F_V25_ADDENDUM.version ||
         expectedVersion === WP8F_V26_WORKFLOW_SEAL.version ||
-        expectedVersion === WP8F_V27_PROVIDER_SEAL.version) &&
+        expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+        expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1234,7 +1256,8 @@ export function validateSchemaDocuments(
       errors.push("V25_SCHEMA_NOT_CLOSED");
     if (
       (expectedVersion === WP8F_V26_WORKFLOW_SEAL.version ||
-        expectedVersion === WP8F_V27_PROVIDER_SEAL.version) &&
+        expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+        expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1244,7 +1267,8 @@ export function validateSchemaDocuments(
     )
       errors.push("V26_SCHEMA_NOT_CLOSED");
     if (
-      expectedVersion === WP8F_V27_PROVIDER_SEAL.version &&
+      (expectedVersion === WP8F_V27_PROVIDER_SEAL.version ||
+        expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version) &&
       (!isRecord(currentWorkSchema) ||
         !isRecord(currentWorkSchema.properties) ||
         !Array.isArray(currentWorkSchema.required) ||
@@ -1253,6 +1277,16 @@ export function validateSchemaDocuments(
           JSON.stringify({ const: WP8F_V27_PROVIDER_SEAL }))
     )
       errors.push("V27_SCHEMA_NOT_CLOSED");
+    if (
+      expectedVersion === WP8F_V28_GREPTILE_REVIEWER.version &&
+      (!isRecord(currentWorkSchema) ||
+        !isRecord(currentWorkSchema.properties) ||
+        !Array.isArray(currentWorkSchema.required) ||
+        !currentWorkSchema.required.includes("wp8fV28GreptileReviewer") ||
+        JSON.stringify(currentWorkSchema.properties.wp8fV28GreptileReviewer) !==
+          JSON.stringify({ const: WP8F_V28_GREPTILE_REVIEWER }))
+    )
+      errors.push("V28_SCHEMA_NOT_CLOSED");
   } else if (expectedVersion !== "2026.09.09-v19")
     errors.push("UNKNOWN_SCHEMA_VERSION");
   return uniqueSorted(errors);
@@ -3498,6 +3532,34 @@ export function validateWp8fOwnerDecisionRecord(
   version = "2026.09.09-v19",
 ): boolean {
   if (typeof record !== "string") return false;
+  if (version === WP8F_V28_GREPTILE_REVIEWER.version) {
+    const g = WP8F_V28_GREPTILE_REVIEWER;
+    const current = record
+      .split("## MP-OD-2026-09-20-V28 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof current === "string" &&
+      validateWp8fOwnerDecisionRecord(record, WP8F_V27_PROVIDER_SEAL.version) &&
+      [
+        g.mandate,
+        g.type,
+        g.repository,
+        g.path,
+        g.fileSha256,
+        g.reviewMode,
+        g.automaticReview,
+        g.output,
+        g.automation,
+        g.repositoryScope,
+        g.prAuthority,
+        g.production,
+        g.inheritedState,
+        "supersedes 2026.09.20-v27",
+        "Auto-enable new repositories OFF",
+        "Production NO_GO — NOT TOUCHED",
+      ].every((value) => current.includes(String(value)))
+    );
+  }
   if (version === WP8F_V27_PROVIDER_SEAL.version) {
     const g = WP8F_V27_PROVIDER_SEAL;
     const current = record
@@ -3742,19 +3804,25 @@ export function evaluateWp8fPaths(
   const allowed =
     phase === "CONTROL_TRANSITION"
       ? WP8F_V18_ENVELOPE.controlFiles
-      : phase === "EVIDENCE"
-        ? isRecord(roadmap) &&
-          (roadmap.version === WP8F_V22_AUTHORIZATION.version ||
-            roadmap.version === WP8F_V23_ADDENDUM.version ||
-            roadmap.version === WP8F_V24_ENABLEMENT.version ||
-            roadmap.version === WP8F_V25_ADDENDUM.version ||
-            roadmap.version === WP8F_V26_WORKFLOW_SEAL.version ||
-            roadmap.version === WP8F_V27_PROVIDER_SEAL.version)
-          ? WP8F_V22_AUTHORIZATION.evidenceFiles
-          : isRecord(roadmap) && roadmap.version === WP8F_V21_COMPLETION.version
-            ? WP8F_V21_COMPLETION.evidenceFiles
-            : WP8F_V19_PREPARATION.evidenceFiles
-        : [];
+      : phase === "GREPTILE_REVIEWER_CONFIG" &&
+          isRecord(roadmap) &&
+          roadmap.version === WP8F_V28_GREPTILE_REVIEWER.version
+        ? [WP8F_V28_GREPTILE_REVIEWER.path]
+        : phase === "EVIDENCE"
+          ? isRecord(roadmap) &&
+            (roadmap.version === WP8F_V22_AUTHORIZATION.version ||
+              roadmap.version === WP8F_V23_ADDENDUM.version ||
+              roadmap.version === WP8F_V24_ENABLEMENT.version ||
+              roadmap.version === WP8F_V25_ADDENDUM.version ||
+              roadmap.version === WP8F_V26_WORKFLOW_SEAL.version ||
+              roadmap.version === WP8F_V27_PROVIDER_SEAL.version ||
+              roadmap.version === WP8F_V28_GREPTILE_REVIEWER.version)
+            ? WP8F_V22_AUTHORIZATION.evidenceFiles
+            : isRecord(roadmap) &&
+                roadmap.version === WP8F_V21_COMPLETION.version
+              ? WP8F_V21_COMPLETION.evidenceFiles
+              : WP8F_V19_PREPARATION.evidenceFiles
+          : [];
   return exactPaths(paths, allowed)
     ? { allowed: true, reason: "EXACT_OWNER_APPROVED_PATHS" }
     : { allowed: false, reason: "UNKNOWN_OR_OUT_OF_SCOPE_PATH" };
@@ -4391,6 +4459,10 @@ const WP8F_V22_SCOPE = [
   "RUNTIME_DEPENDENCIES_MODEL_PROMPT_POLICY_CATALOG_CHECKSUMS_READ_ONLY",
   "PRODUCTION_NO_GO_MP12_SEPARATE",
 ] as const;
+const WP8F_V28_SCOPE = [
+  ...WP8F_V22_SCOPE,
+  "GREPTILE_JSON_EXACT_REVIEWER_CONFIG_ONLY_IN_ADDITION_TO_TEN_CONTROL_PATHS",
+] as const;
 const WP8F_V22_FORBIDDEN = [
   ...WP8F_V21_FORBIDDEN,
   ...WP8F_V21_RETIRED_PROHIBITIONS,
@@ -4601,6 +4673,34 @@ const WP8F_V27_PROVIDER_SEAL = {
   readiness: "PENDING_TEMPLATE_MISMATCH_AND_DATA_STUDIO_HOLD_NOT_RELEASED",
 } as const;
 const WP8F_V27_WORK_KEYS = [...WP8F_V26_WORK_KEYS, "wp8fV27ProviderHangSeal"];
+const WP8F_V28_GREPTILE_REVIEWER = {
+  version: "2026.09.20-v28",
+  ownerDecision: "MP-OD-2026-09-20-V28",
+  supersedes: "2026.09.20-v27",
+  type: "REPOSITORY_SCOPED_INDEPENDENT_GREPTILE_REVIEWER_CONTROL_ONLY_INHERITING_V27",
+  mandate: "OWNER_GREPTILE_INDEPENDENT_REVIEWER_REQUEST_2026_09_20",
+  repository: "Eak-dev/malispang-lineOA",
+  path: "greptile.json",
+  fileSha256:
+    "5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61",
+  reviewMode: "FINDINGS_ONLY_NO_EDIT_APPROVE_OR_MERGE",
+  automaticReview: "PR_OPENED_ONLY_NO_PUSH_REBASE_OR_DRAFT",
+  strictness: 2,
+  commentTypes: ["logic", "syntax"],
+  output:
+    "SUMMARY_CONFIDENCE_ISSUE_TABLE_ON_SEQUENCE_DIAGRAM_OFF_COMMENTS_NO_DESCRIPTION_REWRITE",
+  automation:
+    "AUTO_APPROVE_AUTO_FIX_AUTO_MERGE_GREPTILE_CODEX_PLUGIN_GRELOOP_OFF_NOT_REQUIRED_CHECK",
+  repositoryScope:
+    "EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF_NO_CROSS_REPOSITORY_CONTEXT",
+  prAuthority:
+    "NO_PR_CREATION_NO_DRAFT_READY_TRANSITION_REVIEW_ONLY_EXISTING_AUTHORIZED_PR",
+  production:
+    "NO_PRODUCTION_DEPLOY_GRANT_DATA_STUDIO_HOLD_RELEASE_ISSUE_CLOSE_OR_MP07",
+  inheritedState:
+    "EXACT_V27_RUNTIME_ARTIFACT_GRANTS_JOURNALS_PENDING_TEMPLATE_AND_DATA_STUDIO_HOLD_UNCHANGED",
+} as const;
+const WP8F_V28_WORK_KEYS = [...WP8F_V27_WORK_KEYS, "wp8fV28GreptileReviewer"];
 const v24ControlTiming = channel("mp06.v24.control-inspection-timing");
 
 /** Data validation is NOT provenance. Only the read-only repository inspector
@@ -5132,9 +5232,20 @@ export function inspectV23SealedRepository(
       !validateV22OperationJournal(committedWork.wp8fV22OperationJournal)
     )
       return { ok: false, reason: "V23_INHERITED_JOURNAL_UNVERIFIED" };
-    const v27 = committedWork.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version;
+    const v28 =
+      committedWork.roadmapVersion === WP8F_V28_GREPTILE_REVIEWER.version;
+    const v27 =
+      v28 || committedWork.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version;
     const v26 =
       v27 || committedWork.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version;
+    if (v28) {
+      observation.paths = paths.filter(
+        (path) => path !== WP8F_V28_GREPTILE_REVIEWER.path,
+      );
+      observation.historyPaths = historyPaths.filter(
+        (path) => path !== WP8F_V28_GREPTILE_REVIEWER.path,
+      );
+    }
     let dirty: string[];
     if (v26) {
       // Worktree diff may refresh real index stat metadata even with optional
@@ -5448,8 +5559,79 @@ export function inspectV23SealedRepository(
         }
       }
     }
+    let v28Valid = true;
+    if (v28) {
+      const reviewer = WP8F_V28_GREPTILE_REVIEWER;
+      const inheritedInventory = [
+        ...WP8F_V18_ENVELOPE.controlFiles,
+        WP8F_V27_PROVIDER_SEAL.path,
+        WP8F_V26_WORKFLOW_SEAL.path,
+      ];
+      const configured = paths.includes(reviewer.path);
+      const expectedInventory = configured
+        ? [...inheritedInventory, reviewer.path]
+        : inheritedInventory;
+      v28Valid =
+        samePathSet(paths, expectedInventory) &&
+        samePathSet(historyPaths, expectedInventory);
+      if (v28Valid && configured) {
+        const configCommits = git(
+          "log",
+          "--full-history",
+          "--format=%H",
+          candidate + ".." + head,
+          "--",
+          reviewer.path,
+        )
+          .trim()
+          .split("\n")
+          .filter(Boolean);
+        const configCommit = configCommits[0] ?? "";
+        const configParents = git(
+          "rev-list",
+          "--parents",
+          "-n",
+          "1",
+          configCommit,
+        )
+          .trim()
+          .split(" ");
+        const configParent = configParents[1] ?? "";
+        const parentWork: unknown = JSON.parse(
+          git("show", configParent + ":config/project/current-work.json"),
+        );
+        v28Valid =
+          configCommits.length === 1 &&
+          configParents.length === 2 &&
+          samePathSet(
+            list(
+              git(...diffArgs, "--name-only", "-z", configParent, configCommit),
+            ),
+            [reviewer.path],
+          ) &&
+          list(
+            git(
+              "ls-tree",
+              "-r",
+              "--name-only",
+              "-z",
+              configParent,
+              "--",
+              reviewer.path,
+            ),
+          ).length === 0 &&
+          isRecord(parentWork) &&
+          parentWork.roadmapVersion === reviewer.version &&
+          JSON.stringify(parentWork.wp8fV28GreptileReviewer) ===
+            JSON.stringify(reviewer) &&
+          hash(git("show", head + ":" + reviewer.path)) ===
+            reviewer.fileSha256 &&
+          hash(readFileSync(join(cwd, reviewer.path))) === reviewer.fileSha256;
+      }
+    }
     if (
       !sealValid ||
+      !v28Valid ||
       numstat[2] !== g.path ||
       (dirty.length > 0 &&
         !exactPaths([...new Set(dirty)], WP8F_V18_ENVELOPE.controlFiles))
@@ -5511,7 +5693,8 @@ function v23VerifiedPaths(
     input.head === fresh.proof.head &&
     (!isRecord(work) ||
       (work.roadmapVersion !== WP8F_V26_WORKFLOW_SEAL.version &&
-        work.roadmapVersion !== WP8F_V27_PROVIDER_SEAL.version) ||
+        work.roadmapVersion !== WP8F_V27_PROVIDER_SEAL.version &&
+        work.roadmapVersion !== WP8F_V28_GREPTILE_REVIEWER.version) ||
       (typeof input.rawIndexSha256 === "string" &&
         input.rawIndexSha256 === fresh.proof.rawIndexSha256)) &&
     candidate.evidenceHead === fresh.proof.head &&
@@ -5683,20 +5866,23 @@ function validateWp8fSuccessor(
   v25 = false,
   v26 = false,
   v27 = false,
+  v28 = false,
 ): void {
-  const keys = v27
-    ? WP8F_V27_WORK_KEYS
-    : v26
-      ? WP8F_V26_WORK_KEYS
-      : v25
-        ? WP8F_V25_WORK_KEYS
-        : v24
-          ? WP8F_V24_WORK_KEYS
-          : v23
-            ? WP8F_V23_WORK_KEYS
-            : v22
-              ? WP8F_V22_WORK_KEYS
-              : WP8F_V21_WORK_KEYS;
+  const keys = v28
+    ? WP8F_V28_WORK_KEYS
+    : v27
+      ? WP8F_V27_WORK_KEYS
+      : v26
+        ? WP8F_V26_WORK_KEYS
+        : v25
+          ? WP8F_V25_WORK_KEYS
+          : v24
+            ? WP8F_V24_WORK_KEYS
+            : v23
+              ? WP8F_V23_WORK_KEYS
+              : v22
+                ? WP8F_V22_WORK_KEYS
+                : WP8F_V21_WORK_KEYS;
   if (
     JSON.stringify(work.wp8fSuccessorCompletion) !==
     JSON.stringify(WP8F_V21_COMPLETION)
@@ -5768,6 +5954,12 @@ function validateWp8fSuccessor(
       JSON.stringify(WP8F_V27_PROVIDER_SEAL)
   )
     errors.push("V27_SEALED_ADDENDUM_INVALID");
+  if (
+    v28 &&
+    JSON.stringify(work.wp8fV28GreptileReviewer) !==
+      JSON.stringify(WP8F_V28_GREPTILE_REVIEWER)
+  )
+    errors.push("V28_GREPTILE_REVIEWER_CONTROL_INVALID");
 }
 
 function successorTarget(target: unknown): boolean {
@@ -5819,19 +6011,24 @@ function successorCandidate(
     isFullSha(c.controlCommit, 40) &&
     c.controlCommit !== g.sourceCommit &&
     c.controlOwnerDecision ===
-      (isRecord(work) && work.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version
-        ? WP8F_V27_PROVIDER_SEAL.ownerDecision
+      (isRecord(work) &&
+      work.roadmapVersion === WP8F_V28_GREPTILE_REVIEWER.version
+        ? WP8F_V28_GREPTILE_REVIEWER.ownerDecision
         : isRecord(work) &&
-            work.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version
-          ? WP8F_V26_WORKFLOW_SEAL.ownerDecision
-          : isRecord(work) && work.roadmapVersion === WP8F_V25_ADDENDUM.version
-            ? WP8F_V25_ADDENDUM.ownerDecision
+            work.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version
+          ? WP8F_V27_PROVIDER_SEAL.ownerDecision
+          : isRecord(work) &&
+              work.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version
+            ? WP8F_V26_WORKFLOW_SEAL.ownerDecision
             : isRecord(work) &&
-                work.roadmapVersion === WP8F_V24_ENABLEMENT.version
-              ? WP8F_V24_ENABLEMENT.ownerDecision
-              : v23
-                ? WP8F_V23_ADDENDUM.ownerDecision
-                : g.ownerDecision) &&
+                work.roadmapVersion === WP8F_V25_ADDENDUM.version
+              ? WP8F_V25_ADDENDUM.ownerDecision
+              : isRecord(work) &&
+                  work.roadmapVersion === WP8F_V24_ENABLEMENT.version
+                ? WP8F_V24_ENABLEMENT.ownerDecision
+                : v23
+                  ? WP8F_V23_ADDENDUM.ownerDecision
+                  : g.ownerDecision) &&
     c.controlTestsAndValidatorsPassed === true &&
     c.controlCiHead === c.controlCommit &&
     c.controlCiConclusion === "success" &&
@@ -5839,7 +6036,8 @@ function successorCandidate(
       (work.roadmapVersion !== WP8F_V24_ENABLEMENT.version &&
         work.roadmapVersion !== WP8F_V25_ADDENDUM.version &&
         work.roadmapVersion !== WP8F_V26_WORKFLOW_SEAL.version &&
-        work.roadmapVersion !== WP8F_V27_PROVIDER_SEAL.version) ||
+        work.roadmapVersion !== WP8F_V27_PROVIDER_SEAL.version &&
+        work.roadmapVersion !== WP8F_V28_GREPTILE_REVIEWER.version) ||
       c.controlCiHead === c.evidenceHead) &&
     c.committedPushedAndClean === true &&
     c.exactDiffReviewed === true &&
@@ -6159,17 +6357,19 @@ function evaluateWp8fV22Action(
     !isRecord(evidence) ||
     evidence.provenance !== "INDEPENDENT_OPERATOR_VERIFICATION" ||
     evidence.ownerDecision !==
-      (work.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version
-        ? WP8F_V27_PROVIDER_SEAL.ownerDecision
-        : work.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version
-          ? WP8F_V26_WORKFLOW_SEAL.ownerDecision
-          : work.roadmapVersion === WP8F_V25_ADDENDUM.version
-            ? WP8F_V25_ADDENDUM.ownerDecision
-            : work.roadmapVersion === WP8F_V24_ENABLEMENT.version
-              ? WP8F_V24_ENABLEMENT.ownerDecision
-              : v23
-                ? WP8F_V23_ADDENDUM.ownerDecision
-                : g.ownerDecision) ||
+      (work.roadmapVersion === WP8F_V28_GREPTILE_REVIEWER.version
+        ? WP8F_V28_GREPTILE_REVIEWER.ownerDecision
+        : work.roadmapVersion === WP8F_V27_PROVIDER_SEAL.version
+          ? WP8F_V27_PROVIDER_SEAL.ownerDecision
+          : work.roadmapVersion === WP8F_V26_WORKFLOW_SEAL.version
+            ? WP8F_V26_WORKFLOW_SEAL.ownerDecision
+            : work.roadmapVersion === WP8F_V25_ADDENDUM.version
+              ? WP8F_V25_ADDENDUM.ownerDecision
+              : work.roadmapVersion === WP8F_V24_ENABLEMENT.version
+                ? WP8F_V24_ENABLEMENT.ownerDecision
+                : v23
+                  ? WP8F_V23_ADDENDUM.ownerDecision
+                  : g.ownerDecision) ||
     !Array.isArray(work.wp8fV22OperationJournal)
   )
     return deny;

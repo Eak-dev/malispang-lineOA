@@ -5139,6 +5139,21 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    if (r.version === "2026.09.20-v28") {
+      r.version = "2026.09.20-v27";
+      delete w.wp8fV28GreptileReviewer;
+      w.allowedScope = (w.allowedScope as string[]).filter(
+        (scope) =>
+          scope !==
+          "GREPTILE_JSON_EXACT_REVIEWER_CONFIG_ONLY_IN_ADDITION_TO_TEN_CONTROL_PATHS",
+      );
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "wp8fV28GreptileReviewer",
+      );
+      delete record(s.properties).wp8fV28GreptileReviewer;
+      record(record(s.properties).roadmapVersion).const = "2026.09.20-v27";
+    }
     if (r.version === "2026.09.20-v27") {
       r.version = "2026.09.20-v26";
       delete w.wp8fV27ProviderHangSeal;
@@ -8142,6 +8157,63 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
       v25Git(fixture, "checkout", "--quiet", "--detach", correctionCommit);
       for (const path of v25ControlPaths)
         await copyFile(new URL(path, root), join(fixture, path));
+      const currentRoadmap = record(
+        JSON.parse(
+          await readFile(join(fixture, "config/project/roadmap.json"), "utf8"),
+        ),
+      );
+      const currentWork = record(
+        JSON.parse(
+          await readFile(
+            join(fixture, "config/project/current-work.json"),
+            "utf8",
+          ),
+        ),
+      );
+      const currentSchema = record(
+        JSON.parse(
+          await readFile(
+            join(fixture, "config/project/current-work.schema.json"),
+            "utf8",
+          ),
+        ),
+      );
+      if (currentRoadmap.version === "2026.09.20-v28") {
+        currentRoadmap.version = version;
+        currentRoadmap.ownerDecision = {
+          decisionId: decision,
+          decidedAt: "2026-09-20",
+          supersedes: "2026.09.20-v26",
+        };
+        currentWork.roadmapVersion = version;
+        delete currentWork.wp8fV28GreptileReviewer;
+        currentWork.allowedScope = (
+          currentWork.allowedScope as string[]
+        ).filter(
+          (scope) =>
+            scope !==
+            "GREPTILE_JSON_EXACT_REVIEWER_CONFIG_ONLY_IN_ADDITION_TO_TEN_CONTROL_PATHS",
+        );
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "wp8fV28GreptileReviewer",
+        );
+        delete record(currentSchema.properties).wp8fV28GreptileReviewer;
+        record(record(currentSchema.properties).roadmapVersion).const = version;
+        await Promise.all([
+          writeFile(
+            join(fixture, "config/project/roadmap.json"),
+            JSON.stringify(currentRoadmap, null, 2) + "\n",
+          ),
+          writeFile(
+            join(fixture, "config/project/current-work.json"),
+            JSON.stringify(currentWork, null, 2) + "\n",
+          ),
+          writeFile(
+            join(fixture, "config/project/current-work.schema.json"),
+            JSON.stringify(currentSchema, null, 2) + "\n",
+          ),
+        ]);
+      }
       v25Git(fixture, "add", "--", ...v25ControlPaths);
       if (v25Git(fixture, "diff", "--cached", "--name-only").trim())
         v25Git(

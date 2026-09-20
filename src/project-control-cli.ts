@@ -47,7 +47,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.11-v24" ||
     version === "2026.09.12-v25" ||
     version === "2026.09.20-v26" ||
-    version === "2026.09.20-v27";
+    version === "2026.09.20-v27" ||
+    version === "2026.09.20-v28";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -56,7 +57,10 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     )
       throw new Error("V21_OPERATION_JOURNAL_MISSING");
     const journal = currentWork.wp8fSuccessorOperationJournal;
-    const v26 = version === "2026.09.20-v26" || version === "2026.09.20-v27";
+    const v26 =
+      version === "2026.09.20-v26" ||
+      version === "2026.09.20-v27" ||
+      version === "2026.09.20-v28";
     let newerSuccessorJournal = journal;
     let newerV22Journal =
       "wp8fV22OperationJournal" in currentWork
@@ -103,7 +107,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.11-v24" ||
           historical.roadmapVersion === "2026.09.12-v25" ||
           historical.roadmapVersion === "2026.09.20-v26" ||
-          historical.roadmapVersion === "2026.09.20-v27")
+          historical.roadmapVersion === "2026.09.20-v27" ||
+          historical.roadmapVersion === "2026.09.20-v28")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -125,7 +130,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.11-v24" ||
           historical.roadmapVersion === "2026.09.12-v25" ||
           historical.roadmapVersion === "2026.09.20-v26" ||
-          historical.roadmapVersion === "2026.09.20-v27")
+          historical.roadmapVersion === "2026.09.20-v27" ||
+          historical.roadmapVersion === "2026.09.20-v28")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -160,7 +166,8 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.11-v24" ||
     version === "2026.09.12-v25" ||
     version === "2026.09.20-v26" ||
-    version === "2026.09.20-v27"
+    version === "2026.09.20-v27" ||
+    version === "2026.09.20-v28"
   ) {
     const sealed = inspectV23SealedRepository(fileURLToPath(root));
     if (!sealed.ok) throw new Error(sealed.reason);

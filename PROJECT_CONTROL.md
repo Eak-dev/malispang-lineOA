@@ -1,6 +1,14 @@
 # MalisPang Project Control
 
-## Current effective control — v27 / exact provider-hang test-only seal
+## Current effective control — v28 / repository-scoped Greptile reviewer
+
+Roadmap2026.09.20-v28 / MP-OD-2026-09-20-V28 supersedes 2026.09.20-v27 under OWNER_GREPTILE_INDEPENDENT_REVIEWER_REQUEST_2026_09_20. This is REPOSITORY_SCOPED_INDEPENDENT_GREPTILE_REVIEWER_CONTROL_ONLY_INHERITING_V27 for Eak-dev/malispang-lineOA. It authorizes only greptile.json with SHA-256 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61 in addition to the ten exact control paths.
+
+The reviewer is FINDINGS_ONLY_NO_EDIT_APPROVE_OR_MERGE with PR_OPENED_ONLY_NO_PUSH_REBASE_OR_DRAFT, strictness2, Logic+Syntax only, SUMMARY_CONFIDENCE_ISSUE_TABLE_ON_SEQUENCE_DIAGRAM_OFF_COMMENTS_NO_DESCRIPTION_REWRITE. AUTO_APPROVE_AUTO_FIX_AUTO_MERGE_GREPTILE_CODEX_PLUGIN_GRELOOP_OFF_NOT_REQUIRED_CHECK. Scope is EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF_NO_CROSS_REPOSITORY_CONTEXT. No PR creation or Draft→Ready transition; review only an existing independently authorized PR.
+
+Preserve EXACT_V27_RUNTIME_ARTIFACT_GRANTS_JOURNALS_PENDING_TEMPLATE_AND_DATA_STUDIO_HOLD_UNCHANGED. No Production, deploy, grant change, Data Studio hold release, merge, Issue closure or MP-07. Auto-enable new repositories OFF. Production NO_GO — NOT TOUCHED.
+
+## Historical current control — v27 / exact provider-hang test-only seal
 
 Roadmap2026.09.20-v27 / MP-OD-2026-09-20-V27 supersedes v26 under Owner-adopted Issue12 PO review section12. Earlier current headings are immutable history. Seal only provider-hang diagnostic7ad01bf623e0c6b74df579e2a39b6f94040023c3 and correction74d893dc2a7d1db13e1c4553c4a2d1e3e3914341 in worker-tests/mp-06-pilot-control.test.ts, with their exact parents/blobs/file/diff/counts/commit inventories compiled in wp8fV27ProviderHangSeal. All twelve candidate-to-HEAD/history paths must be accounted for before projecting the immutable v26/v25/v23 layers; future edits, additional paths, runtime/config/dependency/workflow/artifact drift and self-attestation remain denied.
 
