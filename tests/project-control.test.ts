@@ -489,9 +489,22 @@ describe("project-control system Git selection", () => {
       encoding: "utf8",
       env: { PATH: "/usr/bin:/bin" },
     } as const;
-    expect(
-      execFileSync(projectControlGitExecutable(), ["--version"], options),
-    ).toBe(execFileSync("/usr/bin/git", ["--version"], options));
+    const selected = projectControlGitExecutable();
+    const version = (binary: string) => {
+      const started = performance.now();
+      try {
+        return execFileSync(binary, ["--version"], options);
+      } finally {
+        process.stdout.write(
+          JSON.stringify({
+            phase: "git_version_launch",
+            binary,
+            milliseconds: performance.now() - started,
+          }) + "\n",
+        );
+      }
+    };
+    expect(version(selected)).toBe(version("/usr/bin/git"));
   });
 });
 
