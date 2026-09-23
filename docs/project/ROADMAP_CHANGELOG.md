@@ -722,3 +722,7 @@ Owner amendment on 2026-09-23 adds only tsconfig.json and eslint.config.js to th
 # 2026-09-23 — v34 Draft Dev Operations review transition
 
 Owner-approved MP-OD-2026-09-23-V34 supersedes v33 solely for one exact Draft PR, hosted CI and Greptile findings-only review. No workflow/credential/runtime change or merge/deploy/Production/closure authority. Existing v33 paths and v32 inherited grants/journals/holds preserved.
+
+# 2026-09-23 — v35 existing PR18 remediation
+
+MP-OD-2026-09-23-V35 supersedes v34 for the three confirmed P1s only. PR18 creation is CONSUMED and immutable; no replacement PR. Stable checkpoint and pre-validation receipt identity are required before claiming tooling acceptance. Exact existing scope, inherited holds and Production NO_GO remain.

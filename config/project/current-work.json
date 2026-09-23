@@ -2,7 +2,17 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.23-v34",
+  "roadmapVersion": "2026.09.23-v35",
+  "devOperationsRemediationV35": {
+    "version": "2026.09.23-v35",
+    "ownerDecision": "MP-OD-2026-09-23-V35",
+    "supersedes": "2026.09.23-v34",
+    "pullRequest": 18,
+    "creationGrant": "CONSUMED",
+    "authority": "EXISTING_PR18_THREE_P1_REMEDIATION_CI_FINDINGS_ONLY",
+    "inheritedState": "V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED",
+    "forbidden": "NO_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE"
+  },
   "devOperationsReviewV34": {
     "version": "2026.09.23-v34",
     "ownerDecision": "MP-OD-2026-09-23-V34",

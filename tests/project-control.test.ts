@@ -34,6 +34,9 @@ import {
   evaluateProjectAction,
   evaluateDevOperationsPaths,
   projectReviewV34ToV33,
+  projectRemediationV35ToV34,
+  DEV_OPERATIONS_REMEDIATION_V35,
+  validateV35DraftPrMergeReceipt,
   DEV_OPERATIONS_REVIEW_V34,
   validateV34DraftPrMergeReceipt,
   evaluateWp8fPaths,
@@ -53,6 +56,96 @@ import {
 import { runProjectControlValidation } from "../src/project-control-cli.js";
 
 const root = new URL("../", import.meta.url);
+
+describe("v35 consumed PR18 authority", () => {
+  const read = (path: string) =>
+    record(JSON.parse(readFileSync(new URL(path, root), "utf8")));
+  it("validates exact closed control while denying creation and every remote/product action", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json");
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        read("config/project/current-work.schema.json"),
+        DEV_OPERATIONS_REMEDIATION_V35.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        readFileSync(
+          new URL("docs/project/OWNER_DECISION_LOG.md", root),
+          "utf8",
+        ),
+        DEV_OPERATIONS_REMEDIATION_V35.version,
+      ),
+    ).toBe(true);
+    for (const action of [
+      "DEV_OPERATIONS_TOOLING",
+      "UPDATE_GITHUB_ROADMAP",
+      "COMMIT",
+      "PUSH_BRANCH",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(true);
+    for (const action of [
+      "CREATE_DRAFT_PR",
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+      "CHANGE_PRODUCTION",
+      "QUERY_PRODUCTION",
+      "CLOSE_ISSUE",
+      "LOCAL_IMPLEMENTATION",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+    for (const key of Object.keys(DEV_OPERATIONS_REMEDIATION_V35)) {
+      const changed = structuredClone(w);
+      record(changed.devOperationsRemediationV35)[key] = "drift";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V35_EXACT_CONSUMED_PR18_CONTROL_INVALID",
+      );
+    }
+  });
+  it.each([18, 17, 19])(
+    "binds internally consistent receipt %s to existing PR18 only",
+    (number) => {
+      const c = DEV_OPERATIONS_REVIEW_V34,
+        head = "a".repeat(40),
+        merge = "b".repeat(40);
+      const event = {
+        number,
+        repository: { full_name: c.repository },
+        pull_request: {
+          number,
+          state: "open",
+          draft: true,
+          head: {
+            ref: c.headBranch,
+            sha: head,
+            repo: { full_name: c.repository },
+          },
+          base: {
+            ref: c.baseBranch,
+            sha: c.baseHead,
+            repo: { full_name: c.repository },
+          },
+        },
+      };
+      const observed = {
+        sha: merge,
+        merge,
+        ref: `refs/pull/${number}/merge`,
+        parents: [c.baseHead, head],
+      };
+      expect(validateV35DraftPrMergeReceipt(event, observed)).toEqual(
+        number === 18 ? { head, base: c.baseHead, number } : null,
+      );
+      event.pull_request.state = "closed";
+      expect(validateV35DraftPrMergeReceipt(event, observed)).toBeNull();
+    },
+  );
+});
 
 describe("v34 exact Draft review authority", () => {
   const readJson = (path: string): unknown =>
@@ -125,13 +218,15 @@ describe("v34 exact Draft review authority", () => {
     expect(validateV34DraftPrMergeReceipt(e, o)).toBeNull();
   });
   it("validates the closed v34 layer and denies every product/merge action", () => {
-    const r = readJson("config/project/roadmap.json"),
-      w = readJson("config/project/current-work.json");
+    const r = record(readJson("config/project/roadmap.json")),
+      w = record(readJson("config/project/current-work.json")),
+      s = record(readJson("config/project/current-work.schema.json"));
+    projectRemediationV35ToV34(r, w, s);
     expect(validateProjectControl(r, w).errors).toEqual([]);
     expect(
       validateSchemaDocuments(
         readJson("config/project/roadmap.schema.json"),
-        readJson("config/project/current-work.schema.json"),
+        s,
         c.version,
       ),
     ).toEqual([]);
@@ -367,6 +462,32 @@ describe("committed v33 local-only checkout", () => {
       });
     });
   });
+  it.each(["downgrade", "consumption"])(
+    "rejects v35 %s reset even after exact restoration",
+    async (mutation) => {
+      await v25WithChild(fixture, async (cwd) => {
+        const path = "config/project/current-work.json";
+        const original = readFileSync(new URL(path, root));
+        await writeFile(join(cwd, path), original);
+        commit(cwd, path);
+        expect(inspectV23SealedRepository(cwd).ok).toBe(true);
+        const work = record(JSON.parse(original.toString()));
+        if (mutation === "downgrade") {
+          work.roadmapVersion = DEV_OPERATIONS_REVIEW_V34.version;
+          delete work.devOperationsRemediationV35;
+        } else
+          record(work.devOperationsRemediationV35).creationGrant = "UNUSED";
+        await writeFile(join(cwd, path), JSON.stringify(work));
+        commit(cwd, path);
+        await writeFile(join(cwd, path), original);
+        commit(cwd, path);
+        expect(inspectV23SealedRepository(cwd)).toEqual({
+          ok: false,
+          reason: "V35_CONSUMPTION_HISTORY_RESET",
+        });
+      });
+    },
+  );
   it("rejects dirty inherited state before issuing even a local result", async () => {
     await v25WithChild(fixture, async (cwd) => {
       const path = "config/project/current-work.json";

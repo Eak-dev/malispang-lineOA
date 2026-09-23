@@ -1,5 +1,9 @@
 # MalisPang Project Control
 
+## Current effective control — v35 / existing Draft PR18 P1 remediation
+
+Owner approved MP-OD-2026-09-23-V35 / 2026.09.23-v35, superseding v34 only for the three confirmed P1 findings in existing Draft PR18: consumed creation authority, stable checkpoint capture, and pre-validation receipt source binding. Creation grant CONSUMED, exact PR18 only. Retain the v33 path allowlist and all inherited grants/journals/holds. Require negative regressions, full isolated validation and exact-SHA CI/findings-only re-review. No new PR, Ready, merge, reset, rebase, force-push, workflow/credential/runtime edits, remote TEST, deploy, Production or Issue closure. Historical v34 is not fresh creation authority.
+
 ## Current effective control — v34 / one Draft Dev Operations review
 
 Roadmap 2026.09.23-v34 / MP-OD-2026-09-23-V34 supersedes v33 only for one Draft PR from codex/dev-operations-v33 to codex/mp-06-guardrailed-ai at base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, hosted CI and findings-only Greptile review. Owner explicitly approved this transition. Exact v33 allowed paths and inherited grants/journals/holds remain unchanged. No workflow edit, credentials, runtime, remote TEST, Ready, merge, deploy, Production or Issue closure. Validate exact source history and synthetic integration separately; local proof does not confer deployment authority.

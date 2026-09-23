@@ -26,13 +26,23 @@ node scripts/dev-operations/checkpoint.mjs --repo "$REPO" --out "$CHECKPOINT" --
 
 Recovery is deliberate, not automatic: verify manifest hashes and branch/HEAD, inspect both patches and untracked copies, then apply only in a disposable clone after Owner review. Do not restore onto a dirty checkout. Never treat the checkpoint as a secret-safe archive.
 
-After a validation command, record a local receipt in a new file outside the repository. Use a terse label, not raw command text or test output. The receipt includes Git identity and diff digests, pass/fail counts, model and effort; usage and billing remain `UNKNOWN` unless separately verified.
+Before a validation command, capture the explicit expected repository root, branch and full HEAD into a new source receipt outside the repository. After validation, require that same receipt and command label. The tool rejects a different repository, branch, HEAD, index, Git-visible tracked/untracked content or file metadata. Counts are caller-reported, not independently attested test results. Keep the underlying runner report. Usage and billing remain `UNKNOWN`.
 
 ```sh
-node scripts/dev-operations/receipt.mjs --repo "$REPO" --out "$RECEIPT" --command-label CONTROL_VALIDATION --exit-code 0 --tests-passed 1 --tests-failed 0 --model gpt-6-sol --effort high
+node scripts/dev-operations/receipt.mjs --phase before --repo "$REPO" --out "$SOURCE_RECEIPT" --command-label CONTROL_VALIDATION --expected-branch codex/dev-operations-v33 --expected-head "$HEAD"
+# Run validation now, preserving its actual report and exit code.
+node scripts/dev-operations/receipt.mjs --phase after --repo "$REPO" --out "$RECEIPT" --source-receipt "$SOURCE_RECEIPT" --command-label CONTROL_VALIDATION --exit-code 0 --tests-passed 1 --tests-failed 0 --model gpt-6-astra --effort high
 ```
 
 Run `node --test tests/dev-operations/*.test.mjs` for synthetic positive/negative checks. Validate control again and inspect `git diff --check` plus the complete changed-path list before any local commit. No claimed efficiency saving is established by these tests; compare repeated real receipts only after an approved pilot.
+
+## v35 snapshot and review boundaries
+
+PR18 creation is already CONSUMED. Only that existing open Draft PR can be reviewed; no new PR or Ready/merge/deploy authority exists. The v35 history validator rejects consumption resets, including edit-and-restore history.
+
+Checkpoint schema v2 compares complete Git-visible source observations before capture, after payload collection and before publishing the manifest. It separately compares copied patch and untracked bytes. Branch, HEAD, index, inventories, content and file identity/change timestamps must reconcile. On detected drift it exits nonzero without a manifest or PASS; any partial output remains diagnostic only and must not be restored. Never retry automatically or overwrite an earlier output.
+
+These are bounded filesystem observations, not an atomic filesystem snapshot, lock, signed capability, test-run attestation or protection against an adversarial writer that evades every observation. Stop editors/watchers and all other Git activity during capture and validation. Ignored dependencies, environment and external services are outside the source identity contract; validate them separately. Touching source metadata or refreshing the index may conservatively invalidate a receipt even when contents are identical. Symlinks and submodules are rejected rather than silently omitted. Source hashing reads regular files in 64 KiB chunks, including the existing benchmark dataset; checkpoint patches and copied untracked files retain the 5 MiB cap. Pre-validation receipts are local evidence supplied by the operator, not independently authenticated proof of when a test ran.
 
 ## Full regression isolation and macOS Git startup
 

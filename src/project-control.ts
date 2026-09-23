@@ -1049,6 +1049,19 @@ export function evaluateProjectAction(
   }
   if (
     isRecord(roadmap) &&
+    roadmap.version === DEV_OPERATIONS_REMEDIATION_V35.version
+  ) {
+    return [
+      "DEV_OPERATIONS_TOOLING",
+      "UPDATE_GITHUB_ROADMAP",
+      "COMMIT",
+      "PUSH_BRANCH",
+    ].includes(action)
+      ? { allowed: true, reason: "V35_EXISTING_PR18_REMEDIATION_ONLY" }
+      : { allowed: false, reason: "V35_CREATION_CONSUMED_NO_OTHER_AUTHORITY" };
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === DEV_OPERATIONS_REVIEW_V34.version
   ) {
     return [
@@ -5328,9 +5341,12 @@ export function inspectV23SealedRepository(
     );
     const actualWork: unknown = JSON.parse(currentWorkText);
     let committedWork: unknown = actualWork;
+    const v35 =
+      isRecord(actualWork) &&
+      actualWork.roadmapVersion === DEV_OPERATIONS_REMEDIATION_V35.version;
     const v34 =
       isRecord(actualWork) &&
-      actualWork.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version;
+      (actualWork.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version || v35);
     const v33 =
       isRecord(actualWork) &&
       (actualWork.roadmapVersion === DEV_OPERATIONS_V33_CONTROL.version || v34);
@@ -5340,6 +5356,12 @@ export function inspectV23SealedRepository(
     let localPaths: string[] | undefined;
     if (v33) {
       const control = DEV_OPERATIONS_V33_CONTROL;
+      if (
+        v35 &&
+        JSON.stringify(actualWork.devOperationsRemediationV35) !==
+          JSON.stringify(DEV_OPERATIONS_REMEDIATION_V35)
+      )
+        return { ok: false, reason: "V35_EXACT_CONSUMED_PR18_CONTROL_INVALID" };
       if (
         v34 &&
         JSON.stringify(actualWork.devOperationsReviewV34) !==
@@ -5398,7 +5420,14 @@ export function inspectV23SealedRepository(
       if (
         !isRecord(workingWork) ||
         workingWork.roadmapVersion !==
-          (v34 ? DEV_OPERATIONS_REVIEW_V34.version : control.version) ||
+          (v35
+            ? DEV_OPERATIONS_REMEDIATION_V35.version
+            : v34
+              ? DEV_OPERATIONS_REVIEW_V34.version
+              : control.version) ||
+        (v35 &&
+          JSON.stringify(workingWork.devOperationsRemediationV35) !==
+            JSON.stringify(DEV_OPERATIONS_REMEDIATION_V35)) ||
         (v34 &&
           JSON.stringify(workingWork.devOperationsReviewV34) !==
             JSON.stringify(DEV_OPERATIONS_REVIEW_V34)) ||
@@ -5408,10 +5437,12 @@ export function inspectV23SealedRepository(
       workingWork.roadmapVersion = GREPTILE_PUSH_DRAFT_CONTROL.version;
       delete workingWork.devOperationsV33;
       if (v34) delete workingWork.devOperationsReviewV34;
+      if (v35) delete workingWork.devOperationsRemediationV35;
       if (JSON.stringify(workingWork) !== baseline)
         return { ok: false, reason: "V33_WORKING_STATE_DRIFT" };
       let transitioned = false;
       let reviewTransitioned = false;
+      let remediationTransitioned = false;
       for (const revision of git(
         "rev-list",
         "--reverse",
@@ -5426,6 +5457,17 @@ export function inspectV23SealedRepository(
         );
         if (!isRecord(work))
           return { ok: false, reason: "V33_INHERITED_STATE_DRIFT" };
+        if (
+          v35 &&
+          work.roadmapVersion === DEV_OPERATIONS_REMEDIATION_V35.version &&
+          JSON.stringify(work.devOperationsRemediationV35) ===
+            JSON.stringify(DEV_OPERATIONS_REMEDIATION_V35)
+        ) {
+          remediationTransitioned = true;
+          work.roadmapVersion = DEV_OPERATIONS_REVIEW_V34.version;
+          delete work.devOperationsRemediationV35;
+        } else if (remediationTransitioned)
+          return { ok: false, reason: "V35_CONSUMPTION_HISTORY_RESET" };
         if (
           v34 &&
           work.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version &&
@@ -7815,12 +7857,48 @@ export const DEV_OPERATIONS_REVIEW_V34 = {
   inheritedState: "V33_LOCAL_TOOLING_AND_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED",
 } as const;
 
+export const DEV_OPERATIONS_REMEDIATION_V35 = {
+  version: "2026.09.23-v35",
+  ownerDecision: "MP-OD-2026-09-23-V35",
+  supersedes: "2026.09.23-v34",
+  pullRequest: 18,
+  creationGrant: "CONSUMED",
+  authority: "EXISTING_PR18_THREE_P1_REMEDIATION_CI_FINDINGS_ONLY",
+  inheritedState: "V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED",
+  forbidden: "NO_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE",
+} as const;
+
+/** Historical projection, never a grant to create another pull request. */
+export function projectRemediationV35ToV34(
+  r: Record<string, unknown>,
+  w: Record<string, unknown>,
+  schema?: Record<string, unknown>,
+): void {
+  if (r.version !== DEV_OPERATIONS_REMEDIATION_V35.version) return;
+  r.version = DEV_OPERATIONS_REVIEW_V34.version;
+  r.ownerDecision = {
+    decisionId: DEV_OPERATIONS_REVIEW_V34.ownerDecision,
+    decidedAt: "2026-09-23",
+    supersedes: DEV_OPERATIONS_REVIEW_V34.supersedes,
+  };
+  w.roadmapVersion = r.version;
+  delete w.devOperationsRemediationV35;
+  if (schema && isRecord(schema.properties) && Array.isArray(schema.required)) {
+    schema.required = schema.required.filter(
+      (key) => key !== "devOperationsRemediationV35",
+    );
+    delete schema.properties.devOperationsRemediationV35;
+    schema.properties.roadmapVersion = { const: r.version };
+  }
+}
+
 /** Historical fixture projection only; never confers action authority. */
 export function projectReviewV34ToV33(
   r: Record<string, unknown>,
   w: Record<string, unknown>,
   schema?: Record<string, unknown>,
 ): void {
+  projectRemediationV35ToV34(r, w, schema);
   if (r.version !== DEV_OPERATIONS_REVIEW_V34.version) return;
   r.version = DEV_OPERATIONS_V33_CONTROL.version;
   r.ownerDecision = {
@@ -7883,6 +7961,7 @@ export function evaluateDevOperationsPaths(
     ![
       DEV_OPERATIONS_V33_CONTROL.version,
       DEV_OPERATIONS_REVIEW_V34.version,
+      DEV_OPERATIONS_REMEDIATION_V35.version,
     ].some((version) => roadmap.version === version)
   )
     return { allowed: false, reason: "V33_DEV_OPERATIONS_NOT_CURRENT" };
@@ -8099,6 +8178,29 @@ export function validateProjectControl(
 ): ProjectControlValidation {
   if (
     isRecord(roadmap) &&
+    roadmap.version === DEV_OPERATIONS_REMEDIATION_V35.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = DEV_OPERATIONS_REMEDIATION_V35;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.devOperationsRemediationV35) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-23",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectRemediationV35ToV34(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V35_EXACT_CONSUMED_PR18_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === DEV_OPERATIONS_REVIEW_V34.version
   ) {
     if (!isRecord(work))
@@ -8289,6 +8391,26 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === DEV_OPERATIONS_REMEDIATION_V35.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      !schema.required.includes("devOperationsRemediationV35") ||
+      JSON.stringify(schema.properties.devOperationsRemediationV35) !==
+        JSON.stringify({ const: DEV_OPERATIONS_REMEDIATION_V35 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V35_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectRemediationV35ToV34({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      DEV_OPERATIONS_REVIEW_V34.version,
+    );
+  }
   if (version === DEV_OPERATIONS_REVIEW_V34.version) {
     if (
       !isRecord(schema) ||
@@ -8427,6 +8549,19 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === DEV_OPERATIONS_REMEDIATION_V35.version) {
+    if (typeof record !== "string") return false;
+    const section = record
+      .split("## MP-OD-2026-09-23-V35 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof section === "string" &&
+      Object.values(DEV_OPERATIONS_REMEDIATION_V35).every((value) =>
+        section.includes(String(value)),
+      ) &&
+      validateWp8fOwnerDecisionRecord(record, DEV_OPERATIONS_REVIEW_V34.version)
+    );
+  }
   if (version === DEV_OPERATIONS_REVIEW_V34.version) {
     if (typeof record !== "string") return false;
     const section = record
@@ -8507,6 +8642,19 @@ export function validatePr15MergeReceipt(
 }
 
 /** Exact review identity; not a reusable PR-creation grant or live proof. */
+export function validateV35DraftPrMergeReceipt(
+  event: unknown,
+  observed: { sha: unknown; ref: unknown; merge: unknown; parents: unknown },
+): { head: string; base: string; number: number } | null {
+  if (
+    !isRecord(event) ||
+    event.number !== DEV_OPERATIONS_REMEDIATION_V35.pullRequest
+  )
+    return null;
+  return validateV34DraftPrMergeReceipt(event, observed);
+}
+
+/** Historical v34 receipt, superseded by the consumed exact-PR18 v35 record. */
 export function validateV34DraftPrMergeReceipt(
   event: unknown,
   observed: { sha: unknown; ref: unknown; merge: unknown; parents: unknown },

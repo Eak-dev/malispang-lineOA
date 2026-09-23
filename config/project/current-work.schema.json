@@ -5,6 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "devOperationsRemediationV35",
     "devOperationsReviewV34",
     "$schema",
     "schemaVersion",
@@ -61,6 +62,18 @@
     "devOperationsV33"
   ],
   "properties": {
+    "devOperationsRemediationV35": {
+      "const": {
+        "version": "2026.09.23-v35",
+        "ownerDecision": "MP-OD-2026-09-23-V35",
+        "supersedes": "2026.09.23-v34",
+        "pullRequest": 18,
+        "creationGrant": "CONSUMED",
+        "authority": "EXISTING_PR18_THREE_P1_REMEDIATION_CI_FINDINGS_ONLY",
+        "inheritedState": "V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED",
+        "forbidden": "NO_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE"
+      }
+    },
     "devOperationsReviewV34": {
       "const": {
         "version": "2026.09.23-v34",
@@ -591,7 +604,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.23-v34" },
+    "roadmapVersion": { "const": "2026.09.23-v35" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {

@@ -1,5 +1,20 @@
 # Owner Decision Log
 
+## MP-OD-2026-09-23-V35 — existing PR18 three-P1 remediation
+
+Owner explicitly approved remediation after the aeef425 review, not acceptance or deployment. Model recommendation: PO/PM and Codex Developer GPT-6 Astra / High; LINE bot model unchanged.
+
+- version: 2026.09.23-v35
+- ownerDecision: MP-OD-2026-09-23-V35
+- supersedes: 2026.09.23-v34
+- pullRequest: 18
+- creationGrant: CONSUMED
+- authority: EXISTING_PR18_THREE_P1_REMEDIATION_CI_FINDINGS_ONLY
+- inheritedState: V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+- forbidden: NO_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+
+Only existing v33 paths: close creation reuse with exact PR18 and monotonic history checks; fail closed on inconsistent checkpoint snapshots; bind receipts to explicit pre-validation source identity. Regression tests and documentation must disclose limits of filesystem observation and caller-reported test counts. Full isolated suite, exact-source hosted CI and findings-only re-review required. Keep every inherited decision, grant, journal and hold. No timeout/retry waiver.
+
 เอกสาร append-only สำหรับ Project Control ห้ามแก้หรือลบ decision ที่เคยใช้เป็นฐานงาน หากเปลี่ยนคำตัดสินให้เพิ่ม decision ใหม่พร้อม `supersedes`
 
 ## MP-OD-2026-09-02-V4

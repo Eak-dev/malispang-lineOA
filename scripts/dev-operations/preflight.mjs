@@ -67,20 +67,33 @@ try {
       )
     );
   const work =
-    /** @type {{roadmapVersion?: string, devOperationsReviewV34?: {ownerDecision?: string}, devOperationsV33?: {ownerDecision?: string, targetEnvironment?: string}}} */ (
+    /** @type {{roadmapVersion?: string, devOperationsRemediationV35?: {ownerDecision?: string, pullRequest?: number, creationGrant?: string}, devOperationsReviewV34?: {ownerDecision?: string}, devOperationsV33?: {ownerDecision?: string, targetEnvironment?: string}}} */ (
       parseJson(
         readFileSync(resolve(repo, "config/project/current-work.json"), "utf8"),
       )
     );
-  const reviewVersion = roadmap.version === "2026.09.23-v34";
-  const expectedVersion = reviewVersion ? "2026.09.23-v34" : VERSION;
-  const expectedOwner = reviewVersion ? "MP-OD-2026-09-23-V34" : OWNER;
+  const remediation = roadmap.version === "2026.09.23-v35";
+  const reviewVersion = roadmap.version === "2026.09.23-v34" || remediation;
+  const expectedVersion = remediation
+    ? "2026.09.23-v35"
+    : reviewVersion
+      ? "2026.09.23-v34"
+      : VERSION;
+  const expectedOwner = remediation
+    ? "MP-OD-2026-09-23-V35"
+    : reviewVersion
+      ? "MP-OD-2026-09-23-V34"
+      : OWNER;
   if (
     roadmap.version !== expectedVersion ||
     work.roadmapVersion !== expectedVersion ||
     roadmap.ownerDecision?.decisionId !== expectedOwner ||
     (reviewVersion &&
-      work.devOperationsReviewV34?.ownerDecision !== expectedOwner) ||
+      work.devOperationsReviewV34?.ownerDecision !== "MP-OD-2026-09-23-V34") ||
+    (remediation &&
+      (work.devOperationsRemediationV35?.ownerDecision !== expectedOwner ||
+        work.devOperationsRemediationV35.pullRequest !== 18 ||
+        work.devOperationsRemediationV35.creationGrant !== "CONSUMED")) ||
     work.devOperationsV33?.ownerDecision !== OWNER ||
     work.devOperationsV33?.targetEnvironment !== "LOCAL_ONLY"
   )

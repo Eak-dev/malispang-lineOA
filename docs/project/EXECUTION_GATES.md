@@ -3048,3 +3048,7 @@ Required reviewer state: automaticReview open,push; reviewDrafts true; reviewReb
 # v34 Draft Dev Operations review gate
 
 Owner-approved MP-OD-2026-09-23-V34: one exact Draft PR, existing sealed CI and Greptile findings-only review. Before creation, verify no duplicate head/base PR, exact remote base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, clean source SHA, local regression and secret scan. After creation, record PR identity once and inspect CI/review tied to its exact head; never mark Ready or merge. Source seal and synthetic integration are separate. Workflow, credentials, runtime, TEST and Production remain untouched; no issue closure or grant/journal reset.
+
+# v35 existing PR18 remediation gates
+
+Creation authority CONSUMED; only existing open Draft PR18 with the pinned v34 head/base branches and base SHA can enter the integration adapter. Reject replacement PRs, consumption/history resets and inherited drift. Checkpoint must reconcile complete snapshots before publishing its manifest. Receipt requires a source identity captured before validation and unchanged afterward; caller counts are not independently authenticated. Run isolated regressions, exact-SHA CI and findings-only review. No new PR/Ready/merge/deploy/remote TEST/Production/closure.
