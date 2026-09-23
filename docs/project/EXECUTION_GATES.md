@@ -3036,3 +3036,15 @@ The only inherited merge accepted is 88deb90a58369923f11a7266ec63fa8fd5f293c2 wi
 The exact inherited base merge is aad8c5e0ef41c5e47df3d93ae462b9122368c15d with ordered parents 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f and tree 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb. No other merge commit is admitted.
 
 Required reviewer state: automaticReview open,push; reviewDrafts true; reviewRebase false; dashboard PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED; repositoryScope EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF; automation AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF. Trigger proof must be NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT, and Draft PR authority is ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE. V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED.
+
+## MP-OD-2026-09-23-V33 — local Dev Operations gates
+
+1. Baseline: exact clean HEAD 1508782a9cbf9412b3a6967264e9f4e8d6c19376, isolated codex/dev-operations-v33 worktree, v32 validator PASS before writes.
+2. Control: v33 Owner record, roadmap/current-work, closed schema, validator/CLI and negative tests must pass before treating Dev Operations tooling as executable authority. Inherited MP-06 grants/journals/holds and v32 history remain unchanged.
+3. Implementation: only paths listed in devOperationsV33.allowedPaths. Preflight reads branch/HEAD/status/control/toolchain; checkpoint copies only explicitly allowlisted non-secret synthetic files and separately hashes staged, unstaged and untracked state; receipt records exact code identity, command, exit status and observable usage. Stop on scope mismatch or unknown result.
+4. Validation: synthetic clean/dirty/restore/denial/handoff tests, control validator and relevant regression gates; report any missing dependency or incomplete gate as UNKNOWN/BLOCKED, not PASS.
+5. No PR, merge, deploy, remote TEST, Production, Issue closure, runtime or PR16 remediation. GitHub Roadmap Issue #9 receives a concise append-only reconciliation after verified local control. No reset/rebase/force-push or destructive recovery.
+
+# v34 Draft Dev Operations review gate
+
+Owner-approved MP-OD-2026-09-23-V34: one exact Draft PR, existing sealed CI and Greptile findings-only review. Before creation, verify no duplicate head/base PR, exact remote base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, clean source SHA, local regression and secret scan. After creation, record PR identity once and inspect CI/review tied to its exact head; never mark Ready or merge. Source seal and synthetic integration are separate. Workflow, credentials, runtime, TEST and Production remain untouched; no issue closure or grant/journal reset.

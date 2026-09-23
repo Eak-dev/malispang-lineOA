@@ -2,17 +2,20 @@ import {
   readFile,
   copyFile,
   mkdtemp,
+  mkdir,
   writeFile,
   rm,
   utimes,
 } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { channel } from "node:diagnostics_channel";
 import { createHash } from "node:crypto";
 import { readFileSync, lstatSync, existsSync } from "node:fs";
+import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { resolve } from "node:path";
 
 import {
@@ -29,6 +32,10 @@ import {
 import {
   CANONICAL_GITHUB_ISSUES,
   evaluateProjectAction,
+  evaluateDevOperationsPaths,
+  projectReviewV34ToV33,
+  DEV_OPERATIONS_REVIEW_V34,
+  validateV34DraftPrMergeReceipt,
   evaluateWp8fPaths,
   validateWp8fOwnerDecisionRecord,
   validateProjectControl,
@@ -36,6 +43,7 @@ import {
   validateSuccessorOperationJournal,
   validateV22OperationJournal,
   inspectV23SealedRepository,
+  projectControlGitExecutable,
   validateV23SealedObservation,
   validateV25SealedObservation,
   validateV26SealedObservation,
@@ -45,6 +53,447 @@ import {
 import { runProjectControlValidation } from "../src/project-control-cli.js";
 
 const root = new URL("../", import.meta.url);
+
+describe("v34 exact Draft review authority", () => {
+  const readJson = (path: string): unknown =>
+    JSON.parse(readFileSync(new URL(path, root), "utf8")) as unknown;
+  const c = DEV_OPERATIONS_REVIEW_V34;
+  const source = "a".repeat(40),
+    merge = "b".repeat(40);
+  const event = () => ({
+    number: 17,
+    repository: { full_name: String(c.repository) },
+    pull_request: {
+      number: 17,
+      state: "open",
+      draft: true,
+      head: {
+        ref: String(c.headBranch),
+        sha: source,
+        repo: { full_name: String(c.repository) },
+      },
+      base: {
+        ref: String(c.baseBranch),
+        sha: String(c.baseHead),
+        repo: { full_name: String(c.repository) },
+      },
+    },
+  });
+  const observed = () => ({
+    sha: merge,
+    ref: "refs/pull/17/merge",
+    merge,
+    parents: [c.baseHead, source],
+  });
+  it("accepts only the exact Draft identity with ordered synthetic parents", () => {
+    expect(validateV34DraftPrMergeReceipt(event(), observed())).toEqual({
+      head: source,
+      base: c.baseHead,
+      number: 17,
+    });
+  });
+  it.each([
+    "draft",
+    "closed",
+    "number",
+    "repo",
+    "headRepo",
+    "baseRepo",
+    "headBranch",
+    "baseBranch",
+    "baseSha",
+    "headSha",
+    "ref",
+    "sha",
+    "parents",
+  ])("rejects %s drift", (field) => {
+    const e = event(),
+      o = observed();
+    if (field === "draft") e.pull_request.draft = false;
+    if (field === "closed") e.pull_request.state = "closed";
+    if (field === "number") e.pull_request.number = 18;
+    if (field === "repo") e.repository.full_name = "other/repo";
+    if (field === "headRepo") e.pull_request.head.repo.full_name = "other/repo";
+    if (field === "baseRepo") e.pull_request.base.repo.full_name = "other/repo";
+    if (field === "headBranch") e.pull_request.head.ref = "other";
+    if (field === "baseBranch") e.pull_request.base.ref = "other";
+    if (field === "baseSha") e.pull_request.base.sha = source;
+    if (field === "headSha") e.pull_request.head.sha = "HEAD";
+    if (field === "ref") o.ref = "refs/pull/18/merge";
+    if (field === "sha") o.sha = source;
+    if (field === "parents") o.parents.reverse();
+    expect(validateV34DraftPrMergeReceipt(e, o)).toBeNull();
+  });
+  it("validates the closed v34 layer and denies every product/merge action", () => {
+    const r = readJson("config/project/roadmap.json"),
+      w = readJson("config/project/current-work.json");
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        readJson("config/project/roadmap.schema.json"),
+        readJson("config/project/current-work.schema.json"),
+        c.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        readFileSync(
+          new URL("docs/project/OWNER_DECISION_LOG.md", root),
+          "utf8",
+        ),
+        c.version,
+      ),
+    ).toBe(true);
+    for (const action of [
+      "CREATE_DRAFT_PR",
+      "COMMIT",
+      "PUSH_BRANCH",
+      "DEV_OPERATIONS_TOOLING",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(true);
+    for (const action of [
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+      "CHANGE_PRODUCTION",
+      "QUERY_PRODUCTION",
+      "CLOSE_ISSUE",
+      "LOCAL_IMPLEMENTATION",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+    for (const key of Object.keys(c)) {
+      const changed = structuredClone(record(w));
+      record(changed.devOperationsReviewV34)[key] = "drift";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V34_EXACT_REVIEW_CONTROL_INVALID",
+      );
+    }
+  });
+});
+
+describe("committed v33 local-only checkout", () => {
+  let fixture: string;
+  let operatorBefore: string;
+  let base: string;
+  beforeAll(async () => {
+    const { DEV_OPERATIONS_V33_CONTROL: control } =
+      await import("../src/project-control.js");
+    base = control.baseHead;
+    operatorBefore = v25OperatorSnapshot();
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v33-committed-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      fixture,
+    );
+    v25Git(fixture, "checkout", "--quiet", "--detach", base);
+    const paths = control.allowedPaths.flatMap((path) =>
+      path === "tests/dev-operations/*.test.mjs"
+        ? ["tests/dev-operations/tooling.test.mjs"]
+        : [path],
+    );
+    for (const path of paths) {
+      await mkdir(dirname(join(fixture, path)), { recursive: true });
+      await copyFile(new URL(path, root), join(fixture, path));
+    }
+    // Keep the original v33 regression fixture exact under its successor.
+    const r = record(
+      JSON.parse(
+        await readFile(join(fixture, "config/project/roadmap.json"), "utf8"),
+      ),
+    );
+    const w = record(
+      JSON.parse(
+        await readFile(
+          join(fixture, "config/project/current-work.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const s = record(
+      JSON.parse(
+        await readFile(
+          join(fixture, "config/project/current-work.schema.json"),
+          "utf8",
+        ),
+      ),
+    );
+    projectReviewV34ToV33(r, w, s);
+    for (const [path, value] of [
+      ["roadmap.json", r],
+      ["current-work.json", w],
+      ["current-work.schema.json", s],
+    ] as const)
+      await writeFile(
+        join(fixture, "config/project", path),
+        JSON.stringify(value, null, 2) + "\n",
+      );
+    v25Git(fixture, "add", "--", ...paths);
+    v25Git(
+      fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic exact v33 transition",
+    );
+    v25AssertUnchanged(operatorBefore);
+  });
+  afterAll(async () => {
+    try {
+      if (fixture) await rm(fixture, { recursive: true, force: true });
+    } finally {
+      if (operatorBefore) v25AssertUnchanged(operatorBefore);
+    }
+  });
+  const commit = (cwd: string, path: string) => {
+    v25Git(cwd, "add", "--", path);
+    v25Git(
+      cwd,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic v33 negative history",
+    );
+  };
+  it("validates a clean committed checkout with complete paths and no deployment authority", () => {
+    const before = v25OperatorSnapshot(fixture);
+    const result = inspectV23SealedRepository(fixture);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.proof.head).toBe(v25Git(fixture, "rev-parse", "HEAD").trim());
+    expect(result.proof.clean).toBe(true);
+    expect(result.proof.paths).toContain(
+      "scripts/dev-operations/checkpoint.mjs",
+    );
+    const roadmap: unknown = JSON.parse(
+      readFileSync(join(fixture, "config/project/roadmap.json"), "utf8"),
+    );
+    const work: unknown = JSON.parse(
+      readFileSync(join(fixture, "config/project/current-work.json"), "utf8"),
+    );
+    for (const action of [
+      "DEPLOY_TEST",
+      "ACTIVATE_SUCCESSOR_V22",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CHANGE_PRODUCTION",
+    ])
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          work,
+          action,
+          v22Target,
+          v22Evidence(),
+          result.proof,
+        ).allowed,
+      ).toBe(false);
+    v25AssertUnchanged(before, fixture);
+  });
+  it("runs the real CLI on a clean checkout without requiring a dirty path", async () => {
+    const before = v25OperatorSnapshot(fixture);
+    await expect(
+      runProjectControlValidation(pathToFileURL(fixture + "/")),
+    ).resolves.toBeUndefined();
+    v25AssertUnchanged(before, fixture);
+  });
+  it("permits dirty local tooling but preserves raw index and reports not clean", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = join(cwd, "scripts/dev-operations/preflight.mjs");
+      await writeFile(
+        path,
+        readFileSync(path, "utf8") + "\n// synthetic local edit\n",
+      );
+      const before = v25OperatorSnapshot(cwd);
+      const result = inspectV23SealedRepository(cwd);
+      expect(result.ok && result.proof.clean).toBe(false);
+      expect(result.ok).toBe(true);
+      v25AssertUnchanged(before, cwd);
+    });
+  });
+  it("rejects committed protected-path edit-and-restore despite identical final bytes", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "worker/index.ts",
+        original = readFileSync(join(cwd, path));
+      await writeFile(
+        join(cwd, path),
+        Buffer.concat([original, Buffer.from("\n// synthetic drift\n")]),
+      );
+      commit(cwd, path);
+      await writeFile(join(cwd, path), original);
+      commit(cwd, path);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_COMMITTED_SCOPE_DRIFT",
+      });
+    });
+  });
+  it("rejects inherited grant edit-and-restore in committed history", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "config/project/current-work.json",
+        original = readFileSync(join(cwd, path));
+      const work = JSON.parse(original.toString()) as Record<string, unknown>;
+      work.wp8fV22OperationJournal = [];
+      work.syntheticGrant = true;
+      await writeFile(join(cwd, path), JSON.stringify(work));
+      commit(cwd, path);
+      await writeFile(join(cwd, path), original);
+      commit(cwd, path);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_INHERITED_STATE_DRIFT",
+      });
+    });
+  });
+  it("rejects a v33-to-v32-to-v33 control reset", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "config/project/current-work.json",
+        original = readFileSync(join(cwd, path));
+      await writeFile(join(cwd, path), v25Git(cwd, "show", base + ":" + path));
+      commit(cwd, path);
+      await writeFile(join(cwd, path), original);
+      commit(cwd, path);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_CONTROL_HISTORY_RESET",
+      });
+    });
+  });
+  it("rejects dirty inherited state before issuing even a local result", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "config/project/current-work.json";
+      const work = JSON.parse(readFileSync(join(cwd, path), "utf8")) as Record<
+        string,
+        unknown
+      >;
+      work.syntheticGrant = true;
+      await writeFile(join(cwd, path), JSON.stringify(work));
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_WORKING_STATE_DRIFT",
+      });
+    });
+  });
+  it("rejects protected dirty paths even when a caller supplies an extra allowlist", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      await writeFile(join(cwd, "unexpected.txt"), "synthetic");
+      expect(inspectV23SealedRepository(cwd, ["unexpected.txt"])).toEqual({
+        ok: false,
+        reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+      });
+    });
+  });
+  it("rejects a new multi-parent commit without performing a merge", async () => {
+    await v25WithChild(fixture, (cwd) => {
+      const head = v25Git(cwd, "rev-parse", "HEAD").trim();
+      const synthetic = v25Git(
+        cwd,
+        "commit-tree",
+        head + "^{tree}",
+        "-p",
+        head,
+        "-p",
+        base,
+        "-m",
+        "synthetic forbidden ancestry",
+      ).trim();
+      v25Git(cwd, "checkout", "--quiet", "--detach", synthetic);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_NEW_MERGE_HISTORY_DENIED",
+      });
+      return Promise.resolve();
+    });
+  });
+});
+
+describe("project-control system Git selection", () => {
+  const binary = "/Library/Developer/CommandLineTools/usr/bin/git";
+  const paths = [
+    "/Library",
+    "/Library/Developer",
+    "/Library/Developer/CommandLineTools",
+    "/Library/Developer/CommandLineTools/usr",
+    "/Library/Developer/CommandLineTools/usr/bin",
+    binary,
+  ];
+  const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
+  afterEach(() => {
+    Object.defineProperty(process, "platform", platform);
+    vi.restoreAllMocks();
+    syncBuiltinESMExports();
+  });
+  function metadata(path: fs.PathLike) {
+    return {
+      uid: 0,
+      mode: 0o755,
+      isFile: () => path === binary,
+      isDirectory: () => path !== binary,
+    } as fs.Stats;
+  }
+  it("keeps the fixed system Git on non-macOS hosts", () => {
+    Object.defineProperty(process, "platform", { value: "linux" });
+    const stat = vi.spyOn(fs, "lstatSync");
+    syncBuiltinESMExports();
+    expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+    expect(stat).not.toHaveBeenCalled();
+  });
+  it("selects only the root-owned, non-writable CLT executable chain", () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const stat = vi.spyOn(fs, "lstatSync").mockImplementation(metadata);
+    syncBuiltinESMExports();
+    expect(projectControlGitExecutable()).toBe(binary);
+    expect(stat.mock.calls.map(([path]) => path)).toEqual(paths);
+  });
+  it.each(paths)("rejects unsafe or missing metadata at %s", (rejected) => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const stat = vi.spyOn(fs, "lstatSync");
+    syncBuiltinESMExports();
+    for (const unsafe of [
+      { uid: 501 },
+      { mode: 0o775 },
+      { mode: 0o757 },
+      { isFile: () => false, isDirectory: () => false },
+    ]) {
+      stat.mockImplementation((path) => ({
+        ...metadata(path),
+        ...(path === rejected ? unsafe : {}),
+      }));
+      expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+    }
+    stat.mockImplementation((path) => {
+      if (path === rejected) throw new Error("unavailable");
+      return metadata(path);
+    });
+    expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+  });
+  it("rejects a non-executable CLT Git", () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    vi.spyOn(fs, "lstatSync").mockImplementation((path) => ({
+      ...metadata(path),
+      ...(path === binary ? { mode: 0o644 } : {}),
+    }));
+    syncBuiltinESMExports();
+    expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+  });
+  it("uses the same installed Git version as the system launcher", () => {
+    const options = {
+      encoding: "utf8",
+      env: { PATH: "/usr/bin:/bin" },
+    } as const;
+    expect(
+      execFileSync(projectControlGitExecutable(), ["--version"], options),
+    ).toBe(execFileSync("/usr/bin/git", ["--version"], options));
+  });
+});
 
 // Synthetic independent operator evidence, not populated from current-work.
 // Passing this pure assessment is deliberately NOT a deployment capability.
@@ -2367,7 +2816,7 @@ function readJson(path: string): unknown {
   // Current v21 files have independent positive/negative tests below; no old assertions change.
   return JSON.parse(
     execFileSync(
-      "git",
+      projectControlGitExecutable(),
       ["show", "958b00eea5587d27858d3bdee1047ee52c0a736f:" + path],
       { cwd: fileURLToPath(root), encoding: "utf8", maxBuffer: 1024 * 1024 },
     ),
@@ -3595,7 +4044,7 @@ describe("v21 frozen successor TEST and gated integration", () => {
     const readCurrent = (path: string): Record<string, unknown> => {
       const parsed: unknown = JSON.parse(
         execFileSync(
-          "git",
+          projectControlGitExecutable(),
           ["show", "1790da58635edcee154b60d76730248e8130c2d3:" + path],
           {
             cwd: fileURLToPath(root),
@@ -4447,7 +4896,7 @@ describe("v22 exact one-use TEST deployment and retained-Owner successor UAT", (
         (path) =>
           JSON.parse(
             execFileSync(
-              "git",
+              projectControlGitExecutable(),
               ["show", "81170bc91624503cd9d92a27c9de796037afa87e:" + path],
               {
                 cwd: fileURLToPath(root),
@@ -5047,7 +5496,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
 
   const git = (cwd: string, ...args: string[]) =>
     execFileSync(
-      "git",
+      projectControlGitExecutable(),
       [
         "-c",
         "core.hooksPath=/dev/null",
@@ -5139,6 +5588,23 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    projectReviewV34ToV33(r, w, record(schema));
+    if (r.version === "2026.09.23-v33") {
+      r.version = "2026.09.21-v32";
+      r.ownerDecision = {
+        decisionId: "MP-OD-2026-09-21-V32",
+        decidedAt: "2026-09-21",
+        supersedes: "2026.09.20-v31",
+      };
+      w.roadmapVersion = r.version;
+      delete w.devOperationsV33;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "devOperationsV33",
+      );
+      delete record(s.properties).devOperationsV33;
+      record(record(s.properties).roadmapVersion).const = r.version;
+    }
     if (r.version === "2026.09.21-v32") {
       r.version = "2026.09.20-v31";
       w.roadmapVersion = r.version;
@@ -6062,7 +6528,7 @@ function v25DiagnosticPhase(
 }
 function v25Git(cwd: string, ...args: string[]): string {
   return execFileSync(
-    "/usr/bin/git",
+    projectControlGitExecutable(),
     [
       "--no-optional-locks",
       "--no-replace-objects",
@@ -6307,7 +6773,7 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
     baseline = record(
       JSON.parse(
         execFileSync(
-          "git",
+          projectControlGitExecutable(),
           [
             "show",
             "31d2d3dc6c6aaa95ce1b3c82820c8ce1e78c3f1f:config/project/current-work.json",
@@ -8223,6 +8689,23 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
           ),
         ),
       );
+      projectReviewV34ToV33(currentRoadmap, currentWork, currentSchema);
+      if (currentRoadmap.version === "2026.09.23-v33") {
+        currentRoadmap.version = "2026.09.21-v32";
+        currentRoadmap.ownerDecision = {
+          decisionId: "MP-OD-2026-09-21-V32",
+          decidedAt: "2026-09-21",
+          supersedes: "2026.09.20-v31",
+        };
+        currentWork.roadmapVersion = currentRoadmap.version;
+        delete currentWork.devOperationsV33;
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "devOperationsV33",
+        );
+        delete record(currentSchema.properties).devOperationsV33;
+        record(record(currentSchema.properties).roadmapVersion).const =
+          currentRoadmap.version;
+      }
       if (currentRoadmap.version === "2026.09.21-v32") {
         currentRoadmap.version = "2026.09.20-v31";
         currentWork.roadmapVersion = currentRoadmap.version;
@@ -8799,6 +9282,117 @@ describe("v29 PR15 source and integration separation", () => {
       expect(validatePr15MergeReceipt(changed, observed), field).toBeNull();
     }
   });
+  it("validates the exact v33 local Dev Operations layer without remote authority", async () => {
+    const { DEV_OPERATIONS_V33_CONTROL } =
+      await import("../src/project-control.js");
+    const roadmap = record(
+      JSON.parse(
+        await readFile(
+          new URL("../config/project/roadmap.json", import.meta.url),
+          "utf8",
+        ),
+      ),
+    );
+    const work = record(
+      JSON.parse(
+        await readFile(
+          new URL("../config/project/current-work.json", import.meta.url),
+          "utf8",
+        ),
+      ),
+    );
+    const roadmapSchema = JSON.parse(
+      await readFile(
+        new URL("../config/project/roadmap.schema.json", import.meta.url),
+        "utf8",
+      ),
+    ) as unknown;
+    const workSchema = JSON.parse(
+      await readFile(
+        new URL("../config/project/current-work.schema.json", import.meta.url),
+        "utf8",
+      ),
+    ) as unknown;
+    const ownerRecord = await readFile(
+      new URL("../docs/project/OWNER_DECISION_LOG.md", import.meta.url),
+      "utf8",
+    );
+    projectReviewV34ToV33(roadmap, work, record(workSchema));
+    expect(roadmap.version).toBe(DEV_OPERATIONS_V33_CONTROL.version);
+    expect(validateProjectControl(roadmap, work).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        roadmapSchema,
+        workSchema,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        ownerRecord,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      ),
+    ).toBe(true);
+    expect(
+      evaluateProjectAction(roadmap, work, "DEV_OPERATIONS_TOOLING").allowed,
+    ).toBe(true);
+    expect(
+      evaluateDevOperationsPaths(roadmap, work, [
+        "scripts/dev-operations/preflight.mjs",
+        "tests/dev-operations/checkpoint.test.mjs",
+        "tsconfig.json",
+        "eslint.config.js",
+      ]).allowed,
+    ).toBe(true);
+    for (const path of [
+      "src/worker.ts",
+      "tests/dev-operations/../worker.test.mjs",
+      "tests/dev-operations/nested/checkpoint.test.mjs",
+    ])
+      expect(
+        evaluateDevOperationsPaths(roadmap, work, [path]).allowed,
+        path,
+      ).toBe(false);
+    for (const action of [
+      "LOCAL_IMPLEMENTATION",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "CHANGE_PRODUCTION",
+      "CLOSE_ISSUE",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+    ])
+      expect(evaluateProjectAction(roadmap, work, action).allowed, action).toBe(
+        false,
+      );
+    for (const field of [
+      "version",
+      "baseHead",
+      "allowedPaths",
+      "forbidden",
+      "inheritedState",
+    ]) {
+      const changed = structuredClone(work);
+      record(changed.devOperationsV33)[field] = "unexpected";
+      expect(validateProjectControl(roadmap, changed).errors, field).toContain(
+        "V33_EXACT_CONTROL_INVALID",
+      );
+    }
+    const changedSchema = structuredClone(workSchema) as Record<
+      string,
+      unknown
+    >;
+    record(record(changedSchema.properties).roadmapVersion).const =
+      "2026.09.21-v32";
+    expect(
+      validateSchemaDocuments(
+        roadmapSchema,
+        changedSchema,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      ),
+    ).toContain("V33_SCHEMA_NOT_CLOSED");
+  });
+
   it("validates the exact v32 Greptile layer and preserves every inherited grant and journal", async () => {
     const { GREPTILE_PUSH_DRAFT_CONTROL } =
       await import("../src/project-control.js");
@@ -8818,6 +9412,17 @@ describe("v29 PR15 source and integration separation", () => {
         ),
       ),
     );
+    projectReviewV34ToV33(r, w);
+    if (r.version === "2026.09.23-v33") {
+      r.version = GREPTILE_PUSH_DRAFT_CONTROL.version;
+      r.ownerDecision = {
+        decisionId: GREPTILE_PUSH_DRAFT_CONTROL.ownerDecision,
+        decidedAt: "2026-09-21",
+        supersedes: GREPTILE_PUSH_DRAFT_CONTROL.supersedes,
+      };
+      w.roadmapVersion = r.version;
+      delete w.devOperationsV33;
+    }
     expect(r.version).toBe(GREPTILE_PUSH_DRAFT_CONTROL.version);
     expect(validateProjectControl(r, w).errors).toEqual([]);
     for (const key of [

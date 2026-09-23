@@ -972,3 +972,42 @@ This authorization is local implementation, regression validation, commit and no
 - inheritedState: V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED
 
 The exact Owner-created merge 88deb90 is sealed without broadly allowing merge history. One Draft PR and the next real greptile.json push are authorized solely to prove review-on-push for the exact reviewed SHA. No application/runtime, deployment, Production, grant, journal, hold, Ready, merge, Issue or MP-07 authority is added.
+
+## MP-OD-2026-09-23-V34 — one Draft Dev Operations review
+
+Owner approved the proposed exact control transition on 2026-09-23. This permits one Draft PR and its CI/Greptile findings-only review, not Ready, approval, merge, deployment or Production. Check for an existing PR with the exact head/base before creation; reuse it and never create a second PR under this decision.
+
+- version: 2026.09.23-v34
+- ownerDecision: MP-OD-2026-09-23-V34
+- supersedes: 2026.09.23-v33
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/dev-operations-v33
+- baseBranch: codex/mp-06-guardrailed-ai
+- baseHead: 1508782a9cbf9412b3a6967264e9f4e8d6c19376
+- authority: ONE_DRAFT_PR_CI_AND_FINDINGS_ONLY_GREPTILE_REVIEW
+- workflow: UNCHANGED_SEALED_WORKFLOW_NO_NEW_CREDENTIALS
+- forbidden: NO_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+- inheritedState: V33_LOCAL_TOOLING_AND_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+
+Allowed implementation paths remain the exact v33 allowlist; schema, validator, CLI/source adapter, negative tests and control documentation only for this transition. Source history stays merge-free, exact base pinned. CI integration uses only the GitHub synthetic merge with exact parents; validate source separately. No workflow/config/credential/runtime changes. Existing v33 local-only prohibition is superseded solely for this explicit draft review action. Check exact source SHA and review completion; test PASS alone does not close MP-06.
+
+## MP-OD-2026-09-23-V33 — local Dev Operations tooling
+
+Owner approved the separate Dev Operations work package and then explicitly approved the additional exact schema, validator, test and Owner-record paths needed for a valid v33 transition. This records local implementation authority, not completion or permission to alter MP-06 runtime/TEST/Production.
+
+- version: 2026.09.23-v33
+- ownerDecision: MP-OD-2026-09-23-V33
+- supersedes: 2026.09.21-v32
+- type: LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32
+- repository: Eak-dev/malispang-lineOA
+- baseHead: 1508782a9cbf9412b3a6967264e9f4e8d6c19376
+- branch: codex/dev-operations-v33
+- targetEnvironment: LOCAL_ONLY
+- allowedPaths: PROJECT_CONTROL.md, config/project/roadmap.json, config/project/current-work.json, config/project/current-work.schema.json, src/project-control.ts, src/project-control-cli.ts, tests/project-control.test.ts, docs/project/OWNER_DECISION_LOG.md, docs/project/ROADMAP_CHANGELOG.md, docs/project/EXECUTION_GATES.md, tsconfig.json, eslint.config.js, scripts/dev-operations/preflight.mjs, scripts/dev-operations/checkpoint.mjs, scripts/dev-operations/receipt.mjs, tests/dev-operations/*.test.mjs, docs/dev-operations/README.md
+- 2026-09-23 amendment: Owner explicitly approved the two additional lint-integration paths only. This does not permit disabling lint rules, changing runtime/test acceptance, increasing test timeouts or broadening deployment authority.
+- 2026-09-23 regression amendment: Owner explicitly authorized full-suite rerun and historical control-test remediation in `src/project-control.ts`, `src/project-control-cli.ts`, and `tests/project-control.test.ts`. Preserve every existing assertion and timeout, original grants/journals and dirty work. The local macOS Git-launcher remediation selects only the fixed root-owned, non-group/world-writable Command Line Tools path (all ancestors checked without following symlinks), otherwise retaining `/usr/bin/git`. No Git checks, test discovery, concurrency or deployment boundary is relaxed.
+- 2026-09-23 committed-checkout follow-up: Owner authorized continuing with a synthetic commit, validator repair and full clean-checkout regression before considering a real scoped commit/push. Qualify v33 against the exact inherited base, complete post-base path/history inventory and unchanged inherited state at every revision; v33 local results must not acquire deployment provenance. No new path or remote/PR/merge/deploy/Production authority is created.
+- forbidden: NO_RUNTIME_TEST_PRODUCTION_PR_MERGE_DEPLOY_ISSUE_CLOSE
+- inheritedState: V32_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_UNCHANGED
+
+Implementation order: validate v33 closed control and negative actions first; then add the exact local tools, synthetic restoration tests and operator documentation. Preserve dirty work, secrets/PII exclusion and append-only receipts. No PR, merge, deploy, Production, issue closure, reset, rebase or force-push. Existing PR16 P1 and failed CI are separate.

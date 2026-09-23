@@ -713,3 +713,12 @@ Owner decision MP-OD-2026-09-21-V32 supersedes 2026.09.20-v31 only for repositor
 That merge inherited the already-completed base merge aad8c5e0ef41c5e47df3d93ae462b9122368c15d with ordered parents 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f and tree 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb. Both identities are exact; no other merge history is accepted.
 
 The control is REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31 under OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21 for Eak-dev/malispang-lineOA, head codex/mp-06-guardrailed-ai and base codex/phase-1a-foundation. automaticReview is open,push; reviewDrafts true; reviewRebase false. Dashboard is PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED, repositoryScope EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF, automation AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF. Proof is NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT under ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE. V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED.
+
+## 2026-09-23 — v33 local Dev Operations tooling
+
+Owner decision MP-OD-2026-09-23-V33 supersedes 2026.09.21-v32 only for a local, ancillary Dev Operations work package from clean HEAD 1508782a9cbf9412b3a6967264e9f4e8d6c19376 on codex/dev-operations-v33. The canonical MP-06 / Issue #12 / WP8F / TEST_ONLY state remains. The closed v33 field enumerates only control/schema/validator/test/Owner records and scripts/dev-operations, tests/dev-operations, docs/dev-operations files. Prior v32 grants/journals/holds are byte-preserved. No runtime, PR16 remediation, remote TEST, Production, merge, deploy or Issue closure. Roadmap Issue #9 reconciliation follows verified local control; it does not confer acceptance or broader authority.
+Owner amendment on 2026-09-23 adds only tsconfig.json and eslint.config.js to the exact v33 allowed paths to integrate new local `.mjs` tooling with existing lint. No lint rule is waived; historical v27 test timeout remains unresolved and no timeout increase is authorized.
+
+# 2026-09-23 — v34 Draft Dev Operations review transition
+
+Owner-approved MP-OD-2026-09-23-V34 supersedes v33 solely for one exact Draft PR, hosted CI and Greptile findings-only review. No workflow/credential/runtime change or merge/deploy/Production/closure authority. Existing v33 paths and v32 inherited grants/journals/holds preserved.

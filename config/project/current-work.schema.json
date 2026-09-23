@@ -5,6 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "devOperationsReviewV34",
     "$schema",
     "schemaVersion",
     "roadmapId",
@@ -56,9 +57,58 @@
     "wp8fV29PrCi",
     "wp8fV30CiTimeout",
     "wp8fV31Pr15Remediation",
-    "wp8fV32GreptilePushDraft"
+    "wp8fV32GreptilePushDraft",
+    "devOperationsV33"
   ],
   "properties": {
+    "devOperationsReviewV34": {
+      "const": {
+        "version": "2026.09.23-v34",
+        "ownerDecision": "MP-OD-2026-09-23-V34",
+        "supersedes": "2026.09.23-v33",
+        "repository": "Eak-dev/malispang-lineOA",
+        "headBranch": "codex/dev-operations-v33",
+        "baseBranch": "codex/mp-06-guardrailed-ai",
+        "baseHead": "1508782a9cbf9412b3a6967264e9f4e8d6c19376",
+        "authority": "ONE_DRAFT_PR_CI_AND_FINDINGS_ONLY_GREPTILE_REVIEW",
+        "workflow": "UNCHANGED_SEALED_WORKFLOW_NO_NEW_CREDENTIALS",
+        "forbidden": "NO_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE",
+        "inheritedState": "V33_LOCAL_TOOLING_AND_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED"
+      }
+    },
+    "devOperationsV33": {
+      "const": {
+        "version": "2026.09.23-v33",
+        "ownerDecision": "MP-OD-2026-09-23-V33",
+        "supersedes": "2026.09.21-v32",
+        "type": "LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32",
+        "repository": "Eak-dev/malispang-lineOA",
+        "baseHead": "1508782a9cbf9412b3a6967264e9f4e8d6c19376",
+        "branch": "codex/dev-operations-v33",
+        "targetEnvironment": "LOCAL_ONLY",
+        "allowedPaths": [
+          "PROJECT_CONTROL.md",
+          "config/project/roadmap.json",
+          "config/project/current-work.json",
+          "config/project/current-work.schema.json",
+          "src/project-control.ts",
+          "src/project-control-cli.ts",
+          "tests/project-control.test.ts",
+          "docs/project/OWNER_DECISION_LOG.md",
+          "docs/project/ROADMAP_CHANGELOG.md",
+          "docs/project/EXECUTION_GATES.md",
+          "tsconfig.json",
+          "eslint.config.js",
+          "scripts/dev-operations/preflight.mjs",
+          "scripts/dev-operations/checkpoint.mjs",
+          "scripts/dev-operations/receipt.mjs",
+          "tests/dev-operations/*.test.mjs",
+          "docs/dev-operations/README.md"
+        ],
+        "forbidden": "NO_RUNTIME_TEST_PRODUCTION_PR_MERGE_DEPLOY_ISSUE_CLOSE",
+        "inheritedState": "V32_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_UNCHANGED"
+      }
+    },
     "wp8fV32GreptilePushDraft": {
       "const": {
         "version": "2026.09.21-v32",
@@ -541,7 +591,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.21-v32" },
+    "roadmapVersion": { "const": "2026.09.23-v34" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {

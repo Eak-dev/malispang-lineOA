@@ -1,8 +1,43 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { channel } from "node:diagnostics_channel";
+
+/** Avoid macOS's developer-tool launcher on every Git observation. Never
+ * select an executable from PATH, a caller override, or a writable toolchain.
+ * Missing/untrusted Command Line Tools retain the system Git fallback. */
+export function projectControlGitExecutable(): string {
+  if (process.platform === "darwin") {
+    const binary = "/Library/Developer/CommandLineTools/usr/bin/git";
+    const paths = [
+      "/Library",
+      "/Library/Developer",
+      "/Library/Developer/CommandLineTools",
+      "/Library/Developer/CommandLineTools/usr",
+      "/Library/Developer/CommandLineTools/usr/bin",
+      binary,
+    ];
+    try {
+      if (
+        paths.every((path) => {
+          const stat = lstatSync(path);
+          return (
+            stat.uid === 0 &&
+            (stat.mode & 0o022) === 0 &&
+            (path === binary
+              ? stat.isFile() && (stat.mode & 0o111) !== 0
+              : stat.isDirectory())
+          );
+        })
+      )
+        return binary;
+    } catch {
+      // The system launcher also supports Macs with Xcode instead of CLT.
+    }
+  }
+  return "/usr/bin/git";
+}
 
 export const CANONICAL_GITHUB_ISSUES = {
   "MP-01": 8,
@@ -40,6 +75,7 @@ export type ProjectAction =
   | "PREPARE_EXACT_TEST_DEPLOYMENT"
   | "ASSESS_EXACT_TEST_DEPLOYMENT_READINESS"
   | "CREATE_DRAFT_PR"
+  | "DEV_OPERATIONS_TOOLING"
   | "LOCAL_IMPLEMENTATION"
   | "COMMIT"
   | "PUSH_BRANCH"
@@ -1013,6 +1049,30 @@ export function evaluateProjectAction(
   }
   if (
     isRecord(roadmap) &&
+    roadmap.version === DEV_OPERATIONS_REVIEW_V34.version
+  ) {
+    return [
+      "DEV_OPERATIONS_TOOLING",
+      "UPDATE_GITHUB_ROADMAP",
+      "COMMIT",
+      "PUSH_BRANCH",
+      "CREATE_DRAFT_PR",
+    ].includes(action)
+      ? { allowed: true, reason: "V34_EXACT_BRANCH_AND_ONE_DRAFT_REVIEW_ONLY" }
+      : { allowed: false, reason: "V34_NO_OTHER_ACTION_AUTHORITY" };
+  }
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === DEV_OPERATIONS_V33_CONTROL.version
+  ) {
+    if (action === "DEV_OPERATIONS_TOOLING")
+      return { allowed: true, reason: "V33_EXACT_LOCAL_DEV_OPERATIONS_ONLY" };
+    if (["UPDATE_GITHUB_ROADMAP", "COMMIT", "PUSH_BRANCH"].includes(action))
+      return { allowed: true, reason: "V33_CONTROL_RECORD_AND_BRANCH_ONLY" };
+    return { allowed: false, reason: "V33_NO_OTHER_ACTION_AUTHORITY" };
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === GREPTILE_PUSH_DRAFT_CONTROL.version
   ) {
     if (action === "LOCAL_IMPLEMENTATION")
@@ -1187,6 +1247,7 @@ export function evaluateProjectAction(
     PREPARE_EXACT_TEST_DEPLOYMENT: "testDeploymentPreparationWp8f",
     ASSESS_EXACT_TEST_DEPLOYMENT_READINESS: "testDeploymentPreparationWp8f",
     CREATE_DRAFT_PR: "testAcceptanceCompletionWp8f",
+    DEV_OPERATIONS_TOOLING: "devOperationsTooling",
     LOCAL_IMPLEMENTATION: "localImplementation",
     COMMIT: "commit",
     PUSH_BRANCH: "pushBranch",
@@ -5194,6 +5255,7 @@ export function parseV26PorcelainStatus(raw: unknown): string[] | null {
  * hook or external diff. Dirty control files permit validation, never deployment. */
 export function inspectV23SealedRepository(
   root: string,
+  additionalDirtyPaths: readonly string[] = [],
 ): { ok: true; proof: V23CheckoutProof } | { ok: false; reason: string } {
   let previous = performance.now();
   const mark = (phase: string) => {
@@ -5216,7 +5278,7 @@ export function inspectV23SealedRepository(
     };
     const git = (...args: string[]) =>
       execFileSync(
-        "/usr/bin/git",
+        projectControlGitExecutable(),
         [
           "--no-optional-locks",
           "--no-replace-objects",
@@ -5253,7 +5315,8 @@ export function inspectV23SealedRepository(
     )
       return { ok: false, reason: "V23_FULL_EXACT_REPOSITORY_REQUIRED" };
     mark("v23_inspect.repository");
-    const head = git("rev-parse", "HEAD").trim();
+    const actualHead = git("rev-parse", "HEAD").trim();
+    let head = actualHead;
     if (
       !isFullSha(head, 40) ||
       git("rev-parse", g.commit + "^{commit}").trim() !== g.commit
@@ -5263,7 +5326,134 @@ export function inspectV23SealedRepository(
       "show",
       head + ":config/project/current-work.json",
     );
-    const committedWork: unknown = JSON.parse(currentWorkText);
+    const actualWork: unknown = JSON.parse(currentWorkText);
+    let committedWork: unknown = actualWork;
+    const v34 =
+      isRecord(actualWork) &&
+      actualWork.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version;
+    const v33 =
+      isRecord(actualWork) &&
+      (actualWork.roadmapVersion === DEV_OPERATIONS_V33_CONTROL.version || v34);
+    const localDirtyPaths: readonly string[] = v33
+      ? DEV_OPERATIONS_V33_CONTROL.allowedPaths
+      : additionalDirtyPaths;
+    let localPaths: string[] | undefined;
+    if (v33) {
+      const control = DEV_OPERATIONS_V33_CONTROL;
+      if (
+        v34 &&
+        JSON.stringify(actualWork.devOperationsReviewV34) !==
+          JSON.stringify(DEV_OPERATIONS_REVIEW_V34)
+      )
+        return { ok: false, reason: "V34_EXACT_REVIEW_CONTROL_INVALID" };
+      if (
+        JSON.stringify(actualWork.devOperationsV33) !== JSON.stringify(control)
+      )
+        return { ok: false, reason: "V33_EXACT_CONTROL_INVALID" };
+      head = control.baseHead;
+      git("merge-base", "--is-ancestor", head, actualHead);
+      if (git("rev-list", "--min-parents=2", head + ".." + actualHead).trim())
+        return { ok: false, reason: "V33_NEW_MERGE_HISTORY_DENIED" };
+      const localDiff = [
+        "diff",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--no-renames",
+      ];
+      const changed = list(
+        git(...localDiff, "--name-only", "-z", head, actualHead),
+      );
+      const history = list(
+        git(
+          "log",
+          "--format=",
+          "--name-only",
+          "--no-renames",
+          "-z",
+          head + ".." + actualHead,
+        ),
+      );
+      if (
+        [...changed, ...history].some(
+          (path) =>
+            !control.allowedPaths.some((allowed) => allowed === path) &&
+            !/^tests\/dev-operations\/[^/]+\.test\.mjs$/u.test(path),
+        )
+      )
+        return { ok: false, reason: "V33_COMMITTED_SCOPE_DRIFT" };
+      committedWork = JSON.parse(
+        git("show", head + ":config/project/current-work.json"),
+      );
+      if (
+        !isRecord(committedWork) ||
+        committedWork.roadmapVersion !== GREPTILE_PUSH_DRAFT_CONTROL.version
+      )
+        return { ok: false, reason: "V33_BASE_CONTROL_INVALID" };
+      // The v33 overlay cannot change any inherited grant, journal or hold,
+      // including in a commit whose bytes were subsequently restored.
+      const baseline = JSON.stringify(committedWork);
+      const workingWork: unknown = JSON.parse(
+        readFileSync(join(cwd, "config/project/current-work.json"), "utf8"),
+      );
+      if (
+        !isRecord(workingWork) ||
+        workingWork.roadmapVersion !==
+          (v34 ? DEV_OPERATIONS_REVIEW_V34.version : control.version) ||
+        (v34 &&
+          JSON.stringify(workingWork.devOperationsReviewV34) !==
+            JSON.stringify(DEV_OPERATIONS_REVIEW_V34)) ||
+        JSON.stringify(workingWork.devOperationsV33) !== JSON.stringify(control)
+      )
+        return { ok: false, reason: "V33_WORKING_STATE_DRIFT" };
+      workingWork.roadmapVersion = GREPTILE_PUSH_DRAFT_CONTROL.version;
+      delete workingWork.devOperationsV33;
+      if (v34) delete workingWork.devOperationsReviewV34;
+      if (JSON.stringify(workingWork) !== baseline)
+        return { ok: false, reason: "V33_WORKING_STATE_DRIFT" };
+      let transitioned = false;
+      let reviewTransitioned = false;
+      for (const revision of git(
+        "rev-list",
+        "--reverse",
+        head + ".." + actualHead,
+      )
+        .trim()
+        .split("\n")) {
+        if (!isFullSha(revision, 40))
+          return { ok: false, reason: "V33_HISTORY_UNVERIFIED" };
+        const work: unknown = JSON.parse(
+          git("show", revision + ":config/project/current-work.json"),
+        );
+        if (!isRecord(work))
+          return { ok: false, reason: "V33_INHERITED_STATE_DRIFT" };
+        if (
+          v34 &&
+          work.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version &&
+          JSON.stringify(work.devOperationsReviewV34) ===
+            JSON.stringify(DEV_OPERATIONS_REVIEW_V34)
+        ) {
+          reviewTransitioned = true;
+          work.roadmapVersion = control.version;
+          delete work.devOperationsReviewV34;
+        } else if (reviewTransitioned)
+          return { ok: false, reason: "V34_CONTROL_HISTORY_RESET" };
+        if (
+          work.roadmapVersion === control.version &&
+          JSON.stringify(work.devOperationsV33) === JSON.stringify(control)
+        ) {
+          transitioned = true;
+          work.roadmapVersion = GREPTILE_PUSH_DRAFT_CONTROL.version;
+          delete work.devOperationsV33;
+        } else if (transitioned) {
+          return { ok: false, reason: "V33_CONTROL_HISTORY_RESET" };
+        }
+        if (JSON.stringify(work) !== baseline)
+          return { ok: false, reason: "V33_INHERITED_STATE_DRIFT" };
+      }
+      localPaths = list(
+        git(...localDiff, "--name-only", "-z", candidate, actualHead),
+      );
+    }
     if (
       !isRecord(committedWork) ||
       !validateV22OperationJournal(committedWork.wp8fV22OperationJournal)
@@ -6176,13 +6366,23 @@ export function inspectV23SealedRepository(
       !v28Valid ||
       numstat[2] !== g.path ||
       (dirty.length > 0 &&
-        !exactPaths([...new Set(dirty)], WP8F_V18_ENVELOPE.controlFiles))
+        !(
+          [...new Set(dirty)].every(
+            (path) =>
+              WP8F_V18_ENVELOPE.controlFiles.some(
+                (allowed) => allowed === path,
+              ) ||
+              localDirtyPaths.includes(path) ||
+              (localDirtyPaths.includes("tests/dev-operations/*.test.mjs") &&
+                /^tests\/dev-operations\/[^/]+\.test\.mjs$/u.test(path)),
+          ) && dirty.length > 0
+        ))
     )
       return {
         ok: false,
         reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
       };
-    if (git("rev-parse", "HEAD").trim() !== head)
+    if (git("rev-parse", "HEAD").trim() !== actualHead)
       return { ok: false, reason: "V23_CHECKOUT_CHANGED_DURING_INSPECTION" };
     if (
       v26 &&
@@ -6194,13 +6394,15 @@ export function inspectV23SealedRepository(
     mark("v23_inspect.final_head");
     const proof = Object.freeze({
       root: cwd,
-      head,
-      paths: Object.freeze(paths),
+      head: actualHead,
+      paths: Object.freeze(localPaths ?? paths),
       clean: dirty.length === 0,
-      currentWorkDigest: hash(JSON.stringify(committedWork)),
+      currentWorkDigest: hash(JSON.stringify(actualWork)),
       ...(v26 ? { rawIndexSha256: rawIndexBefore } : {}),
     });
-    v23CheckoutProofs.add(proof);
+    // A v33 result verifies local tooling only; it never enters the private
+    // deployment-provenance registry, even when the checkout is clean.
+    if (!v33) v23CheckoutProofs.add(proof);
     mark("v23_inspect.proof_created");
     return { ok: true, proof };
   } catch {
@@ -7599,6 +7801,105 @@ export const GREPTILE_PUSH_DRAFT_CONTROL = {
     "V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED",
 } as const;
 
+export const DEV_OPERATIONS_REVIEW_V34 = {
+  version: "2026.09.23-v34",
+  ownerDecision: "MP-OD-2026-09-23-V34",
+  supersedes: "2026.09.23-v33",
+  repository: "Eak-dev/malispang-lineOA",
+  headBranch: "codex/dev-operations-v33",
+  baseBranch: "codex/mp-06-guardrailed-ai",
+  baseHead: "1508782a9cbf9412b3a6967264e9f4e8d6c19376",
+  authority: "ONE_DRAFT_PR_CI_AND_FINDINGS_ONLY_GREPTILE_REVIEW",
+  workflow: "UNCHANGED_SEALED_WORKFLOW_NO_NEW_CREDENTIALS",
+  forbidden: "NO_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE",
+  inheritedState: "V33_LOCAL_TOOLING_AND_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED",
+} as const;
+
+/** Historical fixture projection only; never confers action authority. */
+export function projectReviewV34ToV33(
+  r: Record<string, unknown>,
+  w: Record<string, unknown>,
+  schema?: Record<string, unknown>,
+): void {
+  if (r.version !== DEV_OPERATIONS_REVIEW_V34.version) return;
+  r.version = DEV_OPERATIONS_V33_CONTROL.version;
+  r.ownerDecision = {
+    decisionId: DEV_OPERATIONS_V33_CONTROL.ownerDecision,
+    decidedAt: "2026-09-23",
+    supersedes: DEV_OPERATIONS_V33_CONTROL.supersedes,
+  };
+  w.roadmapVersion = r.version;
+  delete w.devOperationsReviewV34;
+  if (schema && isRecord(schema.properties) && Array.isArray(schema.required)) {
+    schema.required = schema.required.filter(
+      (key) => key !== "devOperationsReviewV34",
+    );
+    delete schema.properties.devOperationsReviewV34;
+    schema.properties.roadmapVersion = { const: r.version };
+  }
+}
+
+export const DEV_OPERATIONS_V33_CONTROL = {
+  version: "2026.09.23-v33",
+  ownerDecision: "MP-OD-2026-09-23-V33",
+  supersedes: "2026.09.21-v32",
+  type: "LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32",
+  repository: "Eak-dev/malispang-lineOA",
+  baseHead: "1508782a9cbf9412b3a6967264e9f4e8d6c19376",
+  branch: "codex/dev-operations-v33",
+  targetEnvironment: "LOCAL_ONLY",
+  allowedPaths: [
+    "PROJECT_CONTROL.md",
+    "config/project/roadmap.json",
+    "config/project/current-work.json",
+    "config/project/current-work.schema.json",
+    "src/project-control.ts",
+    "src/project-control-cli.ts",
+    "tests/project-control.test.ts",
+    "docs/project/OWNER_DECISION_LOG.md",
+    "docs/project/ROADMAP_CHANGELOG.md",
+    "docs/project/EXECUTION_GATES.md",
+    "tsconfig.json",
+    "eslint.config.js",
+    "scripts/dev-operations/preflight.mjs",
+    "scripts/dev-operations/checkpoint.mjs",
+    "scripts/dev-operations/receipt.mjs",
+    "tests/dev-operations/*.test.mjs",
+    "docs/dev-operations/README.md",
+  ],
+  forbidden: "NO_RUNTIME_TEST_PRODUCTION_PR_MERGE_DEPLOY_ISSUE_CLOSE",
+  inheritedState: "V32_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_UNCHANGED",
+} as const;
+
+export function evaluateDevOperationsPaths(
+  roadmap: unknown,
+  work: unknown,
+  paths: readonly string[],
+): ProjectActionDecision {
+  if (validateProjectControl(roadmap, work).errors.length > 0)
+    return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
+  if (
+    !isRecord(roadmap) ||
+    ![
+      DEV_OPERATIONS_V33_CONTROL.version,
+      DEV_OPERATIONS_REVIEW_V34.version,
+    ].some((version) => roadmap.version === version)
+  )
+    return { allowed: false, reason: "V33_DEV_OPERATIONS_NOT_CURRENT" };
+  if (paths.length === 0 || paths.some((path) => typeof path !== "string"))
+    return { allowed: false, reason: "V33_EXACT_PATHS_REQUIRED" };
+  const allowed = DEV_OPERATIONS_V33_CONTROL.allowedPaths;
+  const valid = paths.every(
+    (path) =>
+      allowed.includes(path as (typeof allowed)[number]) ||
+      (/^tests\/dev-operations\/[^/]+\.test\.mjs$/u.test(path) &&
+        allowed.includes("tests/dev-operations/*.test.mjs")),
+  );
+  return valid
+    ? { allowed: true, reason: "V33_EXACT_LOCAL_DEV_OPERATIONS_PATHS" }
+    : { allowed: false, reason: "V33_PATH_OUT_OF_SCOPE" };
+}
+
 function projectV29(
   roadmap: Record<string, unknown>,
   work: Record<string, unknown>,
@@ -7747,7 +8048,7 @@ function projectV32(
   return { roadmap: r, work: w };
 }
 
-export function validateProjectControl(
+function validateProjectControlV32(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
@@ -7772,6 +8073,74 @@ export function validateProjectControl(
       })
   )
     result.errors.push("V32_EXACT_CONTROL_INVALID");
+  return result;
+}
+
+function projectV33(
+  roadmap: Record<string, unknown>,
+  work: Record<string, unknown>,
+) {
+  const r = structuredClone(roadmap),
+    w = structuredClone(work);
+  r.version = GREPTILE_PUSH_DRAFT_CONTROL.version;
+  r.ownerDecision = {
+    decisionId: GREPTILE_PUSH_DRAFT_CONTROL.ownerDecision,
+    decidedAt: "2026-09-21",
+    supersedes: GREPTILE_PUSH_DRAFT_CONTROL.supersedes,
+  };
+  w.roadmapVersion = r.version;
+  delete w.devOperationsV33;
+  return { roadmap: r, work: w };
+}
+
+export function validateProjectControl(
+  roadmap: unknown,
+  work: unknown,
+): ProjectControlValidation {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === DEV_OPERATIONS_REVIEW_V34.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    const valid =
+      w.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version &&
+      JSON.stringify(w.devOperationsReviewV34) ===
+        JSON.stringify(DEV_OPERATIONS_REVIEW_V34) &&
+      JSON.stringify(r.ownerDecision) ===
+        JSON.stringify({
+          decisionId: DEV_OPERATIONS_REVIEW_V34.ownerDecision,
+          decidedAt: "2026-09-23",
+          supersedes: DEV_OPERATIONS_REVIEW_V34.supersedes,
+        });
+    projectReviewV34ToV33(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V34_EXACT_REVIEW_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    !isRecord(roadmap) ||
+    roadmap.version !== DEV_OPERATIONS_V33_CONTROL.version
+  )
+    return validateProjectControlV32(roadmap, work);
+  if (!isRecord(work))
+    return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+  const projected = projectV33(roadmap, work);
+  const result = validateProjectControlV32(projected.roadmap, projected.work);
+  if (
+    work.roadmapVersion !== DEV_OPERATIONS_V33_CONTROL.version ||
+    JSON.stringify(work.devOperationsV33) !==
+      JSON.stringify(DEV_OPERATIONS_V33_CONTROL) ||
+    JSON.stringify(roadmap.ownerDecision) !==
+      JSON.stringify({
+        decisionId: DEV_OPERATIONS_V33_CONTROL.ownerDecision,
+        decidedAt: "2026-09-23",
+        supersedes: DEV_OPERATIONS_V33_CONTROL.supersedes,
+      })
+  )
+    result.errors.push("V33_EXACT_CONTROL_INVALID");
   return result;
 }
 
@@ -7880,7 +8249,7 @@ function validateSchemaDocumentsV31(
   );
 }
 
-export function validateSchemaDocuments(
+function validateSchemaDocumentsV32(
   roadmapSchema: unknown,
   schema: unknown,
   version = "2026.09.09-v19",
@@ -7912,6 +8281,66 @@ export function validateSchemaDocuments(
     roadmapSchema,
     projected,
     PR15_P1_REMEDIATION_CONTROL.version,
+  );
+}
+
+export function validateSchemaDocuments(
+  roadmapSchema: unknown,
+  schema: unknown,
+  version = "2026.09.09-v19",
+): string[] {
+  if (version === DEV_OPERATIONS_REVIEW_V34.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      !schema.required.includes("devOperationsReviewV34") ||
+      JSON.stringify(schema.properties.devOperationsReviewV34) !==
+        JSON.stringify({ const: DEV_OPERATIONS_REVIEW_V34 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V34_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projected.required = (schema.required as unknown[]).filter(
+      (key) => key !== "devOperationsReviewV34",
+    );
+    const properties = projected.properties as Record<string, unknown>;
+    delete properties.devOperationsReviewV34;
+    properties.roadmapVersion = { const: DEV_OPERATIONS_V33_CONTROL.version };
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      DEV_OPERATIONS_V33_CONTROL.version,
+    );
+  }
+  if (version !== DEV_OPERATIONS_V33_CONTROL.version)
+    return validateSchemaDocumentsV32(roadmapSchema, schema, version);
+  if (
+    !isRecord(schema) ||
+    !isRecord(schema.properties) ||
+    !Array.isArray(schema.required)
+  )
+    return ["V33_SCHEMA_NOT_CLOSED"];
+  if (
+    !schema.required.includes("devOperationsV33") ||
+    JSON.stringify(schema.properties.devOperationsV33) !==
+      JSON.stringify({ const: DEV_OPERATIONS_V33_CONTROL }) ||
+    JSON.stringify(schema.properties.roadmapVersion) !==
+      JSON.stringify({ const: version })
+  )
+    return ["V33_SCHEMA_NOT_CLOSED"];
+  const projected = structuredClone(schema);
+  projected.required = (schema.required as unknown[]).filter(
+    (key) => key !== "devOperationsV33",
+  );
+  const properties = projected.properties as Record<string, unknown>;
+  delete properties.devOperationsV33;
+  properties.roadmapVersion = { const: GREPTILE_PUSH_DRAFT_CONTROL.version };
+  return validateSchemaDocumentsV32(
+    roadmapSchema,
+    projected,
+    GREPTILE_PUSH_DRAFT_CONTROL.version,
   );
 }
 
@@ -7972,7 +8401,7 @@ function validateWp8fOwnerDecisionRecordV31(
   );
 }
 
-export function validateWp8fOwnerDecisionRecord(
+function validateWp8fOwnerDecisionRecordV32(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
@@ -7990,6 +8419,49 @@ export function validateWp8fOwnerDecisionRecord(
     validateWp8fOwnerDecisionRecordV31(
       record,
       PR15_P1_REMEDIATION_CONTROL.version,
+    )
+  );
+}
+
+export function validateWp8fOwnerDecisionRecord(
+  record: unknown,
+  version = "2026.09.09-v19",
+): boolean {
+  if (version === DEV_OPERATIONS_REVIEW_V34.version) {
+    if (typeof record !== "string") return false;
+    const section = record
+      .split("## MP-OD-2026-09-23-V34 —")[1]
+      ?.split("\n## ")[0];
+    return (
+      typeof section === "string" &&
+      Object.values(DEV_OPERATIONS_REVIEW_V34).every((value) =>
+        section.includes(value),
+      ) &&
+      validateWp8fOwnerDecisionRecord(
+        record,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      )
+    );
+  }
+  if (version !== DEV_OPERATIONS_V33_CONTROL.version)
+    return validateWp8fOwnerDecisionRecordV32(record, version);
+  if (typeof record !== "string") return false;
+  const section = record
+    .split("## MP-OD-2026-09-23-V33 —")[1]
+    ?.split("\n## ")[0];
+  return (
+    typeof section === "string" &&
+    [
+      DEV_OPERATIONS_V33_CONTROL.version,
+      DEV_OPERATIONS_V33_CONTROL.ownerDecision,
+      DEV_OPERATIONS_V33_CONTROL.supersedes,
+      DEV_OPERATIONS_V33_CONTROL.baseHead,
+      DEV_OPERATIONS_V33_CONTROL.branch,
+      ...DEV_OPERATIONS_V33_CONTROL.allowedPaths,
+    ].every((value) => section.includes(value)) &&
+    validateWp8fOwnerDecisionRecordV32(
+      record,
+      GREPTILE_PUSH_DRAFT_CONTROL.version,
     )
   );
 }
@@ -8032,6 +8504,52 @@ export function validatePr15MergeReceipt(
   )
     return null;
   return { head: pr.head.sha, base: pr.base.sha };
+}
+
+/** Exact review identity; not a reusable PR-creation grant or live proof. */
+export function validateV34DraftPrMergeReceipt(
+  event: unknown,
+  observed: { sha: unknown; ref: unknown; merge: unknown; parents: unknown },
+): { head: string; base: string; number: number } | null {
+  const c = DEV_OPERATIONS_REVIEW_V34;
+  if (
+    !isRecord(event) ||
+    !Number.isInteger(event.number) ||
+    Number(event.number) < 1 ||
+    !isRecord(event.repository) ||
+    event.repository.full_name !== c.repository ||
+    !isRecord(event.pull_request)
+  )
+    return null;
+  const pr = event.pull_request;
+  if (
+    pr.number !== event.number ||
+    pr.state !== "open" ||
+    pr.draft !== true ||
+    !isRecord(pr.head) ||
+    !isRecord(pr.base) ||
+    !isRecord(pr.head.repo) ||
+    !isRecord(pr.base.repo) ||
+    pr.head.repo.full_name !== c.repository ||
+    pr.base.repo.full_name !== c.repository ||
+    pr.head.ref !== c.headBranch ||
+    pr.base.ref !== c.baseBranch ||
+    !isFullSha(pr.head.sha, 40) ||
+    pr.base.sha !== c.baseHead ||
+    !isFullSha(observed.merge, 40)
+  )
+    return null;
+  const number = Number(event.number);
+  if (
+    observed.sha !== observed.merge ||
+    observed.ref !== `refs/pull/${number}/merge` ||
+    !Array.isArray(observed.parents) ||
+    observed.parents.length !== 2 ||
+    observed.parents[0] !== pr.base.sha ||
+    observed.parents[1] !== pr.head.sha
+  )
+    return null;
+  return { head: pr.head.sha, base: pr.base.sha, number };
 }
 
 /** Exact Draft-PR identity for the v32 Greptile push-trigger proof. */

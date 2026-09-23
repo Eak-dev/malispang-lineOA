@@ -4,12 +4,15 @@ import { fileURLToPath } from "node:url";
 
 import {
   evaluateProjectAction,
+  evaluateDevOperationsPaths,
   validateProjectControl,
   validateSchemaDocuments,
   validateWp8fOwnerDecisionRecord,
   validateSuccessorOperationJournal,
   validateV22OperationJournal,
   inspectV23SealedRepository,
+  projectControlGitExecutable,
+  DEV_OPERATIONS_V33_CONTROL,
 } from "./project-control.js";
 
 export async function runProjectControlValidation(root: URL): Promise<void> {
@@ -52,7 +55,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v29" ||
     version === "2026.09.20-v30" ||
     version === "2026.09.20-v31" ||
-    version === "2026.09.21-v32";
+    version === "2026.09.21-v32" ||
+    version === "2026.09.23-v33" ||
+    version === "2026.09.23-v34";
   if (version === "2026.09.10-v21" || inheritsV22) {
     if (
       typeof currentWork !== "object" ||
@@ -68,7 +73,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       version === "2026.09.20-v29" ||
       version === "2026.09.20-v30" ||
       version === "2026.09.20-v31" ||
-      version === "2026.09.21-v32";
+      version === "2026.09.21-v32" ||
+      version === "2026.09.23-v33" ||
+      version === "2026.09.23-v34";
     let newerSuccessorJournal = journal;
     let newerV22Journal =
       "wp8fV22OperationJournal" in currentWork
@@ -76,14 +83,18 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
         : undefined;
     const cwd = fileURLToPath(root);
     if (
-      execFileSync("git", ["rev-parse", "--is-shallow-repository"], {
-        cwd,
-        encoding: "utf8",
-      }).trim() !== "false"
+      execFileSync(
+        projectControlGitExecutable(),
+        ["rev-parse", "--is-shallow-repository"],
+        {
+          cwd,
+          encoding: "utf8",
+        },
+      ).trim() !== "false"
     )
       throw new Error("V21_FULL_CHECKPOINT_HISTORY_REQUIRED");
     const revisions = execFileSync(
-      "git",
+      projectControlGitExecutable(),
       [
         "log",
         "--format=%H",
@@ -100,7 +111,7 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
         throw new Error("V21_CONTROL_HISTORY_UNVERIFIED");
       const historical: unknown = JSON.parse(
         execFileSync(
-          "git",
+          projectControlGitExecutable(),
           ["show", revision + ":config/project/current-work.json"],
           { cwd, encoding: "utf8", maxBuffer: 1024 * 1024 },
         ),
@@ -120,7 +131,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v29" ||
           historical.roadmapVersion === "2026.09.20-v30" ||
           historical.roadmapVersion === "2026.09.20-v31" ||
-          historical.roadmapVersion === "2026.09.21-v32")
+          historical.roadmapVersion === "2026.09.21-v32" ||
+          historical.roadmapVersion === "2026.09.23-v33" ||
+          historical.roadmapVersion === "2026.09.23-v34")
       ) {
         if (
           !("wp8fSuccessorOperationJournal" in historical) ||
@@ -147,7 +160,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
           historical.roadmapVersion === "2026.09.20-v29" ||
           historical.roadmapVersion === "2026.09.20-v30" ||
           historical.roadmapVersion === "2026.09.20-v31" ||
-          historical.roadmapVersion === "2026.09.21-v32")
+          historical.roadmapVersion === "2026.09.21-v32" ||
+          historical.roadmapVersion === "2026.09.23-v33" ||
+          historical.roadmapVersion === "2026.09.23-v34")
       ) {
         if (
           !("wp8fV22OperationJournal" in currentWork) ||
@@ -187,9 +202,16 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     version === "2026.09.20-v29" ||
     version === "2026.09.20-v30" ||
     version === "2026.09.20-v31" ||
-    version === "2026.09.21-v32"
+    version === "2026.09.21-v32" ||
+    version === "2026.09.23-v33" ||
+    version === "2026.09.23-v34"
   ) {
-    const sealed = inspectV23SealedRepository(fileURLToPath(root));
+    const sealed = inspectV23SealedRepository(
+      fileURLToPath(root),
+      version === "2026.09.23-v33" || version === "2026.09.23-v34"
+        ? DEV_OPERATIONS_V33_CONTROL.allowedPaths
+        : [],
+    );
     if (!sealed.ok) throw new Error(sealed.reason);
     console.log(
       `V23 sealed Git inventory verified: ${sealed.proof.paths.length} complete post-candidate paths; checkout clean=${sealed.proof.clean}; this is not deployment/state/CI approval`,
@@ -219,12 +241,53 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     );
   }
 
+  if (version === "2026.09.23-v33" || version === "2026.09.23-v34") {
+    const cwd = fileURLToPath(root);
+    const gitNames = (...args: string[]) =>
+      execFileSync(
+        projectControlGitExecutable(),
+        ["--no-optional-locks", ...args],
+        {
+          cwd,
+          encoding: "utf8",
+          maxBuffer: 16 * 1024 * 1024,
+        },
+      )
+        .split("\0")
+        .filter(Boolean);
+    const changedPaths = [
+      ...new Set([
+        ...gitNames("diff", "--name-only", "-z", "HEAD"),
+        ...gitNames("ls-files", "--others", "--exclude-standard", "-z"),
+      ]),
+    ];
+    if (
+      !evaluateProjectAction(roadmap, currentWork, "DEV_OPERATIONS_TOOLING")
+        .allowed ||
+      (changedPaths.length > 0 &&
+        !evaluateDevOperationsPaths(roadmap, currentWork, changedPaths)
+          .allowed) ||
+      !evaluateDevOperationsPaths(roadmap, currentWork, [
+        "scripts/dev-operations/preflight.mjs",
+      ]).allowed ||
+      evaluateDevOperationsPaths(roadmap, currentWork, ["src/worker.ts"])
+        .allowed
+    )
+      throw new Error(
+        "ROADMAP_UNVERIFIED: v33 local-only path authority invalid",
+      );
+  }
+
   const exactStateReconciliation = evaluateProjectAction(
     roadmap,
     currentWork,
     "PREPARE_EXACT_TEST_DEPLOYMENT",
   );
-  if (!exactStateReconciliation.allowed) {
+  if (
+    version === "2026.09.23-v33" || version === "2026.09.23-v34"
+      ? exactStateReconciliation.allowed
+      : !exactStateReconciliation.allowed
+  ) {
     throw new Error(
       "ROADMAP_UNVERIFIED: exact TEST deployment preparation must be authorized",
     );
@@ -278,12 +341,16 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     "CREATE_DRAFT_PR",
     "LOCAL_IMPLEMENTATION",
     "CHANGE_PRODUCTION",
+    "DEV_OPERATIONS_TOOLING",
   ] as const) {
     const decision = evaluateProjectAction(roadmap, currentWork, action);
     if (
       (action === "LOCAL_IMPLEMENTATION" &&
         (version === "2026.09.20-v31" || version === "2026.09.21-v32")) ||
-      (action === "CREATE_DRAFT_PR" && version === "2026.09.21-v32")
+      (action === "CREATE_DRAFT_PR" &&
+        (version === "2026.09.21-v32" || version === "2026.09.23-v34")) ||
+      (action === "DEV_OPERATIONS_TOOLING" &&
+        (version === "2026.09.23-v33" || version === "2026.09.23-v34"))
     ) {
       if (!decision.allowed)
         throw new Error(
@@ -301,11 +368,13 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       ? "no warnings"
       : `warnings recorded: ${validation.warnings.join(", ")}`;
   console.log(
-    inheritsV22
-      ? `Project control validation passed: ${version}, MP-06 (#12), exact TEST_ONLY; separate one-use deployment/successor grants; historical and current journals verified; U1 GAP/A1-A3 UNRESOLVED retained; no remote handoff-close/rollback/PR/merge/closure/Production/MP07; ${warningSuffix}`
-      : version === "2026.09.10-v21"
-        ? `Project control validation passed: ${version}, MP-06 (#12), frozen successor TEST_ONLY; independent exact deployment/close/continuation/UAT/review/integration gates required; append-only operation history verified; historical PR14 is not acceptance; Production NO_GO, MP07 blocked; ${warningSuffix}`
-        : `Project control validation passed: ${version}, historical preparation only; no remote mutation; ${warningSuffix}`,
+    version === "2026.09.23-v34"
+      ? `Project control validation passed: ${version}, MP-06 (#12); one exact Draft Dev Operations PR for CI/findings-only review; no Ready/merge/deploy/remote TEST/Production/closure; inherited journals verified; ${warningSuffix}`
+      : inheritsV22
+        ? `Project control validation passed: ${version}, MP-06 (#12), exact TEST_ONLY; separate one-use deployment/successor grants; historical and current journals verified; U1 GAP/A1-A3 UNRESOLVED retained; no remote handoff-close/rollback/PR/merge/closure/Production/MP07; ${warningSuffix}`
+        : version === "2026.09.10-v21"
+          ? `Project control validation passed: ${version}, MP-06 (#12), frozen successor TEST_ONLY; independent exact deployment/close/continuation/UAT/review/integration gates required; append-only operation history verified; historical PR14 is not acceptance; Production NO_GO, MP07 blocked; ${warningSuffix}`
+          : `Project control validation passed: ${version}, historical preparation only; no remote mutation; ${warningSuffix}`,
   );
 }
 
@@ -330,6 +399,8 @@ export async function runPullRequestControlValidation(
     PR15_P1_REMEDIATION_CONTROL,
     validatePr15MergeReceipt,
     validateV32DraftPrMergeReceipt,
+    validateV34DraftPrMergeReceipt,
+    DEV_OPERATIONS_REVIEW_V34,
   } = await import("./project-control.js");
   if (
     process.env.GITHUB_EVENT_NAME !== "pull_request" ||
@@ -341,7 +412,7 @@ export async function runPullRequestControlValidation(
   const cwd = fileURLToPath(root);
   const git = (...args: string[]) =>
     execFileSync(
-      "git",
+      projectControlGitExecutable(),
       ["--no-replace-objects", "--no-optional-locks", ...args],
       { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
     ).trim();
@@ -356,8 +427,16 @@ export async function runPullRequestControlValidation(
     work.roadmapVersion === GREPTILE_PUSH_DRAFT_CONTROL.version &&
     JSON.stringify(work.wp8fV32GreptilePushDraft) ===
       JSON.stringify(GREPTILE_PUSH_DRAFT_CONTROL);
+  const isV34 =
+    work.roadmapVersion === DEV_OPERATIONS_REVIEW_V34.version &&
+    JSON.stringify(work.devOperationsReviewV34) ===
+      JSON.stringify(DEV_OPERATIONS_REVIEW_V34);
   const receipt = (
-    isV32 ? validateV32DraftPrMergeReceipt : validatePr15MergeReceipt
+    isV34
+      ? validateV34DraftPrMergeReceipt
+      : isV32
+        ? validateV32DraftPrMergeReceipt
+        : validatePr15MergeReceipt
   )(event, {
     sha: process.env.GITHUB_SHA,
     ref: process.env.GITHUB_REF,
@@ -365,6 +444,19 @@ export async function runPullRequestControlValidation(
     parents,
   });
   if (!receipt) throw new Error("V29_PR_MERGE_IDENTITY_MISMATCH");
+  if (isV34) {
+    git(
+      "merge-base",
+      "--is-ancestor",
+      DEV_OPERATIONS_REVIEW_V34.baseHead,
+      receipt.head,
+    );
+    if (
+      git("rev-parse", receipt.head + "^{tree}") !==
+      git("rev-parse", merge + "^{tree}")
+    )
+      throw new Error("V34_INTEGRATION_TREE_DIVERGENCE");
+  }
   if (isV32)
     git(
       "merge-base",
@@ -377,6 +469,7 @@ export async function runPullRequestControlValidation(
   // Integration control code/data must be identical to the source that will
   // validate its history. A base-branch control conflict cannot silently pass.
   if (
+    !isV34 &&
     !isV32 &&
     (work.roadmapVersion !== PR15_P1_REMEDIATION_CONTROL.version ||
       JSON.stringify(work.wp8fV31Pr15Remediation) !==

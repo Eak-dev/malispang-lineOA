@@ -1,5 +1,13 @@
 # MalisPang Project Control
 
+## Current effective control — v34 / one Draft Dev Operations review
+
+Roadmap 2026.09.23-v34 / MP-OD-2026-09-23-V34 supersedes v33 only for one Draft PR from codex/dev-operations-v33 to codex/mp-06-guardrailed-ai at base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, hosted CI and findings-only Greptile review. Owner explicitly approved this transition. Exact v33 allowed paths and inherited grants/journals/holds remain unchanged. No workflow edit, credentials, runtime, remote TEST, Ready, merge, deploy, Production or Issue closure. Validate exact source history and synthetic integration separately; local proof does not confer deployment authority.
+
+## Current effective control — v33 / local Dev Operations tooling
+
+Roadmap 2026.09.23-v33 / MP-OD-2026-09-23-V33 supersedes 2026.09.21-v32 only for LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32. Owner approved the exact Dev Operations work package and the additional closed-schema/validator/test/Owner-record paths on 2026-09-23, then explicitly added tsconfig.json and eslint.config.js for lint integration. Base HEAD is 1508782a9cbf9412b3a6967264e9f4e8d6c19376 on isolated branch codex/dev-operations-v33. The canonical work remains MP-06 / Issue #12 / WP8F / TEST_ONLY; this ancillary local tooling does not advance MP-06 or authorize any customer, remote TEST, Production, runtime, PR, merge, deployment or Issue closure action. All v32 runtime/artifact grants, journals and holds remain unchanged. Exact allowed paths and negative gates are sealed in current-work.json and the v33 validator. GitHub Roadmap #9 receives a reconciliation receipt after local validation; prior content stays intact.
+
 ## Current effective control — v30 / PR15 CI hard timeout 20 minutes
 
 Roadmap2026.09.20-v31 supersedes v30 only for the Owner-authorized PR15 P1 handoff-close remediation and the evidenced15-second watchdog on seven exact Git-fixture control tests. The runtime contract permits an older close receipt to reconcile and acknowledge after a newer handoff generation starts while preserving the newer active handoff, retained operation, generation fencing and one-close/no-automatic-retry limits. Authorized remediation paths are tests/project-control.test.ts, worker/durable-objects.ts, worker-tests/durable-state.test.ts and worker-tests/mp-06-pilot-control.test.ts. The20-minute workflow, source-head/synthetic-merge separation, checks, runtime artifact/grants/journals/holds and Draft review-only posture remain unchanged. No rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal reset, Data Studio hold release, issue closure or MP07.
