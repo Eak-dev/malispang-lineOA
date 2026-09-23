@@ -269,6 +269,8 @@ describe("v34 exact Draft review authority", () => {
 
 describe("committed v33 local-only checkout", () => {
   let fixture: string;
+  let v35Fixture: string;
+  let v35Head: string;
   let operatorBefore: string;
   let base: string;
   beforeAll(async () => {
@@ -337,10 +339,51 @@ describe("committed v33 local-only checkout", () => {
       "-m",
       "synthetic exact v33 transition",
     );
+    // Prepare the immutable v35 baseline once. Its full positive inspection is
+    // a separate assertion below, not repeated inside each negative history
+    // case's watchdog. Each negative clones and verifies this exact commit.
+    v35Fixture = await mkdtemp(join(tmpdir(), "mp06-v35-baseline-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fixture,
+      v35Fixture,
+    );
+    for (const path of [
+      "roadmap.json",
+      "current-work.json",
+      "current-work.schema.json",
+    ]) {
+      await copyFile(
+        new URL("config/project/" + path, root),
+        join(v35Fixture, "config/project", path),
+      );
+    }
+    v25Git(
+      v35Fixture,
+      "add",
+      "--",
+      "config/project/roadmap.json",
+      "config/project/current-work.json",
+      "config/project/current-work.schema.json",
+    );
+    v25Git(
+      v35Fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic exact v35 baseline",
+    );
+    v35Head = v25Git(v35Fixture, "rev-parse", "HEAD").trim();
     v25AssertUnchanged(operatorBefore);
   });
   afterAll(async () => {
     try {
+      if (v35Fixture) await rm(v35Fixture, { recursive: true, force: true });
       if (fixture) await rm(fixture, { recursive: true, force: true });
     } finally {
       if (operatorBefore) v25AssertUnchanged(operatorBefore);
@@ -462,15 +505,22 @@ describe("committed v33 local-only checkout", () => {
       });
     });
   });
+  it("validates the exact clean v35 baseline used by both reset regressions", () => {
+    const before = v25OperatorSnapshot(v35Fixture);
+    const result = inspectV23SealedRepository(v35Fixture);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.proof.head).toBe(v35Head);
+    expect(result.proof.clean).toBe(true);
+    v25AssertUnchanged(before, v35Fixture);
+  });
   it.each(["downgrade", "consumption"])(
     "rejects v35 %s reset even after exact restoration",
     async (mutation) => {
-      await v25WithChild(fixture, async (cwd) => {
+      await v25WithChild(v35Fixture, async (cwd) => {
+        expect(v25Git(cwd, "rev-parse", "HEAD").trim()).toBe(v35Head);
         const path = "config/project/current-work.json";
-        const original = readFileSync(new URL(path, root));
-        await writeFile(join(cwd, path), original);
-        commit(cwd, path);
-        expect(inspectV23SealedRepository(cwd).ok).toBe(true);
+        const original = readFileSync(join(cwd, path));
         const work = record(JSON.parse(original.toString()));
         if (mutation === "downgrade") {
           work.roadmapVersion = DEV_OPERATIONS_REVIEW_V34.version;
