@@ -8073,7 +8073,10 @@ export function validateV37IntegrationEvidence(evidence: unknown): boolean {
     "ciRunId",
     "ciConclusion",
     "reviewHeadSha",
-    "reviewId",
+    "reviewCheckRunId",
+    "reviewCheckName",
+    "reviewCheckConclusion",
+    "reviewCommentsAdded",
     "reviewVerdict",
     "unresolvedPriorityFindings",
     "expectedHeadSha",
@@ -8092,8 +8095,11 @@ export function validateV37IntegrationEvidence(evidence: unknown): boolean {
     Number(evidence.ciRunId) > 0 &&
     evidence.ciConclusion === "success" &&
     evidence.reviewHeadSha === evidence.headSha &&
-    typeof evidence.reviewId === "string" &&
-    /^PRR_[A-Za-z0-9_-]+$/u.test(evidence.reviewId) &&
+    Number.isSafeInteger(evidence.reviewCheckRunId) &&
+    Number(evidence.reviewCheckRunId) > 0 &&
+    evidence.reviewCheckName === "Greptile Review" &&
+    evidence.reviewCheckConclusion === "success" &&
+    evidence.reviewCommentsAdded === 0 &&
     evidence.reviewVerdict === "NO_ACTIONABLE_FINDINGS" &&
     evidence.unresolvedPriorityFindings === 0 &&
     evidence.expectedHeadSha === evidence.headSha &&
