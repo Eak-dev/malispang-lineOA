@@ -1051,13 +1051,15 @@ export function evaluateProjectAction(
     isRecord(roadmap) &&
     roadmap.version === DEV_OPERATIONS_INTEGRATION_V37.version
   ) {
+    if (action === "READY_FOR_REVIEW" || action === "MERGE_MP06_PR18")
+      return validateV37IntegrationEvidence(executionEvidence)
+        ? { allowed: true, reason: "V37_EXACT_REVIEWED_HEAD_EVIDENCE" }
+        : { allowed: false, reason: "V37_EXACT_REVIEWED_HEAD_REQUIRED" };
     return [
       "DEV_OPERATIONS_TOOLING",
       "UPDATE_GITHUB_ROADMAP",
       "COMMIT",
       "PUSH_BRANCH",
-      "READY_FOR_REVIEW",
-      "MERGE_MP06_PR18",
     ].includes(action)
       ? { allowed: true, reason: "V37_EXACT_EXISTING_PR18_TO_MP06_ONLY" }
       : { allowed: false, reason: "V37_NO_OTHER_ACTION_AUTHORITY" };
@@ -8054,6 +8056,50 @@ export const DEV_OPERATIONS_INTEGRATION_V37 = {
   forbidden:
     "NO_NEW_PR_DEFAULT_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE",
 } as const;
+
+/** Validate a caller-supplied snapshot of live GitHub CI and independent
+ * review. The caller must separately authenticate these observations against
+ * GitHub immediately before a Ready/merge action. This is not a bearer grant. */
+export function validateV37IntegrationEvidence(evidence: unknown): boolean {
+  const c = DEV_OPERATIONS_INTEGRATION_V37;
+  if (!isRecord(evidence)) return false;
+  const keys = [
+    "repository",
+    "pullRequest",
+    "baseHead",
+    "headBranch",
+    "headSha",
+    "ciHeadSha",
+    "ciRunId",
+    "ciConclusion",
+    "reviewHeadSha",
+    "reviewId",
+    "reviewVerdict",
+    "unresolvedPriorityFindings",
+    "expectedHeadSha",
+    "mergeMethod",
+  ];
+  return (
+    JSON.stringify(Object.keys(evidence).sort()) ===
+      JSON.stringify([...keys].sort()) &&
+    evidence.repository === c.repository &&
+    evidence.pullRequest === c.pullRequest &&
+    evidence.baseHead === c.baseHead &&
+    evidence.headBranch === c.headBranch &&
+    isFullSha(evidence.headSha, 40) &&
+    evidence.ciHeadSha === evidence.headSha &&
+    Number.isSafeInteger(evidence.ciRunId) &&
+    Number(evidence.ciRunId) > 0 &&
+    evidence.ciConclusion === "success" &&
+    evidence.reviewHeadSha === evidence.headSha &&
+    typeof evidence.reviewId === "string" &&
+    /^PRR_[A-Za-z0-9_-]+$/u.test(evidence.reviewId) &&
+    evidence.reviewVerdict === "NO_ACTIONABLE_FINDINGS" &&
+    evidence.unresolvedPriorityFindings === 0 &&
+    evidence.expectedHeadSha === evidence.headSha &&
+    evidence.mergeMethod === "merge"
+  );
+}
 
 /** Test projection only; this never restores the historical v36 restriction. */
 export function projectIntegrationV37ToV36(

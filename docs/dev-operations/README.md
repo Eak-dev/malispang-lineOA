@@ -4,6 +4,8 @@
 
 Owner approved integrating existing PR18 into codex/mp-06-guardrailed-ai only, following a compatibility review. V37 is the narrow successor for committing the qualified v36 tooling, exact-PR review/Ready, one normal merge commit and post-merge verification. It preserves all historical records and consumed creation authority. Existing PR16 remains Draft; automatic CI on its updated head is review-only. The current MP-06 work package and frozen runtime do not gain implementation or deployment authority from this merge. Validate the final source SHA, synthetic PR18/PR16 events and exact merged result before handing the branch back to MP-06 work.
 
+The v37 Ready/merge action is fail-closed without a fresh, independently verified GitHub tuple binding the current PR18 head to successful hosted CI, independent review with zero unresolved priority findings and the merge API's expected head. PR event validation is not that authorization. A new source push invalidates the previous tuple; collect and check a new one before any Ready or merge action.
+
 ## Current v36 — local execution and concise evidence
 
 Owner decision `MP-OD-2026-09-24-V36` authorizes local efficiency improvements on the existing isolated branch, retaining the exact v33 paths and all v35 consumed-PR/inherited-state restrictions. Project commit, push, new PR, Ready, merge, runtime, remote TEST, deploy, Production and issue closure are not authorized. Historical sections below remain evidence, not fresh grants.

@@ -407,9 +407,9 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
   }
   if (version === DEV_OPERATIONS_INTEGRATION_V37.version) {
     for (const action of ["READY_FOR_REVIEW", "MERGE_MP06_PR18"]) {
-      if (!evaluateProjectAction(roadmap, currentWork, action).allowed)
+      if (evaluateProjectAction(roadmap, currentWork, action).allowed)
         throw new Error(
-          `ROADMAP_UNVERIFIED: ${action} exact authority missing`,
+          `ROADMAP_UNVERIFIED: ${action} must require exact live CI and review evidence`,
         );
     }
   }

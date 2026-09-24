@@ -22,6 +22,8 @@ Owner selected option 1, asked for an MP-06 compatibility review first, and then
 
 The merge receipt must prove ordered parents, the exact approved base and reviewed source, and tree equality. Reject unrelated merge ancestry. Preserve all inherited records and actual PR18 creation consumption. Post-merge validation must pass on the MP-06 branch before any feature handoff. No authorization to edit runtime, alter grants/journals, repair remote TEST state, merge PR16, deploy, access Production or close Issue12.
 
+Greptile's 2026-09-24 P1 showed that the first v37 implementation did not bind Ready/merge to the exact reviewed PR head. This remediation narrows the already approved route; it creates no new Owner grant. Both actions must deny without fresh, externally verified CI and independent-review evidence for the same current full SHA, with the merge API's expected head set to that SHA. The published v37 source and its review finding remain in Git/PR history; no earlier green CI or review is carried forward to a new commit.
+
 ## MP-OD-2026-09-24-V36 — local Dev Operations efficiency
 
 Owner explicitly answered "อนุมัติ" to the v36 control-transition question on 2026-09-24, after automatic review required a direct governance decision beyond general project-edit approval. The question included Project Control, schema, validator, tests and documentation for faster local DevOps/direct control execution and expressly excluded commit/push/PR/merge/deploy/Production. Recommended PO/PM GPT-6 Sol Medium and Codex Developer GPT-6 Astra High; LINE bot model unchanged.

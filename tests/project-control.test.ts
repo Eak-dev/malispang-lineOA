@@ -93,15 +93,11 @@ describe("v37 existing PR18 integration authority", () => {
         c.version,
       ),
     ).toBe(true);
-    for (const action of [
-      "DEV_OPERATIONS_TOOLING",
-      "COMMIT",
-      "PUSH_BRANCH",
-      "READY_FOR_REVIEW",
-      "MERGE_MP06_PR18",
-    ])
+    for (const action of ["DEV_OPERATIONS_TOOLING", "COMMIT", "PUSH_BRANCH"])
       expect(evaluateProjectAction(r, w, action).allowed, action).toBe(true);
     for (const action of [
+      "READY_FOR_REVIEW",
+      "MERGE_MP06_PR18",
       "CREATE_PR",
       "CREATE_DRAFT_PR",
       "MERGE_DEFAULT_BRANCH",
@@ -139,6 +135,51 @@ describe("v37 existing PR18 integration authority", () => {
     expect(validateProjectControl(r, changed).errors).toContain(
       "V35_EXACT_CONSUMED_PR18_CONTROL_INVALID",
     );
+  });
+  it("requires CI, independent review and the merge expected-head to name the same PR18 SHA", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json");
+    const headSha = "a".repeat(40);
+    const evidence = {
+      repository: c.repository,
+      pullRequest: c.pullRequest,
+      baseHead: c.baseHead,
+      headBranch: c.headBranch,
+      headSha,
+      ciHeadSha: headSha,
+      ciRunId: 123,
+      ciConclusion: "success",
+      reviewHeadSha: headSha,
+      reviewId: "PRR_exact_review",
+      reviewVerdict: "NO_ACTIONABLE_FINDINGS",
+      unresolvedPriorityFindings: 0,
+      expectedHeadSha: headSha,
+      mergeMethod: "merge",
+    };
+    for (const action of ["READY_FOR_REVIEW", "MERGE_MP06_PR18"]) {
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+      expect(
+        evaluateProjectAction(r, w, action, undefined, evidence).allowed,
+      ).toBe(true);
+      for (const [key, value] of [
+        ["headSha", "b".repeat(40)],
+        ["ciHeadSha", "b".repeat(40)],
+        ["reviewHeadSha", "b".repeat(40)],
+        ["expectedHeadSha", "b".repeat(40)],
+        ["baseHead", "b".repeat(40)],
+        ["reviewId", ""],
+        ["ciConclusion", "failure"],
+        ["reviewVerdict", "ACTIONABLE_FINDING"],
+        ["unresolvedPriorityFindings", 1],
+        ["mergeMethod", "squash"],
+      ] as const) {
+        const invalid = { ...evidence, [key]: value };
+        expect(
+          evaluateProjectAction(r, w, action, undefined, invalid).allowed,
+          `${action} ${key}`,
+        ).toBe(false);
+      }
+    }
   });
   it("binds both review routes and refuses another PR, base or identity", () => {
     const head = "a".repeat(40),
