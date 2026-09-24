@@ -1,5 +1,27 @@
 # MalisPang Project Control
 
+## Current effective control — v37 / existing PR18 integration into MP-06
+
+Owner chose option 1 and approved proceeding on 2026-09-24: integrate only existing PR18 from codex/dev-operations-v33 into codex/mp-06-guardrailed-ai at pinned base 1508782a9cbf9412b3a6967264e9f4e8d6c19376. MP-OD-2026-09-24-V37 supersedes v36 only for commit/push, exact-PR review, Ready, and one ordinary merge commit after complete exact-source CI and independent findings review. PR16 remains Draft; its automatic CI synchronization is review-only, not default-branch merge permission. Preserve v36/v35/v34/v33/v32 records, consumed PR18 creation, all grants/journals/holds, MP-06 UAT gaps and frozen runtime. The DevOps history ends at the reviewed PR18 source; future feature edits require a separate explicit MP-06 work-package transition. No new PR, squash, rebase, force-push, default merge, deploy, remote TEST, Production, Issue closure or MP-07.
+
+Greptile's exact-head P1 is an action gate: branch/base ancestry and a green PR CI adapter are not Ready or merge permission. Immediately before either action, independently fetch live PR18, hosted CI and review from GitHub, verify that current PR head, successful CI commit, independent reviewed commit and merge API `expected_head_sha` are the **same full SHA**, that no priority finding remains unresolved, and that the base is still pinned. Pass only that closed evidence tuple to `evaluateProjectAction`; absent or mismatched evidence must deny the action. A review of an earlier SHA is never inherited by a later commit. After merge, compare the merge's second parent to this exact reviewed SHA and retain the evidence outside the source commit for audit. The local repository inspector proves history/tree structure, not live review provenance.
+
+## Current effective control — v36 / local Dev Operations efficiency
+
+Owner explicitly approved MP-OD-2026-09-24-V36 / 2026.09.24-v36 in response to the targeted control-transition question. Supersedes v35 only for LOCAL_DEV_OPERATIONS_EFFICIENCY_ONLY from baseline 90aa98305105377d006c67f40259297273db3849. Keep the exact v33 paths and V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED. Optimize repeated local Git observations, verified system Git startup and fixed control-validation execution with source-bound evidence and compact output. NO_COMMIT_PUSH_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE. Preserve consumed PR18 creation and all source/index/dirty-state checks and test criteria. Synthetic fixture commits are test setup only. Timing/output-byte measurements do not certify billing savings.
+
+## Current effective control — v35 / existing Draft PR18 P1 remediation
+
+Owner approved MP-OD-2026-09-23-V35 / 2026.09.23-v35, superseding v34 only for the three confirmed P1 findings in existing Draft PR18: consumed creation authority, stable checkpoint capture, and pre-validation receipt source binding. Creation grant CONSUMED, exact PR18 only. Retain the v33 path allowlist and all inherited grants/journals/holds. Require negative regressions, full isolated validation and exact-SHA CI/findings-only re-review. No new PR, Ready, merge, reset, rebase, force-push, workflow/credential/runtime edits, remote TEST, deploy, Production or Issue closure. Historical v34 is not fresh creation authority.
+
+## Current effective control — v34 / one Draft Dev Operations review
+
+Roadmap 2026.09.23-v34 / MP-OD-2026-09-23-V34 supersedes v33 only for one Draft PR from codex/dev-operations-v33 to codex/mp-06-guardrailed-ai at base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, hosted CI and findings-only Greptile review. Owner explicitly approved this transition. Exact v33 allowed paths and inherited grants/journals/holds remain unchanged. No workflow edit, credentials, runtime, remote TEST, Ready, merge, deploy, Production or Issue closure. Validate exact source history and synthetic integration separately; local proof does not confer deployment authority.
+
+## Current effective control — v33 / local Dev Operations tooling
+
+Roadmap 2026.09.23-v33 / MP-OD-2026-09-23-V33 supersedes 2026.09.21-v32 only for LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32. Owner approved the exact Dev Operations work package and the additional closed-schema/validator/test/Owner-record paths on 2026-09-23, then explicitly added tsconfig.json and eslint.config.js for lint integration. Base HEAD is 1508782a9cbf9412b3a6967264e9f4e8d6c19376 on isolated branch codex/dev-operations-v33. The canonical work remains MP-06 / Issue #12 / WP8F / TEST_ONLY; this ancillary local tooling does not advance MP-06 or authorize any customer, remote TEST, Production, runtime, PR, merge, deployment or Issue closure action. All v32 runtime/artifact grants, journals and holds remain unchanged. Exact allowed paths and negative gates are sealed in current-work.json and the v33 validator. GitHub Roadmap #9 receives a reconciliation receipt after local validation; prior content stays intact.
+
 ## Current effective control — v30 / PR15 CI hard timeout 20 minutes
 
 Roadmap2026.09.20-v31 supersedes v30 only for the Owner-authorized PR15 P1 handoff-close remediation and the evidenced15-second watchdog on seven exact Git-fixture control tests. The runtime contract permits an older close receipt to reconcile and acknowledge after a newer handoff generation starts while preserving the newer active handoff, retained operation, generation fencing and one-close/no-automatic-retry limits. Authorized remediation paths are tests/project-control.test.ts, worker/durable-objects.ts, worker-tests/durable-state.test.ts and worker-tests/mp-06-pilot-control.test.ts. The20-minute workflow, source-head/synthetic-merge separation, checks, runtime artifact/grants/journals/holds and Draft review-only posture remain unchanged. No rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal reset, Data Studio hold release, issue closure or MP07.
@@ -268,3 +290,34 @@ Roadmap2026.09.12-v25 / MP-OD-2026-09-12-V25 supersedes v24 as a sealed control-
 Historical v24 fixture is pinned to046eff1d72edeea539623a9bbe9e006ba241a7ae with compiled SHA256 per path checked before use and after local isolated checkout. Tests preserve historical assertions, prove v24 rejection of the new bytes and v25 acceptance only of the approved chain, prohibit network protocols other than local file clone, cleanup in finally and check operator HEAD/index/working-tree invariance. Negative guard tests mutate isolated stand-ins, never the operator. No operator checkout/reset/restore is authorized.
 
 All ten control paths only; original runtime1790da58635edcee154b60d76730248e8130c2d3/artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657, TEST account/Worker/OA,120second fresh-state gates, original operations/session/caps and journals remain unchanged. No mint/reset/replace/reissue grants; deployment/activation/STOP stayAPPROVED_UNUSED0/1 until original authorized starts. Exact final control CI SUCCESS, full clean validation and artifact reproduction are prerequisites, not inferred from this text. Rejected/timeout/unknown outcome consumes its invoked grant and stops without retry. U1 GAP, A1–A3 UNRESOLVED, billingUNKNOWN, Issue12 OPEN; no PR/merge/closure or Production. Production NO_GO — NOT TOUCHED.
+
+## MP-OD-2026-09-21-V32 — Greptile push and Draft review trigger
+
+- version: 2026.09.21-v32
+- ownerDecision: MP-OD-2026-09-21-V32
+- supersedes: 2026.09.20-v31
+- type: REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31
+- mandate: OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/mp-06-guardrailed-ai
+- baseBranch: codex/phase-1a-foundation
+- mergeCommit: 88deb90a58369923f11a7266ec63fa8fd5f293c2
+- mergeParents: aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c
+- mergeTree: 57259355a0877677e5a88ca0c91fa0cf4f37f2ab
+- inheritedBaseMergeCommit: aad8c5e0ef41c5e47df3d93ae462b9122368c15d
+- inheritedBaseMergeParents: 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f
+- inheritedBaseMergeTree: 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb
+- path: greptile.json
+- priorFileSha256: 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61
+- fileSha256: 3cd6a3ab140a230736ac0c2b76f9a75204afc6545a125bf6371468bb69c015b1
+- automaticReview: open,push
+- reviewDrafts: true
+- reviewRebase: false
+- dashboard: PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED
+- repositoryScope: EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF
+- automation: AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF
+- triggerProof: NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT
+- draftPrAuthority: ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE
+- inheritedState: V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED
+
+Owner records the already-completed PR #15 merge as exact immutable history and authorizes one Draft PR with the exact head/base above solely to prove the Greptile push trigger. The repository config successor changes automatic review from open-only to open+push and permits Draft reviews; rebase review remains off. Dashboard values must agree with the repository file, only this repository may be enabled, and auto-enable new repositories stays off. No empty commit, duplicate PR, Ready transition, merge, deploy, remote TEST, Production, application/runtime edit, model change, grant/journal/hold mutation, Issue closure or MP-07 is authorized.

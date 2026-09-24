@@ -1,5 +1,58 @@
 # Owner Decision Log
 
+## MP-OD-2026-09-24-V37 — existing PR18 integration into MP-06
+
+Owner selected option 1, asked for an MP-06 compatibility review first, and then explicitly approved the resulting staged integration plan on 2026-09-24. The checked target is codex/mp-06-guardrailed-ai at 1508782a9cbf9412b3a6967264e9f4e8d6c19376. This decision is limited to existing PR18 and the already qualified local v36 DevOps work, subject to the new control, complete local validation, current exact-source hosted CI and independent findings review. The target is the MP-06 feature branch, not the repository default. PR16 remains Draft and may receive automatic review CI after the MP-06 branch advances. This decision neither changes MP-06 runtime nor resolves pendingTemplate/storage/UAT gaps.
+
+- version: 2026.09.24-v37
+- ownerDecision: MP-OD-2026-09-24-V37
+- supersedes: 2026.09.24-v36
+- repository: Eak-dev/malispang-lineOA
+- pullRequest: 18
+- downstreamDraftPullRequest: 16
+- headBranch: codex/dev-operations-v33
+- baseBranch: codex/mp-06-guardrailed-ai
+- baseHead: 1508782a9cbf9412b3a6967264e9f4e8d6c19376
+- sourceBaseline: 90aa98305105377d006c67f40259297273db3849
+- creationGrant: CONSUMED
+- authority: EXISTING_PR18_REVIEW_READY_AND_ONE_MERGE_COMMIT_TO_MP06_ONLY
+- inheritedState: V36_V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+- futureWork: EXPLICIT_MP06_WORK_PACKAGE_TRANSITION_REQUIRED
+- forbidden: NO_NEW_PR_DEFAULT_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+
+The merge receipt must prove ordered parents, the exact approved base and reviewed source, and tree equality. Reject unrelated merge ancestry. Preserve all inherited records and actual PR18 creation consumption. Post-merge validation must pass on the MP-06 branch before any feature handoff. No authorization to edit runtime, alter grants/journals, repair remote TEST state, merge PR16, deploy, access Production or close Issue12.
+
+Greptile's 2026-09-24 P1 showed that the first v37 implementation did not bind Ready/merge to the exact reviewed PR head. This remediation narrows the already approved route; it creates no new Owner grant. Both actions must deny without fresh, externally verified CI and independent-review evidence for the same current full SHA, with the merge API's expected head set to that SHA. The published v37 source and its review finding remain in Git/PR history; no earlier green CI or review is carried forward to a new commit.
+
+## MP-OD-2026-09-24-V36 — local Dev Operations efficiency
+
+Owner explicitly answered "อนุมัติ" to the v36 control-transition question on 2026-09-24, after automatic review required a direct governance decision beyond general project-edit approval. The question included Project Control, schema, validator, tests and documentation for faster local DevOps/direct control execution and expressly excluded commit/push/PR/merge/deploy/Production. Recommended PO/PM GPT-6 Sol Medium and Codex Developer GPT-6 Astra High; LINE bot model unchanged.
+
+- version: 2026.09.24-v36
+- ownerDecision: MP-OD-2026-09-24-V36
+- supersedes: 2026.09.23-v35
+- baseline: 90aa98305105377d006c67f40259297273db3849
+- authority: LOCAL_DEV_OPERATIONS_EFFICIENCY_ONLY
+- inheritedState: V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+- forbidden: NO_COMMIT_PUSH_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+
+Retain the exact v33 file allowlist. Scope: optimize Git capture/launcher in existing Dev Operations scripts; fixed CONTROL_VALIDATION run in receipt.mjs with real command outcome, complete before/after source binding and compact output; necessary closed v36 control/schema/validator/negative tests and documentation. Preserve all inherited fields and consumed PR18. No arbitrary commands, model experiment reset, timeout/retry increase, assertion waiver or acceptance downgrade. Synthetic fixture commits in disposable tests confer no project commit/publication authority. Full local evidence stays outside the product repo.
+
+## MP-OD-2026-09-23-V35 — existing PR18 three-P1 remediation
+
+Owner explicitly approved remediation after the aeef425 review, not acceptance or deployment. Model recommendation: PO/PM and Codex Developer GPT-6 Astra / High; LINE bot model unchanged.
+
+- version: 2026.09.23-v35
+- ownerDecision: MP-OD-2026-09-23-V35
+- supersedes: 2026.09.23-v34
+- pullRequest: 18
+- creationGrant: CONSUMED
+- authority: EXISTING_PR18_THREE_P1_REMEDIATION_CI_FINDINGS_ONLY
+- inheritedState: V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+- forbidden: NO_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+
+Only existing v33 paths: close creation reuse with exact PR18 and monotonic history checks; fail closed on inconsistent checkpoint snapshots; bind receipts to explicit pre-validation source identity. Regression tests and documentation must disclose limits of filesystem observation and caller-reported test counts. Full isolated suite, exact-source hosted CI and findings-only re-review required. Keep every inherited decision, grant, journal and hold. No timeout/retry waiver.
+
 เอกสาร append-only สำหรับ Project Control ห้ามแก้หรือลบ decision ที่เคยใช้เป็นฐานงาน หากเปลี่ยนคำตัดสินให้เพิ่ม decision ใหม่พร้อม `supersedes`
 
 ## MP-OD-2026-09-02-V4
@@ -941,3 +994,73 @@ Owner explicitly authorized both remaining PR15 actions after evidence on exact 
 - remoteState: NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07
 
 This authorization is local implementation, regression validation, commit and normal push to the existing Draft PR only. It does not make the PR merge-ready and does not authorize resolving the Greptile thread before exact-head evidence is reviewed.
+
+## MP-OD-2026-09-21-V32 — Greptile push and Draft review trigger
+
+- version: 2026.09.21-v32
+- ownerDecision: MP-OD-2026-09-21-V32
+- supersedes: 2026.09.20-v31
+- type: REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31
+- mandate: OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/mp-06-guardrailed-ai
+- baseBranch: codex/phase-1a-foundation
+- mergeCommit: 88deb90a58369923f11a7266ec63fa8fd5f293c2
+- mergeParents: aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c
+- mergeTree: 57259355a0877677e5a88ca0c91fa0cf4f37f2ab
+- inheritedBaseMergeCommit: aad8c5e0ef41c5e47df3d93ae462b9122368c15d
+- inheritedBaseMergeParents: 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f
+- inheritedBaseMergeTree: 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb
+- path: greptile.json
+- priorFileSha256: 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61
+- fileSha256: 3cd6a3ab140a230736ac0c2b76f9a75204afc6545a125bf6371468bb69c015b1
+- automaticReview: open,push
+- reviewDrafts: true
+- reviewRebase: false
+- dashboard: PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED
+- repositoryScope: EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF
+- automation: AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF
+- triggerProof: NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT
+- draftPrAuthority: ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE
+- inheritedState: V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED
+
+The exact Owner-created merge 88deb90 is sealed without broadly allowing merge history. One Draft PR and the next real greptile.json push are authorized solely to prove review-on-push for the exact reviewed SHA. No application/runtime, deployment, Production, grant, journal, hold, Ready, merge, Issue or MP-07 authority is added.
+
+## MP-OD-2026-09-23-V34 — one Draft Dev Operations review
+
+Owner approved the proposed exact control transition on 2026-09-23. This permits one Draft PR and its CI/Greptile findings-only review, not Ready, approval, merge, deployment or Production. Check for an existing PR with the exact head/base before creation; reuse it and never create a second PR under this decision.
+
+- version: 2026.09.23-v34
+- ownerDecision: MP-OD-2026-09-23-V34
+- supersedes: 2026.09.23-v33
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/dev-operations-v33
+- baseBranch: codex/mp-06-guardrailed-ai
+- baseHead: 1508782a9cbf9412b3a6967264e9f4e8d6c19376
+- authority: ONE_DRAFT_PR_CI_AND_FINDINGS_ONLY_GREPTILE_REVIEW
+- workflow: UNCHANGED_SEALED_WORKFLOW_NO_NEW_CREDENTIALS
+- forbidden: NO_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+- inheritedState: V33_LOCAL_TOOLING_AND_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+
+Allowed implementation paths remain the exact v33 allowlist; schema, validator, CLI/source adapter, negative tests and control documentation only for this transition. Source history stays merge-free, exact base pinned. CI integration uses only the GitHub synthetic merge with exact parents; validate source separately. No workflow/config/credential/runtime changes. Existing v33 local-only prohibition is superseded solely for this explicit draft review action. Check exact source SHA and review completion; test PASS alone does not close MP-06.
+
+## MP-OD-2026-09-23-V33 — local Dev Operations tooling
+
+Owner approved the separate Dev Operations work package and then explicitly approved the additional exact schema, validator, test and Owner-record paths needed for a valid v33 transition. This records local implementation authority, not completion or permission to alter MP-06 runtime/TEST/Production.
+
+- version: 2026.09.23-v33
+- ownerDecision: MP-OD-2026-09-23-V33
+- supersedes: 2026.09.21-v32
+- type: LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32
+- repository: Eak-dev/malispang-lineOA
+- baseHead: 1508782a9cbf9412b3a6967264e9f4e8d6c19376
+- branch: codex/dev-operations-v33
+- targetEnvironment: LOCAL_ONLY
+- allowedPaths: PROJECT_CONTROL.md, config/project/roadmap.json, config/project/current-work.json, config/project/current-work.schema.json, src/project-control.ts, src/project-control-cli.ts, tests/project-control.test.ts, docs/project/OWNER_DECISION_LOG.md, docs/project/ROADMAP_CHANGELOG.md, docs/project/EXECUTION_GATES.md, tsconfig.json, eslint.config.js, scripts/dev-operations/preflight.mjs, scripts/dev-operations/checkpoint.mjs, scripts/dev-operations/receipt.mjs, tests/dev-operations/*.test.mjs, docs/dev-operations/README.md
+- 2026-09-23 amendment: Owner explicitly approved the two additional lint-integration paths only. This does not permit disabling lint rules, changing runtime/test acceptance, increasing test timeouts or broadening deployment authority.
+- 2026-09-23 regression amendment: Owner explicitly authorized full-suite rerun and historical control-test remediation in `src/project-control.ts`, `src/project-control-cli.ts`, and `tests/project-control.test.ts`. Preserve every existing assertion and timeout, original grants/journals and dirty work. The local macOS Git-launcher remediation selects only the fixed root-owned, non-group/world-writable Command Line Tools path (all ancestors checked without following symlinks), otherwise retaining `/usr/bin/git`. No Git checks, test discovery, concurrency or deployment boundary is relaxed.
+- 2026-09-23 committed-checkout follow-up: Owner authorized continuing with a synthetic commit, validator repair and full clean-checkout regression before considering a real scoped commit/push. Qualify v33 against the exact inherited base, complete post-base path/history inventory and unchanged inherited state at every revision; v33 local results must not acquire deployment provenance. No new path or remote/PR/merge/deploy/Production authority is created.
+- forbidden: NO_RUNTIME_TEST_PRODUCTION_PR_MERGE_DEPLOY_ISSUE_CLOSE
+- inheritedState: V32_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_UNCHANGED
+
+Implementation order: validate v33 closed control and negative actions first; then add the exact local tools, synthetic restoration tests and operator documentation. Preserve dirty work, secrets/PII exclusion and append-only receipts. No PR, merge, deploy, Production, issue closure, reset, rebase or force-push. Existing PR16 P1 and failed CI are separate.

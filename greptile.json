@@ -1,9 +1,8 @@
 {
   "strictness": 2,
   "commentTypes": ["logic", "syntax"],
-  "autoReview": ["open"],
-  "triggerOnUpdates": false,
-  "triggerOnDrafts": false,
+  "autoReview": ["open", "push"],
+  "triggerOnDrafts": true,
   "shouldUpdateDescription": false,
   "updateSummaryOnly": false,
   "fixWithAI": false,
