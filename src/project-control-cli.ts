@@ -5,6 +5,10 @@ import {
   TEST_READINESS_V38,
   inspectV38Repository,
 } from "./project-control-v38.js";
+import {
+  TEST_OPERATION_POLICY_V39,
+  inspectV39Repository,
+} from "./project-control-v39.js";
 
 import {
   evaluateProjectAction,
@@ -50,6 +54,20 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === TEST_OPERATION_POLICY_V39.version) {
+    const validation = validateProjectControl(roadmap, currentWork);
+    const errors = [
+      ...validation.errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    inspectV39Repository(fileURLToPath(root), projectControlGitExecutable());
+    console.log(
+      "Project control validation passed: 2026.09.24-v39, MP-06 (#12); local TEST operation policy revision 2 only; inherited grants/counts/holds unchanged; remote execution false; Production NO_GO",
+    );
+    return;
   }
   if (version === TEST_READINESS_V38.version) {
     const validation = validateProjectControl(roadmap, currentWork);

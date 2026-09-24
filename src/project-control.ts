@@ -4,6 +4,10 @@ import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { channel } from "node:diagnostics_channel";
 import { TEST_READINESS_V38, projectV38ToV37 } from "./project-control-v38.js";
+import {
+  TEST_OPERATION_POLICY_V39,
+  projectV39ToV38,
+} from "./project-control-v39.js";
 
 /** Avoid macOS's developer-tool launcher on every Git observation. Never
  * select an executable from PATH, a caller override, or a writable toolchain.
@@ -1047,6 +1051,16 @@ export function evaluateProjectAction(
   }
   if (!isRecord(currentWork) || !isRecord(currentWork.authorization)) {
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
+  }
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_OPERATION_POLICY_V39.version
+  ) {
+    return ["LOCAL_IMPLEMENTATION", "UPDATE_GITHUB_ROADMAP", "COMMIT"].includes(
+      action,
+    )
+      ? { allowed: true, reason: "V39_LOCAL_OPERATION_POLICY_SCOPE_ONLY" }
+      : { allowed: false, reason: "V39_NO_REMOTE_OR_RELEASE_AUTHORITY" };
   }
   if (isRecord(roadmap) && roadmap.version === TEST_READINESS_V38.version) {
     return ["LOCAL_IMPLEMENTATION", "UPDATE_GITHUB_ROADMAP", "COMMIT"].includes(
@@ -8478,6 +8492,30 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_OPERATION_POLICY_V39.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = TEST_OPERATION_POLICY_V39;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.testOperationPolicyV39) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-24",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV39ToV38(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid)
+      result.errors.push("V39_EXACT_OPERATION_POLICY_CONTROL_INVALID");
+    return result;
+  }
   if (isRecord(roadmap) && roadmap.version === TEST_READINESS_V38.version) {
     if (!isRecord(work))
       return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
@@ -8760,6 +8798,27 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === TEST_OPERATION_POLICY_V39.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((key) => key === "testOperationPolicyV39")
+        .length !== 1 ||
+      JSON.stringify(schema.properties.testOperationPolicyV39) !==
+        JSON.stringify({ const: TEST_OPERATION_POLICY_V39 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V39_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV39ToV38({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      TEST_OPERATION_POLICY_V39.supersedes,
+    );
+  }
   if (version === TEST_READINESS_V38.version) {
     if (
       !isRecord(schema) ||
@@ -8978,6 +9037,26 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === TEST_OPERATION_POLICY_V39.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split("## MP-OD-2026-09-24-V39 —");
+    if (sections.length !== 2) return false;
+    const section = sections[1]?.split("\n## ")[0];
+    try {
+      const json = section?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(TEST_OPERATION_POLICY_V39) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          TEST_OPERATION_POLICY_V39.supersedes,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === TEST_READINESS_V38.version) {
     if (typeof record !== "string") return false;
     const section = record

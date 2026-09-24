@@ -1,5 +1,13 @@
 # MalisPang Project Control
 
+## Current effective control — v39 / TEST operation policy revision 2
+
+Owner explicitly approved implementing the nine-part revised TEST operation policy on 2026-09-24. MP-OD-2026-09-24-V39 supersedes v38 only for local policy/control/schema/validator/tests and documentation, local commit and GitHub/Notion evidence reconciliation. Baseline is 7c9e08ade55494892af4ae2fd6708134f78329d5. MP-06 / Issue #12 remains CURRENT. See docs/project/TEST_OPERATION_POLICY_TH.md for the approved rules and retained boundaries.
+
+Distinguish routine work from retry, and proven non-execution from completed, failed-with-effects, unknown, in-flight and safety-denied outcomes. Three total attempts apply only to a harmless browser preparation/selection incident, not the lifetime of a task. Counter/history cannot reset through task/tool/session changes. No blind replay after unknown side-effectful outcomes; no tool-denial workaround. SELECT alone does not prove the whole request has no business side effects. Continue independent authorized local work while reporting the exact blocked action, evidence, responsible party and resumption condition.
+
+This is a LOCAL policy/control implementation stage, not remote permission: no push, PR, merge, deploy, activation, LINE/provider request, Storage query, Production, reset/rebase/force-push or Issue closure. The pure policy evaluator issues no external authority and is not an executor or persistent retry ledger. Preserve all v38-and-earlier manifests, grants, counters, journals, accounting and unresolved UAT evidence against the Git baseline. Historical sections below are retained evidence, not competing current action selectors. The storage hold is unchanged and is neither released nor broadened to unrelated work by this decision. Local policy acceptance is not user-test readiness.
+
 ## Current effective control — v38 / MP06 TEST readiness
 
 Owner approved project-scoped development, configuration and testing toward user UAT on มะลิปัง TEST, then explicitly approved executing the complete plan. This supersedes v37's completed DevOps-only scope. MP-06 / Issue #12 remains CURRENT. The first executable stage is local remediation and UAT-contract qualification; remote execution remains fail-closed pending exact candidate, environment, state, rollback and tool-permission gates. No repeated broad Owner approval is required for local implementation in the exact v38 path set.

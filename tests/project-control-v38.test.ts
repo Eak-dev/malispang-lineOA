@@ -3,8 +3,8 @@ import { copyFile, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   evaluateProjectAction,
   projectControlGitExecutable,
@@ -20,7 +20,30 @@ import {
   v38PathsAllowed,
 } from "../src/project-control-v38.js";
 
-const root = new URL("../", import.meta.url);
+// Exercise the current validator with immutable v38 inputs. Future policy
+// overlays must not accidentally replace this historical acceptance contract.
+const sourceRoot = new URL("../", import.meta.url);
+const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v38-regression-"));
+execFileSync(
+  projectControlGitExecutable(),
+  [
+    "clone",
+    "--shared",
+    "--no-hardlinks",
+    fileURLToPath(sourceRoot),
+    historicalRoot,
+  ],
+  { stdio: "pipe" },
+);
+execFileSync(
+  projectControlGitExecutable(),
+  ["checkout", "--detach", "7c9e08ade55494892af4ae2fd6708134f78329d5"],
+  { cwd: historicalRoot, stdio: "pipe" },
+);
+const root = pathToFileURL(historicalRoot + "/");
+afterAll(async () => {
+  await rm(historicalRoot, { recursive: true, force: true });
+});
 type FixtureDocument = Record<string, unknown> & {
   version: string;
   testReadinessV38: Record<string, unknown>;

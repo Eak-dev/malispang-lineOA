@@ -1087,3 +1087,31 @@ Owner explicitly authorized all project-scoped implementation/configuration/test
   "forbidden": "PRODUCTION_RESET_REBASE_FORCE_PUSH_MERGE_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-24-V39 — risk-based TEST operation policy
+
+Owner explicitly approved implementing the drafted nine-part TEST operation policy, including the correction that harmless browser recovery has three total attempts per technical incident, not a lifetime quota. This records local policy, closed governance validation, adversarial regressions, local commit and evidence reconciliation only. It does not release the existing storage hold, authorize a remote operation, reset historical grants/counts, or override an independent tool permission or safety denial. Unknown outcomes require stopping without blind replay; denial cannot be bypassed through another transport. All inherited v38 and earlier controls, journals, accounting and unresolved UAT remain immutable.
+
+```json
+{
+  "version": "2026.09.24-v39",
+  "ownerDecision": "MP-OD-2026-09-24-V39",
+  "supersedes": "2026.09.24-v38",
+  "baseline": "7c9e08ade55494892af4ae2fd6708134f78329d5",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "targetEnvironment": "TEST_ONLY",
+  "worker": "malispang-lineoa-test",
+  "stage": "LOCAL_TEST_OPERATION_POLICY_AND_CONTROL",
+  "policyRevision": 2,
+  "localImplementation": true,
+  "remoteExecution": false,
+  "authority": "PROJECT_POLICY_ADVICE_NOT_TOOL_PERMISSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "browserRecovery": "THREE_TOTAL_ATTEMPTS_PER_HARMLESS_INCIDENT_NOT_LIFETIME",
+  "unknownOutcome": "STOP_NO_BLIND_REPLAY_RECONCILE_READ_ONLY_WHEN_AUTHORIZED",
+  "denial": "STOP_NO_WORKAROUND_OR_ALTERNATE_TRANSPORT",
+  "inheritedEvidence": "IMMUTABLE_GRANTS_COUNTS_JOURNALS_ACCOUNTING_AND_UAT_GAPS",
+  "forbidden": "RUNTIME_REMOTE_PRODUCTION_PUSH_PR_MERGE_DEPLOY_RESET_REBASE_FORCE_PUSH_ISSUE_CLOSE"
+}
+```
