@@ -1,5 +1,13 @@
 # Roadmap Changelog
 
+## 2026.09.24-v37 — existing PR18 integration into MP-06
+
+MP-OD-2026-09-24-V37 supersedes v36 solely for the Owner-approved existing PR18 integration route. Pin source baseline 90aa98305105377d006c67f40259297273db3849, base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, consumed creation and one ordinary merge into codex/mp-06-guardrailed-ai after local/hosted/reviewer checks. PR16 remains Draft and receives only automatic downstream checks. Keep all historical controls, runtime, TEST grants/journals/holds and MP-06 acceptance gaps; feature continuation needs its own scoped work-package transition. No default merge, deploy, Production or Issue closure.
+
+## 2026-09-24 — v36 local Dev Operations efficiency
+
+MP-OD-2026-09-24-V36 explicitly authorizes the scoped control transition after Owner confirmation. Supersedes v35 only for local efficiency from90aa98305105377d006c67f40259297273db3849. Retain exact v33 paths, consumed PR18 and all inherited state. Optimize local Git process overhead and fixed control-validation execution, retain complete source observations/negative gates, and return concise evidence references. No project commit/push/new PR/Ready/merge/runtime/remote TEST/deploy/Production/Issue closure. Implementation/validation remains in progress; this transition itself asserts no timing or billed-token saving.
+
 ## 2026.09.09-v19 — preparation only; exact grant unused
 
 Owner decision MP-OD-2026-09-09-V19 supersedes2026.09.09-v18 from approved baseline ca4904ef3f316f8e381e57e4757f3fe173dbeb1f (README-only child of42026b22069e4299dfc8ff5f73b5077e3b0856fb). MP-06 / Issue12 / WP8F / TEST_ONLY. Only the ten control paths may change; v18 history/runtime/dependencies/artifact remain frozen. The exact c59eb5e12bb96a34da38759a5585be67d8c2ab6e /2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308 /malispang-lineoa-test grant is APPROVED_UNUSED0/1, separate from executable deployment flags which remain false. No upload/version creation/traffic change/deployment in this round, even after readiness; await Owner execution confirmation. Unknown remote outcome never restores a grant.
@@ -713,3 +721,16 @@ Owner decision MP-OD-2026-09-21-V32 supersedes 2026.09.20-v31 only for repositor
 That merge inherited the already-completed base merge aad8c5e0ef41c5e47df3d93ae462b9122368c15d with ordered parents 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f and tree 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb. Both identities are exact; no other merge history is accepted.
 
 The control is REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31 under OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21 for Eak-dev/malispang-lineOA, head codex/mp-06-guardrailed-ai and base codex/phase-1a-foundation. automaticReview is open,push; reviewDrafts true; reviewRebase false. Dashboard is PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED, repositoryScope EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF, automation AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF. Proof is NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT under ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE. V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED.
+
+## 2026-09-23 — v33 local Dev Operations tooling
+
+Owner decision MP-OD-2026-09-23-V33 supersedes 2026.09.21-v32 only for a local, ancillary Dev Operations work package from clean HEAD 1508782a9cbf9412b3a6967264e9f4e8d6c19376 on codex/dev-operations-v33. The canonical MP-06 / Issue #12 / WP8F / TEST_ONLY state remains. The closed v33 field enumerates only control/schema/validator/test/Owner records and scripts/dev-operations, tests/dev-operations, docs/dev-operations files. Prior v32 grants/journals/holds are byte-preserved. No runtime, PR16 remediation, remote TEST, Production, merge, deploy or Issue closure. Roadmap Issue #9 reconciliation follows verified local control; it does not confer acceptance or broader authority.
+Owner amendment on 2026-09-23 adds only tsconfig.json and eslint.config.js to the exact v33 allowed paths to integrate new local `.mjs` tooling with existing lint. No lint rule is waived; historical v27 test timeout remains unresolved and no timeout increase is authorized.
+
+# 2026-09-23 — v34 Draft Dev Operations review transition
+
+Owner-approved MP-OD-2026-09-23-V34 supersedes v33 solely for one exact Draft PR, hosted CI and Greptile findings-only review. No workflow/credential/runtime change or merge/deploy/Production/closure authority. Existing v33 paths and v32 inherited grants/journals/holds preserved.
+
+# 2026-09-23 — v35 existing PR18 remediation
+
+MP-OD-2026-09-23-V35 supersedes v34 for the three confirmed P1s only. PR18 creation is CONSUMED and immutable; no replacement PR. Stable checkpoint and pre-validation receipt identity are required before claiming tooling acceptance. Exact existing scope, inherited holds and Production NO_GO remain.

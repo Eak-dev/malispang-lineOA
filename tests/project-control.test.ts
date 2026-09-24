@@ -2,17 +2,22 @@ import {
   readFile,
   copyFile,
   mkdtemp,
+  mkdir,
+  readdir,
+  symlink,
   writeFile,
   rm,
   utimes,
 } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { channel } from "node:diagnostics_channel";
 import { createHash } from "node:crypto";
 import { readFileSync, lstatSync, existsSync } from "node:fs";
+import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { resolve } from "node:path";
 
 import {
@@ -29,6 +34,19 @@ import {
 import {
   CANONICAL_GITHUB_ISSUES,
   evaluateProjectAction,
+  evaluateDevOperationsPaths,
+  projectReviewV34ToV33,
+  projectRemediationV35ToV34,
+  projectOptimizationV36ToV35,
+  projectIntegrationV37ToV36,
+  DEV_OPERATIONS_INTEGRATION_V37,
+  validateV37PullRequestReceipt,
+  DEV_OPERATIONS_V33_CONTROL,
+  DEV_OPERATIONS_OPTIMIZATION_V36,
+  DEV_OPERATIONS_REMEDIATION_V35,
+  validateV35DraftPrMergeReceipt,
+  DEV_OPERATIONS_REVIEW_V34,
+  validateV34DraftPrMergeReceipt,
   evaluateWp8fPaths,
   validateWp8fOwnerDecisionRecord,
   validateProjectControl,
@@ -36,15 +54,1461 @@ import {
   validateSuccessorOperationJournal,
   validateV22OperationJournal,
   inspectV23SealedRepository,
+  projectControlGitExecutable,
   validateV23SealedObservation,
   validateV25SealedObservation,
   validateV26SealedObservation,
   validateV27SealedObservation,
   parseV26PorcelainStatus,
 } from "../src/project-control.js";
-import { runProjectControlValidation } from "../src/project-control-cli.js";
+import {
+  runProjectControlValidation,
+  runPullRequestControlValidation,
+} from "../src/project-control-cli.js";
 
 const root = new URL("../", import.meta.url);
+
+describe("v37 existing PR18 integration authority", () => {
+  const read = (path: string) =>
+    record(JSON.parse(readFileSync(new URL(path, root), "utf8")));
+  const c = DEV_OPERATIONS_INTEGRATION_V37;
+  it("closes the successor schema and preserves inherited decisions", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json"),
+      s = read("config/project/current-work.schema.json");
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        s,
+        c.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        readFileSync(
+          new URL("docs/project/OWNER_DECISION_LOG.md", root),
+          "utf8",
+        ),
+        c.version,
+      ),
+    ).toBe(true);
+    for (const action of ["DEV_OPERATIONS_TOOLING", "COMMIT", "PUSH_BRANCH"])
+      expect(evaluateProjectAction(r, w, action).allowed, action).toBe(true);
+    for (const action of [
+      "READY_FOR_REVIEW",
+      "MERGE_MP06_PR18",
+      "CREATE_PR",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "LOCAL_IMPLEMENTATION",
+      "DEPLOY_TEST",
+      "QUERY_PRODUCTION",
+      "CLOSE_ISSUE",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed, action).toBe(false);
+    expect(w.devOperationsRemediationV35).toEqual(
+      DEV_OPERATIONS_REMEDIATION_V35,
+    );
+    const oldR = structuredClone(r),
+      oldW = structuredClone(w),
+      oldS = structuredClone(s);
+    projectIntegrationV37ToV36(oldR, oldW, oldS);
+    expect(oldR.version).toBe(DEV_OPERATIONS_OPTIMIZATION_V36.version);
+    expect(validateProjectControl(oldR, oldW).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        oldS,
+        oldR.version as string,
+      ),
+    ).toEqual([]);
+    for (const key of Object.keys(c)) {
+      const changed = structuredClone(w);
+      record(changed.devOperationsIntegrationV37)[key] = "drift";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V37_EXACT_INTEGRATION_CONTROL_INVALID",
+      );
+    }
+    const changed = structuredClone(w);
+    record(changed.devOperationsRemediationV35).creationGrant = "UNUSED";
+    expect(validateProjectControl(r, changed).errors).toContain(
+      "V35_EXACT_CONSUMED_PR18_CONTROL_INVALID",
+    );
+  });
+  it("requires CI, independent review and the merge expected-head to name the same PR18 SHA", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json");
+    const headSha = "a".repeat(40);
+    const evidence = {
+      repository: c.repository,
+      pullRequest: c.pullRequest,
+      baseHead: c.baseHead,
+      headBranch: c.headBranch,
+      headSha,
+      ciHeadSha: headSha,
+      ciRunId: 123,
+      ciConclusion: "success",
+      reviewHeadSha: headSha,
+      reviewCheckRunId: 456,
+      reviewCheckName: "Greptile Review",
+      reviewCheckConclusion: "success",
+      reviewCommentsAdded: 0,
+      reviewVerdict: "NO_ACTIONABLE_FINDINGS",
+      unresolvedPriorityFindings: 0,
+      expectedHeadSha: headSha,
+      mergeMethod: "merge",
+    };
+    for (const action of ["READY_FOR_REVIEW", "MERGE_MP06_PR18"]) {
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+      expect(
+        evaluateProjectAction(r, w, action, undefined, evidence).allowed,
+      ).toBe(true);
+      for (const [key, value] of [
+        ["headSha", "b".repeat(40)],
+        ["ciHeadSha", "b".repeat(40)],
+        ["reviewHeadSha", "b".repeat(40)],
+        ["expectedHeadSha", "b".repeat(40)],
+        ["baseHead", "b".repeat(40)],
+        ["reviewCheckRunId", 0],
+        ["reviewCheckName", "Another review"],
+        ["reviewCheckConclusion", "failure"],
+        ["reviewCommentsAdded", 1],
+        ["ciConclusion", "failure"],
+        ["reviewVerdict", "ACTIONABLE_FINDING"],
+        ["unresolvedPriorityFindings", 1],
+        ["mergeMethod", "squash"],
+      ] as const) {
+        const invalid = { ...evidence, [key]: value };
+        expect(
+          evaluateProjectAction(r, w, action, undefined, invalid).allowed,
+          `${action} ${key}`,
+        ).toBe(false);
+      }
+    }
+  });
+  it("binds both review routes and refuses another PR, base or identity", () => {
+    const head = "a".repeat(40),
+      merge = "b".repeat(40);
+    const eventFor = (number: 18 | 16, draft: boolean) => {
+      const pr18 = number === 18;
+      const base = pr18
+        ? c.baseHead
+        : "88deb90a58369923f11a7266ec63fa8fd5f293c2";
+      const event = {
+        number,
+        repository: { full_name: c.repository },
+        pull_request: {
+          number,
+          state: "open",
+          draft,
+          head: {
+            ref: pr18 ? c.headBranch : c.baseBranch,
+            sha: head,
+            repo: { full_name: c.repository },
+          },
+          base: {
+            ref: pr18 ? c.baseBranch : "codex/phase-1a-foundation",
+            sha: base,
+            repo: { full_name: c.repository },
+          },
+        },
+      };
+      const observed = {
+        sha: merge,
+        ref: `refs/pull/${number}/merge`,
+        merge,
+        parents: [base, head],
+      };
+      return { event, observed };
+    };
+    for (const [number, draft] of [
+      [18, true],
+      [18, false],
+      [16, true],
+    ] as const) {
+      const { event, observed } = eventFor(number, draft);
+      expect(validateV37PullRequestReceipt(event, observed)).toEqual({
+        number,
+        head,
+        base: observed.parents[0],
+      });
+      const badEvent = structuredClone(event);
+      record(badEvent).number = 19;
+      record(badEvent.pull_request).number = 19;
+      expect(validateV37PullRequestReceipt(badEvent, observed)).toBeNull();
+      const badBase = structuredClone(event);
+      badBase.pull_request.base.sha = "c".repeat(40);
+      expect(validateV37PullRequestReceipt(badBase, observed)).toBeNull();
+      expect(
+        validateV37PullRequestReceipt(event, {
+          ...observed,
+          parents: [head, observed.parents[0]],
+        }),
+      ).toBeNull();
+    }
+    const pr16Ready = eventFor(16, false);
+    expect(
+      validateV37PullRequestReceipt(pr16Ready.event, pr16Ready.observed),
+    ).toBeNull();
+  });
+});
+
+describe("v37 source and one MP-06 merge edge", () => {
+  let fixture = "";
+  let source = "";
+  const c = DEV_OPERATIONS_INTEGRATION_V37;
+  beforeAll(async () => {
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v37-merge-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      fixture,
+    );
+    v25Git(fixture, "checkout", "--quiet", "--detach", c.sourceBaseline);
+    const paths = DEV_OPERATIONS_V33_CONTROL.allowedPaths.flatMap((path) =>
+      path === "tests/dev-operations/*.test.mjs"
+        ? [
+            "tests/dev-operations/tooling.test.mjs",
+            "tests/dev-operations/optimization.test.mjs",
+          ]
+        : [path],
+    );
+    for (const path of paths) {
+      await mkdir(dirname(join(fixture, path)), { recursive: true });
+      await copyFile(new URL(path, root), join(fixture, path));
+    }
+    v25Git(fixture, "add", "-A");
+    v25Git(
+      fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic v37 reviewed source",
+    );
+    source = v25Git(fixture, "rev-parse", "HEAD").trim();
+  });
+  afterAll(async () => {
+    if (fixture) await rm(fixture, { recursive: true, force: true });
+  });
+  it("accepts the committed source and rejects a committed control reset", async () => {
+    const accepted = inspectV23SealedRepository(fixture);
+    expect(accepted.ok).toBe(true);
+    await expect(
+      runProjectControlValidation(pathToFileURL(fixture + "/")),
+    ).resolves.toBeUndefined();
+    await v25WithChild(fixture, async (cwd) => {
+      const files = [
+        "config/project/roadmap.json",
+        "config/project/current-work.json",
+        "config/project/current-work.schema.json",
+      ];
+      const originals = await Promise.all(
+        files.map((path) => readFile(join(cwd, path), "utf8")),
+      );
+      const r = record(JSON.parse(originals[0]!)),
+        w = record(JSON.parse(originals[1]!)),
+        s = record(JSON.parse(originals[2]!));
+      projectIntegrationV37ToV36(r, w, s);
+      for (const [index, value] of [r, w, s].entries())
+        await writeFile(
+          join(cwd, files[index]!),
+          JSON.stringify(value, null, 2) + "\n",
+        );
+      v25Git(cwd, "add", "--", ...files);
+      v25Git(
+        cwd,
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "-m",
+        "synthetic unauthorized v37 reset",
+      );
+      for (const [index, value] of originals.entries())
+        await writeFile(join(cwd, files[index]!), value);
+      v25Git(cwd, "add", "--", ...files);
+      v25Git(
+        cwd,
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "-m",
+        "synthetic restoration",
+      );
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V37_CONTROL_HISTORY_RESET",
+      });
+    });
+  }, 30_000);
+  it("accepts the precise merge tree and rejects a later unapproved commit", async () => {
+    v25Git(
+      fixture,
+      "checkout",
+      "--quiet",
+      "-b",
+      "mp06-v37-integrated",
+      c.baseHead,
+    );
+    v25Git(
+      fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "merge",
+      "--quiet",
+      "--no-ff",
+      "--no-edit",
+      source,
+    );
+    const merged = v25Git(fixture, "rev-parse", "HEAD").trim();
+    expect(
+      v25Git(fixture, "rev-list", "--parents", "-n", "1", merged)
+        .trim()
+        .split(" ")
+        .slice(1),
+    ).toEqual([c.baseHead, source]);
+    expect(v25Git(fixture, "rev-parse", merged + "^{tree}").trim()).toBe(
+      v25Git(fixture, "rev-parse", source + "^{tree}").trim(),
+    );
+    const accepted = inspectV23SealedRepository(fixture);
+    expect(accepted.ok).toBe(true);
+    await expect(
+      runProjectControlValidation(pathToFileURL(fixture + "/")),
+    ).resolves.toBeUndefined();
+    await v25WithChild(fixture, async (cwd) => {
+      v25Git(
+        cwd,
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "--allow-empty",
+        "-m",
+        "synthetic unauthorized successor",
+      );
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V37_UNRELATED_MERGE_HISTORY",
+      });
+      await expect(
+        runProjectControlValidation(pathToFileURL(cwd + "/")),
+      ).rejects.toThrow("V37_UNRELATED_MERGE_HISTORY");
+    });
+  }, 30_000);
+  it("validates PR18 synthetic integration with the committed source separately", async () => {
+    const dependencies = join(fixture, "node_modules");
+    await mkdir(dependencies);
+    for (const name of await readdir(
+      new URL("../node_modules/", import.meta.url),
+    ))
+      await symlink(
+        fileURLToPath(new URL("../node_modules/" + name, import.meta.url)),
+        join(dependencies, name),
+      );
+    const directory = await mkdtemp(join(tmpdir(), "mp06-v37-event-"));
+    const eventPath = join(directory, "event.json");
+    const event = {
+      number: 18,
+      repository: { full_name: c.repository },
+      pull_request: {
+        number: 18,
+        state: "open",
+        draft: true,
+        head: {
+          ref: c.headBranch,
+          sha: source,
+          repo: { full_name: c.repository },
+        },
+        base: {
+          ref: c.baseBranch,
+          sha: c.baseHead,
+          repo: { full_name: c.repository },
+        },
+      },
+    };
+    await writeFile(eventPath, JSON.stringify(event));
+    vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
+    vi.stubEnv("GITHUB_REPOSITORY", c.repository);
+    vi.stubEnv("GITHUB_SHA", v25Git(fixture, "rev-parse", "HEAD").trim());
+    vi.stubEnv("GITHUB_REF", "refs/pull/18/merge");
+    try {
+      await expect(
+        runPullRequestControlValidation(
+          pathToFileURL(fixture + "/"),
+          eventPath,
+        ),
+      ).resolves.toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(directory, { recursive: true, force: true });
+    }
+  }, 30_000);
+  it("validates the automatic Draft PR16 integration after MP-06 advances", async () => {
+    const integrated = v25Git(fixture, "rev-parse", "HEAD").trim();
+    v25Git(
+      fixture,
+      "checkout",
+      "--quiet",
+      "-b",
+      "mp06-v37-pr16",
+      "88deb90a58369923f11a7266ec63fa8fd5f293c2",
+    );
+    v25Git(
+      fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "merge",
+      "--quiet",
+      "--no-ff",
+      "--no-edit",
+      integrated,
+    );
+    const merge = v25Git(fixture, "rev-parse", "HEAD").trim();
+    const directory = await mkdtemp(join(tmpdir(), "mp06-v37-event-"));
+    const eventPath = join(directory, "event.json");
+    const event = {
+      number: 16,
+      repository: { full_name: c.repository },
+      pull_request: {
+        number: 16,
+        state: "open",
+        draft: true,
+        head: {
+          ref: c.baseBranch,
+          sha: integrated,
+          repo: { full_name: c.repository },
+        },
+        base: {
+          ref: "codex/phase-1a-foundation",
+          sha: "88deb90a58369923f11a7266ec63fa8fd5f293c2",
+          repo: { full_name: c.repository },
+        },
+      },
+    };
+    await writeFile(eventPath, JSON.stringify(event));
+    vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
+    vi.stubEnv("GITHUB_REPOSITORY", c.repository);
+    vi.stubEnv("GITHUB_SHA", merge);
+    vi.stubEnv("GITHUB_REF", "refs/pull/16/merge");
+    try {
+      await expect(
+        runPullRequestControlValidation(
+          pathToFileURL(fixture + "/"),
+          eventPath,
+        ),
+      ).resolves.toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(directory, { recursive: true, force: true });
+    }
+  }, 30_000);
+});
+
+describe("v36 local efficiency authority", () => {
+  const read = (path: string) =>
+    record(JSON.parse(readFileSync(new URL(path, root), "utf8")));
+  const c = DEV_OPERATIONS_OPTIMIZATION_V36;
+  it("rejects the PR adapter even when invoked with a pull-request environment", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mp06-v36-pr-event-"));
+    const event = join(directory, "event.json");
+    const checkout = join(directory, "checkout");
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      checkout,
+    );
+    const work = read("config/project/current-work.json");
+    const roadmap = read("config/project/roadmap.json");
+    projectIntegrationV37ToV36(roadmap, work);
+    await writeFile(
+      join(checkout, "config/project/current-work.json"),
+      JSON.stringify(work),
+    );
+    await writeFile(event, "{}");
+    vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
+    vi.stubEnv("GITHUB_REPOSITORY", "Eak-dev/malispang-lineOA");
+    try {
+      await expect(
+        runPullRequestControlValidation(pathToFileURL(checkout + "/"), event),
+      ).rejects.toThrow("V36_LOCAL_ONLY_PR_ADAPTER_DENIED");
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+  it("retains consumed PR18 and allows only exact local tooling", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json"),
+      s = read("config/project/current-work.schema.json");
+    projectIntegrationV37ToV36(r, w, s);
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        s,
+        c.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        readFileSync(
+          new URL("docs/project/OWNER_DECISION_LOG.md", root),
+          "utf8",
+        ),
+        c.version,
+      ),
+    ).toBe(true);
+    expect(w.devOperationsRemediationV35).toEqual(
+      DEV_OPERATIONS_REMEDIATION_V35,
+    );
+    expect(evaluateProjectAction(r, w, "DEV_OPERATIONS_TOOLING").allowed).toBe(
+      true,
+    );
+    for (const action of [
+      "COMMIT",
+      "PUSH_BRANCH",
+      "UPDATE_GITHUB_ROADMAP",
+      "CREATE_PR",
+      "CREATE_DRAFT_PR",
+      "READY_FOR_REVIEW",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+      "QUERY_PRODUCTION",
+      "CHANGE_PRODUCTION",
+      "CLOSE_ISSUE",
+      "LOCAL_IMPLEMENTATION",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed, action).toBe(false);
+    expect(
+      evaluateDevOperationsPaths(r, w, [
+        "scripts/dev-operations/receipt.mjs",
+        "tests/dev-operations/efficiency.test.mjs",
+      ]).allowed,
+    ).toBe(true);
+    for (const path of [
+      "package.json",
+      "scripts/dev-operations/arbitrary.mjs",
+      "worker/index.ts",
+      "tests/dev-operations/nested/unsafe.test.mjs",
+    ])
+      expect(evaluateDevOperationsPaths(r, w, [path]).allowed, path).toBe(
+        false,
+      );
+  });
+  it("rejects altered optimization scope, open schema, and inherited authority", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json"),
+      s = read("config/project/current-work.schema.json");
+    projectIntegrationV37ToV36(r, w, s);
+    for (const key of Object.keys(c)) {
+      const changed = structuredClone(w);
+      record(changed.devOperationsOptimizationV36)[key] = "drift";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V36_EXACT_LOCAL_OPTIMIZATION_CONTROL_INVALID",
+      );
+    }
+    const changed = structuredClone(w);
+    record(changed.devOperationsRemediationV35).creationGrant = "UNUSED";
+    expect(validateProjectControl(r, changed).errors).toContain(
+      "V35_EXACT_CONSUMED_PR18_CONTROL_INVALID",
+    );
+    const openSchema = structuredClone(s);
+    openSchema.additionalProperties = true;
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        openSchema,
+        c.version,
+      ).length,
+    ).toBeGreaterThan(0);
+    const wrongSchema = structuredClone(s);
+    record(wrongSchema.properties).devOperationsOptimizationV36 = {
+      type: "object",
+    };
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        wrongSchema,
+        c.version,
+      ),
+    ).toContain("V36_SCHEMA_NOT_CLOSED");
+  });
+});
+
+describe("v36 exact pending transition and history", () => {
+  let fixture: string;
+  const controlPaths = [
+    "config/project/roadmap.json",
+    "config/project/current-work.json",
+    "config/project/current-work.schema.json",
+  ];
+  const commitFixture = (cwd: string) => {
+    v25Git(cwd, "add", "--", ...controlPaths);
+    v25Git(
+      cwd,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic v36 control fixture",
+    );
+  };
+  beforeAll(async () => {
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v36-baseline-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      fixture,
+    );
+    v25Git(
+      fixture,
+      "checkout",
+      "--quiet",
+      "--detach",
+      DEV_OPERATIONS_OPTIMIZATION_V36.baseline,
+    );
+  });
+  afterAll(async () => {
+    if (fixture) await rm(fixture, { recursive: true, force: true });
+  });
+  const withPending = async (fn: (cwd: string) => Promise<void> | void) => {
+    await v25WithChild(fixture, async (cwd) => {
+      for (const path of controlPaths)
+        await copyFile(new URL(path, root), join(cwd, path));
+      const r = record(
+        JSON.parse(await readFile(join(cwd, controlPaths[0]!), "utf8")),
+      );
+      const w = record(
+        JSON.parse(await readFile(join(cwd, controlPaths[1]!), "utf8")),
+      );
+      const s = record(
+        JSON.parse(await readFile(join(cwd, controlPaths[2]!), "utf8")),
+      );
+      projectIntegrationV37ToV36(r, w, s);
+      for (const [path, value] of [r, w, s].map(
+        (value, index) => [controlPaths[index]!, value] as const,
+      ))
+        await writeFile(join(cwd, path), JSON.stringify(value, null, 2) + "\n");
+      await fn(cwd);
+    });
+  };
+  it("accepts the dirty transition only at its exact baseline without changing the index", async () => {
+    await withPending((cwd) => {
+      const before = v25OperatorSnapshot(cwd);
+      const result = inspectV23SealedRepository(cwd);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.reason);
+      expect(result.proof.head).toBe(DEV_OPERATIONS_OPTIMIZATION_V36.baseline);
+      expect(result.proof.clean).toBe(false);
+      v25AssertUnchanged(before, cwd);
+    });
+  }, 15_000);
+  it("keeps identical generated rewrites read-only and still rejects protected content changes", async () => {
+    await withPending(async (cwd) => {
+      const ownerRecord = "docs/project/OWNER_DECISION_LOG.md";
+      await copyFile(new URL(ownerRecord, root), join(cwd, ownerRecord));
+      const path = join(cwd, "artifacts/flex-menu-preview.html");
+      const original = await readFile(path);
+      const metadata = lstatSync(path);
+      await writeFile(path, original);
+      await utimes(path, metadata.atime, new Date(metadata.mtimeMs + 3000));
+      const rewrittenMetadata = lstatSync(path, { bigint: true });
+      const index = resolve(
+        cwd,
+        v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
+      );
+      const indexBefore = await readFile(index);
+      const before = v25OperatorSnapshot(cwd);
+      await expect(
+        runProjectControlValidation(pathToFileURL(cwd + "/")),
+      ).resolves.toBeUndefined();
+      expect(await readFile(index)).toEqual(indexBefore);
+      expect(await readFile(path)).toEqual(original);
+      const afterMetadata = lstatSync(path, { bigint: true });
+      for (const key of [
+        "dev",
+        "ino",
+        "size",
+        "mode",
+        "mtimeNs",
+        "ctimeNs",
+      ] as const)
+        expect(afterMetadata[key], key).toBe(rewrittenMetadata[key]);
+      v25AssertUnchanged(before, cwd);
+
+      await writeFile(
+        path,
+        Buffer.concat([
+          original,
+          Buffer.from("\nSynthetic protected-file change\n"),
+        ]),
+      );
+      const changedBefore = v25OperatorSnapshot(cwd);
+      await expect(
+        runProjectControlValidation(pathToFileURL(cwd + "/")),
+      ).rejects.toThrow("V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH");
+      v25AssertUnchanged(changedBefore, cwd);
+    });
+  }, 15_000);
+  it("rejects replaying the pending transition after another commit", async () => {
+    await withPending((cwd) => {
+      v25Git(
+        cwd,
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "--allow-empty",
+        "-m",
+        "synthetic baseline drift",
+      );
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V36_TRANSITION_BASELINE_REQUIRED",
+      });
+    });
+  });
+  it("rejects inherited PR18 authority changes in pending work", async () => {
+    await withPending(async (cwd) => {
+      const path = join(cwd, "config/project/current-work.json");
+      const work = record(JSON.parse(await readFile(path, "utf8")));
+      record(work.devOperationsRemediationV35).creationGrant = "UNUSED";
+      await writeFile(path, JSON.stringify(work));
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_WORKING_STATE_DRIFT",
+      });
+    });
+  });
+  it("validates committed synthetic v36 without granting deployment", async () => {
+    await withPending(async (cwd) => {
+      commitFixture(cwd);
+      const result = inspectV23SealedRepository(cwd);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.reason);
+      expect(result.proof.clean).toBe(true);
+      const r = JSON.parse(
+        await readFile(join(cwd, controlPaths[0]!), "utf8"),
+      ) as unknown;
+      const w = JSON.parse(
+        await readFile(join(cwd, controlPaths[1]!), "utf8"),
+      ) as unknown;
+      expect(
+        evaluateProjectAction(
+          r,
+          w,
+          "DEPLOY_TEST",
+          v22Target,
+          v22Evidence(),
+          result.proof,
+        ).allowed,
+      ).toBe(false);
+    });
+  }, 15_000);
+  it.each(["version", "consumption"])(
+    "rejects committed %s reset even after restoration",
+    async (mutation) => {
+      await withPending(async (cwd) => {
+        commitFixture(cwd);
+        const originals = await Promise.all(
+          controlPaths.map((path) => readFile(join(cwd, path), "utf8")),
+        );
+        const r = record(JSON.parse(originals[0]!)),
+          w = record(JSON.parse(originals[1]!)),
+          s = record(JSON.parse(originals[2]!));
+        if (mutation === "version") projectOptimizationV36ToV35(r, w, s);
+        else record(w.devOperationsRemediationV35).creationGrant = "UNUSED";
+        for (const [index, value] of [r, w, s].entries())
+          await writeFile(
+            join(cwd, controlPaths[index]!),
+            JSON.stringify(value),
+          );
+        commitFixture(cwd);
+        for (const [index, original] of originals.entries())
+          await writeFile(join(cwd, controlPaths[index]!), original);
+        commitFixture(cwd);
+        expect(inspectV23SealedRepository(cwd)).toEqual({
+          ok: false,
+          reason:
+            mutation === "version"
+              ? "V36_CONTROL_HISTORY_RESET"
+              : "V35_CONSUMPTION_HISTORY_RESET",
+        });
+      });
+    },
+    15_000,
+  );
+});
+
+describe("v35 consumed PR18 authority", () => {
+  const read = (path: string) =>
+    record(JSON.parse(readFileSync(new URL(path, root), "utf8")));
+  it("validates exact closed control while denying creation and every remote/product action", () => {
+    const r = read("config/project/roadmap.json"),
+      w = read("config/project/current-work.json"),
+      s = read("config/project/current-work.schema.json");
+    projectOptimizationV36ToV35(r, w, s);
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        read("config/project/roadmap.schema.json"),
+        s,
+        DEV_OPERATIONS_REMEDIATION_V35.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        readFileSync(
+          new URL("docs/project/OWNER_DECISION_LOG.md", root),
+          "utf8",
+        ),
+        DEV_OPERATIONS_REMEDIATION_V35.version,
+      ),
+    ).toBe(true);
+    for (const action of [
+      "DEV_OPERATIONS_TOOLING",
+      "UPDATE_GITHUB_ROADMAP",
+      "COMMIT",
+      "PUSH_BRANCH",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(true);
+    for (const action of [
+      "CREATE_DRAFT_PR",
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+      "CHANGE_PRODUCTION",
+      "QUERY_PRODUCTION",
+      "CLOSE_ISSUE",
+      "LOCAL_IMPLEMENTATION",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+    for (const key of Object.keys(DEV_OPERATIONS_REMEDIATION_V35)) {
+      const changed = structuredClone(w);
+      record(changed.devOperationsRemediationV35)[key] = "drift";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V35_EXACT_CONSUMED_PR18_CONTROL_INVALID",
+      );
+    }
+  });
+  it.each([18, 17, 19])(
+    "binds internally consistent receipt %s to existing PR18 only",
+    (number) => {
+      const c = DEV_OPERATIONS_REVIEW_V34,
+        head = "a".repeat(40),
+        merge = "b".repeat(40);
+      const event = {
+        number,
+        repository: { full_name: c.repository },
+        pull_request: {
+          number,
+          state: "open",
+          draft: true,
+          head: {
+            ref: c.headBranch,
+            sha: head,
+            repo: { full_name: c.repository },
+          },
+          base: {
+            ref: c.baseBranch,
+            sha: c.baseHead,
+            repo: { full_name: c.repository },
+          },
+        },
+      };
+      const observed = {
+        sha: merge,
+        merge,
+        ref: `refs/pull/${number}/merge`,
+        parents: [c.baseHead, head],
+      };
+      expect(validateV35DraftPrMergeReceipt(event, observed)).toEqual(
+        number === 18 ? { head, base: c.baseHead, number } : null,
+      );
+      event.pull_request.state = "closed";
+      expect(validateV35DraftPrMergeReceipt(event, observed)).toBeNull();
+    },
+  );
+});
+
+describe("v34 exact Draft review authority", () => {
+  const readJson = (path: string): unknown =>
+    JSON.parse(readFileSync(new URL(path, root), "utf8")) as unknown;
+  const c = DEV_OPERATIONS_REVIEW_V34;
+  const source = "a".repeat(40),
+    merge = "b".repeat(40);
+  const event = () => ({
+    number: 17,
+    repository: { full_name: String(c.repository) },
+    pull_request: {
+      number: 17,
+      state: "open",
+      draft: true,
+      head: {
+        ref: String(c.headBranch),
+        sha: source,
+        repo: { full_name: String(c.repository) },
+      },
+      base: {
+        ref: String(c.baseBranch),
+        sha: String(c.baseHead),
+        repo: { full_name: String(c.repository) },
+      },
+    },
+  });
+  const observed = () => ({
+    sha: merge,
+    ref: "refs/pull/17/merge",
+    merge,
+    parents: [c.baseHead, source],
+  });
+  it("accepts only the exact Draft identity with ordered synthetic parents", () => {
+    expect(validateV34DraftPrMergeReceipt(event(), observed())).toEqual({
+      head: source,
+      base: c.baseHead,
+      number: 17,
+    });
+  });
+  it.each([
+    "draft",
+    "closed",
+    "number",
+    "repo",
+    "headRepo",
+    "baseRepo",
+    "headBranch",
+    "baseBranch",
+    "baseSha",
+    "headSha",
+    "ref",
+    "sha",
+    "parents",
+  ])("rejects %s drift", (field) => {
+    const e = event(),
+      o = observed();
+    if (field === "draft") e.pull_request.draft = false;
+    if (field === "closed") e.pull_request.state = "closed";
+    if (field === "number") e.pull_request.number = 18;
+    if (field === "repo") e.repository.full_name = "other/repo";
+    if (field === "headRepo") e.pull_request.head.repo.full_name = "other/repo";
+    if (field === "baseRepo") e.pull_request.base.repo.full_name = "other/repo";
+    if (field === "headBranch") e.pull_request.head.ref = "other";
+    if (field === "baseBranch") e.pull_request.base.ref = "other";
+    if (field === "baseSha") e.pull_request.base.sha = source;
+    if (field === "headSha") e.pull_request.head.sha = "HEAD";
+    if (field === "ref") o.ref = "refs/pull/18/merge";
+    if (field === "sha") o.sha = source;
+    if (field === "parents") o.parents.reverse();
+    expect(validateV34DraftPrMergeReceipt(e, o)).toBeNull();
+  });
+  it("validates the closed v34 layer and denies every product/merge action", () => {
+    const r = record(readJson("config/project/roadmap.json")),
+      w = record(readJson("config/project/current-work.json")),
+      s = record(readJson("config/project/current-work.schema.json"));
+    projectRemediationV35ToV34(r, w, s);
+    expect(validateProjectControl(r, w).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        readJson("config/project/roadmap.schema.json"),
+        s,
+        c.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        readFileSync(
+          new URL("docs/project/OWNER_DECISION_LOG.md", root),
+          "utf8",
+        ),
+        c.version,
+      ),
+    ).toBe(true);
+    for (const action of [
+      "CREATE_DRAFT_PR",
+      "COMMIT",
+      "PUSH_BRANCH",
+      "DEV_OPERATIONS_TOOLING",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(true);
+    for (const action of [
+      "CREATE_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+      "CHANGE_PRODUCTION",
+      "QUERY_PRODUCTION",
+      "CLOSE_ISSUE",
+      "LOCAL_IMPLEMENTATION",
+    ])
+      expect(evaluateProjectAction(r, w, action).allowed).toBe(false);
+    for (const key of Object.keys(c)) {
+      const changed = structuredClone(record(w));
+      record(changed.devOperationsReviewV34)[key] = "drift";
+      expect(validateProjectControl(r, changed).errors).toContain(
+        "V34_EXACT_REVIEW_CONTROL_INVALID",
+      );
+    }
+  });
+});
+
+describe("committed v33 local-only checkout", () => {
+  let fixture: string;
+  let v35Fixture: string;
+  let v35Head: string;
+  let operatorBefore: string;
+  let base: string;
+  beforeAll(async () => {
+    const { DEV_OPERATIONS_V33_CONTROL: control } =
+      await import("../src/project-control.js");
+    base = control.baseHead;
+    operatorBefore = v25OperatorSnapshot();
+    fixture = await mkdtemp(join(tmpdir(), "mp06-v33-committed-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fileURLToPath(root),
+      fixture,
+    );
+    v25Git(fixture, "checkout", "--quiet", "--detach", base);
+    const paths = control.allowedPaths.flatMap((path) =>
+      path === "tests/dev-operations/*.test.mjs"
+        ? ["tests/dev-operations/tooling.test.mjs"]
+        : [path],
+    );
+    for (const path of paths) {
+      await mkdir(dirname(join(fixture, path)), { recursive: true });
+      await copyFile(new URL(path, root), join(fixture, path));
+    }
+    // Keep the original v33 regression fixture exact under its successor.
+    const r = record(
+      JSON.parse(
+        await readFile(join(fixture, "config/project/roadmap.json"), "utf8"),
+      ),
+    );
+    const w = record(
+      JSON.parse(
+        await readFile(
+          join(fixture, "config/project/current-work.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const s = record(
+      JSON.parse(
+        await readFile(
+          join(fixture, "config/project/current-work.schema.json"),
+          "utf8",
+        ),
+      ),
+    );
+    projectReviewV34ToV33(r, w, s);
+    for (const [path, value] of [
+      ["roadmap.json", r],
+      ["current-work.json", w],
+      ["current-work.schema.json", s],
+    ] as const)
+      await writeFile(
+        join(fixture, "config/project", path),
+        JSON.stringify(value, null, 2) + "\n",
+      );
+    v25Git(fixture, "add", "--", ...paths);
+    v25Git(
+      fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic exact v33 transition",
+    );
+    // Prepare the immutable v35 baseline once. Its full positive inspection is
+    // a separate assertion below, not repeated inside each negative history
+    // case's watchdog. Each negative clones and verifies this exact commit.
+    v35Fixture = await mkdtemp(join(tmpdir(), "mp06-v35-baseline-"));
+    v25Git(
+      fileURLToPath(root),
+      "clone",
+      "--quiet",
+      "--shared",
+      fixture,
+      v35Fixture,
+    );
+    for (const path of [
+      "roadmap.json",
+      "current-work.json",
+      "current-work.schema.json",
+    ]) {
+      await copyFile(
+        new URL("config/project/" + path, root),
+        join(v35Fixture, "config/project", path),
+      );
+    }
+    const v35Roadmap = record(
+      JSON.parse(
+        await readFile(join(v35Fixture, "config/project/roadmap.json"), "utf8"),
+      ),
+    );
+    const v35Work = record(
+      JSON.parse(
+        await readFile(
+          join(v35Fixture, "config/project/current-work.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const v35Schema = record(
+      JSON.parse(
+        await readFile(
+          join(v35Fixture, "config/project/current-work.schema.json"),
+          "utf8",
+        ),
+      ),
+    );
+    projectOptimizationV36ToV35(v35Roadmap, v35Work, v35Schema);
+    for (const [path, value] of [
+      ["roadmap.json", v35Roadmap],
+      ["current-work.json", v35Work],
+      ["current-work.schema.json", v35Schema],
+    ] as const)
+      await writeFile(
+        join(v35Fixture, "config/project", path),
+        JSON.stringify(value, null, 2) + "\n",
+      );
+    v25Git(
+      v35Fixture,
+      "add",
+      "--",
+      "config/project/roadmap.json",
+      "config/project/current-work.json",
+      "config/project/current-work.schema.json",
+    );
+    v25Git(
+      v35Fixture,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic exact v35 baseline",
+    );
+    v35Head = v25Git(v35Fixture, "rev-parse", "HEAD").trim();
+    v25AssertUnchanged(operatorBefore);
+  });
+  afterAll(async () => {
+    try {
+      if (v35Fixture) await rm(v35Fixture, { recursive: true, force: true });
+      if (fixture) await rm(fixture, { recursive: true, force: true });
+    } finally {
+      if (operatorBefore) v25AssertUnchanged(operatorBefore);
+    }
+  });
+  const commit = (cwd: string, path: string) => {
+    v25Git(cwd, "add", "--", path);
+    v25Git(
+      cwd,
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      "synthetic v33 negative history",
+    );
+  };
+  it("validates a clean committed checkout with complete paths and no deployment authority", () => {
+    const before = v25OperatorSnapshot(fixture);
+    const result = inspectV23SealedRepository(fixture);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.proof.head).toBe(v25Git(fixture, "rev-parse", "HEAD").trim());
+    expect(result.proof.clean).toBe(true);
+    expect(result.proof.paths).toContain(
+      "scripts/dev-operations/checkpoint.mjs",
+    );
+    const roadmap: unknown = JSON.parse(
+      readFileSync(join(fixture, "config/project/roadmap.json"), "utf8"),
+    );
+    const work: unknown = JSON.parse(
+      readFileSync(join(fixture, "config/project/current-work.json"), "utf8"),
+    );
+    for (const action of [
+      "DEPLOY_TEST",
+      "ACTIVATE_SUCCESSOR_V22",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "CHANGE_PRODUCTION",
+    ])
+      expect(
+        evaluateProjectAction(
+          roadmap,
+          work,
+          action,
+          v22Target,
+          v22Evidence(),
+          result.proof,
+        ).allowed,
+      ).toBe(false);
+    v25AssertUnchanged(before, fixture);
+  });
+  it("runs the real CLI on a clean checkout without requiring a dirty path", async () => {
+    const before = v25OperatorSnapshot(fixture);
+    await expect(
+      runProjectControlValidation(pathToFileURL(fixture + "/")),
+    ).resolves.toBeUndefined();
+    v25AssertUnchanged(before, fixture);
+  });
+  it("permits dirty local tooling but preserves raw index and reports not clean", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = join(cwd, "scripts/dev-operations/preflight.mjs");
+      await writeFile(
+        path,
+        readFileSync(path, "utf8") + "\n// synthetic local edit\n",
+      );
+      const before = v25OperatorSnapshot(cwd);
+      const result = inspectV23SealedRepository(cwd);
+      expect(result.ok && result.proof.clean).toBe(false);
+      expect(result.ok).toBe(true);
+      v25AssertUnchanged(before, cwd);
+    });
+  });
+  it("rejects committed protected-path edit-and-restore despite identical final bytes", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "worker/index.ts",
+        original = readFileSync(join(cwd, path));
+      await writeFile(
+        join(cwd, path),
+        Buffer.concat([original, Buffer.from("\n// synthetic drift\n")]),
+      );
+      commit(cwd, path);
+      await writeFile(join(cwd, path), original);
+      commit(cwd, path);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_COMMITTED_SCOPE_DRIFT",
+      });
+    });
+  });
+  it("rejects inherited grant edit-and-restore in committed history", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "config/project/current-work.json",
+        original = readFileSync(join(cwd, path));
+      const work = JSON.parse(original.toString()) as Record<string, unknown>;
+      work.wp8fV22OperationJournal = [];
+      work.syntheticGrant = true;
+      await writeFile(join(cwd, path), JSON.stringify(work));
+      commit(cwd, path);
+      await writeFile(join(cwd, path), original);
+      commit(cwd, path);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_INHERITED_STATE_DRIFT",
+      });
+    });
+  });
+  it("rejects a v33-to-v32-to-v33 control reset", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "config/project/current-work.json",
+        original = readFileSync(join(cwd, path));
+      await writeFile(join(cwd, path), v25Git(cwd, "show", base + ":" + path));
+      commit(cwd, path);
+      await writeFile(join(cwd, path), original);
+      commit(cwd, path);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_CONTROL_HISTORY_RESET",
+      });
+    });
+  });
+  it("validates the exact clean v35 baseline used by both reset regressions", () => {
+    const before = v25OperatorSnapshot(v35Fixture);
+    const result = inspectV23SealedRepository(v35Fixture);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.proof.head).toBe(v35Head);
+    expect(result.proof.clean).toBe(true);
+    v25AssertUnchanged(before, v35Fixture);
+  });
+  it.each(["downgrade", "consumption"])(
+    "rejects v35 %s reset even after exact restoration",
+    async (mutation) => {
+      await v25WithChild(v35Fixture, async (cwd) => {
+        expect(v25Git(cwd, "rev-parse", "HEAD").trim()).toBe(v35Head);
+        const path = "config/project/current-work.json";
+        const original = readFileSync(join(cwd, path));
+        const work = record(JSON.parse(original.toString()));
+        if (mutation === "downgrade") {
+          work.roadmapVersion = DEV_OPERATIONS_REVIEW_V34.version;
+          delete work.devOperationsRemediationV35;
+        } else
+          record(work.devOperationsRemediationV35).creationGrant = "UNUSED";
+        await writeFile(join(cwd, path), JSON.stringify(work));
+        commit(cwd, path);
+        await writeFile(join(cwd, path), original);
+        commit(cwd, path);
+        expect(inspectV23SealedRepository(cwd)).toEqual({
+          ok: false,
+          reason: "V35_CONSUMPTION_HISTORY_RESET",
+        });
+      });
+    },
+  );
+  it("rejects dirty inherited state before issuing even a local result", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      const path = "config/project/current-work.json";
+      const work = JSON.parse(readFileSync(join(cwd, path), "utf8")) as Record<
+        string,
+        unknown
+      >;
+      work.syntheticGrant = true;
+      await writeFile(join(cwd, path), JSON.stringify(work));
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_WORKING_STATE_DRIFT",
+      });
+    });
+  });
+  it("rejects protected dirty paths even when a caller supplies an extra allowlist", async () => {
+    await v25WithChild(fixture, async (cwd) => {
+      await writeFile(join(cwd, "unexpected.txt"), "synthetic");
+      expect(inspectV23SealedRepository(cwd, ["unexpected.txt"])).toEqual({
+        ok: false,
+        reason: "V23_SEALED_GIT_INVENTORY_OR_DIGEST_MISMATCH",
+      });
+    });
+  });
+  it("rejects a new multi-parent commit without performing a merge", async () => {
+    await v25WithChild(fixture, (cwd) => {
+      const head = v25Git(cwd, "rev-parse", "HEAD").trim();
+      const synthetic = v25Git(
+        cwd,
+        "commit-tree",
+        head + "^{tree}",
+        "-p",
+        head,
+        "-p",
+        base,
+        "-m",
+        "synthetic forbidden ancestry",
+      ).trim();
+      v25Git(cwd, "checkout", "--quiet", "--detach", synthetic);
+      expect(inspectV23SealedRepository(cwd)).toEqual({
+        ok: false,
+        reason: "V33_NEW_MERGE_HISTORY_DENIED",
+      });
+      return Promise.resolve();
+    });
+  });
+});
+
+describe("project-control system Git selection", () => {
+  const binary = "/Library/Developer/CommandLineTools/usr/bin/git";
+  const paths = [
+    "/Library",
+    "/Library/Developer",
+    "/Library/Developer/CommandLineTools",
+    "/Library/Developer/CommandLineTools/usr",
+    "/Library/Developer/CommandLineTools/usr/bin",
+    binary,
+  ];
+  const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
+  afterEach(() => {
+    Object.defineProperty(process, "platform", platform);
+    vi.restoreAllMocks();
+    syncBuiltinESMExports();
+  });
+  function metadata(path: fs.PathLike) {
+    return {
+      uid: 0,
+      mode: 0o755,
+      isFile: () => path === binary,
+      isDirectory: () => path !== binary,
+    } as fs.Stats;
+  }
+  it("keeps the fixed system Git on non-macOS hosts", () => {
+    Object.defineProperty(process, "platform", { value: "linux" });
+    const stat = vi.spyOn(fs, "lstatSync");
+    syncBuiltinESMExports();
+    expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+    expect(stat).not.toHaveBeenCalled();
+  });
+  it("selects only the root-owned, non-writable CLT executable chain", () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const stat = vi.spyOn(fs, "lstatSync").mockImplementation(metadata);
+    syncBuiltinESMExports();
+    expect(projectControlGitExecutable()).toBe(binary);
+    expect(stat.mock.calls.map(([path]) => path)).toEqual(paths);
+  });
+  it.each(paths)("rejects unsafe or missing metadata at %s", (rejected) => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const stat = vi.spyOn(fs, "lstatSync");
+    syncBuiltinESMExports();
+    for (const unsafe of [
+      { uid: 501 },
+      { mode: 0o775 },
+      { mode: 0o757 },
+      { isFile: () => false, isDirectory: () => false },
+    ]) {
+      stat.mockImplementation((path) => ({
+        ...metadata(path),
+        ...(path === rejected ? unsafe : {}),
+      }));
+      expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+    }
+    stat.mockImplementation((path) => {
+      if (path === rejected) throw new Error("unavailable");
+      return metadata(path);
+    });
+    expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+  });
+  it("rejects a non-executable CLT Git", () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    vi.spyOn(fs, "lstatSync").mockImplementation((path) => ({
+      ...metadata(path),
+      ...(path === binary ? { mode: 0o644 } : {}),
+    }));
+    syncBuiltinESMExports();
+    expect(projectControlGitExecutable()).toBe("/usr/bin/git");
+  });
+  it("uses the same installed Git version as the system launcher", () => {
+    const options = {
+      encoding: "utf8",
+      env: { PATH: "/usr/bin:/bin" },
+    } as const;
+    const selected = projectControlGitExecutable();
+    const version = (binary: string) => {
+      const started = performance.now();
+      try {
+        return execFileSync(binary, ["--version"], options);
+      } finally {
+        process.stdout.write(
+          JSON.stringify({
+            phase: "git_version_launch",
+            binary,
+            milliseconds: performance.now() - started,
+          }) + "\n",
+        );
+      }
+    };
+    expect(version(selected)).toBe(version("/usr/bin/git"));
+  });
+});
 
 // Synthetic independent operator evidence, not populated from current-work.
 // Passing this pure assessment is deliberately NOT a deployment capability.
@@ -2367,7 +3831,7 @@ function readJson(path: string): unknown {
   // Current v21 files have independent positive/negative tests below; no old assertions change.
   return JSON.parse(
     execFileSync(
-      "git",
+      projectControlGitExecutable(),
       ["show", "958b00eea5587d27858d3bdee1047ee52c0a736f:" + path],
       { cwd: fileURLToPath(root), encoding: "utf8", maxBuffer: 1024 * 1024 },
     ),
@@ -3595,7 +5059,7 @@ describe("v21 frozen successor TEST and gated integration", () => {
     const readCurrent = (path: string): Record<string, unknown> => {
       const parsed: unknown = JSON.parse(
         execFileSync(
-          "git",
+          projectControlGitExecutable(),
           ["show", "1790da58635edcee154b60d76730248e8130c2d3:" + path],
           {
             cwd: fileURLToPath(root),
@@ -4447,7 +5911,7 @@ describe("v22 exact one-use TEST deployment and retained-Owner successor UAT", (
         (path) =>
           JSON.parse(
             execFileSync(
-              "git",
+              projectControlGitExecutable(),
               ["show", "81170bc91624503cd9d92a27c9de796037afa87e:" + path],
               {
                 cwd: fileURLToPath(root),
@@ -5047,7 +6511,7 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
 
   const git = (cwd: string, ...args: string[]) =>
     execFileSync(
-      "git",
+      projectControlGitExecutable(),
       [
         "-c",
         "core.hooksPath=/dev/null",
@@ -5139,6 +6603,23 @@ describe("v23 sealed control addendum inheriting v22 grants", () => {
     r = clone(record(currentRoadmap));
     w = clone(record(currentManifest));
     schema = clone(record(currentSchema));
+    projectReviewV34ToV33(r, w, record(schema));
+    if (r.version === "2026.09.23-v33") {
+      r.version = "2026.09.21-v32";
+      r.ownerDecision = {
+        decisionId: "MP-OD-2026-09-21-V32",
+        decidedAt: "2026-09-21",
+        supersedes: "2026.09.20-v31",
+      };
+      w.roadmapVersion = r.version;
+      delete w.devOperationsV33;
+      const s = record(schema);
+      s.required = (s.required as string[]).filter(
+        (key) => key !== "devOperationsV33",
+      );
+      delete record(s.properties).devOperationsV33;
+      record(record(s.properties).roadmapVersion).const = r.version;
+    }
     if (r.version === "2026.09.21-v32") {
       r.version = "2026.09.20-v31";
       w.roadmapVersion = r.version;
@@ -6062,7 +7543,7 @@ function v25DiagnosticPhase(
 }
 function v25Git(cwd: string, ...args: string[]): string {
   return execFileSync(
-    "/usr/bin/git",
+    projectControlGitExecutable(),
     [
       "--no-optional-locks",
       "--no-replace-objects",
@@ -6307,7 +7788,7 @@ describe("v24 TEST live UAT enablement without replacement grants", () => {
     baseline = record(
       JSON.parse(
         execFileSync(
-          "git",
+          projectControlGitExecutable(),
           [
             "show",
             "31d2d3dc6c6aaa95ce1b3c82820c8ce1e78c3f1f:config/project/current-work.json",
@@ -8223,6 +9704,23 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
           ),
         ),
       );
+      projectReviewV34ToV33(currentRoadmap, currentWork, currentSchema);
+      if (currentRoadmap.version === "2026.09.23-v33") {
+        currentRoadmap.version = "2026.09.21-v32";
+        currentRoadmap.ownerDecision = {
+          decisionId: "MP-OD-2026-09-21-V32",
+          decidedAt: "2026-09-21",
+          supersedes: "2026.09.20-v31",
+        };
+        currentWork.roadmapVersion = currentRoadmap.version;
+        delete currentWork.devOperationsV33;
+        currentSchema.required = (currentSchema.required as string[]).filter(
+          (key) => key !== "devOperationsV33",
+        );
+        delete record(currentSchema.properties).devOperationsV33;
+        record(record(currentSchema.properties).roadmapVersion).const =
+          currentRoadmap.version;
+      }
       if (currentRoadmap.version === "2026.09.21-v32") {
         currentRoadmap.version = "2026.09.20-v31";
         currentWork.roadmapVersion = currentRoadmap.version;
@@ -8799,6 +10297,117 @@ describe("v29 PR15 source and integration separation", () => {
       expect(validatePr15MergeReceipt(changed, observed), field).toBeNull();
     }
   });
+  it("validates the exact v33 local Dev Operations layer without remote authority", async () => {
+    const { DEV_OPERATIONS_V33_CONTROL } =
+      await import("../src/project-control.js");
+    const roadmap = record(
+      JSON.parse(
+        await readFile(
+          new URL("../config/project/roadmap.json", import.meta.url),
+          "utf8",
+        ),
+      ),
+    );
+    const work = record(
+      JSON.parse(
+        await readFile(
+          new URL("../config/project/current-work.json", import.meta.url),
+          "utf8",
+        ),
+      ),
+    );
+    const roadmapSchema = JSON.parse(
+      await readFile(
+        new URL("../config/project/roadmap.schema.json", import.meta.url),
+        "utf8",
+      ),
+    ) as unknown;
+    const workSchema = JSON.parse(
+      await readFile(
+        new URL("../config/project/current-work.schema.json", import.meta.url),
+        "utf8",
+      ),
+    ) as unknown;
+    const ownerRecord = await readFile(
+      new URL("../docs/project/OWNER_DECISION_LOG.md", import.meta.url),
+      "utf8",
+    );
+    projectReviewV34ToV33(roadmap, work, record(workSchema));
+    expect(roadmap.version).toBe(DEV_OPERATIONS_V33_CONTROL.version);
+    expect(validateProjectControl(roadmap, work).errors).toEqual([]);
+    expect(
+      validateSchemaDocuments(
+        roadmapSchema,
+        workSchema,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      ),
+    ).toEqual([]);
+    expect(
+      validateWp8fOwnerDecisionRecord(
+        ownerRecord,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      ),
+    ).toBe(true);
+    expect(
+      evaluateProjectAction(roadmap, work, "DEV_OPERATIONS_TOOLING").allowed,
+    ).toBe(true);
+    expect(
+      evaluateDevOperationsPaths(roadmap, work, [
+        "scripts/dev-operations/preflight.mjs",
+        "tests/dev-operations/checkpoint.test.mjs",
+        "tsconfig.json",
+        "eslint.config.js",
+      ]).allowed,
+    ).toBe(true);
+    for (const path of [
+      "src/worker.ts",
+      "tests/dev-operations/../worker.test.mjs",
+      "tests/dev-operations/nested/checkpoint.test.mjs",
+    ])
+      expect(
+        evaluateDevOperationsPaths(roadmap, work, [path]).allowed,
+        path,
+      ).toBe(false);
+    for (const action of [
+      "LOCAL_IMPLEMENTATION",
+      "CREATE_DRAFT_PR",
+      "MERGE_DEFAULT_BRANCH",
+      "DEPLOY_TEST",
+      "CHANGE_PRODUCTION",
+      "CLOSE_ISSUE",
+      "PREPARE_EXACT_TEST_DEPLOYMENT",
+    ])
+      expect(evaluateProjectAction(roadmap, work, action).allowed, action).toBe(
+        false,
+      );
+    for (const field of [
+      "version",
+      "baseHead",
+      "allowedPaths",
+      "forbidden",
+      "inheritedState",
+    ]) {
+      const changed = structuredClone(work);
+      record(changed.devOperationsV33)[field] = "unexpected";
+      expect(validateProjectControl(roadmap, changed).errors, field).toContain(
+        "V33_EXACT_CONTROL_INVALID",
+      );
+    }
+    const changedSchema = structuredClone(workSchema) as Record<
+      string,
+      unknown
+    >;
+    record(record(changedSchema.properties).roadmapVersion).const =
+      "2026.09.21-v32";
+    expect(
+      validateSchemaDocuments(
+        roadmapSchema,
+        changedSchema,
+        DEV_OPERATIONS_V33_CONTROL.version,
+      ),
+    ).toContain("V33_SCHEMA_NOT_CLOSED");
+  });
+
   it("validates the exact v32 Greptile layer and preserves every inherited grant and journal", async () => {
     const { GREPTILE_PUSH_DRAFT_CONTROL } =
       await import("../src/project-control.js");
@@ -8818,6 +10427,17 @@ describe("v29 PR15 source and integration separation", () => {
         ),
       ),
     );
+    projectReviewV34ToV33(r, w);
+    if (r.version === "2026.09.23-v33") {
+      r.version = GREPTILE_PUSH_DRAFT_CONTROL.version;
+      r.ownerDecision = {
+        decisionId: GREPTILE_PUSH_DRAFT_CONTROL.ownerDecision,
+        decidedAt: "2026-09-21",
+        supersedes: GREPTILE_PUSH_DRAFT_CONTROL.supersedes,
+      };
+      w.roadmapVersion = r.version;
+      delete w.devOperationsV33;
+    }
     expect(r.version).toBe(GREPTILE_PUSH_DRAFT_CONTROL.version);
     expect(validateProjectControl(r, w).errors).toEqual([]);
     for (const key of [
