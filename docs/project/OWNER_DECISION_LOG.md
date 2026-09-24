@@ -1064,3 +1064,26 @@ Owner approved the separate Dev Operations work package and then explicitly appr
 - inheritedState: V32_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_UNCHANGED
 
 Implementation order: validate v33 closed control and negative actions first; then add the exact local tools, synthetic restoration tests and operator documentation. Preserve dirty work, secrets/PII exclusion and append-only receipts. No PR, merge, deploy, Production, issue closure, reset, rebase or force-push. Existing PR16 P1 and failed CI are separate.
+
+## MP-OD-2026-09-24-V38 — TEST readiness mandate
+
+Owner explicitly authorized all project-scoped implementation/configuration/testing needed to reach user testing on มะลิปัง TEST and then approved executing the plan. This is not Production, merge, destructive reset, automatic Issue closure, or a tool-safety override. Stage local implementation first; do not ask again for this same local scope. Exact remote prerequisites must be proven before any future remote-execution transition; old grants remain immutable, not renewed.
+
+```json
+{
+  "version": "2026.09.24-v38",
+  "ownerDecision": "MP-OD-2026-09-24-V38",
+  "supersedes": "2026.09.24-v37",
+  "baseline": "35b67ab87ecd052ab80f450d766c9eabd2991861",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "targetEnvironment": "TEST_ONLY",
+  "worker": "malispang-lineoa-test",
+  "stage": "LOCAL_REMEDIATION_AND_UAT_CONTRACT",
+  "localImplementation": true,
+  "remoteExecution": false,
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "inheritedEvidence": "PRESERVE_JOURNALS_ACCOUNTING_AND_UNRESOLVED_UAT",
+  "forbidden": "PRODUCTION_RESET_REBASE_FORCE_PUSH_MERGE_ISSUE_CLOSE"
+}
+```

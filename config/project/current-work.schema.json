@@ -5,6 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "testReadinessV38",
     "devOperationsIntegrationV37",
     "devOperationsOptimizationV36",
     "devOperationsRemediationV35",
@@ -64,6 +65,24 @@
     "devOperationsV33"
   ],
   "properties": {
+    "testReadinessV38": {
+      "const": {
+        "version": "2026.09.24-v38",
+        "ownerDecision": "MP-OD-2026-09-24-V38",
+        "supersedes": "2026.09.24-v37",
+        "baseline": "35b67ab87ecd052ab80f450d766c9eabd2991861",
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "targetEnvironment": "TEST_ONLY",
+        "worker": "malispang-lineoa-test",
+        "stage": "LOCAL_REMEDIATION_AND_UAT_CONTRACT",
+        "localImplementation": true,
+        "remoteExecution": false,
+        "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+        "inheritedEvidence": "PRESERVE_JOURNALS_ACCOUNTING_AND_UNRESOLVED_UAT",
+        "forbidden": "PRODUCTION_RESET_REBASE_FORCE_PUSH_MERGE_ISSUE_CLOSE"
+      }
+    },
     "devOperationsIntegrationV37": {
       "const": {
         "version": "2026.09.24-v37",
@@ -636,7 +655,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.24-v37" },
+    "roadmapVersion": { "const": "2026.09.24-v38" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {

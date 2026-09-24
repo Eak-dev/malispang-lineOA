@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  TEST_READINESS_V38,
+  inspectV38Repository,
+} from "./project-control-v38.js";
 
 import {
   evaluateProjectAction,
@@ -46,6 +50,20 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === TEST_READINESS_V38.version) {
+    const validation = validateProjectControl(roadmap, currentWork);
+    const errors = [
+      ...validation.errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    inspectV38Repository(fileURLToPath(root), projectControlGitExecutable());
+    console.log(
+      "Project control validation passed: 2026.09.24-v38, MP-06 (#12); local TEST remediation only; inherited evidence unchanged; remote/UAT NOT READY; Production NO_GO",
+    );
+    return;
   }
   const inheritsV22 =
     version === "2026.09.10-v22" ||

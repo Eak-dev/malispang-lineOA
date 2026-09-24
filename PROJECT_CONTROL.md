@@ -1,5 +1,11 @@
 # MalisPang Project Control
 
+## Current effective control — v38 / MP06 TEST readiness
+
+Owner approved project-scoped development, configuration and testing toward user UAT on มะลิปัง TEST, then explicitly approved executing the complete plan. This supersedes v37's completed DevOps-only scope. MP-06 / Issue #12 remains CURRENT. The first executable stage is local remediation and UAT-contract qualification; remote execution remains fail-closed pending exact candidate, environment, state, rollback and tool-permission gates. No repeated broad Owner approval is required for local implementation in the exact v38 path set.
+
+The v38 inspector compares inherited manifests and append-only evidence to commit35b67ab87ecd052ab80f450d766c9eabd2991861. Existing journals, consumed grants, accounting and historical UAT gaps are not replacement authority. Historical sections below remain evidence, not the effective action selector. Production, reset, rebase, force-push, merge and Issue closure remain forbidden. The storage-review hold is not released by this Owner mandate. The current local stage cannot deploy, activate, send LINE messages, or query the held storage action. A validated control transition is not proof of user-test readiness.
+
 ## Current effective control — v37 / existing PR18 integration into MP-06
 
 Owner chose option 1 and approved proceeding on 2026-09-24: integrate only existing PR18 from codex/dev-operations-v33 into codex/mp-06-guardrailed-ai at pinned base 1508782a9cbf9412b3a6967264e9f4e8d6c19376. MP-OD-2026-09-24-V37 supersedes v36 only for commit/push, exact-PR review, Ready, and one ordinary merge commit after complete exact-source CI and independent findings review. PR16 remains Draft; its automatic CI synchronization is review-only, not default-branch merge permission. Preserve v36/v35/v34/v33/v32 records, consumed PR18 creation, all grants/journals/holds, MP-06 UAT gaps and frozen runtime. The DevOps history ends at the reviewed PR18 source; future feature edits require a separate explicit MP-06 work-package transition. No new PR, squash, rebase, force-push, default merge, deploy, remote TEST, Production, Issue closure or MP-07.

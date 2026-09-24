@@ -66,7 +66,36 @@ import {
   runPullRequestControlValidation,
 } from "../src/project-control-cli.js";
 
-const root = new URL("../", import.meta.url);
+// Historical v1-v37 assertions stay unchanged and run against their sealed
+// v37 input tree. The imported validator is the CURRENT implementation;
+// v38 controls/current-tree scope are tested in project-control-v38.test.ts.
+const sourceRoot = new URL("../", import.meta.url);
+const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v37-regression-"));
+execFileSync(
+  projectControlGitExecutable(),
+  [
+    "clone",
+    "--shared",
+    "--no-hardlinks",
+    fileURLToPath(sourceRoot),
+    historicalRoot,
+  ],
+  { stdio: "pipe" },
+);
+execFileSync(
+  projectControlGitExecutable(),
+  ["checkout", "--detach", "35b67ab87ecd052ab80f450d766c9eabd2991861"],
+  { cwd: historicalRoot, stdio: "pipe" },
+);
+await symlink(
+  new URL("node_modules", sourceRoot),
+  join(historicalRoot, "node_modules"),
+  "dir",
+);
+const root = pathToFileURL(historicalRoot + "/");
+afterAll(async () => {
+  await rm(historicalRoot, { recursive: true, force: true });
+});
 
 describe("v37 existing PR18 integration authority", () => {
   const read = (path: string) =>
@@ -10302,34 +10331,31 @@ describe("v29 PR15 source and integration separation", () => {
       await import("../src/project-control.js");
     const roadmap = record(
       JSON.parse(
-        await readFile(
-          new URL("../config/project/roadmap.json", import.meta.url),
-          "utf8",
-        ),
+        await readFile(new URL("config/project/roadmap.json", root), "utf8"),
       ),
     );
     const work = record(
       JSON.parse(
         await readFile(
-          new URL("../config/project/current-work.json", import.meta.url),
+          new URL("config/project/current-work.json", root),
           "utf8",
         ),
       ),
     );
     const roadmapSchema = JSON.parse(
       await readFile(
-        new URL("../config/project/roadmap.schema.json", import.meta.url),
+        new URL("config/project/roadmap.schema.json", root),
         "utf8",
       ),
     ) as unknown;
     const workSchema = JSON.parse(
       await readFile(
-        new URL("../config/project/current-work.schema.json", import.meta.url),
+        new URL("config/project/current-work.schema.json", root),
         "utf8",
       ),
     ) as unknown;
     const ownerRecord = await readFile(
-      new URL("../docs/project/OWNER_DECISION_LOG.md", import.meta.url),
+      new URL("docs/project/OWNER_DECISION_LOG.md", root),
       "utf8",
     );
     projectReviewV34ToV33(roadmap, work, record(workSchema));
@@ -10413,16 +10439,13 @@ describe("v29 PR15 source and integration separation", () => {
       await import("../src/project-control.js");
     const r = record(
       JSON.parse(
-        await readFile(
-          new URL("../config/project/roadmap.json", import.meta.url),
-          "utf8",
-        ),
+        await readFile(new URL("config/project/roadmap.json", root), "utf8"),
       ),
     );
     const w = record(
       JSON.parse(
         await readFile(
-          new URL("../config/project/current-work.json", import.meta.url),
+          new URL("config/project/current-work.json", root),
           "utf8",
         ),
       ),
