@@ -1,4 +1,26 @@
-# Dev Operations v33 — local-only evidence tooling
+# Dev Operations — local-only evidence tooling
+
+## Current v37 — PR18 integration route
+
+Owner approved integrating existing PR18 into codex/mp-06-guardrailed-ai only, following a compatibility review. V37 is the narrow successor for committing the qualified v36 tooling, exact-PR review/Ready, one normal merge commit and post-merge verification. It preserves all historical records and consumed creation authority. Existing PR16 remains Draft; automatic CI on its updated head is review-only. The current MP-06 work package and frozen runtime do not gain implementation or deployment authority from this merge. Validate the final source SHA, synthetic PR18/PR16 events and exact merged result before handing the branch back to MP-06 work.
+
+## Current v36 — local execution and concise evidence
+
+Owner decision `MP-OD-2026-09-24-V36` authorizes local efficiency improvements on the existing isolated branch, retaining the exact v33 paths and all v35 consumed-PR/inherited-state restrictions. Project commit, push, new PR, Ready, merge, runtime, remote TEST, deploy, Production and issue closure are not authorized. Historical sections below remain evidence, not fresh grants.
+
+For routine checks, invoke the fixed scripts directly. Load the current short context and the exact receipt needed; load full logs/history only to investigate a result. Use a reasoning model for ambiguous requirements, implementation and review. A deterministic executor reports zero model calls for its own phase; this excludes the coding/conductor usage and does not establish total billed-token savings.
+
+Source capture retains independent before/after observations, file/index/patch hashes and metadata checks. It batches only branch/HEAD (Git refs cannot contain newlines), derives tracked names from the existing NUL stage inventory, and reuses a hashing buffer. Paths remain separate so names containing tabs/newlines are not broken by line parsing. The Git selector verifies root ownership, permissions, type and executable bits for the fixed CLT path and its ancestors; unsafe/missing CLT falls back to system Git.
+
+Identical-content rewrites (for example, generated assets after a build) must not cause these read-only checks to refresh the real Git index. Porcelain `git diff` can refresh index stat metadata even with optional locks disabled; disabling that refresh alone can also report a stale-stat path as changed. Use the strict NUL status observation to distinguish real changes, retain accurate diff/patch evidence, and keep raw-index and file-metadata guards intact. The CLI and tooling regressions cover this case separately from genuine protected-file changes.
+
+For the current v36 control check, use the new fixed run phase with Node24.19.0. The output path must be new and outside the repo. This directly runs the existing `node --import tsx scripts/validate-project-control.mjs`, keeping the same full validator. It verifies expected branch/HEAD and source before/after, and records actual child exit/output in a schema-v3 receipt. It accepts only the `CONTROL_VALIDATION` label and no caller-supplied command, model or test counts.
+
+```sh
+node scripts/dev-operations/receipt.mjs --phase run --repo "$REPO" --out "$RECEIPT" --command-label CONTROL_VALIDATION --expected-branch codex/dev-operations-v33 --expected-head "$HEAD"
+```
+
+Read compact stdout first; open the receipt when details are needed. A failed process, malformed result or source drift returns nonzero and cannot produce a PASS result. Diagnostic evidence stays outside the repo. This is local child-process evidence, not a sandbox, signature, independent attestation or permission to execute an unreviewed repository. Existing before/after schema-v2 receipts and their caller-reported limitations remain supported. Ignored dependencies and environment remain outside the source identity contract.
 
 ## v34 review-only successor
 

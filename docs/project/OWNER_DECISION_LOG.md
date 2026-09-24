@@ -1,5 +1,41 @@
 # Owner Decision Log
 
+## MP-OD-2026-09-24-V37 — existing PR18 integration into MP-06
+
+Owner selected option 1, asked for an MP-06 compatibility review first, and then explicitly approved the resulting staged integration plan on 2026-09-24. The checked target is codex/mp-06-guardrailed-ai at 1508782a9cbf9412b3a6967264e9f4e8d6c19376. This decision is limited to existing PR18 and the already qualified local v36 DevOps work, subject to the new control, complete local validation, current exact-source hosted CI and independent findings review. The target is the MP-06 feature branch, not the repository default. PR16 remains Draft and may receive automatic review CI after the MP-06 branch advances. This decision neither changes MP-06 runtime nor resolves pendingTemplate/storage/UAT gaps.
+
+- version: 2026.09.24-v37
+- ownerDecision: MP-OD-2026-09-24-V37
+- supersedes: 2026.09.24-v36
+- repository: Eak-dev/malispang-lineOA
+- pullRequest: 18
+- downstreamDraftPullRequest: 16
+- headBranch: codex/dev-operations-v33
+- baseBranch: codex/mp-06-guardrailed-ai
+- baseHead: 1508782a9cbf9412b3a6967264e9f4e8d6c19376
+- sourceBaseline: 90aa98305105377d006c67f40259297273db3849
+- creationGrant: CONSUMED
+- authority: EXISTING_PR18_REVIEW_READY_AND_ONE_MERGE_COMMIT_TO_MP06_ONLY
+- inheritedState: V36_V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+- futureWork: EXPLICIT_MP06_WORK_PACKAGE_TRANSITION_REQUIRED
+- forbidden: NO_NEW_PR_DEFAULT_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+
+The merge receipt must prove ordered parents, the exact approved base and reviewed source, and tree equality. Reject unrelated merge ancestry. Preserve all inherited records and actual PR18 creation consumption. Post-merge validation must pass on the MP-06 branch before any feature handoff. No authorization to edit runtime, alter grants/journals, repair remote TEST state, merge PR16, deploy, access Production or close Issue12.
+
+## MP-OD-2026-09-24-V36 — local Dev Operations efficiency
+
+Owner explicitly answered "อนุมัติ" to the v36 control-transition question on 2026-09-24, after automatic review required a direct governance decision beyond general project-edit approval. The question included Project Control, schema, validator, tests and documentation for faster local DevOps/direct control execution and expressly excluded commit/push/PR/merge/deploy/Production. Recommended PO/PM GPT-6 Sol Medium and Codex Developer GPT-6 Astra High; LINE bot model unchanged.
+
+- version: 2026.09.24-v36
+- ownerDecision: MP-OD-2026-09-24-V36
+- supersedes: 2026.09.23-v35
+- baseline: 90aa98305105377d006c67f40259297273db3849
+- authority: LOCAL_DEV_OPERATIONS_EFFICIENCY_ONLY
+- inheritedState: V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED
+- forbidden: NO_COMMIT_PUSH_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE
+
+Retain the exact v33 file allowlist. Scope: optimize Git capture/launcher in existing Dev Operations scripts; fixed CONTROL_VALIDATION run in receipt.mjs with real command outcome, complete before/after source binding and compact output; necessary closed v36 control/schema/validator/negative tests and documentation. Preserve all inherited fields and consumed PR18. No arbitrary commands, model experiment reset, timeout/retry increase, assertion waiver or acceptance downgrade. Synthetic fixture commits in disposable tests confer no project commit/publication authority. Full local evidence stays outside the product repo.
+
 ## MP-OD-2026-09-23-V35 — existing PR18 three-P1 remediation
 
 Owner explicitly approved remediation after the aeef425 review, not acceptance or deployment. Model recommendation: PO/PM and Codex Developer GPT-6 Astra / High; LINE bot model unchanged.

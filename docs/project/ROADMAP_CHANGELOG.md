@@ -1,5 +1,13 @@
 # Roadmap Changelog
 
+## 2026.09.24-v37 — existing PR18 integration into MP-06
+
+MP-OD-2026-09-24-V37 supersedes v36 solely for the Owner-approved existing PR18 integration route. Pin source baseline 90aa98305105377d006c67f40259297273db3849, base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, consumed creation and one ordinary merge into codex/mp-06-guardrailed-ai after local/hosted/reviewer checks. PR16 remains Draft and receives only automatic downstream checks. Keep all historical controls, runtime, TEST grants/journals/holds and MP-06 acceptance gaps; feature continuation needs its own scoped work-package transition. No default merge, deploy, Production or Issue closure.
+
+## 2026-09-24 — v36 local Dev Operations efficiency
+
+MP-OD-2026-09-24-V36 explicitly authorizes the scoped control transition after Owner confirmation. Supersedes v35 only for local efficiency from90aa98305105377d006c67f40259297273db3849. Retain exact v33 paths, consumed PR18 and all inherited state. Optimize local Git process overhead and fixed control-validation execution, retain complete source observations/negative gates, and return concise evidence references. No project commit/push/new PR/Ready/merge/runtime/remote TEST/deploy/Production/Issue closure. Implementation/validation remains in progress; this transition itself asserts no timing or billed-token saving.
+
 ## 2026.09.09-v19 — preparation only; exact grant unused
 
 Owner decision MP-OD-2026-09-09-V19 supersedes2026.09.09-v18 from approved baseline ca4904ef3f316f8e381e57e4757f3fe173dbeb1f (README-only child of42026b22069e4299dfc8ff5f73b5077e3b0856fb). MP-06 / Issue12 / WP8F / TEST_ONLY. Only the ten control paths may change; v18 history/runtime/dependencies/artifact remain frozen. The exact c59eb5e12bb96a34da38759a5585be67d8c2ab6e /2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308 /malispang-lineoa-test grant is APPROVED_UNUSED0/1, separate from executable deployment flags which remain false. No upload/version creation/traffic change/deployment in this round, even after readiness; await Owner execution confirmation. Unknown remote outcome never restores a grant.

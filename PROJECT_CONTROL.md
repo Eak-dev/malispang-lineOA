@@ -1,5 +1,13 @@
 # MalisPang Project Control
 
+## Current effective control — v37 / existing PR18 integration into MP-06
+
+Owner chose option 1 and approved proceeding on 2026-09-24: integrate only existing PR18 from codex/dev-operations-v33 into codex/mp-06-guardrailed-ai at pinned base 1508782a9cbf9412b3a6967264e9f4e8d6c19376. MP-OD-2026-09-24-V37 supersedes v36 only for commit/push, exact-PR review, Ready, and one ordinary merge commit after complete exact-source CI and independent findings review. PR16 remains Draft; its automatic CI synchronization is review-only, not default-branch merge permission. Preserve v36/v35/v34/v33/v32 records, consumed PR18 creation, all grants/journals/holds, MP-06 UAT gaps and frozen runtime. The DevOps history ends at the reviewed PR18 source; future feature edits require a separate explicit MP-06 work-package transition. No new PR, squash, rebase, force-push, default merge, deploy, remote TEST, Production, Issue closure or MP-07.
+
+## Current effective control — v36 / local Dev Operations efficiency
+
+Owner explicitly approved MP-OD-2026-09-24-V36 / 2026.09.24-v36 in response to the targeted control-transition question. Supersedes v35 only for LOCAL_DEV_OPERATIONS_EFFICIENCY_ONLY from baseline 90aa98305105377d006c67f40259297273db3849. Keep the exact v33 paths and V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED. Optimize repeated local Git observations, verified system Git startup and fixed control-validation execution with source-bound evidence and compact output. NO_COMMIT_PUSH_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE. Preserve consumed PR18 creation and all source/index/dirty-state checks and test criteria. Synthetic fixture commits are test setup only. Timing/output-byte measurements do not certify billing savings.
+
 ## Current effective control — v35 / existing Draft PR18 P1 remediation
 
 Owner approved MP-OD-2026-09-23-V35 / 2026.09.23-v35, superseding v34 only for the three confirmed P1 findings in existing Draft PR18: consumed creation authority, stable checkpoint capture, and pre-validation receipt source binding. Creation grant CONSUMED, exact PR18 only. Retain the v33 path allowlist and all inherited grants/journals/holds. Require negative regressions, full isolated validation and exact-SHA CI/findings-only re-review. No new PR, Ready, merge, reset, rebase, force-push, workflow/credential/runtime edits, remote TEST, deploy, Production or Issue closure. Historical v34 is not fresh creation authority.

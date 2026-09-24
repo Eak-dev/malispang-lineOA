@@ -25,33 +25,182 @@ const sensitiveContent =
 /** @param {string | Buffer} value */
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
+/** Select only a system-owned Git executable, never PATH or caller input. */
+export function devOperationsGitExecutable() {
+  if (process.platform === "darwin") {
+    const binary = "/Library/Developer/CommandLineTools/usr/bin/git";
+    const paths = [
+      "/Library",
+      "/Library/Developer",
+      "/Library/Developer/CommandLineTools",
+      "/Library/Developer/CommandLineTools/usr",
+      "/Library/Developer/CommandLineTools/usr/bin",
+      binary,
+    ];
+    try {
+      if (
+        paths.every((path) => {
+          const stat = lstatSync(path);
+          return (
+            stat.uid === 0 &&
+            (stat.mode & 0o022) === 0 &&
+            (path === binary
+              ? stat.isFile() && (stat.mode & 0o111) !== 0
+              : stat.isDirectory())
+          );
+        })
+      )
+        return binary;
+    } catch {
+      // Xcode-only Macs or unavailable CLT retain the system launcher.
+    }
+  }
+  return "/usr/bin/git";
+}
+
+/** HEAD and branch contain no newlines. Paths are deliberately not batched.
+ * @param {string} repo @param {string} binary */
+export function readGitIdentity(repo, binary = devOperationsGitExecutable()) {
+  const lines = execFileSync(
+    binary,
+    [
+      "--no-replace-objects",
+      "--no-optional-locks",
+      "-C",
+      repo,
+      "rev-parse",
+      "HEAD",
+      "--symbolic-full-name",
+      "HEAD",
+    ],
+    { encoding: "utf8", maxBuffer: 1024 * 1024 },
+  )
+    .trimEnd()
+    .split("\n");
+  const [head, ref] = lines;
+  if (
+    lines.length !== 2 ||
+    !head ||
+    !/^[a-f0-9]{40}$/u.test(head) ||
+    !ref ||
+    (ref !== "HEAD" && !ref.startsWith("refs/heads/"))
+  )
+    throw new Error("invalid Git identity");
+  return {
+    head,
+    branch: ref === "HEAD" ? "" : ref.slice("refs/heads/".length),
+  };
+}
+
+/** Status resolves stat-only rewrites without refreshing the real index.
+ * Keep the diff's original name multiplicity for unmerged paths, but filter
+ * its stat-only false positives through the true worktree status column.
+ * @param {(...args: string[]) => Buffer} git */
+function unstagedSourceNames(git) {
+  const raw = git(
+    "status",
+    "--porcelain=v1",
+    "-z",
+    "--untracked-files=no",
+    "--no-renames",
+    "--ignore-submodules=none",
+  ).toString();
+  if (raw !== "" && !raw.endsWith("\0"))
+    throw new Error("invalid source status");
+  const statuses = new Set([
+    " M",
+    " T",
+    " D",
+    " A",
+    "M ",
+    "MM",
+    "MT",
+    "MD",
+    "T ",
+    "TM",
+    "TT",
+    "TD",
+    "A ",
+    "AM",
+    "AT",
+    "AD",
+    "D ",
+    "DD",
+    "AU",
+    "UD",
+    "UA",
+    "DU",
+    "AA",
+    "UU",
+    "??",
+  ]);
+  const seen = new Set();
+  const unstaged = new Set();
+  for (const record of raw === "" ? [] : raw.slice(0, -1).split("\0")) {
+    const path = record.slice(3);
+    if (
+      record.length < 4 ||
+      record[2] !== " " ||
+      !statuses.has(record.slice(0, 2)) ||
+      isAbsolute(path) ||
+      path.split("/").some((part) => !part || part === "." || part === "..") ||
+      seen.has(path)
+    )
+      throw new Error("invalid source status");
+    seen.add(path);
+    if (record[1] !== " " && record.slice(0, 2) !== "??") unstaged.add(path);
+  }
+  return git("diff", "--name-only", "--no-renames", "-z")
+    .toString()
+    .split("\0")
+    .filter((path) => path !== "" && unstaged.has(path))
+    .sort();
+}
+
 /** Observe Git-visible source only (not ignored dependencies or environment).
  * Repeated observations detect drift; this is not a filesystem lock or proof
  * against an adversarial writer restoring state between observations.
  * @param {string} repo */
 export function captureSource(repo) {
+  const binary = devOperationsGitExecutable();
   /** @param {...string} args */
   const git = (...args) =>
     execFileSync(
-      "/usr/bin/git",
-      ["--no-replace-objects", "--no-optional-locks", "-C", repo, ...args],
+      binary,
+      [
+        "--no-replace-objects",
+        "--no-optional-locks",
+        "-c",
+        "diff.autoRefreshIndex=false",
+        "-C",
+        repo,
+        ...args,
+      ],
       { maxBuffer: 16 * 1024 * 1024 },
     );
   if (
     realpathSync(git("rev-parse", "--show-toplevel").toString().trim()) !== repo
   )
     throw new Error("repo must be a Git worktree root");
-  const branch = git("branch", "--show-current").toString().trim();
-  const head = git("rev-parse", "HEAD").toString().trim();
+  const { branch, head } = readGitIdentity(repo, binary);
   const inventory = git("ls-files", "--stage", "-z");
   const untracked = git("ls-files", "--others", "--exclude-standard", "-z")
     .toString()
     .split("\0")
     .filter(Boolean)
     .sort();
-  const tracked = git("ls-files", "-z").toString().split("\0").filter(Boolean);
+  const tracked = inventory
+    .toString()
+    .split("\0")
+    .filter(Boolean)
+    .map((record) => {
+      const tab = record.indexOf("\t");
+      if (tab < 0) throw new Error("invalid Git index inventory");
+      return record.slice(tab + 1);
+    });
   const paths = [...new Set([...tracked, ...untracked])].sort();
   const digest = createHash("sha256");
+  const chunk = Buffer.alloc(64 * 1024);
   for (const path of paths) {
     if (
       isAbsolute(path) ||
@@ -71,7 +220,6 @@ export function captureSource(repo) {
     const fd = openSync(source, constants.O_RDONLY | constants.O_NOFOLLOW);
     let opened;
     try {
-      const chunk = Buffer.alloc(64 * 1024);
       let size;
       while ((size = readSync(fd, chunk, 0, chunk.length, null)) > 0)
         fileHash.update(chunk.subarray(0, size));
@@ -135,16 +283,10 @@ export function captureSource(repo) {
       .split("\0")
       .filter(Boolean)
       .sort(),
-    unstagedNames: git("diff", "--name-only", "--no-renames", "-z")
-      .toString()
-      .split("\0")
-      .filter(Boolean)
-      .sort(),
+    unstagedNames: unstagedSourceNames(git),
   };
-  if (
-    git("rev-parse", "HEAD").toString().trim() !== head ||
-    git("branch", "--show-current").toString().trim() !== branch
-  )
+  const finalIdentity = readGitIdentity(repo, binary);
+  if (finalIdentity.head !== head || finalIdentity.branch !== branch)
     throw new Error("source changed during capture");
   return snapshot;
 }
@@ -214,8 +356,15 @@ if (
     /** @param {...string} items */
     const git = (...items) =>
       execFileSync(
-        "/usr/bin/git",
-        ["-C", repo, "--no-optional-locks", ...items],
+        devOperationsGitExecutable(),
+        [
+          "-C",
+          repo,
+          "--no-optional-locks",
+          "-c",
+          "diff.autoRefreshIndex=false",
+          ...items,
+        ],
         { maxBuffer: MAX_BYTES + 1024 },
       );
     if (
@@ -239,9 +388,7 @@ if (
     const stagedNames = names(
       git("diff", "--cached", "--name-only", "--no-renames", "-z"),
     ).sort();
-    const unstagedNames = names(
-      git("diff", "--name-only", "--no-renames", "-z"),
-    ).sort();
+    const unstagedNames = unstagedSourceNames(git);
     const untrackedNames = names(
       git("ls-files", "--others", "--exclude-standard", "-z"),
     );
