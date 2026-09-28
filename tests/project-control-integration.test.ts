@@ -1009,6 +1009,7 @@ describe("v41 exact PR event identity is structure, never approval", () => {
   it.each([
     ["modeled nullable metadata", null],
     ["matching supplied metadata", "b".repeat(40)],
+    ["stale valid metadata", "d".repeat(40)],
   ])(
     "accepts %s only alongside the exact runner/Git tuple",
     (_name, metadata) => {
@@ -1028,7 +1029,9 @@ describe("v41 exact PR event identity is structure, never approval", () => {
   );
 
   it.each([
-    ["wrong hash", "d".repeat(40)],
+    ["uppercase hash", "D".repeat(40)],
+    ["short hash", "d".repeat(39)],
+    ["long hash", "d".repeat(41)],
     ["malformed hash", "not-a-git-sha"],
     ["empty string", ""],
     ["number", 123],
@@ -1057,6 +1060,46 @@ describe("v41 exact PR event identity is structure, never approval", () => {
       if (variant === "ordered-parents") observed.parents.reverse();
       if (variant === "tree") observed.tree = "d".repeat(40);
       if (variant === "source-tree") observed.sourceTree = "d".repeat(40);
+      expect(validateIntegrationPullRequestReceipt(event, observed)).toBeNull();
+    },
+  );
+
+  it.each([
+    "runner-sha",
+    "runner-ref",
+    "ordered-parents",
+    "extra-parent",
+    "tree",
+    "source-tree",
+    "repository",
+    "head-repository",
+    "base-repository",
+    "base-sha",
+    "head-sha",
+    "base-branch",
+    "head-branch",
+  ])(
+    "does not let stale valid metadata rescue a mismatched %s binding",
+    (variant) => {
+      const { event, observed } = eventFor();
+      record(event.pull_request).merge_commit_sha = "d".repeat(40);
+      if (variant === "runner-sha") observed.sha = "e".repeat(40);
+      if (variant === "runner-ref") observed.ref = "refs/pull/456/merge";
+      if (variant === "ordered-parents") observed.parents.reverse();
+      if (variant === "extra-parent") observed.parents.push("e".repeat(40));
+      if (variant === "tree") observed.tree = "e".repeat(40);
+      if (variant === "source-tree") observed.sourceTree = "e".repeat(40);
+      if (variant === "repository") event.repository.full_name = "Other/repo";
+      if (variant === "head-repository")
+        event.pull_request.head.repo.full_name = "Other/repo";
+      if (variant === "base-repository")
+        event.pull_request.base.repo.full_name = "Other/repo";
+      if (variant === "base-sha") event.pull_request.base.sha = "e".repeat(40);
+      if (variant === "head-sha") event.pull_request.head.sha = "e".repeat(40);
+      if (variant === "base-branch")
+        event.pull_request.base.ref = "codex/phase-1a-foundation";
+      if (variant === "head-branch")
+        event.pull_request.head.ref = "codex/unapproved";
       expect(validateIntegrationPullRequestReceipt(event, observed)).toBeNull();
     },
   );
@@ -1329,6 +1372,41 @@ describe("v41 source and precise ordinary integration edge", () => {
 });
 
 describe("v41 CLI PR adapter uses the actual event and restores test environment", () => {
+  it.each([123, 16] as const)(
+    "validates PR%d with stale optional merge metadata using the actual fixture Git tuple",
+    async (number) => {
+      await withCliFixture(number, async (fixture) => {
+        const event = record(
+          JSON.parse(await readFile(fixture.eventPath, "utf8")),
+        );
+        const staleMetadata = "d".repeat(40);
+        expect(fixture.merge).not.toBe(staleMetadata);
+        event.action = "synchronize";
+        record(event.pull_request).merge_commit_sha = staleMetadata;
+        await writeFile(fixture.eventPath, JSON.stringify(event));
+        await expect(
+          runProjectControlValidation(fixture.root),
+        ).resolves.toBeUndefined();
+        const prefix = "Project control validation passed: ";
+        const message = fixture
+          .logMessages()
+          .find(
+            (value) => typeof value === "string" && value.startsWith(prefix),
+          );
+        expect(message).toBeTypeOf("string");
+        if (typeof message !== "string")
+          throw new Error("Expected CLI validation summary");
+        const summary = record(JSON.parse(message.slice(prefix.length)));
+        expect(summary.repositoryInspection).toMatchObject({
+          mode:
+            number === 123 ? "SYNTHETIC_PR_MERGE" : "DOWNSTREAM_REVIEW_ONLY",
+          head: fixture.merge,
+          remoteExecutionAuthorized: false,
+        });
+      });
+    },
+  );
+
   it("validates a modeled opened event with null merge metadata against the actual fixture Git tuple", async () => {
     await withMergeFixture(async ({ cwd, source, tree, merge }) => {
       const { event } = eventFor(source, merge, tree);

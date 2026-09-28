@@ -223,12 +223,14 @@ export function validateIntegrationPullRequestReceipt(
       checkout.ref !== `refs/pull/${event.number}/merge` ||
       !isDeepStrictEqual(checkout.parents, [pr.base.sha, pr.head.sha]) ||
       checkout.tree !== checkout.sourceTree ||
-      // GitHub can emit an opened event before its asynchronous test-merge
-      // metadata is populated. The required runner SHA/ref, ordered Git
-      // parents and exact source tree above remain the identity proof.
+      // Hosted CI 36485083070 matched every required identity above but had
+      // different optional merge metadata. GITHUB_SHA identifies the PR merge ref:
+      // https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request
+      // Payload metadata may be absent, pending or a different well-formed SHA;
+      // it cannot replace runner SHA/ref, ordered Git parents or source tree.
       (pr.merge_commit_sha !== undefined &&
         pr.merge_commit_sha !== null &&
-        pr.merge_commit_sha !== checkout.merge)
+        !sha(pr.merge_commit_sha))
     )
       return null;
     const integration =
