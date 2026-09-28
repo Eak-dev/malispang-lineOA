@@ -5,6 +5,7 @@ import {
   TEST_POLICY_INTEGRATION_V41,
   inspectIntegrationRepository,
   validateIntegrationPullRequestReceipt,
+  type IntegrationCheckoutReceipt,
 } from "./project-control-integration.js";
 import {
   TEST_POLICY_REPAIR_V40,
@@ -35,6 +36,65 @@ import {
   DEV_OPERATIONS_OPTIMIZATION_V36,
   DEV_OPERATIONS_INTEGRATION_V37,
 } from "./project-control.js";
+
+/** Failure-only diagnostics: fixed keys and booleans/enums, never raw event data. */
+function integrationIdentityDiagnostics(
+  event: unknown,
+  checkout: IntegrationCheckoutReceipt,
+) {
+  const asRecord = (value: unknown): Record<string, unknown> =>
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const e = asRecord(event);
+  const pr = asRecord(e.pull_request);
+  const head = asRecord(pr.head);
+  const base = asRecord(pr.base);
+  const c = TEST_POLICY_INTEGRATION_V41;
+  const isSha = (value: unknown) =>
+    typeof value === "string" && /^[a-f0-9]{40}$/u.test(value);
+  const positiveNumber = Number.isSafeInteger(e.number) && Number(e.number) > 0;
+  return {
+    eventRepositoryMatches: asRecord(e.repository).full_name === c.repository,
+    headRepositoryMatches: asRecord(head.repo).full_name === c.repository,
+    baseRepositoryMatches: asRecord(base.repo).full_name === c.repository,
+    pullRequestNumberMatches: positiveNumber && pr.number === e.number,
+    open: pr.state === "open",
+    notMerged: pr.merged !== true,
+    sourceShaValid: isSha(head.sha),
+    baseShaValid: isSha(base.sha),
+    checkoutShaValid: isSha(checkout.merge),
+    checkoutTreeValid: isSha(checkout.tree),
+    runnerShaMatchesCheckout: checkout.sha === checkout.merge,
+    runnerRefMatchesPullRequest:
+      positiveNumber && checkout.ref === `refs/pull/${Number(e.number)}/merge`,
+    orderedParentsMatch:
+      checkout.parents.length === 2 &&
+      checkout.parents[0] === base.sha &&
+      checkout.parents[1] === head.sha,
+    sourceTreeMatchesCheckout: checkout.tree === checkout.sourceTree,
+    mergeMetadata:
+      pr.merge_commit_sha === undefined
+        ? "ABSENT"
+        : pr.merge_commit_sha === null
+          ? "NULL"
+          : pr.merge_commit_sha === checkout.merge
+            ? "MATCH"
+            : "MISMATCH",
+    integrationRouteMatches:
+      e.number !== 16 &&
+      e.number !== 18 &&
+      head.ref === c.headBranch &&
+      base.ref === c.baseBranch &&
+      base.sha === c.publishedBaseline,
+    downstreamRouteMatches:
+      e.number === c.downstreamPr &&
+      pr.draft === true &&
+      head.ref === c.baseBranch &&
+      base.ref === c.downstreamBaseBranch &&
+      base.sha === c.downstreamBaseHead,
+  };
+}
 
 export async function runProjectControlValidation(root: URL): Promise<void> {
   const [roadmap, currentWork, roadmapSchema, currentWorkSchema] =
@@ -95,15 +155,20 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
       const parents = git("rev-list", "--parents", "-n", "1", head)
         .split(" ")
         .slice(1);
-      const receipt = validateIntegrationPullRequestReceipt(event, {
+      const checkout = {
         sha: process.env.GITHUB_SHA,
         ref: process.env.GITHUB_REF,
         merge: head,
         parents,
         tree: git("rev-parse", "HEAD^{tree}"),
         sourceTree: parents[1] ? git("rev-parse", `${parents[1]}^{tree}`) : "",
-      });
-      if (!receipt) throw new Error("V41_PR_MERGE_IDENTITY_MISMATCH");
+      };
+      const receipt = validateIntegrationPullRequestReceipt(event, checkout);
+      if (!receipt)
+        throw new Error(
+          "V41_PR_MERGE_IDENTITY_MISMATCH:" +
+            JSON.stringify(integrationIdentityDiagnostics(event, checkout)),
+        );
       context = { kind: "PULL_REQUEST", receipt };
     }
     const inspected = inspectIntegrationRepository(cwd, binary, context);

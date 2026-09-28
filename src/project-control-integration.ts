@@ -324,6 +324,58 @@ export function inspectIntegrationRepository(
       ["--no-replace-objects", "--no-optional-locks", ...args],
       { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
     );
+  // Each batch belongs to this inspection only. Commit expressions identify
+  // immutable objects; the index is read afresh for every invocation. Parse the
+  // byte-framed protocol, not delimiters in file content, and retain the former
+  // 16 MiB per-blob limit. Missing entries stay missing until requested: the
+  // unchanged v39 index legitimately lacks newly introduced v40/v41 paths.
+  const readBlobs = (revision: string, requested: readonly string[]) => {
+    const unique = [...new Set(requested)];
+    const expressions = unique.map((path) => `${revision}:${path}`);
+    const maximumBlobBytes = 16 * 1024 * 1024;
+    const output = execFileSync(
+      git,
+      ["--no-replace-objects", "--no-optional-locks", "cat-file", "--batch"],
+      {
+        cwd,
+        input: expressions.join("\n") + "\n",
+        maxBuffer: unique.length * (maximumBlobBytes + 1024),
+      },
+    );
+    const contents = new Map<string, string>();
+    let offset = 0;
+    for (const [index, expression] of expressions.entries()) {
+      const newline = output.indexOf(10, offset);
+      if (newline < offset) throw new Error("V41_BLOB_BATCH_HEADER_INVALID");
+      const header = output.subarray(offset, newline).toString("utf8");
+      offset = newline + 1;
+      if (header === `${expression} missing`) continue;
+      const match = /^([a-f0-9]{40}) blob (\d+)$/u.exec(header);
+      const length = Number(match?.[2]);
+      if (
+        !match ||
+        !Number.isSafeInteger(length) ||
+        length < 0 ||
+        length > maximumBlobBytes ||
+        offset + length >= output.length ||
+        output[offset + length] !== 10
+      )
+        throw new Error("V41_BLOB_BATCH_FRAME_INVALID");
+      contents.set(
+        unique[index]!,
+        output.subarray(offset, offset + length).toString("utf8"),
+      );
+      offset += length + 1;
+    }
+    if (offset !== output.length)
+      throw new Error("V41_BLOB_BATCH_TRAILING_DATA");
+    return (path: string): string => {
+      const content = contents.get(path);
+      if (content === undefined)
+        throw new Error(`V41_REQUIRED_BLOB_MISSING:${path}`);
+      return content;
+    };
+  };
   const lines = (value: string) => value.trim().split("\n").filter(Boolean);
   const paths = (value: string) => value.split("\0").filter(Boolean);
   const base = c.baseline;
@@ -434,34 +486,36 @@ export function inspectIntegrationRepository(
     !isDeepStrictEqual(Object.keys(files).sort(), [...V40_ALLOWED_PATHS].sort())
   )
     throw new Error("V41_SNAPSHOT_PATHS_INVALID");
-  const qualified = (path: string): string => {
+  const qualifiedContents = new Map<string, string>();
+  for (const path of V40_ALLOWED_PATHS) {
     const file = object(files[path]);
     if (typeof file.content !== "string" || file.sha256 !== hash(file.content))
       throw new Error("V41_SNAPSHOT_FILE_HASH_MISMATCH");
-    return file.content;
+    qualifiedContents.set(path, file.content);
+  }
+  const qualified = (path: string): string => {
+    const content = qualifiedContents.get(path);
+    if (content === undefined) throw new Error("V41_SNAPSHOT_FILE_MISSING");
+    return content;
   };
-  for (const path of V40_ALLOWED_PATHS) qualified(path);
-  const inherited = controlPaths.map((path) =>
+  const qualifiedControls = controlPaths.map((path) =>
     object(JSON.parse(qualified(path))),
   );
+  const inherited = structuredClone(qualifiedControls);
+  const baselineBlobs = readBlobs(c.baseline, [
+    ...controlPaths,
+    ...appendPaths,
+    "PROJECT_CONTROL.md",
+  ]);
+  const publishedBlobs = readBlobs(c.publishedBaseline, controlPaths);
   projectV40ToV39(inherited[0]!, inherited[1]!, inherited[2]);
   for (const [i, path] of controlPaths.entries())
-    if (
-      !isDeepStrictEqual(
-        inherited[i],
-        JSON.parse(run("show", `${base}:${path}`)),
-      )
-    )
+    if (!isDeepStrictEqual(inherited[i], JSON.parse(baselineBlobs(path))))
       throw new Error("V41_QUALIFIED_V39_LINEAGE_DRIFT");
   projectV39ToV38(inherited[0]!, inherited[1]!, inherited[2]);
   projectV38ToV37(inherited[0]!, inherited[1]!, inherited[2]);
   for (const [i, path] of controlPaths.entries())
-    if (
-      !isDeepStrictEqual(
-        inherited[i],
-        JSON.parse(run("show", `${c.publishedBaseline}:${path}`)),
-      )
-    )
+    if (!isDeepStrictEqual(inherited[i], JSON.parse(publishedBlobs(path))))
       throw new Error("V41_PUBLISHED_LINEAGE_DRIFT");
   const revisions = lines(
     run("rev-list", "--reverse", `${base}..${sourceHead}`),
@@ -521,7 +575,7 @@ export function inspectIntegrationRepository(
         ...appendPaths,
         "PROJECT_CONTROL.md",
       ])
-        if (read(path) !== run("show", `${base}:${path}`))
+        if (read(path) !== baselineBlobs(path))
           throw new Error("V41_BASELINE_INDEX_DRIFT");
       return;
     }
@@ -542,7 +596,7 @@ export function inspectIntegrationRepository(
       throw new Error("V41_EXACT_TRANSITION_REQUIRED");
     projectV41ToV40(r, w, s);
     for (const [i, value] of [r, w, s].entries())
-      if (!isDeepStrictEqual(value, JSON.parse(qualified(controlPaths[i]!))))
+      if (!isDeepStrictEqual(value, qualifiedControls[i]))
         throw new Error("V41_INHERITED_CONTROL_DRIFT");
     for (const path of appendPaths)
       if (!read(path).startsWith(qualified(path)))
@@ -577,9 +631,17 @@ export function inspectIntegrationRepository(
         throw new Error(`V41_FROZEN_V40_DRIFT:${path}`);
   };
   check((path) => readFileSync(join(cwd, path), "utf8"), false);
-  check((path) => run("show", `:${path}`), true);
-  for (const r of revisions)
-    check((path) => run("show", `${r}:${path}`), false);
+  const snapshotReadPaths = [
+    ...controlPaths,
+    ...appendPaths,
+    "PROJECT_CONTROL.md",
+    snapshotPath,
+    ...V40_ALLOWED_PATHS.filter(
+      (path) => !(V41_ALLOWED_PATHS as readonly string[]).includes(path),
+    ),
+  ];
+  check(readBlobs("", snapshotReadPaths), true);
+  for (const r of revisions) check(readBlobs(r, snapshotReadPaths), false);
   return {
     mode,
     head,

@@ -4,6 +4,7 @@ import {
   copyFile,
   mkdir,
   mkdtemp,
+  readFile,
   rm,
   symlink,
   writeFile,
@@ -601,14 +602,19 @@ describe("v41 staged publication gates require exact independently authenticated
 });
 
 describe("v41 independently inspected source, index and full history", () => {
-  it("accepts the exact uncommitted overlay and its synthetic committed source", async () => {
-    await withFixture(async (cwd) => {
+  it("accepts the exact uncommitted overlay as local-only source", async () => {
+    await withFixture((cwd) => {
       expect(
         inspectIntegrationRepository(cwd, projectControlGitExecutable()),
       ).toMatchObject({
         mode: "LOCAL_SOURCE",
         remoteExecutionAuthorized: false,
       });
+    });
+  });
+
+  it("accepts the exact synthetic committed source without integration authority", async () => {
+    await withFixture((cwd) => {
       const source = commit(cwd);
       expect(
         inspectIntegrationRepository(cwd, projectControlGitExecutable()),
@@ -619,9 +625,81 @@ describe("v41 independently inspected source, index and full history", () => {
         clean: true,
         remoteExecutionAuthorized: false,
       });
+    });
+  });
+
+  it("validates the synthetic committed source through the normal CLI", async () => {
+    await withFixture(async (cwd) => {
+      commit(cwd);
       await expect(
         runProjectControlValidation(pathToFileURL(cwd + "/")),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  it.each([
+    "config/project/current-work.json",
+    "docs/project/OWNER_DECISION_LOG.md",
+  ])(
+    "rejects a missing required index blob despite an intact working file: %s",
+    async (path) => {
+      await withFixture((cwd) => {
+        commit(cwd);
+        const original = readFileSync(join(cwd, path), "utf8");
+        git(cwd, ["update-index", "--force-remove", path]);
+        expect(readFileSync(join(cwd, path), "utf8")).toBe(original);
+        expect(() =>
+          inspectIntegrationRepository(cwd, projectControlGitExecutable()),
+        ).toThrow(`V41_REQUIRED_BLOB_MISSING:${path}`);
+      });
+    },
+  );
+
+  it("reads committed UTF-8 evidence by byte lengths rather than embedded batch-like delimiters", async () => {
+    await withFixture(async (cwd) => {
+      const path = "docs/project/ROADMAP_CHANGELOG.md";
+      const suffix =
+        "\n## Synthetic byte-framing evidence\nมะลิปัง ขนมปัง 🍞\n" +
+        "a".repeat(40) +
+        " blob 999\n:config/project/current-work.json missing\n";
+      await writeFile(
+        join(cwd, path),
+        readFileSync(join(cwd, path), "utf8") + suffix,
+      );
+      const source = commit(cwd);
+      expect(
+        inspectIntegrationRepository(cwd, projectControlGitExecutable()),
+      ).toMatchObject({
+        mode: "SOURCE_COMMIT",
+        sourceHead: source,
+        head: source,
+        clean: true,
+        remoteExecutionAuthorized: false,
+      });
+    });
+  });
+
+  it("re-reads the index on a second invocation at the same committed HEAD", async () => {
+    await withFixture(async (cwd) => {
+      const source = commit(cwd);
+      expect(
+        inspectIntegrationRepository(cwd, projectControlGitExecutable()),
+      ).toMatchObject({
+        mode: "SOURCE_COMMIT",
+        head: source,
+        clean: true,
+      });
+      const path = "config/project/current-work.json";
+      const original = readFileSync(join(cwd, path), "utf8");
+      const changed = record(JSON.parse(original));
+      changed.wp8fSuccessorOperationJournal = [];
+      await writeFile(join(cwd, path), JSON.stringify(changed));
+      git(cwd, ["add", path]);
+      await writeFile(join(cwd, path), original);
+      expect(git(cwd, ["rev-parse", "HEAD"])).toBe(source);
+      expect(() =>
+        inspectIntegrationRepository(cwd, projectControlGitExecutable()),
+      ).toThrow("V41_INHERITED_CONTROL_DRIFT");
     });
   });
 
@@ -821,6 +899,94 @@ async function withMergeFixture(
       htmlUrl: `https://github.com/${repository}/pull/123`,
     };
     await run({ cwd, source, tree, merge, receipt, integrated });
+  });
+}
+
+type CliFixture = {
+  root: URL;
+  source: string;
+  merge: string;
+  eventPath: string;
+  alternateEventPath: string;
+  logMessages: () => unknown[];
+};
+
+/** Separate cases each get their own checkout/event/console/environment. Setup
+ * performs no validation; each case exercises one CLI validation entrypoint. */
+async function withCliFixture(
+  number: 123 | 16,
+  run: (fixture: CliFixture) => Promise<void>,
+) {
+  await withFixture(async (cwd) => {
+    const source = commit(cwd);
+    const tree = git(cwd, ["rev-parse", `${source}^{tree}`]);
+    const integration = git(cwd, [
+      ...identity,
+      "commit-tree",
+      tree,
+      "-p",
+      published,
+      "-p",
+      source,
+      "-m",
+      "Synthetic MP06 policy merge for CLI",
+    ]);
+    const merge =
+      number === 123
+        ? integration
+        : git(cwd, [
+            ...identity,
+            "commit-tree",
+            tree,
+            "-p",
+            c.downstreamBaseHead,
+            "-p",
+            integration,
+            "-m",
+            "Synthetic downstream PR16 merge for CLI",
+          ]);
+    git(cwd, ["checkout", "--quiet", "--detach", merge]);
+    const { event } = eventFor(
+      number === 123 ? source : integration,
+      merge,
+      tree,
+      number,
+    );
+    if (number === 16) {
+      event.pull_request.head.ref = targetBranch;
+      event.pull_request.base.ref = c.downstreamBaseBranch;
+      event.pull_request.base.sha = c.downstreamBaseHead;
+    }
+    const directory = await mkdtemp(join(tmpdir(), "mp06-v41-pr-event-"));
+    const eventPath = join(directory, "event.json");
+    const alternateEventPath = join(directory, "alternate-event.json");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await writeFile(eventPath, JSON.stringify(event));
+      await writeFile(alternateEventPath, JSON.stringify(event));
+      vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
+      vi.stubEnv("GITHUB_EVENT_PATH", eventPath);
+      vi.stubEnv("GITHUB_REPOSITORY", repository);
+      vi.stubEnv("GITHUB_SHA", merge);
+      vi.stubEnv("GITHUB_REF", `refs/pull/${number}/merge`);
+      await run({
+        root: pathToFileURL(cwd + "/"),
+        source,
+        merge,
+        eventPath,
+        alternateEventPath,
+        logMessages: () =>
+          log.mock.calls.map(([message]: unknown[]) => message),
+      });
+      expect(git(cwd, ["rev-parse", "HEAD"])).toBe(merge);
+      expect(
+        git(cwd, ["status", "--porcelain=v1", "--untracked-files=all"]),
+      ).toBe("");
+    } finally {
+      vi.unstubAllEnvs();
+      log.mockRestore();
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 }
 
@@ -1224,71 +1390,25 @@ describe("v41 CLI PR adapter uses the actual event and restores test environment
     }
   });
 
-  it.each([123, 16])(
-    "validates exact PR%d context without falling back to historical PR15 rules",
-    async (number) => {
-      await withFixture(async (cwd) => {
-        const source = commit(cwd);
-        const tree = git(cwd, ["rev-parse", `${source}^{tree}`]);
-        const integration = git(cwd, [
-          ...identity,
-          "commit-tree",
-          tree,
-          "-p",
-          published,
-          "-p",
-          source,
-          "-m",
-          "Synthetic MP06 policy merge for CLI",
-        ]);
-        const merge =
-          number === 123
-            ? integration
-            : git(cwd, [
-                ...identity,
-                "commit-tree",
-                tree,
-                "-p",
-                c.downstreamBaseHead,
-                "-p",
-                integration,
-                "-m",
-                "Synthetic downstream PR16 merge for CLI",
-              ]);
-        git(cwd, ["checkout", "--quiet", "--detach", merge]);
-        const { event } = eventFor(
-          number === 123 ? source : integration,
-          merge,
-          tree,
-          number,
-        );
-        if (number === 16) {
-          event.pull_request.head.ref = targetBranch;
-          event.pull_request.base.ref = c.downstreamBaseBranch;
-          event.pull_request.base.sha = c.downstreamBaseHead;
-        }
-        const directory = await mkdtemp(join(tmpdir(), "mp06-v41-pr-event-"));
-        const eventPath = join(directory, "event.json");
-        const alternateEventPath = join(directory, "alternate-event.json");
-        const log = vi.spyOn(console, "log").mockImplementation(() => {});
-        try {
-          await writeFile(eventPath, JSON.stringify(event));
-          await writeFile(alternateEventPath, JSON.stringify(event));
-          vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
-          vi.stubEnv("GITHUB_EVENT_PATH", eventPath);
-          vi.stubEnv("GITHUB_REPOSITORY", repository);
-          vi.stubEnv("GITHUB_SHA", merge);
-          vi.stubEnv("GITHUB_REF", `refs/pull/${number}/merge`);
-          const fixtureRoot = pathToFileURL(cwd + "/");
-          await expect(
-            runProjectControlValidation(fixtureRoot),
-          ).resolves.toBeUndefined();
-          await expect(
-            runPullRequestControlValidation(fixtureRoot, eventPath),
-          ).resolves.toBeUndefined();
-          expect(
-            log.mock.calls.some(
-              ([message]) =>
+  it.each([
+    [123, "normal"],
+    [123, "adapter"],
+    [16, "normal"],
+    [16, "adapter"],
+  ] as const)(
+    "validates exact PR%d via the %s CLI without historical fallback",
+    async (number, entrypoint) => {
+      await withCliFixture(number, async (fixture) => {
+        const result =
+          entrypoint === "normal"
+            ? runProjectControlValidation(fixture.root)
+            : runPullRequestControlValidation(fixture.root, fixture.eventPath);
+        await expect(result).resolves.toBeUndefined();
+        expect(
+          fixture
+            .logMessages()
+            .some(
+              (message) =>
                 typeof message === "string" &&
                 message.includes(
                   number === 123
@@ -1296,37 +1416,75 @@ describe("v41 CLI PR adapter uses the actual event and restores test environment
                     : "DOWNSTREAM_REVIEW_ONLY",
                 ),
             ),
-          ).toBe(true);
+        ).toBe(true);
+      });
+    },
+  );
+
+  it.each(
+    ([123, 16] as const).flatMap((number) => [
+      { number, mismatch: "event-path" },
+      { number, mismatch: "source-sha" },
+      { number, mismatch: "pr-ref" },
+      { number, mismatch: "repository" },
+      { number, mismatch: "missing-event" },
+    ]),
+  )(
+    "rejects exact PR$number CLI $mismatch without changing its checkout",
+    async ({ number, mismatch }) => {
+      await withCliFixture(number, async (fixture) => {
+        if (mismatch === "event-path") {
           await expect(
-            runPullRequestControlValidation(fixtureRoot, alternateEventPath),
+            runPullRequestControlValidation(
+              fixture.root,
+              fixture.alternateEventPath,
+            ),
           ).rejects.toThrow("V41_PR_EVENT_PATH_MISMATCH");
-          vi.stubEnv("GITHUB_SHA", source);
-          await expect(
-            runProjectControlValidation(fixtureRoot),
-          ).rejects.toThrow("V41_PR_MERGE_IDENTITY_MISMATCH");
-          vi.stubEnv("GITHUB_SHA", merge);
+          return;
+        }
+        const untrustedMarker =
+          "<script>synthetic-private-event-value</script>";
+        if (mismatch === "source-sha") {
+          vi.stubEnv("GITHUB_SHA", fixture.source);
+          const event = JSON.parse(
+            await readFile(fixture.eventPath, "utf8"),
+          ) as Record<string, unknown>;
+          event.body = untrustedMarker;
+          await writeFile(fixture.eventPath, JSON.stringify(event));
+        }
+        if (mismatch === "pr-ref")
           vi.stubEnv("GITHUB_REF", "refs/pull/456/merge");
-          await expect(
-            runProjectControlValidation(fixtureRoot),
-          ).rejects.toThrow("V41_PR_MERGE_IDENTITY_MISMATCH");
-          vi.stubEnv("GITHUB_REF", `refs/pull/${number}/merge`);
+        if (mismatch === "repository")
           vi.stubEnv("GITHUB_REPOSITORY", "Other/repo");
-          await expect(
-            runProjectControlValidation(fixtureRoot),
-          ).rejects.toThrow("V41_PR_EVENT_REQUIRED");
-          vi.stubEnv("GITHUB_REPOSITORY", repository);
-          vi.stubEnv("GITHUB_EVENT_PATH", "");
-          await expect(
-            runProjectControlValidation(fixtureRoot),
-          ).rejects.toThrow("V41_PR_EVENT_REQUIRED");
-          expect(git(cwd, ["rev-parse", "HEAD"])).toBe(merge);
+        if (mismatch === "missing-event") vi.stubEnv("GITHUB_EVENT_PATH", "");
+        const failure: unknown = await runProjectControlValidation(
+          fixture.root,
+        ).catch((error: unknown) => error);
+        expect(failure).toBeInstanceOf(Error);
+        if (!(failure instanceof Error))
+          throw new Error("Expected CLI rejection");
+        expect(failure.message).toContain(
+          mismatch === "repository" || mismatch === "missing-event"
+            ? "V41_PR_EVENT_REQUIRED"
+            : "V41_PR_MERGE_IDENTITY_MISMATCH",
+        );
+        if (mismatch === "source-sha") {
+          const diagnostics = JSON.parse(
+            failure.message.slice("V41_PR_MERGE_IDENTITY_MISMATCH:".length),
+          ) as Record<string, unknown>;
+          expect(diagnostics).toMatchObject({
+            runnerShaMatchesCheckout: false,
+            orderedParentsMatch: true,
+            sourceTreeMatchesCheckout: true,
+            mergeMetadata: "ABSENT",
+          });
+          expect(failure.message).not.toContain(untrustedMarker);
+          expect(failure.message).not.toContain(fixture.source);
           expect(
-            git(cwd, ["status", "--porcelain=v1", "--untracked-files=all"]),
-          ).toBe("");
-        } finally {
-          vi.unstubAllEnvs();
-          log.mockRestore();
-          await rm(directory, { recursive: true, force: true });
+            Object.values(diagnostics).every(
+              (value) => typeof value === "boolean" || value === "ABSENT",
+            ),
+          ).toBe(true);
         }
       });
     },
