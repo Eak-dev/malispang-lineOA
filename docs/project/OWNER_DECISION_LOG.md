@@ -1115,3 +1115,74 @@ Owner explicitly approved implementing the drafted nine-part TEST operation poli
   "forbidden": "RUNTIME_REMOTE_PRODUCTION_PUSH_PR_MERGE_DEPLOY_RESET_REBASE_FORCE_PUSH_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-28-V40 — approved TEST policy revision 3 local repair
+
+Owner explicitly approved the reviewed draft: “อนุมัติที่คุณร่างและปรับแก้ได้เลย เพื่อสามารถทำงานต่อได้”. This records scoped CONTROL_REPAIR_ONLY implementation authority, not a tool review outcome, new remote grant, or global publication of v40.
+
+Known conflicts: ambiguous historical Current headings and root authorization flags; mixed runtime/control/evidence baselines; v37 published versus v39 local policy. Scope is the exact V40_ALLOWED_PATHS set, schema/validator integration, preserved historical regression fixtures and policy/adoption documentation. Allowed actions are LOCAL_IMPLEMENTATION, LOCAL_VALIDATION and LOCAL_ANALYSIS. No commit or external write is authorized in this round. The local repair grant expires at handoff or Owner revocation/replacement; it cannot be used to start another work package.
+
+Published v37 at 35b67ab87ecd052ab80f450d766c9eabd2991861 was confirmed by read-only local/remote Git comparison on 2026-09-28. Isolated work inherits local v39 at 07ce10f641ebaa74ceab83c98e8f5fdc40d6858b. Supersedes v39 identifies only the technical local overlay chain; docs/project/CONTROL_REPAIR_V40_TH.md maps the intended published-v37 transition separately. Existing MP07 local authorization is neither revoked nor expanded; it must use its own verified package.
+
+Acceptance: exact schema/Owner record, one derived fail-closed local authority summary, unchanged inherited manifests/grants/journals/history at working tree/index/every successor revision, positive local and negative remote/replay/reset regressions, independent review and applicable local quality gates. Validation qualifies local bytes only. Production NO_GO, historical Data Studio denials and pending-template/UAT gaps remain. Support Case 15724958 does not supply a restoration procedure or authorize replay, SQL or permission changes.
+
+```json
+{
+  "version": "2026.09.28-v40",
+  "ownerDecision": "MP-OD-2026-09-28-V40",
+  "supersedes": "2026.09.24-v39",
+  "baseline": "07ce10f641ebaa74ceab83c98e8f5fdc40d6858b",
+  "publishedControlVersion": "2026.09.24-v37",
+  "publishedBaseline": "35b67ab87ecd052ab80f450d766c9eabd2991861",
+  "inheritedLocalVersion": "2026.09.24-v39",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "targetEnvironment": "LOCAL_ONLY",
+  "stage": "LOCAL_CONTROL_REPAIR_ONLY",
+  "policyRevision": 3,
+  "localImplementation": true,
+  "remoteExecution": false,
+  "commit": false,
+  "publication": false,
+  "authority": "LOCAL_CONTROL_ONLY_NOT_TOOL_PERMISSION",
+  "storageHold": "UNRESOLVED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "inheritedEvidence": "IMMUTABLE_GRANTS_COUNTS_JOURNALS_ACCOUNTING_AND_UAT_GAPS",
+  "parallelWork": "MP07_EXISTING_SEPARATE_SCOPE_UNCHANGED",
+  "forbidden": "RUNTIME_REMOTE_PRODUCTION_COMMIT_PUSH_PR_PUBLICATION_MERGE_DEPLOY_RESET_REBASE_FORCE_PUSH_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-29-V41 — approved conditional MP06 policy integration
+
+Owner replied “อนุมัติ” to option1 of the integration plan and the explicit summary listing local control/CI/tests, commit, source push, one Draft PR and one ordinary merge into MP06 after exact-source CI/review. This new approval is limited to that package; it does not reopen the historical denied action or authorize runtime/deployment/Production.
+
+Allowed implementation paths are V41_ALLOWED_PATHS. Preserve the sealed v40 snapshot and its historical local-only contract, every inherited manifest/record/assertion and frozen module. The actual Git baseline remains07ce10f; qualified v40 is not a commit. Pin publishedMP06base35b67 and exact source/base/repository. Local qualification binds reviewed parent/tree/diff; post-commit source SHA, actual created PR and live CI/review must be independently verified and recorded externally. One Draft PR and one ordinary MP06 merge only; unknown/consumed operations cannot be retried as new grants. Source fixes require new exact-source evidence. Stop on base/scope drift or unresolved findings.
+
+The downstream PR16 stays Draft and review-only. No default merge, runtime/model/workflow/dependency change, SQL/storage/held-action replay, remote TEST/deploy/activation, credentials/permissions, reset/rebase/force-push, Issue closure or Production. Storage/claims/Registry remain NOT_OBSERVED; pendingTemplate cause UNKNOWN and accounting/UAT gaps remain. Existing independent MP07 scope is unchanged. Grant expires at completed integration/handoff or Owner revocation/replacement; no automatic next package.
+
+```json
+{
+  "version": "2026.09.29-v41",
+  "ownerDecision": "MP-OD-2026-09-29-V41",
+  "supersedes": "2026.09.28-v40",
+  "baseline": "07ce10f641ebaa74ceab83c98e8f5fdc40d6858b",
+  "publishedBaseline": "35b67ab87ecd052ab80f450d766c9eabd2991861",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/test-policy-v40",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "downstreamPr": 16,
+  "downstreamBaseBranch": "codex/phase-1a-foundation",
+  "downstreamBaseHead": "88deb90a58369923f11a7266ec63fa8fd5f293c2",
+  "qualifiedSnapshotSha256": "d76fa61d8ff2e82a96002a78c41b5ce584512013c7614609534e3c39c3369d48",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "CONDITIONAL_POLICY_INTEGRATION_ONLY",
+  "targetEnvironment": "LOCAL_AND_GITHUB_CONTROL_ONLY",
+  "remoteExecution": false,
+  "production": false,
+  "maximumDraftPullRequests": 1,
+  "maximumIntegrationMerges": 1,
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "forbidden": "RUNTIME_DEPLOY_ACTIVATE_STORAGE_LINE_PROVIDER_PRODUCTION_DEFAULT_MERGE_RESET_REBASE_FORCE_PUSH_ISSUE_CLOSE"
+}
+```

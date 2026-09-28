@@ -1,3 +1,120 @@
+# MaliPang TEST — นโยบายการทำงาน ฉบับ 3
+
+สถานะ: **OWNER_APPROVED / LOCAL_IMPLEMENTATION_ONLY — ไม่ใช่ remote execution authority**
+
+- วันที่/Owner decision: 28 กันยายน 2026 / `MP-OD-2026-09-28-V40`
+- Local control version: `2026.09.28-v40`; MP-06 / GitHub Issue #12 ยังคง CURRENT และ Roadmap Issue #9 คงเดิม
+- คำอนุมัติที่ใช้: “อนุมัติที่คุณร่างและปรับแก้ได้เลย เพื่อสามารถทำงานต่อได้” หลัง Owner ได้อ่านร่างฉบับ 3
+- Published MP-06 baseline ที่ตรวจ: `35b67ab87ecd052ab80f450d766c9eabd2991861` / `2026.09.24-v37`
+- Inherited local policy/control baseline: `07ce10f641ebaa74ceab83c98e8f5fdc40d6858b` / `2026.09.24-v39`; การมีประวัติ v38/v39 ใน checkout นี้ไม่ใช่หลักฐานว่าเผยแพร่หรือมีผลบน MP-06 branch แล้ว
+- รอบนี้อนุญาตเฉพาะ local policy/control/schema/validator/tests/docs ตาม exact allowlist ของ v40 **ไม่ให้สิทธิ์ commit, push, PR, merge, external publication, deploy, activation, remote TEST/Storage, LINE/provider call, Production หรือปิด Issue** ไม่เปลี่ยน runtime, LINE bot model หรือ approval configuration
+- การอนุมัติ local implementation มีแล้ว; ผล validation/independent review/published integration ต้องรายงานแยกตามหลักฐานจริง ไม่รับรองจากสถานะเอกสารนี้
+
+Effective local overlay คือ `localControlRepairV40` การกระทำที่อนุญาตเฉพาะชุดงานนี้คือ `LOCAL_IMPLEMENTATION`, `LOCAL_VALIDATION` และ `LOCAL_ANALYSIS`; `COMMIT` และ publication ทุกชนิดเป็น false ในรอบนี้ ไม่ใช้ historical flags เป็น fallback
+
+การเปลี่ยนแปลงรายข้อและเงื่อนไขนำไปใช้ดู [แผนรับนโยบายและซ่อม control v40](CONTROL_REPAIR_V40_TH.md) เนื้อหาฉบับ 2 ด้านท้ายเก็บ byte-for-byte เป็นประวัติ ไม่ใช่ทางเลือกให้หยิบสิทธิ์เก่าที่กว้างกว่า
+
+## 1. แยกสิทธิ์และความพร้อมสี่เรื่อง
+
+ก่อนทำ action ให้ตรวจแยก Owner authorization, effective Project Control, สิทธิ์เครื่องมือ/บัญชีบริการ และหลักฐานความพร้อมทางเทคนิค ต้องครบเงื่อนไขที่เกี่ยวข้อง Full Access, local tests PASS, อีเมล Support และนโยบายโครงการใช้แทนเงื่อนไขที่ขาดไม่ได้
+
+AI เสนอและอธิบายกฎได้ แต่ห้ามเขียนข้อเสนอของตนเป็นคำอนุมัติของ Owner การเปลี่ยนขอบเขตต้องแสดงกฎเดิม กฎใหม่ สิ่งที่ยังคงเดิม ความเสี่ยง และวิธีรับมือผลล้มเหลว ไม่ลด acceptance criteria หรือใช้ความกำกวมของเอกสารสร้างสิทธิ์ให้ตนเอง
+
+## 2. ยืนยัน TEST ด้วยตัวตนระบบ ไม่ใช่ชื่อแสดงผล
+
+ขอบเขตคือ LINE OA “มะลิปัง TEST” และทรัพยากร TEST ในชุดงานที่อนุมัติ “มะลิปัง” Production อยู่นอกขอบเขตทั้งหมด ไม่เปิดข้อมูล ส่งข้อความ เปลี่ยนค่า หรือ deploy
+
+Remote action ในอนาคตต้องมีสิทธิ์แยกและ target manifest ที่ตรวจ account, channel/Worker, environment, namespace/object ตามความจำเป็น พร้อม source/deployed version, approved testers/ข้อมูล, งบ, วิธีหยุดและกู้คืน หาก target ไม่ชัด ให้หยุด action นั้น ไม่เดาหรือสำรวจทรัพยากรอื่นเพื่อหาตัวคล้ายกัน งาน local ในรอบนี้ไม่ต้องเข้าถึง remote เพื่อพิสูจน์ target
+
+## 3. อนุมัติเป็นชุดงาน และทำงานประจำต่อในขอบเขต
+
+ชุดงานระบุเป้าหมาย exact paths/ระบบ/ข้อมูลที่แตะได้ ผลข้างเคียงที่ยอมรับ งบ/ระยะเวลา เกณฑ์ผ่าน ข้อห้ามและผู้รับช่วง งานย่อยที่อยู่ในขอบเขตและผ่านสิทธิ์เครื่องมือไม่ต้องขอ Owner อนุมัติซ้ำทุกคลิก การอ่านไฟล์ วิเคราะห์ และ local tests ด้วยข้อมูลจำลองที่ไม่ติดต่อระบบจริงไม่ใช้ remote retry quota
+
+ต้องขอการตัดสินใจเพิ่มเมื่อ target, ชนิดข้อมูล, งบ, business behavior, credentials/roles หรือสิทธิ์สำคัญ เช่น destructive action, commit/publication, merge/deploy เปลี่ยนจากชุดงานที่มีผล การอนุมัติรุ่นโมเดล Codex ไม่เปลี่ยนโมเดล LINE bot อัตโนมัติ คำว่า read-only ไม่ให้สิทธิ์ remote ตามชื่อหมวดโดยปริยาย
+
+MP-07 local package ที่ได้รับอนุมัติไว้ไม่ถูกยกเลิกหรือถือว่ายังไม่เคยอนุมัติจากนโยบายนี้ ให้ตรวจ baseline/control/Owner decision และขอบเขตเดิมของ checkout นั้นก่อนดำเนินต่อ ไม่ขออนุมัติ scope เดิมซ้ำ ไม่เริ่มหรือขยาย MP-07 ใน checkout v40 และไม่เพิ่ม CURRENT item เพราะ MP-06 ติดขัด
+
+## 4. แยกการเตรียมหน้าจอจาก target/data access
+
+การจัดหน้าต่างหรือเลือกเครื่องมือโดยไม่ส่งคำขอไป target และไม่อ่านข้อมูลนอกขอบเขต ไม่ใช่ SQL/deployment operation แต่ navigation, reload, search, selector, DOM snapshot หรือเปิด editor อาจส่งคำขอหรืออ่านข้อมูล ต้องจัดประเภทจากพฤติกรรมและผลจริง ไม่ใช้ “ยังไม่กด Run” เป็นหลักฐานว่าปลอดผลข้างเคียง
+
+กำหนด target, selectors/fields และขอบเขตผลลัพธ์ก่อนอ่าน ไม่อ่าน DOM/tab list/object tree ทั้งหมดแล้วค่อยกรอง หากจำเป็นต้องค้นหาภายใน TEST เพื่อยืนยัน target ต้องมี discovery scope ที่กำหนดข้อมูลและจำนวนผลลัพธ์แยก ไม่ใช้ discovery เป็นชื่อใหม่ของ action ที่ถูกปฏิเสธ นโยบายนี้ไม่อนุญาต remote discovery
+
+## 5. ตัดสิน retry จากผลและประวัติ ก่อนนับครั้ง
+
+| ผลก่อนหน้า                           | การปฏิบัติภายในสิทธิ์ที่มีผล                                                                 |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| SUCCEEDED                            | ไปขั้นถัดไป ไม่ replay เพื่อสร้างผลเดิมอีกครั้ง                                              |
+| NOT_STARTED และมีหลักฐานว่าไม่เกิดผล | แก้สาเหตุแล้วลองได้เฉพาะสิทธิ์และเพดานที่อนุมัติ และเมื่อไม่มี unresolved history ที่ห้ามไว้ |
+| FAILED_WITH_KNOWN_EFFECTS            | ตรวจและจัดการผลบางส่วนก่อน; error ไม่ยืนยันว่าไม่มีผล                                        |
+| UNKNOWN                              | ห้ามส่งซ้ำ; reconcile เฉพาะวิธีที่มีสิทธิ์อยู่จริง ไม่แทน UNKNOWN ด้วยศูนย์/PASS             |
+| IN_FLIGHT                            | ห้ามส่งซ้อน; รอหรือตรวจสถานะผ่านกลไกที่อนุญาต                                                |
+| SAFETY_DENIED                        | หยุด action นั้น ไม่ใช้โควตา technical retry และไม่เปลี่ยนวิธีหรือผู้ช่วยเพื่อหลบ            |
+
+Technical failure ของ browser preparation/selection ความเสี่ยงต่ำที่พิสูจน์ว่าปลอดผลข้างเคียงคงเพดาน **รวมครั้งแรกไม่เกิน 3 ครั้งต่อเหตุขัดข้อง** เป็นเพดานบริหารงานของโครงการ ไม่ใช่ข้อจำกัดสากลและไม่แทน one-shot SQL/deploy/activation/LINE หรือ grant เดิม Timeout หลังเริ่มทำงานไม่พิสูจน์ว่า NOT_STARTED; แยก timeout ของการพิจารณาสิทธิ์ตามผลเครื่องมือจริง ไม่เดาว่าเป็น approval หรือ denial
+
+Semantic action identity ผูกวัตถุประสงค์ target ข้อมูล/ผลที่ตั้งใจให้เกิด และประวัติ/สิทธิ์ ไม่ผูกชื่อ task/tool/URL/process/ผู้ช่วย/incident name การเปลี่ยนชื่อไม่เติม grant หรือเริ่ม counter ใหม่ ต้องตรวจประวัติทั้งหมด: unresolved denial, UNKNOWN, IN_FLIGHT และผลบางส่วนที่ยังไม่จัดการยังมีผล แม้ครั้งล่าสุดรายงาน NOT_STARTED หรือ SUCCEEDED
+
+แยก technical-attempt count, logical-operation/grant usage และ effect receipts ไม่ใช้ข้อความที่ caller อ้างเองเป็น trusted history เมื่อครบเพดานหยุด retry อัตโนมัติและทำงานอิสระที่อนุญาตต่อได้ การเปิดรอบใหม่ต้องมีหลักฐานเหตุหรือเงื่อนไขเปลี่ยนจริงพร้อมสิทธิ์ครบ ไม่จำเป็นต้องพิสูจน์ root cause ทุกชั้นก่อนแก้ technical failure ที่ปลอดภัย แต่ต้องไม่กลบ side effects, เพิ่ม timeout/retry เพื่อให้ผ่าน หรือปลด denial ผ่านการแก้ต้นเหตุ
+
+## 6. การอ่านข้อมูลต้องประเมินผลทั้งเส้นทาง
+
+พิจารณา UI auto-load/refresh, authentication, route/GET/RPC, deployed source, DO wakeup/constructor/initialization/migration, การตั้งหรือกระตุ้น alarm/งานเบื้องหลัง, SQL และผล audit/billing ร่วมกัน HTTP GET หรือ SQL SELECT ไม่พิสูจน์ว่า request ทั้งหมดไม่เปลี่ยน business state หากยังไม่ทราบให้จัด potentially state-changing และไม่ execute จากสิทธิ์อ่าน
+
+จำกัด Object/ข้อมูล/query/fields จำนวนแถว/ขนาดผล/ครั้ง/ค่าใช้จ่ายและหลักฐานก่อนอ่าน ไม่ enumerate หรืออ่าน secret/raw customer chat/ข้อมูลลูกค้าอื่นเพื่อความสะดวก แยก expected audit metadata/ค่าบริการจากการเปลี่ยนออเดอร์ แต้ม เงิน หรือ conversation state ไม่ตั้งเงื่อนไขที่เป็นไปไม่ได้ว่าห้ามมี audit metadata ทุกชนิด
+
+ตรวจผลคำสั่งทีละรายการ ไม่ใช้ run-all กลบ partial/unknown outcome ไม่ reset หรือแก้ pendingTemplate เพื่อผลิต PASS การวิเคราะห์แผนอ่านทำได้ใน local scope แต่รอบ v40 นี้ **ไม่มี remote query หรือ observation authority ใด** และไม่เปลี่ยน freshness gate เดิม
+
+## 7. Legacy MP-06 denials แยกเป็นข้อจำกัดที่ยังไม่ยุติ
+
+คงสามเหตุการณ์ Data Studio วันที่ 13 กันยายน 2026 โดยไม่เปลี่ยนคำอธิบายหรือเวลา:
+
+| เวลา UTC | Action ที่ถูกปฏิเสธ                                |
+| -------- | -------------------------------------------------- |
+| 06:58:25 | DOM snapshot ที่อาจเปิด schema/object tree         |
+| 07:01:13 | อ่าน option metadata หลัง exact-name check ไม่ผ่าน |
+| 10:40:30 | browser bootstrap ซ้ำภายใต้ข้อห้ามลองซ้ำเดิม       |
+
+สถานะยัง **UNRESOLVED** อีเมล Support Case 15724958 ที่ Owner นำมาระบุว่าไม่มีวิธีเปิดรายการ review เก่าที่แนะนำได้ นี่ไม่ใช่ ALLOWED, การยกเลิกข้อห้าม, successor remote grant หรือหลักฐานว่ากำลังรอคำอนุมัติแน่นอน ไม่สร้าง denial ใหม่ ไม่รัน SQL ไม่เปลี่ยน permissions และไม่แตะ Production จากเคสนี้
+
+Owner approval ของนโยบาย, Full Access, empty denial picker, ชื่อ task/tool ใหม่ หรือการเรียก “new scoped read-only observation” ไม่ปลดข้อจำกัดและไม่รับช่วง/แทนสิทธิ์ action เดิม ทางเลือกที่ปลอดภัยขึ้นเสนอเป็นแผนให้ประเมินได้ แต่ไม่ execute จากนโยบายนี้ ต้องพิสูจน์ความแตกต่างที่เกี่ยวข้องกับเหตุปฏิเสธจริง ไม่ใช่ทางอ้อมไปยัง action เดิม และมีสิทธิ์เครื่องมือ/authority ครบจริงก่อน
+
+หยุดเฉพาะ action และงานที่พึ่งมัน ไม่ขยายเป็นการห้าม browser ทุกครั้งตลอดโปรเจกต์ งาน local/ข้อมูลจำลองอิสระที่มีสิทธิ์อยู่แล้วทำต่อได้ Storage hold, pending-template causality, U1 GAP, A1–A3 UNRESOLVED และ billing UNKNOWN คงเดิม ไม่ส่ง U2 จากผลนโยบายนี้
+
+## 8. งานที่มีผลจริงและผู้ปฏิบัติใช้แผนเฉพาะ
+
+LINE/provider request ที่มีค่าใช้จ่าย, data/config mutation, deploy/activation, merge และ recovery ต้องมี action-specific plan ระบุ source/target, operation identity, budget, expected effects, receipts และ STOP/rollback ที่อนุมัติแล้ว ผล timeout/คลุมเครือไม่ยืนยันว่าไม่ได้ใช้สิทธิ์ ห้ามเติม grants หรือ reset accounting/claims/journals/clarification budget/Owner/session เพื่อให้ผ่าน
+
+มีผู้ปฏิบัติหลักคนเดียวต่อ checkout/shared remote target รวม potentially state-changing reads และงาน UNKNOWN/IN_FLIGHT; handoff ต้องระบุ holder, target, ผลที่ยังไม่ทราบและขั้นถัดไปก่อนเปลี่ยนผู้ปฏิบัติ งาน local ที่แยกผลและแบ่ง exact paths ชัดทำขนานได้ ไม่ให้สิทธิ์ผู้ช่วยมากกว่าชุดงานหลัก
+
+## 9. หลักฐานพอดีกับความเสี่ยงและรายงานทางเดินต่อ
+
+ใช้ focused tests ระหว่างพัฒนาและ required full gates เมื่อ candidate พร้อม ใช้ evidence เดิมเฉพาะ source/config/environment และ freshness ตรง ไม่รันซ้ำเพียงเพื่อให้เขียว ไม่ลด assertions/UAT/DoD หรืออ้างประหยัด token/เงินที่ไม่ได้วัด จัด local/CI ก่อน remote evidence ที่หมดอายุเร็ว ไม่เปลี่ยน freshness หรือให้ query ใหม่เพียงเพื่อแก้วงจรเอกสาร
+
+รักษา dirty work และ local checkpoints ที่ตรวจย้อนหลังได้ แยกสิทธิ์แก้ไฟล์, commit, push, GitHub/Notion publication ไม่บังคับ push หลังถูกปฏิเสธหรือเสี่ยงเปิดข้อมูล v40 รอบนี้ไม่มีสิทธิ์ commit/publication; บันทึก local evidence ได้ใน exact paths ที่อนุมัติ ไม่ทำให้ประวัติหรือข้อมูลธุรกิจสูญหายเพื่อให้ tree สะอาด
+
+ทุกจุดหยุดรายงาน: ทำสำเร็จอะไร → action ที่ติด → หลักฐาน/ประเภทปัญหา → ใครจัดการ → เงื่อนไขกลับมาทำ → งานอิสระที่เดินต่อได้ → Owner ต้องทำอะไรตอนนี้ ปัญหาเทคนิคใน scope ให้ Developer แก้ต่อ; ขอ Owner เฉพาะ scope/risk ที่เปลี่ยน; tool denial ใช้ทางที่รองรับจริง ไม่อ้างว่ามี review request pending โดยไม่มีหลักฐาน
+
+Local PASS, CI PASS, deployment, UAT และ Issue DoD เป็นคนละสถานะ หลัง TEST session ที่ได้รับสิทธิ์ในอนาคตต้องตรวจ AI/pilot, in-flight, accounting, STOP/cleanup และ handoff ตาม control เดิม ไม่ประกาศพร้อม user-test จาก policy tests
+
+## 10. Effective control จุดเดียวและการรับนโยบายอย่างมีขอบเขต
+
+แยก Draft → Owner-approved implementation → Local control integrated/validated → Published integration → Remote execution eligible → UAT verified ไม่ใช้สถานะหนึ่งแทนอีกสถานะ การผ่าน local validation ไม่ทำให้ v40 เผยแพร่หรือใช้แทน v37 บน MP-06 branch และไม่ให้ remote execution
+
+ใช้ change map ใน CONTROL_REPAIR_V40_TH.md เทียบ published v37 กับ selected inherited local v39 ไม่อ้างเพียง supersedes v39 เพื่อรวมงานอื่นโดยนัย Effective authority summary ต้องอ้าง control ที่ผ่าน validation รวม hold/ข้อยกเว้นและ exact paths ไม่ใช้ root flag เก่าหรือ historical heading เป็นสิทธิ์ปัจจุบัน; summary ไม่ใช่ permission broker
+
+แยก runtime candidate, control baseline, evidence HEAD และ deployed version พร้อมเวลา observation ไม่เรียกทุกค่าเป็น HEAD ล่าสุด เก็บ frozen v38/v39 modules/records และ grants/journals/accounting ตาม baseline ไม่เขียนทับประวัติ
+
+CONTROL_REPAIR_ONLY รอบนี้จำกัด local v40 policy/control/schema/validator/tests/docs ตาม approved allowlist จนมีผล qualification หรือรายงานข้อขัดแย้ง ไม่อนุญาต runtime/helper ใหม่, approval configuration หรือการข้าม validator ขณะรวมสิทธิ์ หากพบความขัดแย้งเพิ่มเติมให้หยุดเฉพาะ scope ใหม่ที่เกี่ยวข้องและบอก delta ที่ต้องตัดสินใจ ไม่ขออนุมัติ local scope เดิมซ้ำ
+
+Pure retry evaluator เดิมคง logic ไม่แก้ frozen v38/v39 module; v40 เพิ่ม local authority/qualification integration เท่านั้น Evaluator เป็น local decision aid ไม่ execute browser/Storage ไม่รับรองข้อมูล caller ไม่เป็น persistent incident ledger และไม่สร้างสิทธิ์เครื่องมือ การนำไปผูก executor/remote stage ในอนาคตต้องมีงานและ authority แยก พร้อม trusted history/effects/target validation
+
+---
+
+## Historical policy revision 2 — exact retained suffix, not current v40 authority
+
+เนื้อหาต่อจากบรรทัดนี้คงฉบับ 2 เดิมทุก byte เพื่อการตรวจย้อนหลังเท่านั้น โดยเฉพาะสิทธิ์ local commit/GitHub/Notion ใน v39 ไม่ได้รับช่วงมาใน v40 รอบนี้
+
 # MaliPang TEST — กติกาการปฏิบัติงานและการลองซ้ำ ฉบับ 2
 
 สถานะ: OWNER_APPROVED / LOCAL_IMPLEMENTATION_ONLY

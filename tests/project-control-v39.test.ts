@@ -10,8 +10,8 @@ import {
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   evaluateProjectAction,
   projectControlGitExecutable,
@@ -28,7 +28,30 @@ import {
   v39PathsAllowed,
 } from "../src/project-control-v39.js";
 
-const root = new URL("../", import.meta.url);
+// Keep every v39 assertion on its immutable inputs while exercising the current
+// validator. A new overlay must not silently rewrite this historical contract.
+const sourceRoot = new URL("../", import.meta.url);
+const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v39-regression-"));
+execFileSync(
+  projectControlGitExecutable(),
+  [
+    "clone",
+    "--shared",
+    "--no-hardlinks",
+    fileURLToPath(sourceRoot),
+    historicalRoot,
+  ],
+  { stdio: "pipe" },
+);
+execFileSync(
+  projectControlGitExecutable(),
+  ["checkout", "--detach", "07ce10f641ebaa74ceab83c98e8f5fdc40d6858b"],
+  { cwd: historicalRoot, stdio: "pipe" },
+);
+const root = pathToFileURL(historicalRoot + "/");
+afterAll(async () => {
+  await rm(historicalRoot, { recursive: true, force: true });
+});
 type FixtureDocument = Record<string, unknown> & {
   version: string;
   testOperationPolicyV39: Record<string, unknown>;

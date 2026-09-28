@@ -1,5 +1,38 @@
 # MalisPang Project Control
 
+## Effective integration control — v41 / MP-06 policy publication only
+
+Owner approved option 1 of the scoped integration plan on 2026-09-29, after the plan explicitly listed local control/CI changes, commit, source push, one Draft PR, exact-source CI and independent review, and one ordinary merge into codex/mp-06-guardrailed-ai. MP-OD-2026-09-29-V41 supersedes the local-only action selector of v40 for this package only. MP-06 / Issue12 remains CURRENT and OPEN. No general publication, deployment or runtime authority is granted.
+
+The actual Git parent is local v39 07ce10f641ebaa74ceab83c98e8f5fdc40d6858b. Qualified v40 was never committed: its 14-path working-tree snapshot is retained under tests/fixtures/mp06-v40-qualified/snapshot.json with a compiled SHA256 seal. The integration validator compares inherited manifests and append-only records against that snapshot and the pinned Git lineage. It must not invent a v40 ancestor or reinterpret its historical COMMIT=false as permission. Frozen v38/v39/v40 modules and the pure policy evaluator stay unchanged.
+
+Only source branch codex/test-policy-v40 to pinned MP06 base35b67ab87ecd052ab80f450d766c9eabd2991861 in Eak-dev/malispang-lineOA is eligible. Source qualification binds parent/tree/diff before commit and the actual SHA after commit. Published source, current PR head, successful CI source and independently reviewed source must match before Ready or the single ordinary merge; use expected-head checking. Record the actual PR number and grant consumption externally once GitHub returns them. No duplicate creation, blind retry of an unknown outcome, stale review inheritance or base-drift auto-rebase is permitted.
+
+Structural validation of source, synthetic merge or merged history is not evidence of live GitHub approval. The action gate needs independently observed exact receipts; a caller-supplied approval boolean or local PASS cannot substitute for them. PR16's downstream synthetic merge may be validated read-only but PR16 must remain Draft and cannot be merged by this package. Stop integration for scope/base drift or unresolved review findings.
+
+No Production, default-branch merge, deploy, activation, LINE/provider call, SQL/storage observation, permission/credential change, denied-action replay, grant/history/accounting reset or Issue closure. Storage/claims/Registry remain NOT_OBSERVED and pending-template cause UNKNOWN; UAT gaps remain. Publication of policy is not permission to execute the historical denied action and does not make TEST ready for U2. Existing independent MP07 scope is unchanged.
+
+All preceding local selectors and original audit records below are preserved as historical evidence. Resolve current authority by validated version and exact action evidence, not by choosing an old heading or flag. The integration grant expires upon its one completed merge/handoff or Owner revocation/replacement; it cannot start another package.
+
+## Local authority entrypoint — v40 / CONTROL_REPAIR_ONLY
+
+Owner approved TEST policy revision 3 on 2026-09-28: “อนุมัติที่คุณร่างและปรับแก้ได้เลย เพื่อสามารถทำงานต่อได้”. Decision MP-OD-2026-09-28-V40 authorizes only isolated local control/policy/schema/validator/tests and evidence documentation in V40_ALLOWED_PATHS. The permitted action selector is LOCAL_IMPLEMENTATION, LOCAL_VALIDATION, LOCAL_ANALYSIS. It does not authorize commit, push, GitHub/Notion publication, PR, merge, deployment, runtime changes, remote TEST, Production or Issue closure. The scope expires when this local repair is handed off, or is revoked/replaced; it cannot bootstrap additional packages.
+
+Published MP-06 control remains 2026.09.24-v37 at 35b67ab87ecd052ab80f450d766c9eabd2991861. This isolated candidate inherits local v39 commit 07ce10f641ebaa74ceab83c98e8f5fdc40d6858b, with v38/v39 preserved as local history, not retrospectively published authority. The technical overlay supersedes v39 only here; the exact published-v37 adoption/change mapping is in docs/project/CONTROL_REPAIR_V40_TH.md. No change is made to another checkout or MP-07's separately approved package.
+
+Read the validated `summarizeProjectAuthority` output from the control CLI for this checkout's single local authority summary. It distinguishes published control, inherited local control, frozen runtime, observed evidence HEAD and unobserved deployed state. Historical root authorization/status fields and headings below are audit evidence, not independent current action selectors. The summary is not a permission broker, proof of external access, or UAT readiness. Invalid or conflicting control fails closed.
+
+Historical denials, one-use grants, counters, journals, accounting and UAT gaps remain immutable. Support Case 15724958 provided no procedure to reopen the historical review; there is no asserted pending release. No replay, fresh denial, SQL, permission change, transport bypass or pendingTemplate reset is authorized. The storage hold and unexplained retained state remain separate blockers, not a ban on independent approved local work.
+
+### Historical index — preserved original records below
+
+- v39: local policy revision 2, inherited but not published on MP-06.
+- v38: local readiness mandate, not remote execution authority.
+- v37: published MP-06 integration baseline.
+- v36 and earlier: preserved historical controls, grant usage and acceptance evidence.
+
+The following original text is intentionally retained byte-for-byte. Resolve current scope by versioned validation above, never by selecting the most permissive historical heading or flag.
+
 ## Current effective control — v39 / TEST operation policy revision 2
 
 Owner explicitly approved implementing the nine-part revised TEST operation policy on 2026-09-24. MP-OD-2026-09-24-V39 supersedes v38 only for local policy/control/schema/validator/tests and documentation, local commit and GitHub/Notion evidence reconciliation. Baseline is 7c9e08ade55494892af4ae2fd6708134f78329d5. MP-06 / Issue #12 remains CURRENT. See docs/project/TEST_OPERATION_POLICY_TH.md for the approved rules and retained boundaries.

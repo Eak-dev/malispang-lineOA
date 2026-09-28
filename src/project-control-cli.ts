@@ -2,6 +2,15 @@ import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
+  TEST_POLICY_INTEGRATION_V41,
+  inspectIntegrationRepository,
+  validateIntegrationPullRequestReceipt,
+} from "./project-control-integration.js";
+import {
+  TEST_POLICY_REPAIR_V40,
+  inspectV40Repository,
+} from "./project-control-v40.js";
+import {
   TEST_READINESS_V38,
   inspectV38Repository,
 } from "./project-control-v38.js";
@@ -12,6 +21,7 @@ import {
 
 import {
   evaluateProjectAction,
+  summarizeProjectAuthority,
   evaluateDevOperationsPaths,
   validateProjectControl,
   validateSchemaDocuments,
@@ -54,6 +64,87 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === TEST_POLICY_INTEGRATION_V41.version) {
+    const validation = validateProjectControl(roadmap, currentWork);
+    const errors = [
+      ...validation.errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    const cwd = fileURLToPath(root);
+    const binary = projectControlGitExecutable();
+    const git = (...args: string[]) =>
+      execFileSync(
+        binary,
+        ["--no-replace-objects", "--no-optional-locks", ...args],
+        { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      ).trim();
+    let context: Parameters<typeof inspectIntegrationRepository>[2];
+    if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+      if (
+        !process.env.GITHUB_EVENT_PATH ||
+        process.env.GITHUB_REPOSITORY !== TEST_POLICY_INTEGRATION_V41.repository
+      )
+        throw new Error("V41_PR_EVENT_REQUIRED");
+      const event: unknown = JSON.parse(
+        await readFile(process.env.GITHUB_EVENT_PATH, "utf8"),
+      );
+      const head = git("rev-parse", "HEAD");
+      const parents = git("rev-list", "--parents", "-n", "1", head)
+        .split(" ")
+        .slice(1);
+      const receipt = validateIntegrationPullRequestReceipt(event, {
+        sha: process.env.GITHUB_SHA,
+        ref: process.env.GITHUB_REF,
+        merge: head,
+        parents,
+        tree: git("rev-parse", "HEAD^{tree}"),
+        sourceTree: parents[1] ? git("rev-parse", `${parents[1]}^{tree}`) : "",
+      });
+      if (!receipt) throw new Error("V41_PR_MERGE_IDENTITY_MISMATCH");
+      context = { kind: "PULL_REQUEST", receipt };
+    }
+    const inspected = inspectIntegrationRepository(cwd, binary, context);
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState:
+            "STRUCTURAL_VALIDATION_NOT_LIVE_CI_REVIEW_OR_OPERATION_PERMISSION",
+        }),
+    );
+    return;
+  }
+  if (version === TEST_POLICY_REPAIR_V40.version) {
+    const validation = validateProjectControl(roadmap, currentWork);
+    const errors = [
+      ...validation.errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    inspectV40Repository(fileURLToPath(root), projectControlGitExecutable());
+    const summary = summarizeProjectAuthority(roadmap, currentWork);
+    if (!("sourceRoles" in summary))
+      throw new Error("ROADMAP_UNVERIFIED: V40_AUTHORITY_SUMMARY_MISSING");
+    const evidenceHead = execFileSync(
+      projectControlGitExecutable(),
+      ["rev-parse", "HEAD"],
+      { cwd: fileURLToPath(root), encoding: "utf8" },
+    ).trim();
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summary,
+          repositoryInspection: "VERIFIED_LOCAL_WORKTREE_INDEX_AND_HISTORY",
+          sourceRoles: { ...summary.sourceRoles, evidenceHead },
+          sourceState: "LOCAL_WORKTREE_INSPECTED_NOT_A_PUBLICATION_RECEIPT",
+        }),
+    );
+    return;
   }
   if (version === TEST_OPERATION_POLICY_V39.version) {
     const validation = validateProjectControl(roadmap, currentWork);
@@ -519,6 +610,15 @@ export async function runPullRequestControlValidation(
   const work = JSON.parse(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
+  if (work.roadmapVersion === TEST_POLICY_INTEGRATION_V41.version) {
+    if (eventPath !== process.env.GITHUB_EVENT_PATH)
+      throw new Error("V41_PR_EVENT_PATH_MISMATCH");
+    await runProjectControlValidation(root);
+    console.log(
+      "V41 PR source/integration identity verified; not Ready, merge, remote TEST or Production authority",
+    );
+    return;
+  }
   if (work.roadmapVersion === DEV_OPERATIONS_OPTIMIZATION_V36.version)
     throw new Error("V36_LOCAL_ONLY_PR_ADAPTER_DENIED");
   const isV37 =
