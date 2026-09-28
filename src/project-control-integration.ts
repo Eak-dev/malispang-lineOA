@@ -223,7 +223,11 @@ export function validateIntegrationPullRequestReceipt(
       checkout.ref !== `refs/pull/${event.number}/merge` ||
       !isDeepStrictEqual(checkout.parents, [pr.base.sha, pr.head.sha]) ||
       checkout.tree !== checkout.sourceTree ||
+      // GitHub can emit an opened event before its asynchronous test-merge
+      // metadata is populated. The required runner SHA/ref, ordered Git
+      // parents and exact source tree above remain the identity proof.
       (pr.merge_commit_sha !== undefined &&
+        pr.merge_commit_sha !== null &&
         pr.merge_commit_sha !== checkout.merge)
     )
       return null;
@@ -619,6 +623,7 @@ export interface IntegrationCreationEvidence {
 }
 export interface IntegrationLiveEvidence {
   kind: "LIVE_GITHUB_INTEGRATION";
+  local: IntegrationLocalEvidence;
   repository: string;
   headBranch: string;
   baseBranch: string;
@@ -703,6 +708,7 @@ function fresh(observed: unknown, checked: unknown) {
 }
 const liveKeys = [
   "kind",
+  "local",
   "repository",
   "headBranch",
   "baseBranch",
@@ -753,6 +759,9 @@ function liveEvidence(e: unknown): e is IntegrationLiveEvidence {
     e.reviewConclusion === "success" &&
     e.unresolvedFindings === 0 &&
     e.reviewCommentsAdded === 0 &&
+    localEvidence(e.local) &&
+    e.local.stage === "POST_COMMIT" &&
+    e.local.head === e.headSha &&
     e.creationState === "CONSUMED" &&
     e.creationPullRequest === e.pullRequest &&
     e.mergeState === "UNUSED" &&

@@ -327,6 +327,7 @@ const creationEvidence = (): IntegrationCreationEvidence => ({
 });
 const liveEvidence = (): IntegrationLiveEvidence => ({
   kind: "LIVE_GITHUB_INTEGRATION",
+  local: localEvidence("POST_COMMIT"),
   repository,
   headBranch: sourceBranch,
   baseBranch: targetBranch,
@@ -510,6 +511,42 @@ describe("v41 staged publication gates require exact independently authenticated
         "UPDATE_GITHUB_ROADMAP",
       ])
         expect(action(name, evidence)).toBe(false);
+    },
+  );
+
+  it.each([
+    "missing-local",
+    "old-qualified-head",
+    "pre-commit",
+    "failed-validation",
+    "failed-independent-review",
+    "wrong-qualified-tree",
+    "wrong-reviewed-diff",
+    "dirty-source",
+  ])(
+    "binds the live reviewed HEAD to its post-commit qualification: %s",
+    (variant) => {
+      const evidence = liveEvidence();
+      if (variant === "missing-local") delete record(evidence).local;
+      if (variant === "old-qualified-head")
+        evidence.local.head = "d".repeat(40);
+      if (variant === "pre-commit")
+        evidence.local = localEvidence("PRE_COMMIT");
+      if (variant === "failed-validation")
+        record(evidence.local).validation = "FAIL";
+      if (variant === "failed-independent-review")
+        record(evidence.local).independentReview = "ACTIONABLE_FINDINGS";
+      if (variant === "wrong-qualified-tree")
+        evidence.local.qualifiedTree = "d".repeat(40);
+      if (variant === "wrong-reviewed-diff")
+        evidence.local.reviewedDiffSha256 = "d".repeat(64);
+      if (variant === "dirty-source") evidence.local.workingTreeClean = false;
+      for (const name of [
+        "READY_FOR_REVIEW",
+        "MERGE_MP06_POLICY",
+        "UPDATE_GITHUB_ROADMAP",
+      ])
+        expect(action(name, evidence), name).toBe(false);
     },
   );
 
@@ -734,6 +771,59 @@ const eventFor = (
   },
 });
 
+type MergeFixture = {
+  cwd: string;
+  source: string;
+  tree: string;
+  merge: string;
+  receipt: NonNullable<
+    ReturnType<typeof validateIntegrationPullRequestReceipt>
+  >;
+  integrated: IntegrationMergeReceipt;
+};
+
+/** One isolated merge fixture per case, with only one full inspector invocation
+ * in each positive mode test. Preserve the ordinary per-test 5000ms budget. */
+async function withMergeFixture(
+  run: (fixture: MergeFixture) => Promise<void> | void,
+) {
+  await withFixture(async (cwd) => {
+    const source = commit(cwd);
+    const tree = git(cwd, ["rev-parse", `${source}^{tree}`]);
+    const merge = git(cwd, [
+      ...identity,
+      "commit-tree",
+      tree,
+      "-p",
+      published,
+      "-p",
+      source,
+      "-m",
+      "Synthetic Merge pull request #123 from Eak-dev/codex/test-policy-v40",
+    ]);
+    git(cwd, ["checkout", "--quiet", "--detach", merge]);
+    const { event, observed } = eventFor(source, merge, tree);
+    const receipt = validateIntegrationPullRequestReceipt(event, observed);
+    expect(receipt).not.toBeNull();
+    if (!receipt) throw new Error("Synthetic PR fixture was not accepted");
+    const integrated: IntegrationMergeReceipt = {
+      repository,
+      pr: 123,
+      baseBranch: targetBranch,
+      headBranch: sourceBranch,
+      base: published,
+      head: source,
+      merge,
+      tree,
+      state: "closed",
+      merged: true,
+      method: "merge",
+      htmlUrl: `https://github.com/${repository}/pull/123`,
+    };
+    await run({ cwd, source, tree, merge, receipt, integrated });
+  });
+}
+
 describe("v41 exact PR event identity is structure, never approval", () => {
   it("accepts an actual allocated PR identity and binds source/merge/tree separately", () => {
     const { event, observed } = eventFor();
@@ -749,6 +839,61 @@ describe("v41 exact PR event identity is structure, never approval", () => {
       tree: observed.tree,
     });
   });
+
+  it.each([
+    ["modeled nullable metadata", null],
+    ["matching supplied metadata", "b".repeat(40)],
+  ])(
+    "accepts %s only alongside the exact runner/Git tuple",
+    (_name, metadata) => {
+      const { event, observed } = eventFor();
+      record(event.pull_request).merge_commit_sha = metadata;
+      expect(
+        validateIntegrationPullRequestReceipt(event, observed),
+      ).toMatchObject({
+        kind: "INTEGRATION",
+        pr: 123,
+        head: observed.parents[1],
+        base: published,
+        merge: observed.merge,
+        tree: observed.tree,
+      });
+    },
+  );
+
+  it.each([
+    ["wrong hash", "d".repeat(40)],
+    ["malformed hash", "not-a-git-sha"],
+    ["empty string", ""],
+    ["number", 123],
+    ["boolean", false],
+    ["object", {}],
+    ["array", []],
+  ])("rejects supplied nonnull merge metadata: %s", (_name, metadata) => {
+    const { event, observed } = eventFor();
+    record(event.pull_request).merge_commit_sha = metadata;
+    expect(validateIntegrationPullRequestReceipt(event, observed)).toBeNull();
+  });
+
+  it.each([
+    "runner-sha",
+    "runner-ref",
+    "ordered-parents",
+    "tree",
+    "source-tree",
+  ])(
+    "does not let modeled null metadata weaken the required %s binding",
+    (variant) => {
+      const { event, observed } = eventFor();
+      record(event.pull_request).merge_commit_sha = null;
+      if (variant === "runner-sha") observed.sha = "d".repeat(40);
+      if (variant === "runner-ref") observed.ref = "refs/pull/456/merge";
+      if (variant === "ordered-parents") observed.parents.reverse();
+      if (variant === "tree") observed.tree = "d".repeat(40);
+      if (variant === "source-tree") observed.sourceTree = "d".repeat(40);
+      expect(validateIntegrationPullRequestReceipt(event, observed)).toBeNull();
+    },
+  );
 
   it.each([
     "repository",
@@ -801,22 +946,8 @@ describe("v41 exact PR event identity is structure, never approval", () => {
 });
 
 describe("v41 source and precise ordinary integration edge", () => {
-  it("keeps source, synthetic merge and unproven live integration distinct", async () => {
-    await withFixture((cwd) => {
-      const source = commit(cwd);
-      const tree = git(cwd, ["rev-parse", `${source}^{tree}`]);
-      const merge = git(cwd, [
-        ...identity,
-        "commit-tree",
-        tree,
-        "-p",
-        published,
-        "-p",
-        source,
-        "-m",
-        "Synthetic Merge pull request #123 from Eak-dev/codex/test-policy-v40",
-      ]);
-      git(cwd, ["checkout", "--quiet", "--detach", merge]);
+  it("keeps an unproven live integration structure-only", async () => {
+    await withMergeFixture(({ cwd, source, tree, merge }) => {
       expect(
         git(cwd, ["rev-list", "--parents", "-n", "1", merge])
           .split(" ")
@@ -832,10 +963,11 @@ describe("v41 source and precise ordinary integration edge", () => {
         clean: true,
         remoteExecutionAuthorized: false,
       });
-      const { event, observed } = eventFor(source, merge, tree);
-      const receipt = validateIntegrationPullRequestReceipt(event, observed);
-      expect(receipt).not.toBeNull();
-      if (!receipt) throw new Error("Synthetic PR fixture was not accepted");
+    });
+  });
+
+  it("distinguishes a synthetic PR merge from its source and actual integration", async () => {
+    await withMergeFixture(({ cwd, source, tree, merge, receipt }) => {
       expect(
         inspectIntegrationRepository(cwd, projectControlGitExecutable(), {
           kind: "PULL_REQUEST",
@@ -848,20 +980,11 @@ describe("v41 source and precise ordinary integration edge", () => {
         tree,
         remoteExecutionAuthorized: false,
       });
-      const integrated: IntegrationMergeReceipt = {
-        repository,
-        pr: 123,
-        baseBranch: targetBranch,
-        headBranch: sourceBranch,
-        base: published,
-        head: source,
-        merge,
-        tree,
-        state: "closed",
-        merged: true,
-        method: "merge",
-        htmlUrl: `https://github.com/${repository}/pull/123`,
-      };
+    });
+  });
+
+  it("requires the exact actual-merge receipt to report integrated", async () => {
+    await withMergeFixture(({ cwd, source, tree, merge, integrated }) => {
       expect(
         inspectIntegrationRepository(cwd, projectControlGitExecutable(), {
           kind: "INTEGRATED",
@@ -874,21 +997,27 @@ describe("v41 source and precise ordinary integration edge", () => {
         tree,
         remoteExecutionAuthorized: false,
       });
-      for (const [key, value] of [
-        ["pr", 16],
-        ["pr", 18],
-        ["repository", "Other/repo"],
-        ["headBranch", "codex/unapproved"],
-        ["baseBranch", "main"],
-        ["base", "d".repeat(40)],
-        ["head", "d".repeat(40)],
-        ["merge", "d".repeat(40)],
-        ["tree", "d".repeat(40)],
-        ["state", "open"],
-        ["merged", false],
-        ["method", "squash"],
-        ["htmlUrl", `https://github.com/${repository}/pull/456`],
-      ] as const) {
+    });
+  });
+
+  it.each([
+    ["pr", 16],
+    ["pr", 18],
+    ["repository", "Other/repo"],
+    ["headBranch", "codex/unapproved"],
+    ["baseBranch", "main"],
+    ["base", "d".repeat(40)],
+    ["head", "d".repeat(40)],
+    ["merge", "d".repeat(40)],
+    ["tree", "d".repeat(40)],
+    ["state", "open"],
+    ["merged", false],
+    ["method", "squash"],
+    ["htmlUrl", `https://github.com/${repository}/pull/456`],
+  ] as const)(
+    "rejects mismatched actual-merge receipt %s=%s",
+    async (key, value) => {
+      await withMergeFixture(({ cwd, integrated }) => {
         const invalid = { ...integrated };
         record(invalid)[key] = value;
         expect(
@@ -899,21 +1028,23 @@ describe("v41 source and precise ordinary integration edge", () => {
             }),
           key,
         ).toThrow();
-      }
-      expect(() =>
-        inspectIntegrationRepository(cwd, projectControlGitExecutable(), {
-          kind: "PULL_REQUEST",
-          receipt: { ...receipt, head: "d".repeat(40) },
-        }),
-      ).toThrow();
-      expect(() =>
-        inspectIntegrationRepository(cwd, projectControlGitExecutable(), {
-          kind: "PULL_REQUEST",
-          receipt: { ...receipt, tree: "d".repeat(40) },
-        }),
-      ).toThrow();
-    });
-  });
+      });
+    },
+  );
+
+  it.each(["head", "tree"])(
+    "rejects mismatched synthetic PR receipt %s",
+    async (key) => {
+      await withMergeFixture(({ cwd, receipt }) => {
+        expect(() =>
+          inspectIntegrationRepository(cwd, projectControlGitExecutable(), {
+            kind: "PULL_REQUEST",
+            receipt: { ...receipt, [key]: "d".repeat(40) },
+          }),
+        ).toThrow();
+      });
+    },
+  );
 
   it("validates downstream PR16 as review-only without authorizing its merge", async () => {
     await withFixture((cwd) => {
@@ -1032,6 +1163,48 @@ describe("v41 source and precise ordinary integration edge", () => {
 });
 
 describe("v41 CLI PR adapter uses the actual event and restores test environment", () => {
+  it("validates a modeled opened event with null merge metadata against the actual fixture Git tuple", async () => {
+    await withMergeFixture(async ({ cwd, source, tree, merge }) => {
+      const { event } = eventFor(source, merge, tree);
+      record(event).action = "opened";
+      record(event.pull_request).merge_commit_sha = null;
+      const directory = await mkdtemp(join(tmpdir(), "mp06-v41-null-event-"));
+      const eventPath = join(directory, "opened-event.json");
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await writeFile(eventPath, JSON.stringify(event));
+        vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
+        vi.stubEnv("GITHUB_EVENT_PATH", eventPath);
+        vi.stubEnv("GITHUB_REPOSITORY", repository);
+        vi.stubEnv("GITHUB_SHA", merge);
+        vi.stubEnv("GITHUB_REF", "refs/pull/123/merge");
+        const fixtureRoot = pathToFileURL(cwd + "/");
+        await expect(
+          runPullRequestControlValidation(fixtureRoot, eventPath),
+        ).resolves.toBeUndefined();
+        expect(
+          log.mock.calls.some(
+            ([message]) =>
+              typeof message === "string" &&
+              message.includes("SYNTHETIC_PR_MERGE"),
+          ),
+        ).toBe(true);
+        vi.stubEnv("GITHUB_SHA", source);
+        await expect(
+          runPullRequestControlValidation(fixtureRoot, eventPath),
+        ).rejects.toThrow("V41_PR_MERGE_IDENTITY_MISMATCH");
+        expect(git(cwd, ["rev-parse", "HEAD"])).toBe(merge);
+        expect(
+          git(cwd, ["status", "--porcelain=v1", "--untracked-files=all"]),
+        ).toBe("");
+      } finally {
+        vi.unstubAllEnvs();
+        log.mockRestore();
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+  });
+
   it("does not misidentify a disposable local source as the runner's real PR checkout", async () => {
     vi.stubEnv("GITHUB_EVENT_NAME", "pull_request");
     vi.stubEnv(

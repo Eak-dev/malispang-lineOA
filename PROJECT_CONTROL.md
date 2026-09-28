@@ -10,6 +10,8 @@ Only source branch codex/test-policy-v40 to pinned MP06 base35b67ab87ecd052ab80f
 
 Structural validation of source, synthetic merge or merged history is not evidence of live GitHub approval. The action gate needs independently observed exact receipts; a caller-supplied approval boolean or local PASS cannot substitute for them. PR16's downstream synthetic merge may be validated read-only but PR16 must remain Draft and cannot be merged by this package. Stop integration for scope/base drift or unresolved review findings.
 
+Every current-head Ready/merge receipt must also include the independently verified POST_COMMIT local qualification receipt for that same source SHA. A later source commit requires new local qualification and independent review bound to its tree/diff; neither initial Draft creation nor newer hosted CI can inherit an earlier local result.
+
 No Production, default-branch merge, deploy, activation, LINE/provider call, SQL/storage observation, permission/credential change, denied-action replay, grant/history/accounting reset or Issue closure. Storage/claims/Registry remain NOT_OBSERVED and pending-template cause UNKNOWN; UAT gaps remain. Publication of policy is not permission to execute the historical denied action and does not make TEST ready for U2. Existing independent MP07 scope is unchanged.
 
 All preceding local selectors and original audit records below are preserved as historical evidence. Resolve current authority by validated version and exact action evidence, not by choosing an old heading or flag. The integration grant expires upon its one completed merge/handoff or Owner revocation/replacement; it cannot start another package.
