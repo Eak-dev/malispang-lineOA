@@ -1,5 +1,13 @@
 # Roadmap Changelog
 
+## 2026.09.24-v37 — existing PR18 integration into MP-06
+
+MP-OD-2026-09-24-V37 supersedes v36 solely for the Owner-approved existing PR18 integration route. Pin source baseline 90aa98305105377d006c67f40259297273db3849, base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, consumed creation and one ordinary merge into codex/mp-06-guardrailed-ai after local/hosted/reviewer checks. PR16 remains Draft and receives only automatic downstream checks. Keep all historical controls, runtime, TEST grants/journals/holds and MP-06 acceptance gaps; feature continuation needs its own scoped work-package transition. No default merge, deploy, Production or Issue closure.
+
+## 2026-09-24 — v36 local Dev Operations efficiency
+
+MP-OD-2026-09-24-V36 explicitly authorizes the scoped control transition after Owner confirmation. Supersedes v35 only for local efficiency from90aa98305105377d006c67f40259297273db3849. Retain exact v33 paths, consumed PR18 and all inherited state. Optimize local Git process overhead and fixed control-validation execution, retain complete source observations/negative gates, and return concise evidence references. No project commit/push/new PR/Ready/merge/runtime/remote TEST/deploy/Production/Issue closure. Implementation/validation remains in progress; this transition itself asserts no timing or billed-token saving.
+
 ## 2026.09.09-v19 — preparation only; exact grant unused
 
 Owner decision MP-OD-2026-09-09-V19 supersedes2026.09.09-v18 from approved baseline ca4904ef3f316f8e381e57e4757f3fe173dbeb1f (README-only child of42026b22069e4299dfc8ff5f73b5077e3b0856fb). MP-06 / Issue12 / WP8F / TEST_ONLY. Only the ten control paths may change; v18 history/runtime/dependencies/artifact remain frozen. The exact c59eb5e12bb96a34da38759a5585be67d8c2ab6e /2203b6459174b54064142a391e778624c650b3d01e7e48f0a0d46df702c38308 /malispang-lineoa-test grant is APPROVED_UNUSED0/1, separate from executable deployment flags which remain false. No upload/version creation/traffic change/deployment in this round, even after readiness; await Owner execution confirmation. Unknown remote outcome never restores a grant.
@@ -705,3 +713,46 @@ Only the exact `timeout-minutes: 10` to `20` workflow successor is authorized be
 - paths: tests/project-control.test.ts, worker/durable-objects.ts, worker-tests/durable-state.test.ts, worker-tests/mp-06-pilot-control.test.ts
 - evidence: run35513480785/job106085364845 four default5000ms timeouts; focused local seven cases passed at approximately2364–3127ms
 - restrictions: existing Draft PR only; no merge/deploy/remote TEST/Production/grant/journal/hold/Issue/MP07 action
+
+## 2026-09-21 — v32 Greptile push and Draft review trigger
+
+Owner decision MP-OD-2026-09-21-V32 supersedes 2026.09.20-v31 only for repository-scoped reviewer behavior. It seals exact merge 88deb90a58369923f11a7266ec63fa8fd5f293c2 (parents aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c; tree 57259355a0877677e5a88ca0c91fa0cf4f37f2ab) and authorizes the exact successor greptile.json from SHA-256 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61 to 3cd6a3ab140a230736ac0c2b76f9a75204afc6545a125bf6371468bb69c015b1.
+
+That merge inherited the already-completed base merge aad8c5e0ef41c5e47df3d93ae462b9122368c15d with ordered parents 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f and tree 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb. Both identities are exact; no other merge history is accepted.
+
+The control is REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31 under OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21 for Eak-dev/malispang-lineOA, head codex/mp-06-guardrailed-ai and base codex/phase-1a-foundation. automaticReview is open,push; reviewDrafts true; reviewRebase false. Dashboard is PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED, repositoryScope EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF, automation AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF. Proof is NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT under ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE. V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED.
+
+## 2026-09-23 — v33 local Dev Operations tooling
+
+Owner decision MP-OD-2026-09-23-V33 supersedes 2026.09.21-v32 only for a local, ancillary Dev Operations work package from clean HEAD 1508782a9cbf9412b3a6967264e9f4e8d6c19376 on codex/dev-operations-v33. The canonical MP-06 / Issue #12 / WP8F / TEST_ONLY state remains. The closed v33 field enumerates only control/schema/validator/test/Owner records and scripts/dev-operations, tests/dev-operations, docs/dev-operations files. Prior v32 grants/journals/holds are byte-preserved. No runtime, PR16 remediation, remote TEST, Production, merge, deploy or Issue closure. Roadmap Issue #9 reconciliation follows verified local control; it does not confer acceptance or broader authority.
+Owner amendment on 2026-09-23 adds only tsconfig.json and eslint.config.js to the exact v33 allowed paths to integrate new local `.mjs` tooling with existing lint. No lint rule is waived; historical v27 test timeout remains unresolved and no timeout increase is authorized.
+
+# 2026-09-23 — v34 Draft Dev Operations review transition
+
+Owner-approved MP-OD-2026-09-23-V34 supersedes v33 solely for one exact Draft PR, hosted CI and Greptile findings-only review. No workflow/credential/runtime change or merge/deploy/Production/closure authority. Existing v33 paths and v32 inherited grants/journals/holds preserved.
+
+# 2026-09-23 — v35 existing PR18 remediation
+
+MP-OD-2026-09-23-V35 supersedes v34 for the three confirmed P1s only. PR18 creation is CONSUMED and immutable; no replacement PR. Stable checkpoint and pre-validation receipt identity are required before claiming tooling acceptance. Exact existing scope, inherited holds and Production NO_GO remain.
+
+# 2026-09-24 — v38 MP06 TEST readiness
+
+Owner authorized development through TEST user readiness. Stage1 permits exact-path local remediation and UAT-contract work from merged35b67ab, preserving all inherited manifests/journals/history against Git. Remote readiness is not yet proven; no deployment/activation/storage bypass/merge/Production/closure authority is issued by the local stage. MP06 remains current. The v38 successor inspector makes historical inherited data immutable without reusing historical action grants.
+
+## 2026-09-24 — v39 TEST operation policy revision 2
+
+Owner approved the revised nine-part policy and its implementation. MP-OD-2026-09-24-V39 supersedes v38 from pinned local commit7c9e08ade55494892af4ae2fd6708134f78329d5 only for the exact local policy/control/test/documentation scope. Risk-based handling separates routine navigation, bounded harmless preparation retries, unknown execution, in-flight operations and safety denial. Three total attempts are per logical incident, never reset by changing tool/session/task. The pure evaluator cannot grant remote/tool permissions and stores no authoritative incident history. Closed overlay/schema, baseline inheritance, index/history inventory and negative regressions must pass before reporting implementation qualified. No runtime, bot model, dependency, workflow, credentials, remote TEST or Production change. Historical holds/grants/journals/accounting/UAT remain unchanged; local approval does not release Storage or certify UAT. GitHub and Notion receive evidence reconciliation, not a code publication or deployment grant.
+
+## 2026-09-28 — v40 local control repair / policy revision 3
+
+MP-OD-2026-09-28-V40 records Owner approval of the reviewed revision-3 draft. Add one validated local authority entrypoint, separate published v37/local v39/runtime/evidence/deployed-state roles, and record exact per-rule adoption mapping. Preserve every historical manifest, denial, grant, journal, UAT gap and document prefix/suffix. This isolated candidate does not change the published v37 baseline or MP07's separate package.
+
+Only local control implementation, analysis and validation in exact paths are authorized. No commit, push, remote publication, new PR, merge, runtime/model/config/dependency changes, SQL, TEST/Production activity or Issue closure. Pure retry evaluator remains unchanged because its complete-history fail-closed behavior already covers the approved revision. Historical v39 regression assertions remain pinned to v39, not rewritten to accept v40. Qualification and remaining gaps are reported separately from publication, execution eligibility and UAT.
+
+## 2026-09-29 — v41 scoped policy integration into MP06
+
+MP-OD-2026-09-29-V41 records Owner approval of option1: local integration control/CI/tests, exact-path commit and source push, one Draft PR into codex/mp-06-guardrailed-ai, exact-source CI plus independent review, and one ordinary MP06 merge only after all conditions pass. This is new publication/integration authority, not retrospective v40 commit permission. Preserve the qualified14-file v40 snapshot and every historical assertion/manifest/grant/journal; add a successor inspector rather than weakening frozen controls.
+
+The incomplete shared Git object store discovered before edits was not repaired in place: reconstruct the unchanged sealed v40 snapshot in an independent clone from the verified full-history recovery bundle. Original dirty work is preserved; cause of missing objects remains UNKNOWN. New validation results must be recorded on the new candidate; old1348-test qualification is baseline evidence only.
+
+No runtime/model/workflow/dependency changes, PR16/default merge, TEST deploy/activation/storage/SQL, permission/credential changes, historical denied-action replay, Production or Issue closure. MP06 remains CURRENT/OPEN and NOT_UAT_READY. MP07's independent existing package is not expanded or revoked. A completed policy merge cannot substitute for missing fresh-state/causal/accounting/UAT evidence.

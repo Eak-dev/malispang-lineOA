@@ -1,5 +1,78 @@
 # MalisPang Project Control
 
+## Effective integration control — v41 / MP-06 policy publication only
+
+Owner approved option 1 of the scoped integration plan on 2026-09-29, after the plan explicitly listed local control/CI changes, commit, source push, one Draft PR, exact-source CI and independent review, and one ordinary merge into codex/mp-06-guardrailed-ai. MP-OD-2026-09-29-V41 supersedes the local-only action selector of v40 for this package only. MP-06 / Issue12 remains CURRENT and OPEN. No general publication, deployment or runtime authority is granted.
+
+The actual Git parent is local v39 07ce10f641ebaa74ceab83c98e8f5fdc40d6858b. Qualified v40 was never committed: its 14-path working-tree snapshot is retained under tests/fixtures/mp06-v40-qualified/snapshot.json with a compiled SHA256 seal. The integration validator compares inherited manifests and append-only records against that snapshot and the pinned Git lineage. It must not invent a v40 ancestor or reinterpret its historical COMMIT=false as permission. Frozen v38/v39/v40 modules and the pure policy evaluator stay unchanged.
+
+Only source branch codex/test-policy-v40 to pinned MP06 base35b67ab87ecd052ab80f450d766c9eabd2991861 in Eak-dev/malispang-lineOA is eligible. Source qualification binds parent/tree/diff before commit and the actual SHA after commit. Published source, current PR head, successful CI source and independently reviewed source must match before Ready or the single ordinary merge; use expected-head checking. Record the actual PR number and grant consumption externally once GitHub returns them. No duplicate creation, blind retry of an unknown outcome, stale review inheritance or base-drift auto-rebase is permitted.
+
+Structural validation of source, synthetic merge or merged history is not evidence of live GitHub approval. The action gate needs independently observed exact receipts; a caller-supplied approval boolean or local PASS cannot substitute for them. PR16's downstream synthetic merge may be validated read-only but PR16 must remain Draft and cannot be merged by this package. Stop integration for scope/base drift or unresolved review findings.
+
+Every current-head Ready/merge receipt must also include the independently verified POST_COMMIT local qualification receipt for that same source SHA. A later source commit requires new local qualification and independent review bound to its tree/diff; neither initial Draft creation nor newer hosted CI can inherit an earlier local result.
+
+For CI synthetic merges, authoritative identity is the runner GITHUB_SHA/GITHUB_REF plus actual Git HEAD, ordered base/source parents and exact source tree, with the pinned event repository/branches/base. The optional PR-event merge_commit_sha is asynchronous metadata, not that identity proof: absent/null or a well-formed different SHA does not replace or veto the required tuple. Malformed metadata still fails closed. CI36485083070 demonstrated a metadata mismatch while every required tuple check matched. This adapter correction grants no action or real integration approval; actual merge receipts, same-head qualification/CI/review and the single-merge ledger remain mandatory.
+
+No Production, default-branch merge, deploy, activation, LINE/provider call, SQL/storage observation, permission/credential change, denied-action replay, grant/history/accounting reset or Issue closure. Storage/claims/Registry remain NOT_OBSERVED and pending-template cause UNKNOWN; UAT gaps remain. Publication of policy is not permission to execute the historical denied action and does not make TEST ready for U2. Existing independent MP07 scope is unchanged.
+
+All preceding local selectors and original audit records below are preserved as historical evidence. Resolve current authority by validated version and exact action evidence, not by choosing an old heading or flag. The integration grant expires upon its one completed merge/handoff or Owner revocation/replacement; it cannot start another package.
+
+## Local authority entrypoint — v40 / CONTROL_REPAIR_ONLY
+
+Owner approved TEST policy revision 3 on 2026-09-28: “อนุมัติที่คุณร่างและปรับแก้ได้เลย เพื่อสามารถทำงานต่อได้”. Decision MP-OD-2026-09-28-V40 authorizes only isolated local control/policy/schema/validator/tests and evidence documentation in V40_ALLOWED_PATHS. The permitted action selector is LOCAL_IMPLEMENTATION, LOCAL_VALIDATION, LOCAL_ANALYSIS. It does not authorize commit, push, GitHub/Notion publication, PR, merge, deployment, runtime changes, remote TEST, Production or Issue closure. The scope expires when this local repair is handed off, or is revoked/replaced; it cannot bootstrap additional packages.
+
+Published MP-06 control remains 2026.09.24-v37 at 35b67ab87ecd052ab80f450d766c9eabd2991861. This isolated candidate inherits local v39 commit 07ce10f641ebaa74ceab83c98e8f5fdc40d6858b, with v38/v39 preserved as local history, not retrospectively published authority. The technical overlay supersedes v39 only here; the exact published-v37 adoption/change mapping is in docs/project/CONTROL_REPAIR_V40_TH.md. No change is made to another checkout or MP-07's separately approved package.
+
+Read the validated `summarizeProjectAuthority` output from the control CLI for this checkout's single local authority summary. It distinguishes published control, inherited local control, frozen runtime, observed evidence HEAD and unobserved deployed state. Historical root authorization/status fields and headings below are audit evidence, not independent current action selectors. The summary is not a permission broker, proof of external access, or UAT readiness. Invalid or conflicting control fails closed.
+
+Historical denials, one-use grants, counters, journals, accounting and UAT gaps remain immutable. Support Case 15724958 provided no procedure to reopen the historical review; there is no asserted pending release. No replay, fresh denial, SQL, permission change, transport bypass or pendingTemplate reset is authorized. The storage hold and unexplained retained state remain separate blockers, not a ban on independent approved local work.
+
+### Historical index — preserved original records below
+
+- v39: local policy revision 2, inherited but not published on MP-06.
+- v38: local readiness mandate, not remote execution authority.
+- v37: published MP-06 integration baseline.
+- v36 and earlier: preserved historical controls, grant usage and acceptance evidence.
+
+The following original text is intentionally retained byte-for-byte. Resolve current scope by versioned validation above, never by selecting the most permissive historical heading or flag.
+
+## Current effective control — v39 / TEST operation policy revision 2
+
+Owner explicitly approved implementing the nine-part revised TEST operation policy on 2026-09-24. MP-OD-2026-09-24-V39 supersedes v38 only for local policy/control/schema/validator/tests and documentation, local commit and GitHub/Notion evidence reconciliation. Baseline is 7c9e08ade55494892af4ae2fd6708134f78329d5. MP-06 / Issue #12 remains CURRENT. See docs/project/TEST_OPERATION_POLICY_TH.md for the approved rules and retained boundaries.
+
+Distinguish routine work from retry, and proven non-execution from completed, failed-with-effects, unknown, in-flight and safety-denied outcomes. Three total attempts apply only to a harmless browser preparation/selection incident, not the lifetime of a task. Counter/history cannot reset through task/tool/session changes. No blind replay after unknown side-effectful outcomes; no tool-denial workaround. SELECT alone does not prove the whole request has no business side effects. Continue independent authorized local work while reporting the exact blocked action, evidence, responsible party and resumption condition.
+
+This is a LOCAL policy/control implementation stage, not remote permission: no push, PR, merge, deploy, activation, LINE/provider request, Storage query, Production, reset/rebase/force-push or Issue closure. The pure policy evaluator issues no external authority and is not an executor or persistent retry ledger. Preserve all v38-and-earlier manifests, grants, counters, journals, accounting and unresolved UAT evidence against the Git baseline. Historical sections below are retained evidence, not competing current action selectors. The storage hold is unchanged and is neither released nor broadened to unrelated work by this decision. Local policy acceptance is not user-test readiness.
+
+## Current effective control — v38 / MP06 TEST readiness
+
+Owner approved project-scoped development, configuration and testing toward user UAT on มะลิปัง TEST, then explicitly approved executing the complete plan. This supersedes v37's completed DevOps-only scope. MP-06 / Issue #12 remains CURRENT. The first executable stage is local remediation and UAT-contract qualification; remote execution remains fail-closed pending exact candidate, environment, state, rollback and tool-permission gates. No repeated broad Owner approval is required for local implementation in the exact v38 path set.
+
+The v38 inspector compares inherited manifests and append-only evidence to commit35b67ab87ecd052ab80f450d766c9eabd2991861. Existing journals, consumed grants, accounting and historical UAT gaps are not replacement authority. Historical sections below remain evidence, not the effective action selector. Production, reset, rebase, force-push, merge and Issue closure remain forbidden. The storage-review hold is not released by this Owner mandate. The current local stage cannot deploy, activate, send LINE messages, or query the held storage action. A validated control transition is not proof of user-test readiness.
+
+## Current effective control — v37 / existing PR18 integration into MP-06
+
+Owner chose option 1 and approved proceeding on 2026-09-24: integrate only existing PR18 from codex/dev-operations-v33 into codex/mp-06-guardrailed-ai at pinned base 1508782a9cbf9412b3a6967264e9f4e8d6c19376. MP-OD-2026-09-24-V37 supersedes v36 only for commit/push, exact-PR review, Ready, and one ordinary merge commit after complete exact-source CI and independent findings review. PR16 remains Draft; its automatic CI synchronization is review-only, not default-branch merge permission. Preserve v36/v35/v34/v33/v32 records, consumed PR18 creation, all grants/journals/holds, MP-06 UAT gaps and frozen runtime. The DevOps history ends at the reviewed PR18 source; future feature edits require a separate explicit MP-06 work-package transition. No new PR, squash, rebase, force-push, default merge, deploy, remote TEST, Production, Issue closure or MP-07.
+
+Greptile's exact-head P1 is an action gate: branch/base ancestry and a green PR CI adapter are not Ready or merge permission. Immediately before either action, independently fetch live PR18, hosted CI and review from GitHub, verify that current PR head, successful CI commit, independent reviewed commit and merge API `expected_head_sha` are the **same full SHA**, that no priority finding remains unresolved, and that the base is still pinned. Pass only that closed evidence tuple to `evaluateProjectAction`; absent or mismatched evidence must deny the action. A review of an earlier SHA is never inherited by a later commit. After merge, compare the merge's second parent to this exact reviewed SHA and retain the evidence outside the source commit for audit. The local repository inspector proves history/tree structure, not live review provenance.
+
+## Current effective control — v36 / local Dev Operations efficiency
+
+Owner explicitly approved MP-OD-2026-09-24-V36 / 2026.09.24-v36 in response to the targeted control-transition question. Supersedes v35 only for LOCAL_DEV_OPERATIONS_EFFICIENCY_ONLY from baseline 90aa98305105377d006c67f40259297273db3849. Keep the exact v33 paths and V35_V34_V33_V32_GRANTS_JOURNALS_HOLDS_UNCHANGED. Optimize repeated local Git observations, verified system Git startup and fixed control-validation execution with source-bound evidence and compact output. NO_COMMIT_PUSH_NEW_PR_READY_MERGE_DEPLOY_RUNTIME_TEST_PRODUCTION_ISSUE_CLOSE. Preserve consumed PR18 creation and all source/index/dirty-state checks and test criteria. Synthetic fixture commits are test setup only. Timing/output-byte measurements do not certify billing savings.
+
+## Current effective control — v35 / existing Draft PR18 P1 remediation
+
+Owner approved MP-OD-2026-09-23-V35 / 2026.09.23-v35, superseding v34 only for the three confirmed P1 findings in existing Draft PR18: consumed creation authority, stable checkpoint capture, and pre-validation receipt source binding. Creation grant CONSUMED, exact PR18 only. Retain the v33 path allowlist and all inherited grants/journals/holds. Require negative regressions, full isolated validation and exact-SHA CI/findings-only re-review. No new PR, Ready, merge, reset, rebase, force-push, workflow/credential/runtime edits, remote TEST, deploy, Production or Issue closure. Historical v34 is not fresh creation authority.
+
+## Current effective control — v34 / one Draft Dev Operations review
+
+Roadmap 2026.09.23-v34 / MP-OD-2026-09-23-V34 supersedes v33 only for one Draft PR from codex/dev-operations-v33 to codex/mp-06-guardrailed-ai at base 1508782a9cbf9412b3a6967264e9f4e8d6c19376, hosted CI and findings-only Greptile review. Owner explicitly approved this transition. Exact v33 allowed paths and inherited grants/journals/holds remain unchanged. No workflow edit, credentials, runtime, remote TEST, Ready, merge, deploy, Production or Issue closure. Validate exact source history and synthetic integration separately; local proof does not confer deployment authority.
+
+## Current effective control — v33 / local Dev Operations tooling
+
+Roadmap 2026.09.23-v33 / MP-OD-2026-09-23-V33 supersedes 2026.09.21-v32 only for LOCAL_DEV_OPERATIONS_TOOLING_ONLY_INHERITING_V32. Owner approved the exact Dev Operations work package and the additional closed-schema/validator/test/Owner-record paths on 2026-09-23, then explicitly added tsconfig.json and eslint.config.js for lint integration. Base HEAD is 1508782a9cbf9412b3a6967264e9f4e8d6c19376 on isolated branch codex/dev-operations-v33. The canonical work remains MP-06 / Issue #12 / WP8F / TEST_ONLY; this ancillary local tooling does not advance MP-06 or authorize any customer, remote TEST, Production, runtime, PR, merge, deployment or Issue closure action. All v32 runtime/artifact grants, journals and holds remain unchanged. Exact allowed paths and negative gates are sealed in current-work.json and the v33 validator. GitHub Roadmap #9 receives a reconciliation receipt after local validation; prior content stays intact.
+
 ## Current effective control — v30 / PR15 CI hard timeout 20 minutes
 
 Roadmap2026.09.20-v31 supersedes v30 only for the Owner-authorized PR15 P1 handoff-close remediation and the evidenced15-second watchdog on seven exact Git-fixture control tests. The runtime contract permits an older close receipt to reconcile and acknowledge after a newer handoff generation starts while preserving the newer active handoff, retained operation, generation fencing and one-close/no-automatic-retry limits. Authorized remediation paths are tests/project-control.test.ts, worker/durable-objects.ts, worker-tests/durable-state.test.ts and worker-tests/mp-06-pilot-control.test.ts. The20-minute workflow, source-head/synthetic-merge separation, checks, runtime artifact/grants/journals/holds and Draft review-only posture remain unchanged. No rebase, force-push, Ready transition, duplicate Greptile review, merge, deploy, remote TEST, Production, grant/journal reset, Data Studio hold release, issue closure or MP07.
@@ -268,3 +341,34 @@ Roadmap2026.09.12-v25 / MP-OD-2026-09-12-V25 supersedes v24 as a sealed control-
 Historical v24 fixture is pinned to046eff1d72edeea539623a9bbe9e006ba241a7ae with compiled SHA256 per path checked before use and after local isolated checkout. Tests preserve historical assertions, prove v24 rejection of the new bytes and v25 acceptance only of the approved chain, prohibit network protocols other than local file clone, cleanup in finally and check operator HEAD/index/working-tree invariance. Negative guard tests mutate isolated stand-ins, never the operator. No operator checkout/reset/restore is authorized.
 
 All ten control paths only; original runtime1790da58635edcee154b60d76730248e8130c2d3/artifactadc5e2e9d465a1426a877400379da81309152dfca66841a9c31d710907546657, TEST account/Worker/OA,120second fresh-state gates, original operations/session/caps and journals remain unchanged. No mint/reset/replace/reissue grants; deployment/activation/STOP stayAPPROVED_UNUSED0/1 until original authorized starts. Exact final control CI SUCCESS, full clean validation and artifact reproduction are prerequisites, not inferred from this text. Rejected/timeout/unknown outcome consumes its invoked grant and stops without retry. U1 GAP, A1–A3 UNRESOLVED, billingUNKNOWN, Issue12 OPEN; no PR/merge/closure or Production. Production NO_GO — NOT TOUCHED.
+
+## MP-OD-2026-09-21-V32 — Greptile push and Draft review trigger
+
+- version: 2026.09.21-v32
+- ownerDecision: MP-OD-2026-09-21-V32
+- supersedes: 2026.09.20-v31
+- type: REPOSITORY_SCOPED_GREPTILE_PUSH_AND_DRAFT_REVIEW_CONTROL_ONLY_INHERITING_V31
+- mandate: OWNER_GREPTILE_PUSH_AND_DRAFT_REVIEW_REQUEST_2026_09_21
+- repository: Eak-dev/malispang-lineOA
+- headBranch: codex/mp-06-guardrailed-ai
+- baseBranch: codex/phase-1a-foundation
+- mergeCommit: 88deb90a58369923f11a7266ec63fa8fd5f293c2
+- mergeParents: aad8c5e0ef41c5e47df3d93ae462b9122368c15d,d41dff3e0eda6e5930d8e2a4d58a952cef2dd57c
+- mergeTree: 57259355a0877677e5a88ca0c91fa0cf4f37f2ab
+- inheritedBaseMergeCommit: aad8c5e0ef41c5e47df3d93ae462b9122368c15d
+- inheritedBaseMergeParents: 30b79f791e276fa5f420d08ffff208a231780281,ca4904ef3f316f8e381e57e4757f3fe173dbeb1f
+- inheritedBaseMergeTree: 21b8a8b3f436cfccdd6f7a2ebba82cde8debb5bb
+- path: greptile.json
+- priorFileSha256: 5b5f370f52925022378f5112e4ecd63b4a050a40cc5ac40b06f95a65d1754d61
+- fileSha256: 3cd6a3ab140a230736ac0c2b76f9a75204afc6545a125bf6371468bb69c015b1
+- automaticReview: open,push
+- reviewDrafts: true
+- reviewRebase: false
+- dashboard: PR_OPENED_ON_NEW_PUSHES_ON_DRAFT_ON_ALL_OTHER_REVIEW_SETTINGS_UNCHANGED
+- repositoryScope: EXACT_REPOSITORY_ONLY_AUTO_ENABLE_NEW_REPOSITORIES_OFF
+- automation: AUTO_FIX_AUTO_APPROVE_AUTO_MERGE_OFF
+- triggerProof: NEXT_REAL_PUSH_TO_OPEN_DRAFT_PR_EXACT_REVIEWED_SHA_NO_EMPTY_COMMIT
+- draftPrAuthority: ONE_DRAFT_PR_EXACT_HEAD_AND_BASE_FOR_TRIGGER_PROOF_NO_READY_OR_MERGE
+- inheritedState: V31_RUNTIME_ARTIFACT_GRANTS_JOURNALS_HOLDS_AND_PRODUCTION_NO_GO_UNCHANGED
+
+Owner records the already-completed PR #15 merge as exact immutable history and authorizes one Draft PR with the exact head/base above solely to prove the Greptile push trigger. The repository config successor changes automatic review from open-only to open+push and permits Draft reviews; rebase review remains off. Dashboard values must agree with the repository file, only this repository may be enabled, and auto-enable new repositories stays off. No empty commit, duplicate PR, Ready transition, merge, deploy, remote TEST, Production, application/runtime edit, model change, grant/journal/hold mutation, Issue closure or MP-07 is authorized.
