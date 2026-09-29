@@ -1,5 +1,27 @@
 # MalisPang Project Control
 
+## Effective publication control — v43 / one harness Draft PR
+
+Owner approved publishing the qualified local historical harness repair to GitHub and running CI, then explicitly approved the sole dependency exception: undici 7.29.0 to 7.29.1 through miniflare@5.20260811.0-alpha in pnpm-workspace.yaml and pnpm-lock.yaml, for GHSA-3wwx-pv8p-q78v. MP-OD-2026-09-29-V43 supersedes v42 for this exact package. MP06/Issue12 remains CURRENT/OPEN. Read-only reconciliation confirms Issue9/Issue12 OPEN, MP06 at a05bab89bc6d5cdf2914581ed658be86dd00b062 and existing PR16 Draft.
+
+Only codex/mp06-harness-v43 to codex/mp-06-guardrailed-ai in Eak-dev/malispang-lineOA is eligible, with that exact merge as base. Preserve the never-committed qualified v42 overlay using the sealed snapshot and compact overlay patch. Keep its harness, frozen v42 inspector, historical assertions, 5000ms and zero retries unchanged. The v41 PR19 integration grant remains consumed. All old grants, holds, accounting and UAT gaps remain unchanged.
+
+Permit only the 19 exact V43_ALLOWED_PATHS for the inherited v42 package, minimal publication control/CI adapters and the two dependency files. No other dependency, runtime, workflow, credential, bot model or business-policy change. The reviewed minimal dependency pair is hash-sealed in harnessPublicationV43; exact bytes, fresh audit zero at every severity and the applicable qualification receipt are required before publication actions. Hash sealing alone is not qualification or publication.
+
+COMMIT requires a focused-check/review receipt bound to the exact staged tree, prior v42 qualification and fresh zero audit. PUSH_BRANCH and one CREATE_DRAFT_PR require complete local qualification after commit and independent review on the same actual source SHA/tree. Preserve all failed/unknown outcomes; authenticate receipts independently and keep the one-use creation ledger externally. No duplicate PR or blind retry. Existing unchanged workflow runs on the Draft PR event; source push alone does not trigger its MP06 push filter.
+
+CI validates the actual runner SHA/ref, exact open Draft event/repository/branches/base, ordered synthetic parents [base, source] and source-identical tree. A synthetic merge is validation only. No Ready, merge, default-branch action, deploy, remote TEST, storage/SQL, LINE/provider call, Production, U2 or Issue closure is authorized. A new source commit requires fresh qualification/review; old receipts cannot authorize it. All prior records below remain preserved historical evidence.
+
+## Effective local control — v42 / historical harness repair
+
+Owner approved “อนุมัติซ่อมชุดทดสอบเฉพาะ local” on 2026-09-29, including the necessary control transition, following the local harness repair proposal. MP-OD-2026-09-29-V42 supersedes v41 only for local diagnosis, implementation and validation of historical fixture setup and cleanup in the exact V42_ALLOWED_PATHS. MP-06 / Issue12 remains CURRENT and OPEN. Read-only reconciliation observed Issue9/Issue12 OPEN and MP06 at the exact baseline below; publication of this successor is not authorized.
+
+The baseline is actual PR19 merge a05bab89bc6d5cdf2914581ed658be86dd00b062, with parents 35b67ab87ecd052ab80f450d766c9eabd2991861 and b1ab0d6ce86487c324df291235d53e86ca5da66e, tree 7d3ede2902d545092300171faa83fa403f5d3e1e. V41's single integration grant is CONSUMED; its unchanged historical record cannot authorize another commit, push, PR or merge. This package is an uncommitted local overlay with HEAD fixed at that merge. Current authority comes only from validated v42.
+
+Measure the expensive setup phase before changing it. Preserve every historical assertion, commit/path/hash check, isolated mutable fixture, cleanup and operator guard, the failing case's 5000ms watchdog and zero retries. Allowed changes are the specific test harness/helper/regression paths, minimal control/schema/dispatcher wiring and append-only evidence. Frozen inspectors v38/v39/v40/v41, runtime, workflows, dependencies, model, policy and secrets remain unchanged. Full required local gates and focused positive/negative/cleanup evidence are required; local success is not hosted CI qualification.
+
+No commit, push, publication, PR/Ready/merge, deployment, remote TEST, SQL/storage, LINE/provider call, permission change, Production access or Issue closure. Historical one-use grants, journals, counters, accounting, storage hold and UAT gaps remain unchanged. No U2 request follows this package. Report measured root cause, exact delta and limitations before any separately authorized publication package. All earlier records below remain historical evidence.
+
 ## Effective integration control — v41 / MP-06 policy publication only
 
 Owner approved option 1 of the scoped integration plan on 2026-09-29, after the plan explicitly listed local control/CI changes, commit, source push, one Draft PR, exact-source CI and independent review, and one ordinary merge into codex/mp-06-guardrailed-ai. MP-OD-2026-09-29-V41 supersedes the local-only action selector of v40 for this package only. MP-06 / Issue12 remains CURRENT and OPEN. No general publication, deployment or runtime authority is granted.

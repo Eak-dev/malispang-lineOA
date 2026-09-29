@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import {
   evaluateProjectAction,
   projectControlGitExecutable,
@@ -43,7 +43,54 @@ import {
   type IntegrationMergeReceipt,
 } from "../src/project-control-integration.js";
 
-const root = new URL("../", import.meta.url);
+// Preserve every v41 assertion on its actual final source inputs while exercising
+// today's imported dispatcher. The successor overlay must not rewrite history.
+const sourceRoot = new URL("../", import.meta.url);
+const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v41-regression-"));
+afterAll(async () => {
+  await rm(historicalRoot, { recursive: true, force: true });
+});
+try {
+  execFileSync(
+    projectControlGitExecutable(),
+    [
+      "clone",
+      "--quiet",
+      "--shared",
+      "--no-hardlinks",
+      "--no-checkout",
+      fileURLToPath(sourceRoot),
+      historicalRoot,
+    ],
+    { stdio: "pipe" },
+  );
+  execFileSync(
+    projectControlGitExecutable(),
+    [
+      "checkout",
+      "--quiet",
+      "--detach",
+      "b1ab0d6ce86487c324df291235d53e86ca5da66e",
+    ],
+    { cwd: historicalRoot, stdio: "pipe" },
+  );
+} catch (error) {
+  await rm(historicalRoot, { recursive: true, force: true });
+  throw error;
+}
+const root = pathToFileURL(historicalRoot + "/");
+async function validateHistoricalControl(
+  validate = () => runProjectControlValidation(root),
+) {
+  const prior = process.env.GITHUB_EVENT_NAME;
+  process.env.GITHUB_EVENT_NAME = "push";
+  try {
+    await validate();
+  } finally {
+    if (prior === undefined) delete process.env.GITHUB_EVENT_NAME;
+    else process.env.GITHUB_EVENT_NAME = prior;
+  }
+}
 const c = TEST_POLICY_INTEGRATION_V41;
 const base = TEST_POLICY_REPAIR_V40.baseline;
 const published: string = TEST_POLICY_REPAIR_V40.publishedBaseline;
@@ -123,6 +170,30 @@ async function withFixture(run: (cwd: string) => Promise<void> | void) {
 }
 
 describe("v41 exact control-only adoption, not runtime or tool authority", () => {
+  it.each(["success", "failure"])(
+    "restores the outer PR event after historical CLI %s",
+    async (outcome) => {
+      const prior = process.env.GITHUB_EVENT_NAME;
+      process.env.GITHUB_EVENT_NAME = "pull_request";
+      try {
+        const call = validateHistoricalControl(async () => {
+          expect(process.env.GITHUB_EVENT_NAME).toBe("push");
+          if (outcome === "failure")
+            throw new Error("synthetic historical validation failure");
+          await runProjectControlValidation(root);
+        });
+        if (outcome === "failure")
+          await expect(call).rejects.toThrow(
+            "synthetic historical validation failure",
+          );
+        else await expect(call).resolves.toBeUndefined();
+        expect(process.env.GITHUB_EVENT_NAME).toBe("pull_request");
+      } finally {
+        if (prior === undefined) delete process.env.GITHUB_EVENT_NAME;
+        else process.env.GITHUB_EVENT_NAME = prior;
+      }
+    },
+  );
   it("validates current manifests and projects exactly to the qualified v40 snapshot", async () => {
     const { r, w, s } = fixtures();
     expect(r.version).toBe("2026.09.29-v41");
@@ -137,7 +208,7 @@ describe("v41 exact control-only adoption, not runtime or tool authority", () =>
     expect(validateWp8fOwnerDecisionRecord(ownerRecord(), r.version)).toBe(
       true,
     );
-    await expect(runProjectControlValidation(root)).resolves.toBeUndefined();
+    await expect(validateHistoricalControl()).resolves.toBeUndefined();
     expect(summarizeProjectAuthority(r, w)).toMatchObject({
       remoteExecutionAuthorized: false,
       productionAuthorized: false,

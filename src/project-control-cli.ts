@@ -2,6 +2,16 @@ import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
+  HARNESS_PUBLICATION_V43,
+  inspectV43Repository,
+  validateV43PullRequestReceipt,
+  type V43PrReceipt,
+} from "./project-control-v43.js";
+import {
+  LOCAL_HARNESS_REPAIR_V42,
+  inspectV42Repository,
+} from "./project-control-v42.js";
+import {
   TEST_POLICY_INTEGRATION_V41,
   inspectIntegrationRepository,
   validateIntegrationPullRequestReceipt,
@@ -124,6 +134,82 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === HARNESS_PUBLICATION_V43.version) {
+    const errors = [
+      ...validateProjectControl(roadmap, currentWork).errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    const cwd = fileURLToPath(root),
+      binary = projectControlGitExecutable();
+    const git = (...args: string[]) =>
+      execFileSync(
+        binary,
+        ["--no-replace-objects", "--no-optional-locks", ...args],
+        { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      ).trim();
+    let receipt: V43PrReceipt | undefined;
+    if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+      if (
+        !process.env.GITHUB_EVENT_PATH ||
+        process.env.GITHUB_REPOSITORY !== HARNESS_PUBLICATION_V43.repository
+      )
+        throw new Error("V43_PR_EVENT_REQUIRED");
+      const event: unknown = JSON.parse(
+        await readFile(process.env.GITHUB_EVENT_PATH, "utf8"),
+      );
+      const merge = git("rev-parse", "HEAD");
+      const parents = git("rev-list", "--parents", "-n", "1", merge)
+        .split(" ")
+        .slice(1);
+      const verified = validateV43PullRequestReceipt(event, {
+        sha: process.env.GITHUB_SHA,
+        ref: process.env.GITHUB_REF,
+        merge,
+        parents,
+        tree: git("rev-parse", "HEAD^{tree}"),
+        sourceTree: parents[1] ? git("rev-parse", parents[1] + "^{tree}") : "",
+      });
+      if (!verified) throw new Error("V43_PR_MERGE_IDENTITY_MISMATCH");
+      receipt = verified;
+    }
+    const inspected = inspectV43Repository(cwd, binary, receipt);
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState:
+            "STRUCTURAL_VALIDATION_NOT_LIVE_CI_REVIEW_OR_MERGE_AUTHORITY",
+        }),
+    );
+    return;
+  }
+  if (version === LOCAL_HARNESS_REPAIR_V42.version) {
+    if (process.env.GITHUB_EVENT_NAME === "pull_request")
+      throw new Error("V42_LOCAL_ONLY_PR_ADAPTER_DENIED");
+    const errors = [
+      ...validateProjectControl(roadmap, currentWork).errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    const inspected = inspectV42Repository(
+      fileURLToPath(root),
+      projectControlGitExecutable(),
+    );
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState:
+            "LOCAL_UNCOMMITTED_OVERLAY_NOT_HOSTED_CI_OR_PUBLICATION_AUTHORITY",
+        }),
+    );
+    return;
   }
   if (version === TEST_POLICY_INTEGRATION_V41.version) {
     const validation = validateProjectControl(roadmap, currentWork);
@@ -675,6 +761,14 @@ export async function runPullRequestControlValidation(
   const work = JSON.parse(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
+  if (work.roadmapVersion === HARNESS_PUBLICATION_V43.version) {
+    if (eventPath !== process.env.GITHUB_EVENT_PATH)
+      throw new Error("V43_PR_EVENT_PATH_MISMATCH");
+    await runProjectControlValidation(root);
+    return;
+  }
+  if (work.roadmapVersion === LOCAL_HARNESS_REPAIR_V42.version)
+    throw new Error("V42_LOCAL_ONLY_PR_ADAPTER_DENIED");
   if (work.roadmapVersion === TEST_POLICY_INTEGRATION_V41.version) {
     if (eventPath !== process.env.GITHUB_EVENT_PATH)
       throw new Error("V41_PR_EVENT_PATH_MISMATCH");

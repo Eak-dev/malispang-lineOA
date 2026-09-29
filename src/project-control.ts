@@ -4,6 +4,18 @@ import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { channel } from "node:diagnostics_channel";
 import {
+  HARNESS_PUBLICATION_V43,
+  projectV43ToV42,
+  v43AuthoritySummary,
+  evaluateV43Action,
+} from "./project-control-v43.js";
+import {
+  LOCAL_HARNESS_REPAIR_V42,
+  V42_ALLOWED_ACTIONS,
+  projectV42ToV41,
+  v42AuthoritySummary,
+} from "./project-control-v42.js";
+import {
   TEST_POLICY_INTEGRATION_V41,
   projectV41ToV40,
   v41AuthoritySummary,
@@ -1053,11 +1065,15 @@ export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
       allowedActions: [],
       remoteExecutionAuthorized: false,
     } as const;
+  if (isRecord(roadmap) && roadmap.version === HARNESS_PUBLICATION_V43.version)
+    return v43AuthoritySummary();
   if (
     isRecord(roadmap) &&
     roadmap.version === TEST_POLICY_INTEGRATION_V41.version
   )
     return v41AuthoritySummary();
+  if (isRecord(roadmap) && roadmap.version === LOCAL_HARNESS_REPAIR_V42.version)
+    return v42AuthoritySummary();
   if (isRecord(roadmap) && roadmap.version === TEST_POLICY_REPAIR_V40.version)
     return v40AuthoritySummary();
   return {
@@ -1086,6 +1102,15 @@ export function evaluateProjectAction(
   if (!isRecord(currentWork) || !isRecord(currentWork.authorization)) {
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
+  if (isRecord(roadmap) && roadmap.version === HARNESS_PUBLICATION_V43.version)
+    return evaluateV43Action(action, executionEvidence);
+  if (isRecord(roadmap) && roadmap.version === LOCAL_HARNESS_REPAIR_V42.version)
+    return (V42_ALLOWED_ACTIONS as readonly string[]).includes(action)
+      ? { allowed: true, reason: "V42_LOCAL_HARNESS_REPAIR_ONLY" }
+      : {
+          allowed: false,
+          reason: "V42_NO_PUBLICATION_REMOTE_OR_INHERITED_GRANT",
+        };
   if (
     isRecord(roadmap) &&
     roadmap.version === TEST_POLICY_INTEGRATION_V41.version
@@ -8542,6 +8567,52 @@ export function validateProjectControl(
 ): ProjectControlValidation {
   if (
     isRecord(roadmap) &&
+    roadmap.version === HARNESS_PUBLICATION_V43.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = HARNESS_PUBLICATION_V43;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.harnessPublicationV43) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-29",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV43ToV42(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V43_EXACT_PUBLICATION_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === LOCAL_HARNESS_REPAIR_V42.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = LOCAL_HARNESS_REPAIR_V42;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.localHarnessRepairV42) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-29",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV42ToV41(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V42_EXACT_LOCAL_HARNESS_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === TEST_POLICY_INTEGRATION_V41.version
   ) {
     if (!isRecord(work))
@@ -8889,6 +8960,48 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === HARNESS_PUBLICATION_V43.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((key) => key === "harnessPublicationV43")
+        .length !== 1 ||
+      JSON.stringify(schema.properties.harnessPublicationV43) !==
+        JSON.stringify({ const: HARNESS_PUBLICATION_V43 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V43_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV43ToV42({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      HARNESS_PUBLICATION_V43.supersedes,
+    );
+  }
+  if (version === LOCAL_HARNESS_REPAIR_V42.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((key) => key === "localHarnessRepairV42")
+        .length !== 1 ||
+      JSON.stringify(schema.properties.localHarnessRepairV42) !==
+        JSON.stringify({ const: LOCAL_HARNESS_REPAIR_V42 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V42_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV42ToV41({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      LOCAL_HARNESS_REPAIR_V42.supersedes,
+    );
+  }
   if (version === TEST_POLICY_INTEGRATION_V41.version) {
     if (
       !isRecord(schema) ||
@@ -9170,6 +9283,48 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === HARNESS_PUBLICATION_V43.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split("## MP-OD-2026-09-29-V43 —");
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(HARNESS_PUBLICATION_V43) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          HARNESS_PUBLICATION_V43.supersedes,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
+  if (version === LOCAL_HARNESS_REPAIR_V42.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split("## MP-OD-2026-09-29-V42 —");
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(LOCAL_HARNESS_REPAIR_V42) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          LOCAL_HARNESS_REPAIR_V42.supersedes,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === TEST_POLICY_INTEGRATION_V41.version) {
     if (typeof record !== "string") return false;
     const sections = record.split("## MP-OD-2026-09-29-V41 —");

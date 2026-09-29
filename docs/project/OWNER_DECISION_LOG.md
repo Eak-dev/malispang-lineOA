@@ -1186,3 +1186,79 @@ The downstream PR16 stays Draft and review-only. No default merge, runtime/model
   "forbidden": "RUNTIME_DEPLOY_ACTIVATE_STORAGE_LINE_PROVIDER_PRODUCTION_DEFAULT_MERGE_RESET_REBASE_FORCE_PUSH_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-29-V42 — local historical harness repair
+
+Owner approved “อนุมัติซ่อมชุดทดสอบเฉพาะ local” after the scoped proposal, including necessary control transition. Only local measurement, harness performance repair and regression validation are authorized. PR19 is already merged at the exact baseline and its single integration grant is consumed. Read-only GitHub reconciliation observed Issue9/Issue12 OPEN and the actual MP06 merge; no external reconciliation write is authorized. Preserve all historical assertions, hashes, paths, operator/cleanup guards, 5000ms and zero retries. No commit, publication, remote TEST, Production or Issue closure.
+
+```json
+{
+  "version": "2026.09.29-v42",
+  "ownerDecision": "MP-OD-2026-09-29-V42",
+  "supersedes": "2026.09.29-v41",
+  "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "baselineTree": "7d3ede2902d545092300171faa83fa403f5d3e1e",
+  "sourceCommit": "b1ab0d6ce86487c324df291235d53e86ca5da66e",
+  "publishedParent": "35b67ab87ecd052ab80f450d766c9eabd2991861",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "LOCAL_HISTORICAL_HARNESS_REPAIR_ONLY",
+  "targetEnvironment": "LOCAL_ONLY",
+  "integrationPr": 19,
+  "integrationGrant": "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
+  "localImplementation": true,
+  "commit": false,
+  "publication": false,
+  "remoteExecution": false,
+  "production": false,
+  "watchdogMs": 5000,
+  "retries": 0,
+  "invariants": "HISTORICAL_ASSERTIONS_HASHES_PATHS_CLEANUP_OPERATOR_GUARDS_UNCHANGED",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "forbidden": "RUNTIME_WORKFLOW_DEPENDENCY_COMMIT_PUSH_PR_MERGE_DEPLOY_REMOTE_TEST_PRODUCTION_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-29-V43 — qualified harness Draft publication and exact undici remediation
+
+Owner approved publishing the qualified local harness repair to GitHub and running CI, then approved only undici 7.29.0 to 7.29.1 via miniflare@5.20260811.0-alpha scoped override in pnpm-workspace.yaml and pnpm-lock.yaml for GHSA-3wwx-pv8p-q78v. No broader dependency update or audit suppression. Preserve the sealed never-committed v42 qualification and all historical grants/holds/acceptance. PR19 is consumed; one separate Draft PR only. COMMIT needs exact staged-tree focused checks/review and fresh audit0; push/PR need complete exact-source post-commit qualification/review. No Ready, merge, deployment, remote TEST/SQL/storage, Production, U2 or closure. The minimal generated dependency pair below is independently reviewed and hash-sealed; sealing is not audit, qualification or publication evidence.
+
+```json
+{
+  "version": "2026.09.29-v43",
+  "ownerDecision": "MP-OD-2026-09-29-V43",
+  "supersedes": "2026.09.29-v42",
+  "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "QUALIFIED_HARNESS_DRAFT_PUBLICATION_ONLY",
+  "snapshotSha256": "0161cfb6213ed869ea23b7370ad147aec12e7c96baa4fcfcb76e461aa1e6c4f1",
+  "patchSha256": "4a271328b3822f4c1fd84a1e05fed040612ce4e034f95f2fa1397b3ff2835115",
+  "priorV42SourceSealSha256": "8a33f2339e6cc801ad5ca8a5e9c935e83fc7b604d54702859f1bcd085be51353",
+  "maximumDraftPullRequests": 1,
+  "priorIntegrationPr": 19,
+  "priorIntegrationGrant": "CONSUMED_NO_REPLACEMENT",
+  "dependencyPatch": {
+    "parent": "miniflare@5.20260811.0-alpha",
+    "package": "undici",
+    "from": "7.29.0",
+    "to": "7.29.1",
+    "advisory": "GHSA-3wwx-pv8p-q78v",
+    "status": "SEALED",
+    "workspaceSha256": "6003269d4862bed78638c80e0610ebdf2a6eb9edf9bc4041754700ce85f9f92a",
+    "lockfileSha256": "9000c0273ad14ca8876409d0b240f5737390aebf5c8f28509f720d3a4a6d810b"
+  },
+  "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "remoteExecution": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "forbidden": "RUNTIME_WORKFLOW_OTHER_DEPENDENCY_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
