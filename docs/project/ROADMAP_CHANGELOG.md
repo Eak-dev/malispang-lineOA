@@ -764,3 +764,11 @@ MP-OD-2026-09-29-V42 records Owner approval for local diagnosis and repair of th
 ## 2026-09-29 — v43 qualified harness publication and narrow undici patch
 
 Owner authorizes a dedicated codex/mp06-harness-v43 source and one Draft PR into the unchanged MP06 merge baseline a05bab89bc6d5cdf2914581ed658be86dd00b062. Preserve qualified v42 as sealed controls/doc additions plus its compact exact overlay, not an invented Git ancestor. Historical v41/v42 tests retain assertions with isolated restored inputs and scoped runner-event handling. The only dependency exception is the approved parent-scoped undici7.29.0 to7.29.1 patch for GHSA-3wwx-pv8p-q78v in the two exact yaml/lock paths. Require fresh audit0, reviewed patch hashes, exact-source post-commit full gates and Draft PR CI. No Ready/merge/deploy/remote TEST/Production/U2/closure; all old grants and holds remain.
+
+## 2026.09.30-v44 — existing Draft PR20 harness repair
+
+Supersedes v43 only for Owner-approved measured Git-fixture repair and same-PR follow-up. Preserve published S=d0f63188c50da6e204a4ecc1e91bed97f5ec44eb, MP06 M=a05bab89bc6d5cdf2914581ed658be86dd00b062, MP06 CURRENT/Issue12 OPEN and Issue9 OPEN. V44_ALLOWED_PATHS is the exact 13-path control/harness scope; dependencies, old modules, sealed snapshots and runtime/workflows remain frozen. Creation CONSUMED, PR20 stays Draft, no merge/remote execution/closure. Earlier records/grants are historical, not inherited executable authority.
+
+## 2026.09.30-v45 — current inspector immutable-read batching
+
+Supersedes published v43 at S directly, replacing only the unpublished v44 draft after the rejected child-process experiment. Owner explicitly extends local implementation to current inspectV23Repository immutable-read batching and two direct batch helper/regression files. V45_ALLOWED_PATHS has14 exact paths; the main historical harness is now strictly frozen at S. Preserve every check,5000ms/zero retries, all old modules/snapshots/dependencies/runtime/workflows/holds. MP06/Issue12 CURRENT/OPEN, Issue9 OPEN, PR20 OPEN Draft into unchanged M; creation consumed, no new PR/Ready/merge/remote execution/closure.

@@ -5,6 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "inspectorBatchV45",
     "harnessPublicationV43",
     "localHarnessRepairV42",
     "testPolicyIntegrationV41",
@@ -70,6 +71,47 @@
     "devOperationsV33"
   ],
   "properties": {
+    "inspectorBatchV45": {
+      "const": {
+        "version": "2026.09.30-v45",
+        "ownerDecision": "MP-OD-2026-09-30-V45",
+        "supersedes": "2026.09.29-v43",
+        "replacesUnpublishedDraft": "2026.09.30-v44",
+        "baseline": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+        "baselineTree": "69ba68699b20f5c93bf078aef66d3b4f76a9514f",
+        "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+        "repository": "Eak-dev/malispang-lineOA",
+        "headBranch": "codex/mp06-harness-v43",
+        "baseBranch": "codex/mp-06-guardrailed-ai",
+        "pullRequest": 20,
+        "creationGrant": "CONSUMED_NO_NEW_PR",
+        "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "stage": "IMMUTABLE_GIT_BATCHING_EXISTING_DRAFT_ONLY",
+        "harnessPath": "tests/project-control.test.ts",
+        "harnessSha256": "feec02a8e5536ea91354a6744b75e5b69409fd2358826eed271efdbb82deaff2",
+        "implementationSeals": {
+          "src/project-control.ts": "707998f462fca122e7d59e1d3ebf10f5930130603353ce90d8fcffcda53ba1d6",
+          "src/project-control-git-batch.ts": "c899f89dcef27dc5c59ad9b508564e2ebca046e94679ab0ff905441367cade61",
+          "tests/project-control-git-batch.test.ts": "e3d872ec4af95beddb5bb740d8887edd12488ce46251b7c464d000c108d6a906"
+        },
+        "implementationScope": "CURRENT_INSPECTOR_INVOCATION_IMMUTABLE_BLOB_BATCHING_ONLY_NO_CACHE_OR_CHECK_OMISSION",
+        "measurement": "PAIRED_MEASUREMENT_REQUIRED_NO_HOSTED_CAUSE_CLAIM",
+        "invariants": "ALL_ASSERTIONS_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP_UNCHANGED",
+        "watchdogMs": 5000,
+        "retries": 0,
+        "node": "24.19.0",
+        "pnpm": "11.19.0",
+        "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+        "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+        "remoteExecution": false,
+        "ready": false,
+        "merge": false,
+        "production": false,
+        "forbidden": "NEW_PR_READY_MERGE_RUNTIME_WORKFLOW_PARALLELISM_DEPENDENCY_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+      }
+    },
     "harnessPublicationV43": {
       "const": {
         "version": "2026.09.29-v43",
@@ -800,7 +842,7 @@
     "$schema": { "const": "./current-work.schema.json" },
     "schemaVersion": { "const": 1 },
     "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.29-v43" },
+    "roadmapVersion": { "const": "2026.09.30-v45" },
     "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
     "githubIssue": { "type": "integer", "minimum": 1 },
     "currentPhase": {

@@ -4,7 +4,7 @@ import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   evaluateProjectAction,
   projectControlGitExecutable,
@@ -27,7 +27,7 @@ import {
   type V43CreationReceipt,
 } from "../src/project-control-v43.js";
 
-const root = new URL("../", import.meta.url),
+const sourceRoot = new URL("../", import.meta.url),
   c = HARNESS_PUBLICATION_V43;
 const read = (path: string) =>
   JSON.parse(readFileSync(new URL(path, root), "utf8")) as Record<
@@ -56,6 +56,49 @@ const git = (cwd: string, args: string[], input?: string) =>
     ],
     { cwd, encoding: "utf8", input, stdio: ["pipe", "pipe", "pipe"] },
   ).trim();
+// Published v43 is immutable Git history, not the successor working overlay.
+// Keep every original assertion and exercise today's imported implementation.
+const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v43-history-"));
+afterAll(async () => {
+  await rm(historicalRoot, { recursive: true, force: true });
+  expect(existsSync(historicalRoot)).toBe(false);
+});
+try {
+  git(fileURLToPath(sourceRoot), [
+    "clone",
+    "--quiet",
+    "--shared",
+    "--no-hardlinks",
+    "--no-checkout",
+    fileURLToPath(sourceRoot),
+    historicalRoot,
+  ]);
+  git(historicalRoot, [
+    "checkout",
+    "--quiet",
+    "--detach",
+    "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  ]);
+  expect(git(historicalRoot, ["rev-parse", "HEAD^{tree}"])).toBe(
+    "69ba68699b20f5c93bf078aef66d3b4f76a9514f",
+  );
+} catch (error) {
+  await rm(historicalRoot, { recursive: true, force: true });
+  throw error;
+}
+const root = pathToFileURL(historicalRoot + "/");
+async function validateHistoricalControl(
+  validate = () => runProjectControlValidation(root),
+) {
+  const prior = process.env.GITHUB_EVENT_NAME;
+  process.env.GITHUB_EVENT_NAME = "push";
+  try {
+    await validate();
+  } finally {
+    if (prior === undefined) delete process.env.GITHUB_EVENT_NAME;
+    else process.env.GITHUB_EVENT_NAME = prior;
+  }
+}
 const environmentKeys = [
   "GITHUB_EVENT_NAME",
   "GITHUB_EVENT_PATH",
@@ -172,6 +215,29 @@ const creation = (): V43CreationReceipt => ({
 });
 
 describe("v43 exact Draft publication without renewed integration authority", () => {
+  it.each([false, true])(
+    "restores outer PR event after the historical CLI, failure=%s",
+    async (fail) => {
+      const prior = process.env.GITHUB_EVENT_NAME;
+      process.env.GITHUB_EVENT_NAME = "pull_request";
+      try {
+        const validate = validateHistoricalControl(async () => {
+          expect(process.env.GITHUB_EVENT_NAME).toBe("push");
+          if (fail) throw new Error("synthetic historical failure");
+          await runProjectControlValidation(root);
+        });
+        if (fail)
+          await expect(validate).rejects.toThrow(
+            "synthetic historical failure",
+          );
+        else await expect(validate).resolves.toBeUndefined();
+        expect(process.env.GITHUB_EVENT_NAME).toBe("pull_request");
+      } finally {
+        if (prior === undefined) delete process.env.GITHUB_EVENT_NAME;
+        else process.env.GITHUB_EVENT_NAME = prior;
+      }
+    },
+  );
   it("projects exactly to qualified v42 and validates this actual checkout", async () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
@@ -184,7 +250,7 @@ describe("v43 exact Draft publication without renewed integration authority", ()
         c.version,
       ),
     ).toEqual([]);
-    await expect(runProjectControlValidation(root)).resolves.toBeUndefined();
+    await expect(validateHistoricalControl()).resolves.toBeUndefined();
     const snapshot = readQualifiedV42Snapshot(fileURLToPath(root));
     projectV43ToV42(r, w, s);
     for (const [path, value] of [

@@ -3,6 +3,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { channel } from "node:diagnostics_channel";
+import { readGitBlobBatch } from "./project-control-git-batch.js";
+import {
+  INSPECTOR_BATCH_V45,
+  projectV45ToV43,
+  v45AuthoritySummary,
+  evaluateV45Action,
+} from "./project-control-v45.js";
 import {
   HARNESS_PUBLICATION_V43,
   projectV43ToV42,
@@ -1065,6 +1072,8 @@ export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
       allowedActions: [],
       remoteExecutionAuthorized: false,
     } as const;
+  if (isRecord(roadmap) && roadmap.version === INSPECTOR_BATCH_V45.version)
+    return v45AuthoritySummary();
   if (isRecord(roadmap) && roadmap.version === HARNESS_PUBLICATION_V43.version)
     return v43AuthoritySummary();
   if (
@@ -1102,6 +1111,8 @@ export function evaluateProjectAction(
   if (!isRecord(currentWork) || !isRecord(currentWork.authorization)) {
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
+  if (isRecord(roadmap) && roadmap.version === INSPECTOR_BATCH_V45.version)
+    return evaluateV45Action(action, executionEvidence);
   if (isRecord(roadmap) && roadmap.version === HARNESS_PUBLICATION_V43.version)
     return evaluateV43Action(action, executionEvidence);
   if (isRecord(roadmap) && roadmap.version === LOCAL_HARNESS_REPAIR_V42.version)
@@ -5412,7 +5423,11 @@ export function inspectV23SealedRepository(
       GIT_CONFIG_GLOBAL: "/dev/null",
       GIT_TERMINAL_PROMPT: "0",
     };
-    const git = (...args: string[]) =>
+    const gitOutput = (
+      args: string[],
+      input?: string,
+      maxBuffer = 16 * 1024 * 1024,
+    ) =>
       execFileSync(
         projectControlGitExecutable(),
         [
@@ -5429,10 +5444,15 @@ export function inspectV23SealedRepository(
         {
           cwd,
           env,
-          encoding: "utf8",
-          maxBuffer: 16 * 1024 * 1024,
-          stdio: ["ignore", "pipe", "pipe"],
+          ...(input === undefined ? {} : { input }),
+          maxBuffer,
+          stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
         },
+      );
+    const git = (...args: string[]) => gitOutput(args).toString("utf8");
+    const blobs = (specs: readonly string[]) =>
+      readGitBlobBatch(specs, (input, limit) =>
+        gitOutput(["cat-file", "--batch"], input, limit),
       );
     const list = (raw: string) => raw.split("\0").filter(Boolean);
     const hash = (raw: string | Buffer) =>
@@ -5865,13 +5885,18 @@ export function inspectV23SealedRepository(
     )
       .trim()
       .split("\t");
+    const sealedBlobs = blobs(
+      [candidate, parents[1]!, g.commit, head].map(
+        (revision) => revision + ":" + g.path,
+      ),
+    );
     const observation = {
       commit: g.commit,
       path: g.path,
-      candidateFileSha256: hash(git("show", candidate + ":" + g.path)),
-      parentFileSha256: hash(git("show", parents[1]! + ":" + g.path)),
-      sealedFileSha256: hash(git("show", g.commit + ":" + g.path)),
-      headFileSha256: hash(git("show", head + ":" + g.path)),
+      candidateFileSha256: hash(sealedBlobs[0]!.text()),
+      parentFileSha256: hash(sealedBlobs[1]!.text()),
+      sealedFileSha256: hash(sealedBlobs[2]!.text()),
+      headFileSha256: hash(sealedBlobs[3]!.text()),
       workingFileSha256: hash(readFileSync(join(cwd, g.path))),
       pathDiffSha256: hash(
         git(
@@ -6303,7 +6328,7 @@ export function inspectV23SealedRepository(
     )
       return { ok: false, reason: "V23_INHERITED_JOURNAL_RESET_OR_REWRITE" };
     let newerV22Journal = committedWork.wp8fV22OperationJournal;
-    for (const revision of git(
+    const journalRevisions = git(
       "log",
       "--format=%H",
       "4b3a91c1e1c6748a1b6da2920888f87d736c1138^.." + head,
@@ -6311,11 +6336,19 @@ export function inspectV23SealedRepository(
       "config/project/current-work.json",
     )
       .trim()
-      .split("\n")) {
+      .split("\n");
+    // Keep the original ordered loop, including its invalid-revision guard.
+    const journalBlobs = blobs(
+      journalRevisions
+        .filter((revision) => isFullSha(revision, 40))
+        .map((revision) => revision + ":config/project/current-work.json"),
+    );
+    let journalIndex = 0;
+    for (const revision of journalRevisions) {
       if (!isFullSha(revision, 40))
         return { ok: false, reason: "V23_INHERITED_HISTORY_UNVERIFIED" };
       const previous: unknown = JSON.parse(
-        git("show", revision + ":config/project/current-work.json"),
+        journalBlobs[journalIndex++]!.text(),
       );
       if (
         !isRecord(previous) ||
@@ -6355,12 +6388,17 @@ export function inspectV23SealedRepository(
       )
         .trim()
         .split("\t");
+      const nextBlobs = blobs(
+        [nextParents[1]!, next.commit].map(
+          (revision) => revision + ":" + next.path,
+        ),
+      );
       const nextObservation = {
         ...observation,
         commit: next.commit,
         path: next.path,
-        parentFileSha256: hash(git("show", nextParents[1]! + ":" + next.path)),
-        sealedFileSha256: hash(git("show", next.commit + ":" + next.path)),
+        parentFileSha256: hash(nextBlobs[0]!.text()),
+        sealedFileSha256: hash(nextBlobs[1]!.text()),
         pathDiffSha256: hash(
           git(
             ...diffArgs,
@@ -6410,20 +6448,19 @@ export function inspectV23SealedRepository(
         )
           .trim()
           .split("\t");
+        const workflowBlobs = blobs(
+          [candidate, workflow.parent, workflow.commit, head].map(
+            (revision) => revision + ":" + workflow.path,
+          ),
+        );
         const workflowObservation = {
           commit: workflow.commit,
           parent: workflow.parent,
           path: workflow.path,
-          candidateFileSha256: hash(
-            git("show", candidate + ":" + workflow.path),
-          ),
-          parentFileSha256: hash(
-            git("show", workflow.parent + ":" + workflow.path),
-          ),
-          sealedFileSha256: hash(
-            git("show", workflow.commit + ":" + workflow.path),
-          ),
-          headFileSha256: hash(git("show", head + ":" + workflow.path)),
+          candidateFileSha256: hash(workflowBlobs[0]!.text()),
+          parentFileSha256: hash(workflowBlobs[1]!.text()),
+          sealedFileSha256: hash(workflowBlobs[2]!.text()),
+          headFileSha256: hash(workflowBlobs[3]!.text()),
           workingFileSha256: hash(readFileSync(join(cwd, workflow.path))),
           pathDiffSha256: hash(
             git(
@@ -6461,15 +6498,9 @@ export function inspectV23SealedRepository(
               workflow.commit,
             ),
           ),
-          parentBlobOid: git(
-            "rev-parse",
-            workflow.parent + ":" + workflow.path,
-          ).trim(),
-          sealedBlobOid: git(
-            "rev-parse",
-            workflow.commit + ":" + workflow.path,
-          ).trim(),
-          headBlobOid: git("rev-parse", head + ":" + workflow.path).trim(),
+          parentBlobOid: workflowBlobs[1]!.oid(),
+          sealedBlobOid: workflowBlobs[2]!.oid(),
+          headBlobOid: workflowBlobs[3]!.oid(),
         };
         if (v29WorkflowCommit || v30WorkflowCommit) {
           workflowObservation.headFileSha256 = workflow.sealedFileSha256;
@@ -6525,16 +6556,17 @@ export function inspectV23SealedRepository(
               .split("\t");
             if (stepStat[2] !== provider.path)
               throw new Error("V27_SEALED_STAT_INVALID");
+            const stepBlobs = blobs(
+              [seal.parent, seal.commit].map(
+                (revision) => revision + ":" + provider.path,
+              ),
+            );
             return {
               ...observation,
               commit: seal.commit,
               parent: seal.parent,
-              parentFileSha256: hash(
-                git("show", seal.parent + ":" + provider.path),
-              ),
-              sealedFileSha256: hash(
-                git("show", seal.commit + ":" + provider.path),
-              ),
+              parentFileSha256: hash(stepBlobs[0]!.text()),
+              sealedFileSha256: hash(stepBlobs[1]!.text()),
               pathDiffSha256: hash(
                 git(
                   ...diffArgs,
@@ -6553,14 +6585,8 @@ export function inspectV23SealedRepository(
               commitPaths: list(
                 git(...diffArgs, "--name-only", "-z", seal.parent, seal.commit),
               ),
-              parentBlobOid: git(
-                "rev-parse",
-                seal.parent + ":" + provider.path,
-              ).trim(),
-              sealedBlobOid: git(
-                "rev-parse",
-                seal.commit + ":" + provider.path,
-              ).trim(),
+              parentBlobOid: stepBlobs[0]!.oid(),
+              sealedBlobOid: stepBlobs[1]!.oid(),
               headBlobOid:
                 v31 && v31ProviderCommits.length === 1
                   ? provider.correction.sealedBlobOid
@@ -8565,6 +8591,26 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (isRecord(roadmap) && roadmap.version === INSPECTOR_BATCH_V45.version) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = INSPECTOR_BATCH_V45;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.inspectorBatchV45) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-30",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV45ToV43(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V45_EXACT_REPAIR_CONTROL_INVALID");
+    return result;
+  }
   if (
     isRecord(roadmap) &&
     roadmap.version === HARNESS_PUBLICATION_V43.version
@@ -8960,6 +9006,27 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === INSPECTOR_BATCH_V45.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((key) => key === "inspectorBatchV45").length !==
+        1 ||
+      JSON.stringify(schema.properties.inspectorBatchV45) !==
+        JSON.stringify({ const: INSPECTOR_BATCH_V45 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V45_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV45ToV43({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      INSPECTOR_BATCH_V45.supersedes,
+    );
+  }
   if (version === HARNESS_PUBLICATION_V43.version) {
     if (
       !isRecord(schema) ||
@@ -9283,6 +9350,24 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === INSPECTOR_BATCH_V45.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split("## MP-OD-2026-09-30-V45 —");
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(INSPECTOR_BATCH_V45) &&
+        validateWp8fOwnerDecisionRecord(record, INSPECTOR_BATCH_V45.supersedes)
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === HARNESS_PUBLICATION_V43.version) {
     if (typeof record !== "string") return false;
     const sections = record.split("## MP-OD-2026-09-29-V43 —");

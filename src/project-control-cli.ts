@@ -2,6 +2,11 @@ import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
+  INSPECTOR_BATCH_V45,
+  inspectV45Repository,
+  validateV45PullRequestReceipt,
+} from "./project-control-v45.js";
+import {
   HARNESS_PUBLICATION_V43,
   inspectV43Repository,
   validateV43PullRequestReceipt,
@@ -134,6 +139,58 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === INSPECTOR_BATCH_V45.version) {
+    const errors = [
+      ...validateProjectControl(roadmap, currentWork).errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    const cwd = fileURLToPath(root),
+      binary = projectControlGitExecutable();
+    const git = (...args: string[]) =>
+      execFileSync(
+        binary,
+        ["--no-replace-objects", "--no-optional-locks", ...args],
+        { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      ).trim();
+    let receipt: V43PrReceipt | undefined;
+    if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+      if (
+        !process.env.GITHUB_EVENT_PATH ||
+        process.env.GITHUB_REPOSITORY !== INSPECTOR_BATCH_V45.repository
+      )
+        throw new Error("V45_PR_EVENT_REQUIRED");
+      const event: unknown = JSON.parse(
+        await readFile(process.env.GITHUB_EVENT_PATH, "utf8"),
+      );
+      const merge = git("rev-parse", "HEAD");
+      const parents = git("rev-list", "--parents", "-n", "1", merge)
+        .split(" ")
+        .slice(1);
+      const verified = validateV45PullRequestReceipt(event, {
+        sha: process.env.GITHUB_SHA,
+        ref: process.env.GITHUB_REF,
+        merge,
+        parents,
+        tree: git("rev-parse", "HEAD^{tree}"),
+        sourceTree: parents[1] ? git("rev-parse", parents[1] + "^{tree}") : "",
+      });
+      if (!verified) throw new Error("V45_PR_MERGE_IDENTITY_MISMATCH");
+      receipt = verified;
+    }
+    const inspected = inspectV45Repository(cwd, binary, receipt);
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState:
+            "STRUCTURAL_VALIDATION_NOT_LIVE_CI_REVIEW_OR_MERGE_AUTHORITY",
+        }),
+    );
+    return;
   }
   if (version === HARNESS_PUBLICATION_V43.version) {
     const errors = [
@@ -761,6 +818,12 @@ export async function runPullRequestControlValidation(
   const work = JSON.parse(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
+  if (work.roadmapVersion === INSPECTOR_BATCH_V45.version) {
+    if (eventPath !== process.env.GITHUB_EVENT_PATH)
+      throw new Error("V45_PR_EVENT_PATH_MISMATCH");
+    await runProjectControlValidation(root);
+    return;
+  }
   if (work.roadmapVersion === HARNESS_PUBLICATION_V43.version) {
     if (eventPath !== process.env.GITHUB_EVENT_PATH)
       throw new Error("V43_PR_EVENT_PATH_MISMATCH");

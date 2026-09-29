@@ -1262,3 +1262,91 @@ Owner approved publishing the qualified local harness repair to GitHub and runni
   "forbidden": "RUNTIME_WORKFLOW_OTHER_DEPENDENCY_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-30-V44 — measured harness repair / existing Draft PR20
+
+Owner approved measuring and repairing the new v33 Git-harness timeout, all original assertions/operator/raw-index/isolation/awaited-cleanup checks and 5000ms/zero retries unchanged, full exact-source requalification and normal update of PR20 only. Baseline is published v43 S; MP06 M and Issues9/12 stay unchanged. Creation and PR19 integration grants are consumed. No dependency/runtime/workflow/parallelism change, new PR, Ready, merge, deployment, remote TEST, storage/SQL, LINE/provider, Production, U2 or closure. Local measurements cannot establish the historical hosted slow phase. Candidate sealing follows measured repair/review; it does not itself claim qualification or an observed improvement.
+
+```json
+{
+  "version": "2026.09.30-v44",
+  "ownerDecision": "MP-OD-2026-09-30-V44",
+  "supersedes": "2026.09.29-v43",
+  "baseline": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baselineTree": "69ba68699b20f5c93bf078aef66d3b4f76a9514f",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "MEASURED_HARNESS_REPAIR_EXISTING_DRAFT_ONLY",
+  "harnessPath": "tests/project-control.test.ts",
+  "priorHarnessSha256": "feec02a8e5536ea91354a6744b75e5b69409fd2358826eed271efdbb82deaff2",
+  "harnessSha256": "PENDING_MEASURED_REPAIR",
+  "measurement": "PAIRED_MEASUREMENT_REQUIRED_NO_HOSTED_CAUSE_CLAIM",
+  "invariants": "ALL_ASSERTIONS_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP_UNCHANGED",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "node": "24.19.0",
+  "pnpm": "11.19.0",
+  "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "remoteExecution": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_RUNTIME_WORKFLOW_PARALLELISM_DEPENDENCY_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V45 — immutable current inspector batching / PR20 only
+
+Owner replied “อนุญาต” to the exact proposal extending the current local Git inspector to batch immutable reads while preserving all historical/path/blob/hash/index/provenance checks and 5000ms/zero retries, fully qualifying the exact source, then updating existing Draft PR20 only. V44 was never published: its helper-only child experiment showed no benefit (one observed comparison 3451.251ms to3638.068ms, +5.41%) and was rejected; original harness bytes remain unchanged. Preserve the unpublished 12-file draft externally, not as an invented Git ancestor or qualification. V45 supersedes published v43 directly; prior V44 text is retained historical evidence.
+
+Only the exact14 V45_ALLOWED_PATHS apply. Freeze main historical harness, older modules, sealed snapshots, runtime/workflows/parallelism/dependencies and all old grants/holds. Pending seals for src/project-control.ts and the new batch module/test are not qualification. No new PR/Ready/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/closure. Normal same-branch PR20 update remains conditional on independently verified exact-source checks/review/full qualification/fresh audit0 and fresh existing-PR readback.
+
+```json
+{
+  "version": "2026.09.30-v45",
+  "ownerDecision": "MP-OD-2026-09-30-V45",
+  "supersedes": "2026.09.29-v43",
+  "replacesUnpublishedDraft": "2026.09.30-v44",
+  "baseline": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baselineTree": "69ba68699b20f5c93bf078aef66d3b4f76a9514f",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "IMMUTABLE_GIT_BATCHING_EXISTING_DRAFT_ONLY",
+  "harnessPath": "tests/project-control.test.ts",
+  "harnessSha256": "feec02a8e5536ea91354a6744b75e5b69409fd2358826eed271efdbb82deaff2",
+  "implementationSeals": {
+    "src/project-control.ts": "707998f462fca122e7d59e1d3ebf10f5930130603353ce90d8fcffcda53ba1d6",
+    "src/project-control-git-batch.ts": "c899f89dcef27dc5c59ad9b508564e2ebca046e94679ab0ff905441367cade61",
+    "tests/project-control-git-batch.test.ts": "e3d872ec4af95beddb5bb740d8887edd12488ce46251b7c464d000c108d6a906"
+  },
+  "implementationScope": "CURRENT_INSPECTOR_INVOCATION_IMMUTABLE_BLOB_BATCHING_ONLY_NO_CACHE_OR_CHECK_OMISSION",
+  "measurement": "PAIRED_MEASUREMENT_REQUIRED_NO_HOSTED_CAUSE_CLAIM",
+  "invariants": "ALL_ASSERTIONS_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP_UNCHANGED",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "node": "24.19.0",
+  "pnpm": "11.19.0",
+  "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "remoteExecution": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_RUNTIME_WORKFLOW_PARALLELISM_DEPENDENCY_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```

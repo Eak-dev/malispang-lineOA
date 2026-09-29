@@ -1,5 +1,25 @@
 # MalisPang Project Control
 
+## Effective inspector control — v45 / existing Draft PR20 only
+
+Owner explicitly approved extending the current local Git inspector to batch immutable reads on 2026-09-30. MP-OD-2026-09-30-V45 supersedes published v43 directly and replaces unpublished v44; v44 was never committed or published. Its helper-only child-process experiment passed locally but was 5.41% slower in the observed comparison, so it was rejected, not sealed or qualified. The external 12-file v44 draft snapshot preserves its exact bytes; it is not a Git ancestor or acceptance evidence.
+
+Only current inspectV23Repository immutable Git-read batching, src/project-control-git-batch.ts and direct regressions are newly editable, alongside the minimal V45_ALLOWED_PATHS control transition. Keep main tests/project-control.test.ts exact S bytes, every historical assertion, path/blob/hash/history/ancestry/index/provenance check, operator/isolation/awaited-cleanup proof, 5000ms and zero retries. No cache across invocations, mutable-state read reuse, skipped observation, moved watchdog work or acceptance downgrade. Freeze older inspector modules, snapshots, runtime, workflows/parallelism and dependencies.
+
+Baseline remains published S=d0f63188c50da6e204a4ecc1e91bed97f5ec44eb, MP06 base M=a05bab89bc6d5cdf2914581ed658be86dd00b062; read-only reconciliation confirms PR20 OPEN Draft at S, Issues9/12 OPEN and MP06 CURRENT. Measure candidate effects without claiming the historical hosted cause. Seal final current inspector and the two batch files only after review; PENDING seals block COMMIT/PUSH. Exact staged-tree focused checks/review/fresh audit0 precede COMMIT; exact final SHA/tree full local qualification/review/fresh audit0 and fresh <=120-second PR20 readback precede normal same-branch PUSH. Preserve independently authenticated V43 receipt structure inside the V45 envelope; old grants do not execute.
+
+Creation remains CONSUMED, PR19 integration consumed, and PR20 stays Draft. No new PR, Ready, merge, force-push/reset/rebase, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2 or Issue closure. Retain all earlier journals/accounting/holds/UAT gaps and unpublished v44 records below. CI still requires exact PR20 runner/source/synthetic [M,source] identity and source-identical tree, never merge authority.
+
+## Effective repair control — v44 / existing Draft PR20 only
+
+Owner approved measuring and repairing the new Git-harness case, complete requalification and update of existing Draft PR20 on 2026-09-30. MP-OD-2026-09-30-V44 supersedes v43 only for V44_ALLOWED_PATHS. MP06/Issue12 remains CURRENT/OPEN; read-only reconciliation confirms Issue9/Issue12 OPEN, PR20 OPEN Draft at S=d0f63188c50da6e204a4ecc1e91bed97f5ec44eb and MP06 base M=a05bab89bc6d5cdf2914581ed658be86dd00b062. Preserve S as immutable Git history; no new historical snapshot is needed.
+
+Measure and repair only fixture overhead in tests/project-control.test.ts with direct regressions. Preserve every assertion, raw-index proof, operator HEAD/index/worktree guard, isolated mutable child, awaited cleanup, 5000ms watchdog and zero retries. Local paired timings are not the cause of the historical hosted failure. Candidate bytes must be sealed after measurement/review; unsealed or unqualified work cannot publish. All runtime, workflows/parallelism, dependencies, v43/v42 inspectors and sealed fixtures remain frozen.
+
+Only normal follow-up commits and pushes to codex/mp06-harness-v43 updating PR20 into codex/mp-06-guardrailed-ai are conditional. PRE_COMMIT binds exact staged-tree focused checks, candidate harness seal, fresh audit0 and independent review; POST_COMMIT binds full local qualification and fresh audit/review to exact SHA/tree. PUSH also requires independent fresh PR20 OPEN Draft readback at expected published head/base and normal fast-forward. Authenticate actual Git, receipts and GitHub state independently; the pure gate is not provenance. A later source invalidates prior qualification/review.
+
+Creation CONSUMED: no new PR, Ready, merge, force-push/rebase/reset, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2 or Issue closure. PR19 integration stays consumed; journals/accounting/holds/UAT gaps stay unchanged. CI requires actual runner SHA/ref, exact PR20 repository/branches/base, ordered synthetic parents [M,source] and source-identical tree; this grants no merge authority. Prior records below remain immutable history.
+
 ## Effective publication control — v43 / one harness Draft PR
 
 Owner approved publishing the qualified local historical harness repair to GitHub and running CI, then explicitly approved the sole dependency exception: undici 7.29.0 to 7.29.1 through miniflare@5.20260811.0-alpha in pnpm-workspace.yaml and pnpm-lock.yaml, for GHSA-3wwx-pv8p-q78v. MP-OD-2026-09-29-V43 supersedes v42 for this exact package. MP06/Issue12 remains CURRENT/OPEN. Read-only reconciliation confirms Issue9/Issue12 OPEN, MP06 at a05bab89bc6d5cdf2914581ed658be86dd00b062 and existing PR16 Draft.
