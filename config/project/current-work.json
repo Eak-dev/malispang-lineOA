@@ -2,7 +2,41 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.09.30-v45",
+  "roadmapVersion": "2026.09.30-v47.1",
+  "testKnowledgeValidityV46": {
+    "version": "2026.09.30-v46",
+    "ownerDecision": "MP-OD-2026-09-30-V46",
+    "supersedes": "2026.09.30-v45",
+    "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+    "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+    "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+    "repository": "Eak-dev/malispang-lineOA",
+    "workId": "MP-06",
+    "githubIssue": 12,
+    "stage": "LOCAL_TEST_KNOWLEDGE_UNTIL_PRODUCTION_RELEASE_ONLY",
+    "targetEnvironment": "LOCAL_ONLY_TEST_CONFIGURATION",
+    "accountName": "มะลิปัง TEST",
+    "validity": "PRE_RELEASE_ONLY_CLOSE_ON_PRODUCTION_RELEASE_OR_OWNER_REVOCATION",
+    "content": "EXACT_EXISTING_ANSWERS_AND_CHECKSUMS_UNCHANGED",
+    "history": "ARCHIVE_EXACT_PRIOR_MANIFEST_KEEP_DATED_RECORD_EXPIRY",
+    "workerHangClockFixture": {
+      "path": "worker-tests/mp-06-pilot-control.test.ts",
+      "before": "2026-09-08T00:00:00.000Z",
+      "after": "2026-10-01T00:00:00.000Z",
+      "scope": "ONE_EXACT_CLOCK_LITERAL_ONLY_ALL_OTHER_BYTES_UNCHANGED"
+    },
+    "localImplementation": true,
+    "commit": false,
+    "publication": false,
+    "ready": false,
+    "merge": false,
+    "remoteExecution": false,
+    "production": false,
+    "priorPublicationAuthority": "SUSPENDED_NO_V45_OR_OLDER_RECEIPT_INHERITANCE",
+    "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+    "uatReadiness": "NOT_VERIFIED",
+    "forbidden": "COMMIT_PUSH_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+  },
   "inspectorBatchV45": {
     "version": "2026.09.30-v45",
     "ownerDecision": "MP-OD-2026-09-30-V45",
@@ -1871,5 +1905,77 @@
     "invariants": "GENERATION_FENCE_RETAINED_OPERATION_NO_RESET_NO_AUTOMATIC_RETRY_NO_NEW_CLOSE_GRANT",
     "prAuthority": "EXISTING_PR15_DRAFT_REVIEW_ONLY_NO_READY_MERGE_OR_DUPLICATE_GREPTILE_REVIEW",
     "remoteState": "NO_DEPLOY_REMOTE_TEST_PRODUCTION_GRANT_JOURNAL_HOLD_ISSUE_CLOSE_OR_MP07"
+  },
+  "knowledgePublicationV47": {
+    "version": "2026.09.30-v47.1",
+    "ownerDecision": "MP-OD-2026-09-30-V47A",
+    "supersedes": "2026.09.30-v47",
+    "projectionVersion": "2026.09.30-v46",
+    "amendsUnpublished": "2026.09.30-v47",
+    "priorUnpublishedTree": "cc947a6f2f956584c1772cc51df42f554141aa72",
+    "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+    "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+    "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+    "publishedHead": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+    "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+    "repository": "Eak-dev/malispang-lineOA",
+    "headBranch": "codex/mp06-harness-v43",
+    "baseBranch": "codex/mp-06-guardrailed-ai",
+    "pullRequest": 20,
+    "workId": "MP-06",
+    "githubIssue": 12,
+    "stage": "FROZEN_TEST_KNOWLEDGE_EXISTING_DRAFT_PR20_ONLY",
+    "snapshotPath": "tests/fixtures/mp06-v46-local/snapshot.json",
+    "snapshotSha256": "1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109",
+    "v46FixtureAdapterSha256": "5f38fb7e2c5934b500a38b3969339bff636f61dc1f0f09019fbbfb65591f7bf8",
+    "amendedHistory": {
+      "docs/project/OWNER_DECISION_LOG.md": {
+        "bytes": 298123,
+        "sha256": "85987282050d66dc3fb038387f6cefb2c0c15e1fd7790f472f0f3888d663ce9c"
+      },
+      "docs/project/ROADMAP_CHANGELOG.md": {
+        "bytes": 165324,
+        "sha256": "a59fa4e3424b33ac758109d655bf72f0bbca6c60e168535a5c4bf189f5cb209f"
+      },
+      "docs/project/EXECUTION_GATES.md": {
+        "bytes": 798413,
+        "sha256": "13ae305b72a7fa2195cd85a2b623610c8cd2b269ce83b40970623842f7d41c82"
+      },
+      "PROJECT_CONTROL.md": {
+        "bytes": 88546,
+        "sha256": "75924a8576dfc43dcb43c10abb7ec28234fddf1927e99b6b65b70a45920a7c48"
+      }
+    },
+    "dependencyPatch": {
+      "package": "brace-expansion",
+      "upgrades": [
+        {
+          "from": "1.1.18",
+          "to": "1.1.21"
+        },
+        {
+          "from": "5.0.9",
+          "to": "5.0.12"
+        }
+      ],
+      "status": "SEALED",
+      "workspaceSha256": "1a4f86bd18f075a14d76da77b4d24735aac2659c4f1704736757c3d8f8715615",
+      "lockfileSha256": "4b7ff8fa2f0339f9ee934373c979ad55501dca88590b074c111a4efd4f1c48fd"
+    },
+    "content": "V46_SNAPSHOT_FROZEN_EXACT_ANSWERS_CHECKSUMS_AND_WORKER_CLOCK",
+    "creationGrant": "CONSUMED_NO_NEW_PR",
+    "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+    "priorReceipts": "HISTORICAL_ONLY_NEW_V47_EXACT_SOURCE_RECEIPTS_REQUIRED",
+    "sourceLineage": "ONE_DIRECT_CHILD_OF_BASELINE_ONLY",
+    "watchdogMs": 5000,
+    "retries": 0,
+    "auditGate": "FRESH_ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+    "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+    "uatReadiness": "NOT_VERIFIED",
+    "ready": false,
+    "merge": false,
+    "remoteExecution": false,
+    "production": false,
+    "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
   }
 }

@@ -4495,7 +4495,7 @@ describe("MP-06 WP8A authenticated TEST-only pilot endpoints", () => {
     timingMarker("test_started");
     vi.useFakeTimers();
     timingMarker("fake_timers_installed");
-    vi.setSystemTime(new Date("2026-09-08T00:00:00.000Z"));
+    vi.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
     timingMarker("synthetic_clock_set");
     const senderId = "U_SYNTHETIC_WP8D_TIMEOUT_TESTER";
     const coordinator = env.CONVERSATION_STATE.getByName(

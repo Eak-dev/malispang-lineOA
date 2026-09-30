@@ -9,7 +9,7 @@ import {
 } from "../src/index.js";
 
 const manifestPath = new URL(
-  "../config/approved-knowledge-base/test-knowledge-base.json",
+  "./fixtures/knowledge-base/test-knowledge-base-v1.json",
   import.meta.url,
 );
 
@@ -101,7 +101,7 @@ const expectedAnswers: Readonly<Record<FaqIntent, string>> = {
   STOCK: MENU_STOCK_ANSWER,
 };
 
-describe("Issue #8 Owner-approved exact content", () => {
+describe("Issue #8 historical Owner-approved exact content (immutable v1)", () => {
   it("stores the exact approved answer and provenance for all 14 categories", async () => {
     const manifest = await loadManifest();
     for (const [intent, expected] of Object.entries(expectedAnswers) as [

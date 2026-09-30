@@ -5,6 +5,18 @@ import { join, resolve } from "node:path";
 import { channel } from "node:diagnostics_channel";
 import { readGitBlobBatch } from "./project-control-git-batch.js";
 import {
+  KNOWLEDGE_PUBLICATION_V47,
+  projectV47ToV46,
+  v47AuthoritySummary,
+  evaluateV47Action,
+} from "./project-control-v47.js";
+import {
+  TEST_KNOWLEDGE_VALIDITY_V46,
+  projectV46ToV45,
+  v46AuthoritySummary,
+  evaluateV46Action,
+} from "./project-control-v46.js";
+import {
   INSPECTOR_BATCH_V45,
   projectV45ToV43,
   v45AuthoritySummary,
@@ -1072,6 +1084,16 @@ export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
       allowedActions: [],
       remoteExecutionAuthorized: false,
     } as const;
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === KNOWLEDGE_PUBLICATION_V47.version
+  )
+    return v47AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_KNOWLEDGE_VALIDITY_V46.version
+  )
+    return v46AuthoritySummary();
   if (isRecord(roadmap) && roadmap.version === INSPECTOR_BATCH_V45.version)
     return v45AuthoritySummary();
   if (isRecord(roadmap) && roadmap.version === HARNESS_PUBLICATION_V43.version)
@@ -1111,6 +1133,16 @@ export function evaluateProjectAction(
   if (!isRecord(currentWork) || !isRecord(currentWork.authorization)) {
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
   }
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === KNOWLEDGE_PUBLICATION_V47.version
+  )
+    return evaluateV47Action(action, executionEvidence);
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_KNOWLEDGE_VALIDITY_V46.version
+  )
+    return evaluateV46Action(action);
   if (isRecord(roadmap) && roadmap.version === INSPECTOR_BATCH_V45.version)
     return evaluateV45Action(action, executionEvidence);
   if (isRecord(roadmap) && roadmap.version === HARNESS_PUBLICATION_V43.version)
@@ -8591,6 +8623,52 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === KNOWLEDGE_PUBLICATION_V47.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = KNOWLEDGE_PUBLICATION_V47;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.knowledgePublicationV47) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-30",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV47ToV46(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V47_EXACT_PUBLICATION_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_KNOWLEDGE_VALIDITY_V46.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = TEST_KNOWLEDGE_VALIDITY_V46;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.testKnowledgeValidityV46) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-30",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV46ToV45(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V46_EXACT_LOCAL_CONTROL_INVALID");
+    return result;
+  }
   if (isRecord(roadmap) && roadmap.version === INSPECTOR_BATCH_V45.version) {
     if (!isRecord(work))
       return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
@@ -9006,6 +9084,48 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === KNOWLEDGE_PUBLICATION_V47.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((key) => key === "knowledgePublicationV47")
+        .length !== 1 ||
+      JSON.stringify(schema.properties.knowledgePublicationV47) !==
+        JSON.stringify({ const: KNOWLEDGE_PUBLICATION_V47 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V47_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV47ToV46({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      KNOWLEDGE_PUBLICATION_V47.projectionVersion,
+    );
+  }
+  if (version === TEST_KNOWLEDGE_VALIDITY_V46.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((key) => key === "testKnowledgeValidityV46")
+        .length !== 1 ||
+      JSON.stringify(schema.properties.testKnowledgeValidityV46) !==
+        JSON.stringify({ const: TEST_KNOWLEDGE_VALIDITY_V46 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V46_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV46ToV45({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      TEST_KNOWLEDGE_VALIDITY_V46.supersedes,
+    );
+  }
   if (version === INSPECTOR_BATCH_V45.version) {
     if (
       !isRecord(schema) ||
@@ -9350,6 +9470,50 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === KNOWLEDGE_PUBLICATION_V47.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      `## ${KNOWLEDGE_PUBLICATION_V47.ownerDecision} —`,
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(KNOWLEDGE_PUBLICATION_V47) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          KNOWLEDGE_PUBLICATION_V47.projectionVersion,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
+  if (version === TEST_KNOWLEDGE_VALIDITY_V46.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split("## MP-OD-2026-09-30-V46 —");
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(TEST_KNOWLEDGE_VALIDITY_V46) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          TEST_KNOWLEDGE_VALIDITY_V46.supersedes,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === INSPECTOR_BATCH_V45.version) {
     if (typeof record !== "string") return false;
     const sections = record.split("## MP-OD-2026-09-30-V45 —");

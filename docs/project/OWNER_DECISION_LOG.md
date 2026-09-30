@@ -1350,3 +1350,185 @@ Only the exact14 V45_ALLOWED_PATHS apply. Freeze main historical harness, older 
   "forbidden": "NEW_PR_READY_MERGE_RUNTIME_WORKFLOW_PARALLELISM_DEPENDENCY_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-30-V46 — TEST knowledge validity until Production release
+
+Owner requested changing the TEST data validity from the 30 September cutoff to until Production release. Supersedes v45 for this local implementation only; it does not renew or inherit publication permissions. MP-06 / Issue12 remains CURRENT / OPEN. Read-only reconciliation observed Issue9 and Issue12 OPEN, and PR20 OPEN Draft at d0f63188c50da6e204a4ecc1e91bed97f5ec44eb into a05bab89bc6d5cdf2914581ed658be86dd00b062. Exact local baseline 86e5c967dd29e669ee0bc66e594fc9636a188c4e has not been pushed.
+
+Use an explicit TEST-only PRE_RELEASE lifecycle, not an invented future date. It ends when Production release is recorded or Owner revokes it. Production requires separately reviewed data and authorization; this record is not a claim of current Production state. Preserve the exact prior manifest as a historical fixture, preserve old dated-record expiry behavior, and keep every existing customer answer/checksum unchanged. New validity records must have their own version and provenance. A missing, invalid, unknown or released lifecycle must fail closed.
+
+The successor records use observed decision-record time `2026-09-30T02:34:48.000Z` for `approvedAt` and `effectiveFrom`, carry the prior record version as `supersedes`, and reference this Owner decision. This timestamp records the TEST-only validity renewal, not a reapproval for Production or a change to any customer answer. The release marker is explicit local configuration: it does not automatically observe remote Production. A separately approved Production release workflow must first record release/revocation and verify this TEST validity is closed; no remote observation or deployment is authorized here.
+
+The allowed local package is V46_ALLOWED_PATHS, including only the necessary v45 historical-fixture sourcing adapter, with original assertions/watchdogs/cleanup unchanged. No unrelated runtime, workflow, dependency or fixture repair. V45 implementation history, failed full suite, unresolved raw-index drift, storage hold, accounting and UAT gaps are retained; no prior result is converted to PASS. No commit, push, PR, Ready, merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2 or Issue closure.
+
+Necessary compatibility within this uncommitted v46 package: the full local Worker suite first reported 293 PASS / 1 FAIL because the provider-hang webhook fixture fixed its clock at 2026-09-08, before the renewed TEST records take effect. Fail-closed knowledge routing correctly prevented the fixture from reaching the intended provider-hang checkpoints. Align only that single `vi.setSystemTime` literal in `worker-tests/mp-06-pilot-control.test.ts` to `2026-10-01T00:00:00.000Z`; do not backdate data approval. The v46 inspector accepts only the exact baseline file or its exact one-literal replacement, comparing all file bytes. Every assertion, deadline, timer, retry, cleanup and all other bytes stay unchanged. The original baseline and all prior seals remain historical, not overwritten; final acceptance requires the aligned candidate and focused/full Worker PASS. Structural acceptance of the baseline during editing is not test qualification.
+
+```json
+{
+  "version": "2026.09.30-v46",
+  "ownerDecision": "MP-OD-2026-09-30-V46",
+  "supersedes": "2026.09.30-v45",
+  "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "repository": "Eak-dev/malispang-lineOA",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "LOCAL_TEST_KNOWLEDGE_UNTIL_PRODUCTION_RELEASE_ONLY",
+  "targetEnvironment": "LOCAL_ONLY_TEST_CONFIGURATION",
+  "accountName": "มะลิปัง TEST",
+  "validity": "PRE_RELEASE_ONLY_CLOSE_ON_PRODUCTION_RELEASE_OR_OWNER_REVOCATION",
+  "content": "EXACT_EXISTING_ANSWERS_AND_CHECKSUMS_UNCHANGED",
+  "history": "ARCHIVE_EXACT_PRIOR_MANIFEST_KEEP_DATED_RECORD_EXPIRY",
+  "workerHangClockFixture": {
+    "path": "worker-tests/mp-06-pilot-control.test.ts",
+    "before": "2026-09-08T00:00:00.000Z",
+    "after": "2026-10-01T00:00:00.000Z",
+    "scope": "ONE_EXACT_CLOCK_LITERAL_ONLY_ALL_OTHER_BYTES_UNCHANGED"
+  },
+  "localImplementation": true,
+  "commit": false,
+  "publication": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "priorPublicationAuthority": "SUSPENDED_NO_V45_OR_OLDER_RECEIPT_INHERITANCE",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "forbidden": "COMMIT_PUSH_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V47 — publish frozen TEST knowledge through existing Draft PR20
+
+The approved publication is one direct source child of H only, not a sequence of follow-up commits. Candidate parent must be H in both staged and final-source receipts. This preserves newly appended evidence without allowing a later source revision to erase it.
+
+Owner explicitly approved the proposed successor control followed by ordinary commit/push to existing Draft PR20 only after qualification. Supersedes v46's local-only stage for this bounded publication; it does not retroactively authorize prior actions or revive v45/older grants. MP06 / Issue12 remains CURRENT / OPEN. Read-only reconciliation confirms Issue9 and Issue12 OPEN, PR20 OPEN Draft at published source d0f63188c50da6e204a4ecc1e91bed97f5ec44eb into MP06 base a05bab89bc6d5cdf2914581ed658be86dd00b062. Local baseline 86e5c967dd29e669ee0bc66e594fc9636a188c4e and the uncommitted v46 overlay are preserved.
+
+Seal the exact22-file v46 local overlay before publication adapters in tests/fixtures/mp06-v46-local/snapshot.json, SHA256 1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109. V47_ALLOWED_PATHS adds only the new control module/test and that snapshot. Preserve frozen runtime, all14 answers/checksums/keywords, explicit TEST-only PRE_RELEASE validity, archived dated manifest, old expiry behavior, v46 inspector and the exact Worker clock correction. V46 regressions source their immutable snapshot (and unchanged schema at H) while exercising the current dispatcher; every original assertion/watchdog/cleanup stays unchanged, and the sourcing adapter is hash-sealed.
+
+Authenticate exact staged-tree focused checks, fresh zero-all-severity audit and independent review before COMMIT. Authenticate full original26 local gates, frozen-install proof, fresh audit0 and independent exact-source review after commit. Raw HEAD/index/source observations must remain byte-preserving; keep stage/process evidence and stop on drift without rewriting operator state. Old failed v45 receipts and RAW_INDEX_WRITER_UNKNOWN remain unresolved historical evidence, not new qualification. A new SHA or changed tree requires fresh applicable evidence.
+
+Normal PUSH_BRANCH is conditional on the complete new v47 source receipt and independent fresh PR20 OPEN Draft/unmerged readback, expected published source/base/repository/branches, and fast-forward ancestry. Creation grant remains consumed; no new PR or Ready. Ordered synthetic CI parents [M,source], exact runner SHA/ref and source-identical tree establish validation identity only. No merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2, permission changes or Issue closure. The historical denied action is not replayed; retained-state cause, accounting and UAT evidence remain incomplete. This approval publishes reviewable code only, not a test-session launch.
+
+```json
+{
+  "version": "2026.09.30-v47",
+  "ownerDecision": "MP-OD-2026-09-30-V47",
+  "supersedes": "2026.09.30-v46",
+  "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "publishedHead": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "FROZEN_TEST_KNOWLEDGE_EXISTING_DRAFT_PR20_ONLY",
+  "snapshotPath": "tests/fixtures/mp06-v46-local/snapshot.json",
+  "snapshotSha256": "1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109",
+  "v46FixtureAdapterSha256": "5f38fb7e2c5934b500a38b3969339bff636f61dc1f0f09019fbbfb65591f7bf8",
+  "content": "V46_SNAPSHOT_FROZEN_EXACT_ANSWERS_CHECKSUMS_AND_WORKER_CLOCK",
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "priorReceipts": "HISTORICAL_ONLY_NEW_V47_EXACT_SOURCE_RECEIPTS_REQUIRED",
+  "sourceLineage": "ONE_DIRECT_CHILD_OF_BASELINE_ONLY",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "auditGate": "FRESH_ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V47A — exact brace-expansion exception for Draft PR20
+
+Owner approved the specific proposed security fixes brace-expansion1.1.18 to1.1.21 and5.0.9 to5.0.12, the minimal lockfile/control update and fresh testing before normal push to existing Draft PR20. This amendment supersedes unpublished v47, not its historical facts; retain all prior v47 Owner text, failed audit/qualification records and v46 immutable snapshot. The main control version becomes2026.09.30-v47.1 with explicit projectionVersion2026.09.30-v46. MP06/Issue12 remains CURRENT/OPEN; current HEADH86e5c967, published sourceSd0f63188 and baseMa05bab89 remain pinned.
+
+Permit only two new dependency paths, pnpm-workspace.yaml and pnpm-lock.yaml, within the27-path set. Only minimatch@3.1.5>brace-expansion and minimatch@10.2.6>brace-expansion may resolve to the exact approved patch versions. Preserve all other resolutions, existing overrides, importer semantics, undici7.29.1 and package/workflow/runtime/knowledge bytes. Verify public registry metadata, exact package integrity and narrow pair diff; seal the reviewed pair together. PENDING/mixed/incomplete pairs cannot authorize commit/push. Fresh audit must report zero at every severity without suppression.
+
+The new receipt binds actual workspace/lock hashes at the outer v47.1 envelope. Frozen nested V43 dependency hashes remain historical identifiers only; do not replace old records or label old failures PASS. Both staged-tree and final-source qualification/review must authenticate the actual new pair. One direct source child of H remains the only publication candidate; exact clean-source26-stage local qualification, fresh audit/install evidence and fresh PR20 OPEN Draft/head/base/fast-forward readback precede ordinary push. No new PR, Ready, merge, reset/rebase/force-push, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2 or Issue closure. The existing Data Studio hold and pendingTemplate/UAT/accounting gaps remain unchanged.
+
+```json
+{
+  "version": "2026.09.30-v47.1",
+  "ownerDecision": "MP-OD-2026-09-30-V47A",
+  "supersedes": "2026.09.30-v47",
+  "projectionVersion": "2026.09.30-v46",
+  "amendsUnpublished": "2026.09.30-v47",
+  "priorUnpublishedTree": "cc947a6f2f956584c1772cc51df42f554141aa72",
+  "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "publishedHead": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "FROZEN_TEST_KNOWLEDGE_EXISTING_DRAFT_PR20_ONLY",
+  "snapshotPath": "tests/fixtures/mp06-v46-local/snapshot.json",
+  "snapshotSha256": "1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109",
+  "v46FixtureAdapterSha256": "5f38fb7e2c5934b500a38b3969339bff636f61dc1f0f09019fbbfb65591f7bf8",
+  "amendedHistory": {
+    "docs/project/OWNER_DECISION_LOG.md": {
+      "bytes": 298123,
+      "sha256": "85987282050d66dc3fb038387f6cefb2c0c15e1fd7790f472f0f3888d663ce9c"
+    },
+    "docs/project/ROADMAP_CHANGELOG.md": {
+      "bytes": 165324,
+      "sha256": "a59fa4e3424b33ac758109d655bf72f0bbca6c60e168535a5c4bf189f5cb209f"
+    },
+    "docs/project/EXECUTION_GATES.md": {
+      "bytes": 798413,
+      "sha256": "13ae305b72a7fa2195cd85a2b623610c8cd2b269ce83b40970623842f7d41c82"
+    },
+    "PROJECT_CONTROL.md": {
+      "bytes": 88546,
+      "sha256": "75924a8576dfc43dcb43c10abb7ec28234fddf1927e99b6b65b70a45920a7c48"
+    }
+  },
+  "dependencyPatch": {
+    "package": "brace-expansion",
+    "upgrades": [
+      {
+        "from": "1.1.18",
+        "to": "1.1.21"
+      },
+      {
+        "from": "5.0.9",
+        "to": "5.0.12"
+      }
+    ],
+    "status": "SEALED",
+    "workspaceSha256": "1a4f86bd18f075a14d76da77b4d24735aac2659c4f1704736757c3d8f8715615",
+    "lockfileSha256": "4b7ff8fa2f0339f9ee934373c979ad55501dca88590b074c111a4efd4f1c48fd"
+  },
+  "content": "V46_SNAPSHOT_FROZEN_EXACT_ANSWERS_CHECKSUMS_AND_WORKER_CLOCK",
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "priorReceipts": "HISTORICAL_ONLY_NEW_V47_EXACT_SOURCE_RECEIPTS_REQUIRED",
+  "sourceLineage": "ONE_DIRECT_CHILD_OF_BASELINE_ONLY",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "auditGate": "FRESH_ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```

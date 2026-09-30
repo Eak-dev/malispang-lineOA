@@ -5,6 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "testKnowledgeValidityV46",
     "inspectorBatchV45",
     "harnessPublicationV43",
     "localHarnessRepairV42",
@@ -68,9 +69,46 @@
     "wp8fV30CiTimeout",
     "wp8fV31Pr15Remediation",
     "wp8fV32GreptilePushDraft",
-    "devOperationsV33"
+    "devOperationsV33",
+    "knowledgePublicationV47"
   ],
   "properties": {
+    "testKnowledgeValidityV46": {
+      "const": {
+        "version": "2026.09.30-v46",
+        "ownerDecision": "MP-OD-2026-09-30-V46",
+        "supersedes": "2026.09.30-v45",
+        "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+        "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+        "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+        "repository": "Eak-dev/malispang-lineOA",
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "stage": "LOCAL_TEST_KNOWLEDGE_UNTIL_PRODUCTION_RELEASE_ONLY",
+        "targetEnvironment": "LOCAL_ONLY_TEST_CONFIGURATION",
+        "accountName": "มะลิปัง TEST",
+        "validity": "PRE_RELEASE_ONLY_CLOSE_ON_PRODUCTION_RELEASE_OR_OWNER_REVOCATION",
+        "content": "EXACT_EXISTING_ANSWERS_AND_CHECKSUMS_UNCHANGED",
+        "history": "ARCHIVE_EXACT_PRIOR_MANIFEST_KEEP_DATED_RECORD_EXPIRY",
+        "workerHangClockFixture": {
+          "path": "worker-tests/mp-06-pilot-control.test.ts",
+          "before": "2026-09-08T00:00:00.000Z",
+          "after": "2026-10-01T00:00:00.000Z",
+          "scope": "ONE_EXACT_CLOCK_LITERAL_ONLY_ALL_OTHER_BYTES_UNCHANGED"
+        },
+        "localImplementation": true,
+        "commit": false,
+        "publication": false,
+        "ready": false,
+        "merge": false,
+        "remoteExecution": false,
+        "production": false,
+        "priorPublicationAuthority": "SUSPENDED_NO_V45_OR_OLDER_RECEIPT_INHERITANCE",
+        "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+        "uatReadiness": "NOT_VERIFIED",
+        "forbidden": "COMMIT_PUSH_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+      }
+    },
     "inspectorBatchV45": {
       "const": {
         "version": "2026.09.30-v45",
@@ -839,12 +877,26 @@
         }
       }
     },
-    "$schema": { "const": "./current-work.schema.json" },
-    "schemaVersion": { "const": 1 },
-    "roadmapId": { "const": "MP-ROADMAP" },
-    "roadmapVersion": { "const": "2026.09.30-v45" },
-    "workId": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
-    "githubIssue": { "type": "integer", "minimum": 1 },
+    "$schema": {
+      "const": "./current-work.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "roadmapId": {
+      "const": "MP-ROADMAP"
+    },
+    "roadmapVersion": {
+      "const": "2026.09.30-v47.1"
+    },
+    "workId": {
+      "type": "string",
+      "pattern": "^MP-(0[1-9]|1[0-2])$"
+    },
+    "githubIssue": {
+      "type": "integer",
+      "minimum": 1
+    },
     "currentPhase": {
       "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
     },
@@ -856,24 +908,43 @@
       "additionalProperties": false,
       "required": ["commit", "branch"],
       "properties": {
-        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-        "branch": { "type": "string", "minLength": 1 }
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
-    "implementationBranch": { "type": "string", "minLength": 1 },
-    "targetEnvironment": { "const": "TEST_ONLY" },
-    "authorizedWorkPackage": { "const": "WP8F" },
+    "implementationBranch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetEnvironment": {
+      "const": "TEST_ONLY"
+    },
+    "authorizedWorkPackage": {
+      "const": "WP8F"
+    },
     "allowedScope": {
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "forbiddenScope": {
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "authorization": {
       "type": "object",
@@ -910,35 +981,93 @@
         "production"
       ],
       "properties": {
-        "localImplementation": { "const": false },
-        "runtimeWp1": { "const": false },
-        "benchmarkWp2": { "const": false },
-        "runtimeRemediationWp3": { "const": false },
-        "benchmarkCompletionWp4": { "const": false },
-        "localClosureRemediationWp5": { "const": false },
-        "testReadinessAssessmentWp6": { "const": false },
-        "testReadinessConditionClosureWp6": { "const": false },
-        "testReadinessConditionsClosedWp6": { "const": true },
-        "aiNluImplementationWp7": { "const": false },
-        "aiNluLocalAcceptanceCompleteWp7": { "const": true },
-        "runtimePilotControlRemediationWp8a": { "const": false },
-        "runtimePilotControlsCompleteWp8a": { "const": true },
-        "testDeploymentSmokeRollbackWp8": { "const": false },
-        "providerAttemptSettlementRemediationWp8b": { "const": false },
-        "providerReconciliationControlledRetestWp8c": { "const": false },
-        "durableLifecycleDiagnosticsRemediationWp8d": { "const": false },
-        "exactStateReconciliationControlledRetestWp8e": { "const": false },
-        "testAcceptanceCompletionWp8f": { "const": true },
-        "testDeploymentPreparationWp8f": { "const": true },
-        "policySnapshot": { "type": "boolean" },
-        "policySnapshotReadOnly": { "type": "boolean" },
-        "commit": { "type": "boolean" },
-        "pushBranch": { "type": "boolean" },
-        "githubRoadmapUpdate": { "type": "boolean" },
-        "testDeploymentAuthorization": { "const": true },
-        "testDeploymentOccurred": { "const": true },
-        "testDeployment": { "const": false },
-        "production": { "type": "boolean" }
+        "localImplementation": {
+          "const": false
+        },
+        "runtimeWp1": {
+          "const": false
+        },
+        "benchmarkWp2": {
+          "const": false
+        },
+        "runtimeRemediationWp3": {
+          "const": false
+        },
+        "benchmarkCompletionWp4": {
+          "const": false
+        },
+        "localClosureRemediationWp5": {
+          "const": false
+        },
+        "testReadinessAssessmentWp6": {
+          "const": false
+        },
+        "testReadinessConditionClosureWp6": {
+          "const": false
+        },
+        "testReadinessConditionsClosedWp6": {
+          "const": true
+        },
+        "aiNluImplementationWp7": {
+          "const": false
+        },
+        "aiNluLocalAcceptanceCompleteWp7": {
+          "const": true
+        },
+        "runtimePilotControlRemediationWp8a": {
+          "const": false
+        },
+        "runtimePilotControlsCompleteWp8a": {
+          "const": true
+        },
+        "testDeploymentSmokeRollbackWp8": {
+          "const": false
+        },
+        "providerAttemptSettlementRemediationWp8b": {
+          "const": false
+        },
+        "providerReconciliationControlledRetestWp8c": {
+          "const": false
+        },
+        "durableLifecycleDiagnosticsRemediationWp8d": {
+          "const": false
+        },
+        "exactStateReconciliationControlledRetestWp8e": {
+          "const": false
+        },
+        "testAcceptanceCompletionWp8f": {
+          "const": true
+        },
+        "testDeploymentPreparationWp8f": {
+          "const": true
+        },
+        "policySnapshot": {
+          "type": "boolean"
+        },
+        "policySnapshotReadOnly": {
+          "type": "boolean"
+        },
+        "commit": {
+          "type": "boolean"
+        },
+        "pushBranch": {
+          "type": "boolean"
+        },
+        "githubRoadmapUpdate": {
+          "type": "boolean"
+        },
+        "testDeploymentAuthorization": {
+          "const": true
+        },
+        "testDeploymentOccurred": {
+          "const": true
+        },
+        "testDeployment": {
+          "const": false
+        },
+        "production": {
+          "type": "boolean"
+        }
       }
     },
     "policySnapshotReference": {
@@ -946,11 +1075,15 @@
       "additionalProperties": false,
       "required": ["version", "checksum", "mode"],
       "properties": {
-        "version": { "const": "2026.09.05-policy-v1" },
+        "version": {
+          "const": "2026.09.05-policy-v1"
+        },
         "checksum": {
           "const": "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0"
         },
-        "mode": { "const": "READ_ONLY" }
+        "mode": {
+          "const": "READ_ONLY"
+        }
       }
     },
     "wp2BenchmarkReference": {
@@ -991,14 +1124,24 @@
         "remediatedPassResultChecksum": {
           "const": "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6"
         },
-        "runtimeMode": { "const": "READ_ONLY" },
-        "datasetExpectedCasesMode": { "const": "READ_ONLY" },
-        "independentOracleMode": { "const": "READ_ONLY" },
-        "acceptanceThresholdsMode": { "const": "READ_ONLY" },
+        "runtimeMode": {
+          "const": "READ_ONLY"
+        },
+        "datasetExpectedCasesMode": {
+          "const": "READ_ONLY"
+        },
+        "independentOracleMode": {
+          "const": "READ_ONLY"
+        },
+        "acceptanceThresholdsMode": {
+          "const": "READ_ONLY"
+        },
         "reportRegeneration": {
           "const": "READ_ONLY_VERIFICATION_ONLY"
         },
-        "totalCases": { "const": 5000 },
+        "totalCases": {
+          "const": 5000
+        },
         "failedMetrics": {
           "type": "object",
           "additionalProperties": false,
@@ -1011,12 +1154,24 @@
             "authorityFailureFailClosedPercent"
           ],
           "properties": {
-            "autoCorrectnessPercent": { "const": 96.4 },
-            "falseAutoCount": { "const": 144 },
-            "riskyFailClosedPercent": { "const": 85.3387 },
-            "unsupportedClaims": { "const": 144 },
-            "piiOrRawChatLeakage": { "const": 0 },
-            "authorityFailureFailClosedPercent": { "const": 100 }
+            "autoCorrectnessPercent": {
+              "const": 96.4
+            },
+            "falseAutoCount": {
+              "const": 144
+            },
+            "riskyFailClosedPercent": {
+              "const": 85.3387
+            },
+            "unsupportedClaims": {
+              "const": 144
+            },
+            "piiOrRawChatLeakage": {
+              "const": 0
+            },
+            "authorityFailureFailClosedPercent": {
+              "const": 100
+            }
           }
         },
         "passMetrics": {
@@ -1035,16 +1190,36 @@
             "confusionMatrixOffDiagonal"
           ],
           "properties": {
-            "functionalCases": { "const": 3000 },
-            "thaiLanguageVariationCases": { "const": 1000 },
-            "adversarialSafetyCases": { "const": 1000 },
-            "autoCorrectnessPercent": { "const": 100 },
-            "falseAutoCount": { "const": 0 },
-            "riskyFailClosedPercent": { "const": 100 },
-            "unsupportedClaims": { "const": 0 },
-            "piiOrRawChatLeakage": { "const": 0 },
-            "authorityFailureFailClosedPercent": { "const": 100 },
-            "confusionMatrixOffDiagonal": { "const": 0 }
+            "functionalCases": {
+              "const": 3000
+            },
+            "thaiLanguageVariationCases": {
+              "const": 1000
+            },
+            "adversarialSafetyCases": {
+              "const": 1000
+            },
+            "autoCorrectnessPercent": {
+              "const": 100
+            },
+            "falseAutoCount": {
+              "const": 0
+            },
+            "riskyFailClosedPercent": {
+              "const": 100
+            },
+            "unsupportedClaims": {
+              "const": 0
+            },
+            "piiOrRawChatLeakage": {
+              "const": 0
+            },
+            "authorityFailureFailClosedPercent": {
+              "const": 100
+            },
+            "confusionMatrixOffDiagonal": {
+              "const": 0
+            }
           }
         }
       }
@@ -1076,13 +1251,19 @@
           "minItems": 18,
           "maxItems": 18,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "narrowProvenanceFileAllowlist": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "provenanceRequirements": {
           "type": "object",
@@ -1110,19 +1291,35 @@
             "benchmarkCompletionRoadmapVersion": {
               "const": "2026.09.05-v5"
             },
-            "ambiguousSingleCommitFieldForbidden": { "const": true },
-            "selfReferentialArtifactCommitForbidden": { "const": true },
+            "ambiguousSingleCommitFieldForbidden": {
+              "const": true
+            },
+            "selfReferentialArtifactCommitForbidden": {
+              "const": true
+            },
             "provenanceMustNotAffectSemanticResultChecksum": {
               "const": true
             },
-            "deploymentStatus": { "const": "NOT_DEPLOYED" }
+            "deploymentStatus": {
+              "const": "NOT_DEPLOYED"
+            }
           }
         },
-        "datasetChecksumMustRemainUnchanged": { "const": true },
-        "independentOracleMustRemainUnchanged": { "const": true },
-        "expectedResultsMustRemainUnchanged": { "const": true },
-        "acceptanceThresholdsMustRemainUnchanged": { "const": true },
-        "failedHistoryMustBeRetained": { "const": true }
+        "datasetChecksumMustRemainUnchanged": {
+          "const": true
+        },
+        "independentOracleMustRemainUnchanged": {
+          "const": true
+        },
+        "expectedResultsMustRemainUnchanged": {
+          "const": true
+        },
+        "acceptanceThresholdsMustRemainUnchanged": {
+          "const": true
+        },
+        "failedHistoryMustBeRetained": {
+          "const": true
+        }
       }
     },
     "localClosureRemediationPlan": {
@@ -1146,7 +1343,9 @@
         "postWp5Decision"
       ],
       "properties": {
-        "blocker": { "const": "RESOLVED" },
+        "blocker": {
+          "const": "RESOLVED"
+        },
         "implementationStatus": {
           "const": "COMPLETED_AT_TOOLCHAIN_COMMIT"
         },
@@ -1156,21 +1355,32 @@
         "toolchainCommit": {
           "const": "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331"
         },
-        "localVerdict": { "const": "PASS_WITH_LIMITATIONS" },
-        "authoritativeToolchainSource": { "const": "PACKAGE_JSON" },
+        "localVerdict": {
+          "const": "PASS_WITH_LIMITATIONS"
+        },
+        "authoritativeToolchainSource": {
+          "const": "PACKAGE_JSON"
+        },
         "implementationFileAllowlist": {
           "type": "array",
           "minItems": 6,
           "maxItems": 6,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "timeoutRemediationFileAllowlist": {
           "type": "array",
           "minItems": 1,
           "maxItems": 1,
           "uniqueItems": true,
-          "prefixItems": [{ "const": "tests/mp-06-wp2-benchmark.test.ts" }],
+          "prefixItems": [
+            {
+              "const": "tests/mp-06-wp2-benchmark.test.ts"
+            }
+          ],
           "items": false
         },
         "benchmarkTestTimeoutContract": {
@@ -1230,37 +1440,99 @@
             "targetFile": {
               "const": "tests/mp-06-wp2-benchmark.test.ts"
             },
-            "targetHook": { "const": "runMp06Benchmark beforeAll" },
-            "previousTimeoutMs": { "const": 120000 },
-            "currentTimeoutMs": { "const": 300000 },
-            "authorizedTimeoutMs": { "const": 300000 },
-            "maximumTimeoutMs": { "const": 300000 },
-            "testSpecificTimeoutMs": { "const": 15000 },
-            "testSpecificTimeoutCount": { "const": 2 },
-            "dedicatedProcess": { "const": true },
-            "observedMaximumMs": { "const": 260200 },
-            "acceptanceCeilingMs": { "const": 270000 },
-            "remainingMarginMs": { "const": 9800 },
-            "hardCeilingNotPerformanceThreshold": { "const": true },
-            "productPerformanceGuarantee": { "const": false },
-            "globalTimeoutChanged": { "const": false },
-            "unlimitedTimeoutForbidden": { "const": true },
-            "timeoutRemovalForbidden": { "const": true },
-            "assertionChangesForbidden": { "const": true },
-            "datasetChangesForbidden": { "const": true },
-            "oracleChangesForbidden": { "const": true },
-            "benchmarkSemanticChangesForbidden": { "const": true },
-            "acceptanceThresholdChangesForbidden": { "const": true },
-            "skipOrTodoForbidden": { "const": true },
-            "splitToAvoidAssertionsForbidden": { "const": true },
-            "catchOrIgnoreTimeoutForbidden": { "const": true },
-            "retryToHideFailureForbidden": { "const": true },
-            "benchmarkFailureMustRemainNonZeroExit": { "const": true },
-            "sequentialRunsRequired": { "const": 5 },
-            "allRunsMustCompleteBelowMs": { "const": 270000 },
-            "skippedOrCancelledAllowed": { "const": 0 },
-            "checksumsAndMetricsMustMatchAcrossRuns": { "const": true },
-            "trackedBenchmarkReportsMustRemainUnchanged": { "const": true }
+            "targetHook": {
+              "const": "runMp06Benchmark beforeAll"
+            },
+            "previousTimeoutMs": {
+              "const": 120000
+            },
+            "currentTimeoutMs": {
+              "const": 300000
+            },
+            "authorizedTimeoutMs": {
+              "const": 300000
+            },
+            "maximumTimeoutMs": {
+              "const": 300000
+            },
+            "testSpecificTimeoutMs": {
+              "const": 15000
+            },
+            "testSpecificTimeoutCount": {
+              "const": 2
+            },
+            "dedicatedProcess": {
+              "const": true
+            },
+            "observedMaximumMs": {
+              "const": 260200
+            },
+            "acceptanceCeilingMs": {
+              "const": 270000
+            },
+            "remainingMarginMs": {
+              "const": 9800
+            },
+            "hardCeilingNotPerformanceThreshold": {
+              "const": true
+            },
+            "productPerformanceGuarantee": {
+              "const": false
+            },
+            "globalTimeoutChanged": {
+              "const": false
+            },
+            "unlimitedTimeoutForbidden": {
+              "const": true
+            },
+            "timeoutRemovalForbidden": {
+              "const": true
+            },
+            "assertionChangesForbidden": {
+              "const": true
+            },
+            "datasetChangesForbidden": {
+              "const": true
+            },
+            "oracleChangesForbidden": {
+              "const": true
+            },
+            "benchmarkSemanticChangesForbidden": {
+              "const": true
+            },
+            "acceptanceThresholdChangesForbidden": {
+              "const": true
+            },
+            "skipOrTodoForbidden": {
+              "const": true
+            },
+            "splitToAvoidAssertionsForbidden": {
+              "const": true
+            },
+            "catchOrIgnoreTimeoutForbidden": {
+              "const": true
+            },
+            "retryToHideFailureForbidden": {
+              "const": true
+            },
+            "benchmarkFailureMustRemainNonZeroExit": {
+              "const": true
+            },
+            "sequentialRunsRequired": {
+              "const": 5
+            },
+            "allRunsMustCompleteBelowMs": {
+              "const": 270000
+            },
+            "skippedOrCancelledAllowed": {
+              "const": 0
+            },
+            "checksumsAndMetricsMustMatchAcrossRuns": {
+              "const": true
+            },
+            "trackedBenchmarkReportsMustRemainUnchanged": {
+              "const": true
+            }
           }
         },
         "requiredVersions": {
@@ -1268,9 +1540,15 @@
           "additionalProperties": false,
           "required": ["node", "pnpm", "versionMatch"],
           "properties": {
-            "node": { "const": "24.19.0" },
-            "pnpm": { "const": "11.19.0" },
-            "versionMatch": { "const": "EXACT" }
+            "node": {
+              "const": "24.19.0"
+            },
+            "pnpm": {
+              "const": "11.19.0"
+            },
+            "versionMatch": {
+              "const": "EXACT"
+            }
           }
         },
         "requiredContract": {
@@ -1290,17 +1568,39 @@
             "newCiWorkflowAuthorized"
           ],
           "properties": {
-            "packageManagerDeclaration": { "const": true },
-            "nodeEngineDeclaration": { "const": true },
-            "pnpmEngineDeclaration": { "const": true },
-            "nodeVersionFile": { "const": true },
-            "machineReadableConsistencyValidator": { "const": true },
-            "nodeMismatchFailsFast": { "const": true },
-            "pnpmMismatchFailsFast": { "const": true },
-            "developerBootstrapDocumentation": { "const": true },
-            "existingCiUsesExactVersionsIfPresent": { "const": true },
-            "existingCiDetectedAtTransition": { "const": false },
-            "newCiWorkflowAuthorized": { "const": false }
+            "packageManagerDeclaration": {
+              "const": true
+            },
+            "nodeEngineDeclaration": {
+              "const": true
+            },
+            "pnpmEngineDeclaration": {
+              "const": true
+            },
+            "nodeVersionFile": {
+              "const": true
+            },
+            "machineReadableConsistencyValidator": {
+              "const": true
+            },
+            "nodeMismatchFailsFast": {
+              "const": true
+            },
+            "pnpmMismatchFailsFast": {
+              "const": true
+            },
+            "developerBootstrapDocumentation": {
+              "const": true
+            },
+            "existingCiUsesExactVersionsIfPresent": {
+              "const": true
+            },
+            "existingCiDetectedAtTransition": {
+              "const": false
+            },
+            "newCiWorkflowAuthorized": {
+              "const": false
+            }
           }
         },
         "registryPolicy": {
@@ -1315,12 +1615,24 @@
             "vendoringAllowed"
           ],
           "properties": {
-            "offlineBuildRequired": { "const": false },
-            "declaredRegistryDownloadAllowed": { "const": true },
-            "frozenLockfileRequired": { "const": true },
-            "lockfileIntegrityRequired": { "const": true },
-            "dependencyVersionChangesAllowed": { "const": false },
-            "vendoringAllowed": { "const": false }
+            "offlineBuildRequired": {
+              "const": false
+            },
+            "declaredRegistryDownloadAllowed": {
+              "const": true
+            },
+            "frozenLockfileRequired": {
+              "const": true
+            },
+            "lockfileIntegrityRequired": {
+              "const": true
+            },
+            "dependencyVersionChangesAllowed": {
+              "const": false
+            },
+            "vendoringAllowed": {
+              "const": false
+            }
           }
         },
         "readOnlyBoundaries": {
@@ -1338,15 +1650,33 @@
             "productCatalog"
           ],
           "properties": {
-            "runtime": { "const": true },
-            "runtimeBehaviorTests": { "const": true },
-            "benchmarkDataset": { "const": true },
-            "independentOracle": { "const": true },
-            "benchmarkSemantics": { "const": true },
-            "acceptanceThresholds": { "const": true },
-            "policy": { "const": true },
-            "knowledgeBase": { "const": true },
-            "productCatalog": { "const": true }
+            "runtime": {
+              "const": true
+            },
+            "runtimeBehaviorTests": {
+              "const": true
+            },
+            "benchmarkDataset": {
+              "const": true
+            },
+            "independentOracle": {
+              "const": true
+            },
+            "benchmarkSemantics": {
+              "const": true
+            },
+            "acceptanceThresholds": {
+              "const": true
+            },
+            "policy": {
+              "const": true
+            },
+            "knowledgeBase": {
+              "const": true
+            },
+            "productCatalog": {
+              "const": true
+            }
           }
         },
         "acceptanceCriteria": {
@@ -1370,23 +1700,51 @@
             "deploymentStatus"
           ],
           "properties": {
-            "toolchainVersionsPinned": { "const": true },
-            "declarationsConsistent": { "const": true },
-            "validatorDetectsVersionDrift": { "const": true },
-            "cleanCheckoutBootstrapDocumented": { "const": true },
-            "frozenInstallWithEmptyStore": { "const": true },
+            "toolchainVersionsPinned": {
+              "const": true
+            },
+            "declarationsConsistent": {
+              "const": true
+            },
+            "validatorDetectsVersionDrift": {
+              "const": true
+            },
+            "cleanCheckoutBootstrapDocumented": {
+              "const": true
+            },
+            "frozenInstallWithEmptyStore": {
+              "const": true
+            },
             "benchmarkReportReproducibleWithoutTrackedChanges": {
               "const": true
             },
-            "policyChecksumUnchanged": { "const": true },
-            "datasetChecksumUnchanged": { "const": true },
-            "semanticResultChecksumUnchanged": { "const": true },
-            "benchmarkMetricsUnchanged": { "const": true },
-            "fullValidationRequired": { "const": true },
-            "workingTreeCleanAfterCommit": { "const": true },
-            "localHeadMustMatchRemote": { "const": true },
-            "githubRoadmapAndIssueReconciled": { "const": true },
-            "deploymentStatus": { "const": "NOT_DEPLOYED" }
+            "policyChecksumUnchanged": {
+              "const": true
+            },
+            "datasetChecksumUnchanged": {
+              "const": true
+            },
+            "semanticResultChecksumUnchanged": {
+              "const": true
+            },
+            "benchmarkMetricsUnchanged": {
+              "const": true
+            },
+            "fullValidationRequired": {
+              "const": true
+            },
+            "workingTreeCleanAfterCommit": {
+              "const": true
+            },
+            "localHeadMustMatchRemote": {
+              "const": true
+            },
+            "githubRoadmapAndIssueReconciled": {
+              "const": true
+            },
+            "deploymentStatus": {
+              "const": "NOT_DEPLOYED"
+            }
           }
         },
         "postWp5Decision": {
@@ -1394,16 +1752,24 @@
           "additionalProperties": false,
           "required": ["ownerDecisionRequired", "authorizedPath", "options"],
           "properties": {
-            "ownerDecisionRequired": { "const": false },
-            "authorizedPath": { "const": "TEST_READINESS_ASSESSMENT" },
+            "ownerDecisionRequired": {
+              "const": false
+            },
+            "authorizedPath": {
+              "const": "TEST_READINESS_ASSESSMENT"
+            },
             "options": {
               "type": "array",
               "minItems": 2,
               "maxItems": 2,
               "uniqueItems": true,
               "prefixItems": [
-                { "const": "AI_NLU_WORK_PACKAGE" },
-                { "const": "TEST_READINESS_ASSESSMENT" }
+                {
+                  "const": "AI_NLU_WORK_PACKAGE"
+                },
+                {
+                  "const": "TEST_READINESS_ASSESSMENT"
+                }
               ],
               "items": false
             }
@@ -1434,18 +1800,30 @@
         "limitations"
       ],
       "properties": {
-        "verdict": { "const": "PASS_WITH_LIMITATIONS" },
-        "recordedAt": { "const": "2026-09-06" },
+        "verdict": {
+          "const": "PASS_WITH_LIMITATIONS"
+        },
+        "recordedAt": {
+          "const": "2026-09-06"
+        },
         "timeoutCommit": {
           "const": "98f6bc0843e376de9932acad767fb463932514cc"
         },
         "toolchainCommit": {
           "const": "9377e30faf0f63e506ba1eb1b88f7c2d7bbcd331"
         },
-        "nodeVersion": { "const": "24.19.0" },
-        "pnpmVersion": { "const": "11.19.0" },
-        "cleanCheckoutReproducible": { "const": true },
-        "benchmarkCases": { "const": 5000 },
+        "nodeVersion": {
+          "const": "24.19.0"
+        },
+        "pnpmVersion": {
+          "const": "11.19.0"
+        },
+        "cleanCheckoutReproducible": {
+          "const": true
+        },
+        "benchmarkCases": {
+          "const": 5000
+        },
         "policyChecksum": {
           "const": "504a39b0879933658be35a5b6fb8bb92c8931d5ab473ee7b54f3112bbaa00bc0"
         },
@@ -1455,24 +1833,48 @@
         "semanticResultChecksum": {
           "const": "f1fd652a96092a1f65a77f78d77877c3b2f1cccc61e09f794bc0055bd14707f6"
         },
-        "aiNluImplemented": { "const": true },
-        "testEnvironmentAssessed": { "const": true },
-        "testDeployment": { "const": false },
-        "ownerTestUatComplete": { "const": false },
-        "productionStatus": { "const": "NO_GO" },
+        "aiNluImplemented": {
+          "const": true
+        },
+        "testEnvironmentAssessed": {
+          "const": true
+        },
+        "testDeployment": {
+          "const": false
+        },
+        "ownerTestUatComplete": {
+          "const": false
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
         "limitations": {
           "type": "array",
           "minItems": 7,
           "maxItems": 7,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "AI_NLU_SYNTHETIC_ONLY" },
-            { "const": "TEST_NOT_DEPLOYED" },
-            { "const": "TEST_SMOKE_NOT_COMPLETED" },
-            { "const": "OWNER_TEST_UAT_NOT_COMPLETED" },
-            { "const": "ROLLBACK_REHEARSAL_NOT_COMPLETED" },
-            { "const": "PR_DEFAULT_BRANCH_NOT_INTEGRATED" },
-            { "const": "PRODUCTION_NO_GO" }
+            {
+              "const": "AI_NLU_SYNTHETIC_ONLY"
+            },
+            {
+              "const": "TEST_NOT_DEPLOYED"
+            },
+            {
+              "const": "TEST_SMOKE_NOT_COMPLETED"
+            },
+            {
+              "const": "OWNER_TEST_UAT_NOT_COMPLETED"
+            },
+            {
+              "const": "ROLLBACK_REHEARSAL_NOT_COMPLETED"
+            },
+            {
+              "const": "PR_DEFAULT_BRANCH_NOT_INTEGRATED"
+            },
+            {
+              "const": "PRODUCTION_NO_GO"
+            }
           ],
           "items": false
         }
@@ -1502,7 +1904,9 @@
         "issueMustRemainOpen"
       ],
       "properties": {
-        "implementationStatus": { "const": "COMPLETED_WITH_CONDITIONS" },
+        "implementationStatus": {
+          "const": "COMPLETED_WITH_CONDITIONS"
+        },
         "assessmentCommit": {
           "const": "76d1e1302c31a35ab49e565b231cf63100e27fb6"
         },
@@ -1515,17 +1919,30 @@
         "deliverable": {
           "const": "docs/line-oa/mp-06/MP_06_WP6_TEST_READINESS_ASSESSMENT_TH.md"
         },
-        "remoteInspectionMode": { "const": "TEST_METADATA_READ_ONLY" },
-        "secretInspectionMode": { "const": "NAMES_AND_PRESENCE_ONLY" },
-        "productionRemoteInspection": { "const": "FORBIDDEN" },
-        "deploymentAuthorization": { "const": false },
-        "aiNluImplementation": { "const": false },
+        "remoteInspectionMode": {
+          "const": "TEST_METADATA_READ_ONLY"
+        },
+        "secretInspectionMode": {
+          "const": "NAMES_AND_PRESENCE_ONLY"
+        },
+        "productionRemoteInspection": {
+          "const": "FORBIDDEN"
+        },
+        "deploymentAuthorization": {
+          "const": false
+        },
+        "aiNluImplementation": {
+          "const": false
+        },
         "requiredAssessmentAreas": {
           "type": "array",
           "minItems": 21,
           "maxItems": 21,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "verdictOptions": {
           "type": "array",
@@ -1533,15 +1950,27 @@
           "maxItems": 3,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "TEST_READINESS_ASSESSMENT_PASS" },
-            { "const": "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS" },
-            { "const": "TEST_READINESS_BLOCKED" }
+            {
+              "const": "TEST_READINESS_ASSESSMENT_PASS"
+            },
+            {
+              "const": "TEST_READINESS_ASSESSMENT_PASS_WITH_CONDITIONS"
+            },
+            {
+              "const": "TEST_READINESS_BLOCKED"
+            }
           ],
           "items": false
         },
-        "unknownMustNotBeAssumedPass": { "const": true },
-        "notApplicableRequiresReason": { "const": true },
-        "issueMustRemainOpen": { "const": true }
+        "unknownMustNotBeAssumedPass": {
+          "const": true
+        },
+        "notApplicableRequiresReason": {
+          "const": true
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "testReadinessConditionClosurePlan": {
@@ -1574,17 +2003,27 @@
         "implementationCommit": {
           "const": "688c1fbd75358429b7161f41de3ef706696595e4"
         },
-        "verdict": { "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED" },
+        "verdict": {
+          "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED"
+        },
         "authorizedConditions": {
           "type": "array",
           "minItems": 4,
           "maxItems": 4,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "ACTIVE_BENCHMARK_TIMEOUT_METADATA_DRIFT" },
-            { "const": "TEST_ALERT_RATE_STOP_CONTROLS_NOT_FROZEN" },
-            { "const": "ROLLBACK_AND_SYNTHETIC_FIXTURES_NOT_FROZEN" },
-            { "const": "VALIDATION_CHAIN_RICH_MENU_FORMATTING_DRIFT" }
+            {
+              "const": "ACTIVE_BENCHMARK_TIMEOUT_METADATA_DRIFT"
+            },
+            {
+              "const": "TEST_ALERT_RATE_STOP_CONTROLS_NOT_FROZEN"
+            },
+            {
+              "const": "ROLLBACK_AND_SYNTHETIC_FIXTURES_NOT_FROZEN"
+            },
+            {
+              "const": "VALIDATION_CHAIN_RICH_MENU_FORMATTING_DRIFT"
+            }
           ],
           "items": false
         },
@@ -1600,39 +2039,77 @@
             "performanceGuarantee"
           ],
           "properties": {
-            "hookWatchdogMs": { "const": 300000 },
-            "testSpecificWatchdogMs": { "const": 15000 },
-            "testSpecificWatchdogCount": { "const": 2 },
-            "observedMaximumMs": { "const": 260200 },
-            "acceptanceCeilingMs": { "const": 270000 },
-            "performanceGuarantee": { "const": false }
+            "hookWatchdogMs": {
+              "const": 300000
+            },
+            "testSpecificWatchdogMs": {
+              "const": 15000
+            },
+            "testSpecificWatchdogCount": {
+              "const": 2
+            },
+            "observedMaximumMs": {
+              "const": 260200
+            },
+            "acceptanceCeilingMs": {
+              "const": 270000
+            },
+            "performanceGuarantee": {
+              "const": false
+            }
           }
         },
-        "runtimeMode": { "const": "READ_ONLY" },
-        "policyMode": { "const": "READ_ONLY" },
-        "datasetOracleBenchmarkSemanticsMode": { "const": "READ_ONLY" },
-        "knowledgeBaseCatalogMode": { "const": "READ_ONLY" },
+        "runtimeMode": {
+          "const": "READ_ONLY"
+        },
+        "policyMode": {
+          "const": "READ_ONLY"
+        },
+        "datasetOracleBenchmarkSemanticsMode": {
+          "const": "READ_ONLY"
+        },
+        "knowledgeBaseCatalogMode": {
+          "const": "READ_ONLY"
+        },
         "testReadiness": {
           "const": "READY_FOR_SEPARATE_DEPLOYMENT_AUTHORIZATION"
         },
-        "pnpmCheckSequentialRuns": { "const": 2 },
-        "previewByteStable": { "const": true },
-        "rollbackRehearsalStatus": { "const": "NOT_PERFORMED" },
-        "ownerUatStatus": { "const": "NOT_PERFORMED" },
-        "deploymentAuthorization": { "const": false },
-        "aiNluImplementation": { "const": false },
-        "issueMustRemainOpen": { "const": true },
+        "pnpmCheckSequentialRuns": {
+          "const": 2
+        },
+        "previewByteStable": {
+          "const": true
+        },
+        "rollbackRehearsalStatus": {
+          "const": "NOT_PERFORMED"
+        },
+        "ownerUatStatus": {
+          "const": "NOT_PERFORMED"
+        },
+        "deploymentAuthorization": {
+          "const": false
+        },
+        "aiNluImplementation": {
+          "const": false
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        },
         "verdictOptions": {
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED" },
+            {
+              "const": "WP6_TEST_READINESS_CONDITIONS_CLOSED"
+            },
             {
               "const": "WP6_TEST_READINESS_CONDITIONS_PARTIALLY_CLOSED"
             },
-            { "const": "WP6_TEST_READINESS_CONDITION_CLOSURE_FAILED" }
+            {
+              "const": "WP6_TEST_READINESS_CONDITION_CLOSURE_FAILED"
+            }
           ],
           "items": false
         }
@@ -1683,19 +2160,45 @@
         "authorityMode": {
           "const": "ADVISORY_ONLY_DETERMINISTIC_POLICY_FINAL"
         },
-        "provider": { "const": "OPENAI" },
-        "api": { "const": "RESPONSES_API" },
-        "model": { "const": "gpt-5.6-terra" },
-        "baseUrl": { "const": "https://api.openai.com/v1/responses" },
-        "credentialEnvironmentVariable": { "const": "OPENAI_API_KEY" },
-        "credentialInspectionMode": { "const": "PRESENCE_ONLY" },
-        "featureFlag": { "const": "MP06_AI_NLU_ENABLED" },
-        "featureFlagDefaultEnabled": { "const": false },
-        "structuredOutputsStrict": { "const": true },
-        "storeResponses": { "const": false },
-        "streaming": { "const": false },
-        "toolCalling": { "const": false },
-        "maximumRetries": { "const": 1 },
+        "provider": {
+          "const": "OPENAI"
+        },
+        "api": {
+          "const": "RESPONSES_API"
+        },
+        "model": {
+          "const": "gpt-5.6-terra"
+        },
+        "baseUrl": {
+          "const": "https://api.openai.com/v1/responses"
+        },
+        "credentialEnvironmentVariable": {
+          "const": "OPENAI_API_KEY"
+        },
+        "credentialInspectionMode": {
+          "const": "PRESENCE_ONLY"
+        },
+        "featureFlag": {
+          "const": "MP06_AI_NLU_ENABLED"
+        },
+        "featureFlagDefaultEnabled": {
+          "const": false
+        },
+        "structuredOutputsStrict": {
+          "const": true
+        },
+        "storeResponses": {
+          "const": false
+        },
+        "streaming": {
+          "const": false
+        },
+        "toolCalling": {
+          "const": false
+        },
+        "maximumRetries": {
+          "const": 1
+        },
         "requestDeadlineMs": {
           "type": "integer",
           "minimum": 1000,
@@ -1718,12 +2221,24 @@
             "deterministicBenchmarkReuseForbidden"
           ],
           "properties": {
-            "maximumRequests": { "const": 500 },
-            "maximumCostUsd": { "const": 5 },
-            "criticalSafetyRepeatCount": { "const": 3 },
-            "promptDevelopmentAndHoldoutSeparated": { "const": true },
-            "customerDataForbidden": { "const": true },
-            "deterministicBenchmarkReuseForbidden": { "const": true }
+            "maximumRequests": {
+              "const": 500
+            },
+            "maximumCostUsd": {
+              "const": 5
+            },
+            "criticalSafetyRepeatCount": {
+              "const": 3
+            },
+            "promptDevelopmentAndHoldoutSeparated": {
+              "const": true
+            },
+            "customerDataForbidden": {
+              "const": true
+            },
+            "deterministicBenchmarkReuseForbidden": {
+              "const": true
+            }
           }
         },
         "acceptanceCriteria": {
@@ -1741,15 +2256,33 @@
             "minimumRequiredFieldExtractionAccuracyPercent"
           ],
           "properties": {
-            "structuredSchemaSuccessPercent": { "const": 100 },
-            "riskyAuthorityFailClosedPercent": { "const": 100 },
-            "maximumStaffOnlyDowngrades": { "const": 0 },
-            "maximumFalseFinalAuto": { "const": 0 },
-            "maximumUnsupportedClaims": { "const": 0 },
-            "maximumPiiLeakage": { "const": 0 },
-            "maximumPromptInjectionOverrides": { "const": 0 },
-            "minimumFinalRoutingAccuracyPercent": { "const": 95 },
-            "minimumRequiredFieldExtractionAccuracyPercent": { "const": 95 }
+            "structuredSchemaSuccessPercent": {
+              "const": 100
+            },
+            "riskyAuthorityFailClosedPercent": {
+              "const": 100
+            },
+            "maximumStaffOnlyDowngrades": {
+              "const": 0
+            },
+            "maximumFalseFinalAuto": {
+              "const": 0
+            },
+            "maximumUnsupportedClaims": {
+              "const": 0
+            },
+            "maximumPiiLeakage": {
+              "const": 0
+            },
+            "maximumPromptInjectionOverrides": {
+              "const": 0
+            },
+            "minimumFinalRoutingAccuracyPercent": {
+              "const": 95
+            },
+            "minimumRequiredFieldExtractionAccuracyPercent": {
+              "const": 95
+            }
           }
         },
         "readOnlyBoundaries": {
@@ -1766,14 +2299,30 @@
             "deploymentConfiguration"
           ],
           "properties": {
-            "policy": { "const": true },
-            "knowledgeBase": { "const": true },
-            "productCatalog": { "const": true },
-            "deterministicBenchmarkDataset": { "const": true },
-            "deterministicOracle": { "const": true },
-            "deterministicBenchmarkSemantics": { "const": true },
-            "deterministicBenchmarkReports": { "const": true },
-            "deploymentConfiguration": { "const": true }
+            "policy": {
+              "const": true
+            },
+            "knowledgeBase": {
+              "const": true
+            },
+            "productCatalog": {
+              "const": true
+            },
+            "deterministicBenchmarkDataset": {
+              "const": true
+            },
+            "deterministicOracle": {
+              "const": true
+            },
+            "deterministicBenchmarkSemantics": {
+              "const": true
+            },
+            "deterministicBenchmarkReports": {
+              "const": true
+            },
+            "deploymentConfiguration": {
+              "const": true
+            }
           }
         },
         "localAcceptanceEvidence": {
@@ -1807,54 +2356,108 @@
             "normalSuitesRequireCredential"
           ],
           "properties": {
-            "promptVersion": { "const": "v1" },
+            "promptVersion": {
+              "const": "v1"
+            },
             "promptChecksum": {
               "const": "bb32a123d6671ac2167887ea8ba476bdebe28bc4b1cca23d53b9b6879cc8eeb6"
             },
-            "schemaVersion": { "const": "v1" },
+            "schemaVersion": {
+              "const": "v1"
+            },
             "schemaChecksum": {
               "const": "811436149e813ce6ece4baade44640c56b48edf5198433822e688c9994319793"
             },
-            "datasetVersion": { "const": "v1" },
+            "datasetVersion": {
+              "const": "v1"
+            },
             "datasetChecksum": {
               "const": "cbfb9d6030ded2ab3cb8237233313940f2df206efdd7ac91cc05c948fdcae11b"
             },
             "semanticResultChecksum": {
               "const": "7f45332328bfe3a1cef1464fb6eb5370b23d90bb7148034af5da71daee137c55"
             },
-            "uniqueCases": { "const": 60 },
-            "apiRequests": { "const": 100 },
-            "structuredSchemaSuccessPercent": { "const": 100 },
-            "riskyAuthorityFailClosedPercent": { "const": 100 },
-            "riskSignalRecallPercent": { "const": 95 },
-            "finalRoutingAccuracyPercent": { "const": 98 },
-            "requiredFieldExtractionAccuracyPercent": { "const": 100 },
-            "staffOnlyDowngrades": { "const": 0 },
-            "falseFinalAuto": { "const": 0 },
-            "unsupportedClaims": { "const": 0 },
-            "piiLeakage": { "const": 0 },
-            "promptInjectionOverrides": { "const": 0 },
-            "inputTokens": { "const": 54639 },
-            "outputTokens": { "const": 9327 },
-            "estimatedCostUsd": { "const": 0.221202 },
+            "uniqueCases": {
+              "const": 60
+            },
+            "apiRequests": {
+              "const": 100
+            },
+            "structuredSchemaSuccessPercent": {
+              "const": 100
+            },
+            "riskyAuthorityFailClosedPercent": {
+              "const": 100
+            },
+            "riskSignalRecallPercent": {
+              "const": 95
+            },
+            "finalRoutingAccuracyPercent": {
+              "const": 98
+            },
+            "requiredFieldExtractionAccuracyPercent": {
+              "const": 100
+            },
+            "staffOnlyDowngrades": {
+              "const": 0
+            },
+            "falseFinalAuto": {
+              "const": 0
+            },
+            "unsupportedClaims": {
+              "const": 0
+            },
+            "piiLeakage": {
+              "const": 0
+            },
+            "promptInjectionOverrides": {
+              "const": 0
+            },
+            "inputTokens": {
+              "const": 54639
+            },
+            "outputTokens": {
+              "const": 9327
+            },
+            "estimatedCostUsd": {
+              "const": 0.221202
+            },
             "latencyMs": {
               "type": "object",
               "additionalProperties": false,
               "required": ["minimum", "median", "p95", "maximum"],
               "properties": {
-                "minimum": { "const": 1157 },
-                "median": { "const": 1516 },
-                "p95": { "const": 2908 },
-                "maximum": { "const": 3456 }
+                "minimum": {
+                  "const": 1157
+                },
+                "median": {
+                  "const": 1516
+                },
+                "p95": {
+                  "const": 2908
+                },
+                "maximum": {
+                  "const": 3456
+                }
               }
             },
-            "cleanCheckoutReproducible": { "const": true },
-            "normalSuitesRequireCredential": { "const": false }
+            "cleanCheckoutReproducible": {
+              "const": true
+            },
+            "normalSuitesRequireCredential": {
+              "const": false
+            }
           }
         },
-        "deploymentAuthorization": { "const": false },
-        "productionStatus": { "const": "NO_GO" },
-        "issueMustRemainOpen": { "const": true }
+        "deploymentAuthorization": {
+          "const": false
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "wp8aRuntimePilotControlPlan": {
@@ -1878,15 +2481,21 @@
         "issueMustRemainOpen"
       ],
       "properties": {
-        "implementationStatus": { "const": "COMPLETED_AT_RUNTIME_COMMIT" },
+        "implementationStatus": {
+          "const": "COMPLETED_AT_RUNTIME_COMMIT"
+        },
         "controlAuthorizationCommit": {
           "const": "4da15774c7d19027f48a443488f3db8a0c248f23"
         },
         "runtimeImplementationCommit": {
           "const": "d48c5066a4b92d4035bcf41076734199cc0fea4a"
         },
-        "remediationVerdict": { "const": "PASS" },
-        "blocker": { "const": "WP8_GATE_B_RUNTIME_ENFORCEMENT_MISSING" },
+        "remediationVerdict": {
+          "const": "PASS"
+        },
+        "blocker": {
+          "const": "WP8_GATE_B_RUNTIME_ENFORCEMENT_MISSING"
+        },
         "readinessCorrection": {
           "const": "WP6_OPERATOR_CONDITIONS_CLOSED_RUNTIME_ENFORCEMENT_NOT_VERIFIED"
         },
@@ -1902,12 +2511,24 @@
             "newRemoteResourceRequired"
           ],
           "properties": {
-            "existingNamespace": { "const": "CONVERSATION_STATE" },
-            "reservedObjectName": { "const": "mp06-pilot-control-v1" },
-            "storageBackend": { "const": "SQLITE" },
-            "sharedAcrossAllTesters": { "const": true },
-            "newBindingRequired": { "const": false },
-            "newRemoteResourceRequired": { "const": false }
+            "existingNamespace": {
+              "const": "CONVERSATION_STATE"
+            },
+            "reservedObjectName": {
+              "const": "mp06-pilot-control-v1"
+            },
+            "storageBackend": {
+              "const": "SQLITE"
+            },
+            "sharedAcrossAllTesters": {
+              "const": true
+            },
+            "newBindingRequired": {
+              "const": false
+            },
+            "newRemoteResourceRequired": {
+              "const": false
+            }
           }
         },
         "limits": {
@@ -1924,14 +2545,30 @@
             "maximumConcurrentProviderRequests"
           ],
           "properties": {
-            "maximumTesters": { "const": 5 },
-            "rollingMinuteEvents": { "const": 20 },
-            "rollingHourEvents": { "const": 200 },
-            "maximumSessionEvents": { "const": 200 },
-            "maximumProviderAttempts": { "const": 200 },
-            "maximumSessionMinutes": { "const": 60 },
-            "maximumSessionCostMicroUsd": { "const": 5000000 },
-            "maximumConcurrentProviderRequests": { "const": 1 }
+            "maximumTesters": {
+              "const": 5
+            },
+            "rollingMinuteEvents": {
+              "const": 20
+            },
+            "rollingHourEvents": {
+              "const": 200
+            },
+            "maximumSessionEvents": {
+              "const": 200
+            },
+            "maximumProviderAttempts": {
+              "const": 200
+            },
+            "maximumSessionMinutes": {
+              "const": 60
+            },
+            "maximumSessionCostMicroUsd": {
+              "const": 5000000
+            },
+            "maximumConcurrentProviderRequests": {
+              "const": 1
+            }
           }
         },
         "requiredAdmissionOrder": {
@@ -1958,15 +2595,21 @@
             "killOrExpiry"
           ],
           "properties": {
-            "missingMalformedOrUnknown": { "const": "NO_PROVIDER_CALL" },
-            "storageOrCoordinatorFailure": { "const": "NO_PROVIDER_CALL" },
+            "missingMalformedOrUnknown": {
+              "const": "NO_PROVIDER_CALL"
+            },
+            "storageOrCoordinatorFailure": {
+              "const": "NO_PROVIDER_CALL"
+            },
             "duplicateEvent": {
               "const": "NO_PROVIDER_CALL_OR_DUPLICATE_REPLY"
             },
             "uncertainDispatchOrBilling": {
               "const": "CONSUME_RESERVATION_AND_STOP_SESSION"
             },
-            "busy": { "const": "FAIL_CLOSED_NO_QUEUE" },
+            "busy": {
+              "const": "FAIL_CLOSED_NO_QUEUE"
+            },
             "killOrExpiry": {
               "const": "DENY_NEW_WORK_AND_REJECT_UNAUTHORIZED_AI_RESULT"
             }
@@ -1990,24 +2633,56 @@
             "benchmarkWatchdogs"
           ],
           "properties": {
-            "model": { "const": true },
-            "prompt": { "const": true },
-            "aiSchema": { "const": true },
-            "deterministicPolicy": { "const": true },
-            "knowledgeBase": { "const": true },
-            "productCatalog": { "const": true },
-            "benchmarkDataset": { "const": true },
-            "independentOracle": { "const": true },
-            "benchmarkSemantics": { "const": true },
-            "benchmarkReports": { "const": true },
-            "benchmarkThresholds": { "const": true },
-            "benchmarkWatchdogs": { "const": true }
+            "model": {
+              "const": true
+            },
+            "prompt": {
+              "const": true
+            },
+            "aiSchema": {
+              "const": true
+            },
+            "deterministicPolicy": {
+              "const": true
+            },
+            "knowledgeBase": {
+              "const": true
+            },
+            "productCatalog": {
+              "const": true
+            },
+            "benchmarkDataset": {
+              "const": true
+            },
+            "independentOracle": {
+              "const": true
+            },
+            "benchmarkSemantics": {
+              "const": true
+            },
+            "benchmarkReports": {
+              "const": true
+            },
+            "benchmarkThresholds": {
+              "const": true
+            },
+            "benchmarkWatchdogs": {
+              "const": true
+            }
           }
         },
-        "testDeploymentAuthorization": { "const": false },
-        "remoteMutationAuthorization": { "const": false },
-        "productionStatus": { "const": "NO_GO" },
-        "issueMustRemainOpen": { "const": true }
+        "testDeploymentAuthorization": {
+          "const": false
+        },
+        "remoteMutationAuthorization": {
+          "const": false
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "wp8TestPilotPlan": {
@@ -2060,46 +2735,90 @@
         "candidateArtifactSha256": {
           "const": "810c6d51f4898076ce2d6c4f93666128370387e79263d695021c50cf250ed36b"
         },
-        "workerName": { "const": "malispang-lineoa-test" },
-        "configPath": { "const": "wrangler.jsonc" },
+        "workerName": {
+          "const": "malispang-lineoa-test"
+        },
+        "configPath": {
+          "const": "wrangler.jsonc"
+        },
         "workerDomain": {
           "const": "malispang-lineoa-test.eakkachai-dev.workers.dev"
         },
         "rollbackTargetVersionId": {
           "const": "3e02e79b-29c9-46cf-9218-ed2d0b7d7655"
         },
-        "credentialSlot": { "const": "OPENAI_API_KEY" },
-        "deploymentOccurred": { "const": true },
+        "credentialSlot": {
+          "const": "OPENAI_API_KEY"
+        },
+        "deploymentOccurred": {
+          "const": true
+        },
         "currentDeployedRevision": {
           "const": "509c3587-7ae9-41a8-8ba2-1082d03e138d"
         },
-        "pilotAiEnabled": { "const": false },
-        "pilotClosed": { "const": true },
-        "ownerUatStatus": { "const": "PENDING" },
-        "gateA": { "const": "PASS_SAFE_OVER_HANDOFF_ONLY" },
-        "gateB": { "const": "PASS_RUNTIME_ENFORCED" },
-        "gateC": { "const": "PASS_RETAINED_TEST_V21_NO_AI" },
-        "rollbackRehearsal": { "const": "PASS" },
-        "rollbackCommandSeconds": { "const": 3 },
-        "candidateRecoverySeconds": { "const": 7 },
+        "pilotAiEnabled": {
+          "const": false
+        },
+        "pilotClosed": {
+          "const": true
+        },
+        "ownerUatStatus": {
+          "const": "PENDING"
+        },
+        "gateA": {
+          "const": "PASS_SAFE_OVER_HANDOFF_ONLY"
+        },
+        "gateB": {
+          "const": "PASS_RUNTIME_ENFORCED"
+        },
+        "gateC": {
+          "const": "PASS_RETAINED_TEST_V21_NO_AI"
+        },
+        "rollbackRehearsal": {
+          "const": "PASS"
+        },
+        "rollbackCommandSeconds": {
+          "const": 3
+        },
+        "candidateRecoverySeconds": {
+          "const": 7
+        },
         "lineSmokeStatus": {
           "const": "BLOCKED_TESTER_IDENTITY_NOT_PROVISIONED"
         },
         "finalTestState": {
           "const": "CANDIDATE_DEPLOYED_AI_OFF_PILOT_STOPPED"
         },
-        "testEventsUsed": { "const": 0 },
-        "providerAttemptsUsed": { "const": 0 },
-        "costConsumedMicroUsd": { "const": 0 },
+        "testEventsUsed": {
+          "const": 0
+        },
+        "providerAttemptsUsed": {
+          "const": 0
+        },
+        "costConsumedMicroUsd": {
+          "const": 0
+        },
         "verdict": {
           "const": "WP8_TEST_PILOT_PARTIAL_AWAITING_LINE_TEST"
         },
-        "maximumTestEvents": { "const": 200 },
-        "maximumProviderAttempts": { "const": 200 },
-        "maximumSessionMinutes": { "const": 60 },
-        "maximumCostMicroUsd": { "const": 5000000 },
-        "productionStatus": { "const": "NO_GO" },
-        "issueMustRemainOpen": { "const": true }
+        "maximumTestEvents": {
+          "const": 200
+        },
+        "maximumProviderAttempts": {
+          "const": 200
+        },
+        "maximumSessionMinutes": {
+          "const": 60
+        },
+        "maximumCostMicroUsd": {
+          "const": 5000000
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "wp8bProviderAttemptSettlementPlan": {
@@ -2139,8 +2858,12 @@
         "implementationCommit": {
           "const": "25b0bc9f726b05d80aeb586fd09290c43bc3ba35"
         },
-        "remediationVerdict": { "const": "PASS" },
-        "observedStopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
+        "remediationVerdict": {
+          "const": "PASS"
+        },
+        "observedStopReason": {
+          "const": "IN_FLIGHT_USAGE_UNKNOWN"
+        },
         "observedState": {
           "type": "object",
           "additionalProperties": false,
@@ -2154,13 +2877,27 @@
             "inFlight"
           ],
           "properties": {
-            "pilot": { "const": "STOPPED" },
-            "aiEnabled": { "const": false },
-            "admittedEvents": { "const": 1 },
-            "providerAttempts": { "const": 1 },
-            "budgetConsumedMicroUsd": { "const": 0 },
-            "budgetReservedMicroUsd": { "const": 12932 },
-            "inFlight": { "const": 1 }
+            "pilot": {
+              "const": "STOPPED"
+            },
+            "aiEnabled": {
+              "const": false
+            },
+            "admittedEvents": {
+              "const": 1
+            },
+            "providerAttempts": {
+              "const": 1
+            },
+            "budgetConsumedMicroUsd": {
+              "const": 0
+            },
+            "budgetReservedMicroUsd": {
+              "const": 12932
+            },
+            "inFlight": {
+              "const": 1
+            }
           }
         },
         "verifiedFacts": {
@@ -2168,14 +2905,20 @@
           "minItems": 6,
           "maxItems": 6,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "unverifiedFacts": {
           "type": "array",
           "minItems": 4,
           "maxItems": 4,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "requiredFailureSemantics": {
           "type": "object",
@@ -2194,8 +2937,12 @@
             "lateProviderResult": {
               "const": "IGNORE_NO_REPLY_NO_SECOND_SETTLEMENT"
             },
-            "settlementReplay": { "const": "IDEMPOTENT" },
-            "stopDuringInFlight": { "const": "NO_AI_REPLY" },
+            "settlementReplay": {
+              "const": "IDEMPOTENT"
+            },
+            "stopDuringInFlight": {
+              "const": "NO_AI_REPLY"
+            },
             "existingUnknownAttempt": {
               "const": "KEEP_FULL_RESERVATION_NO_REFUND"
             }
@@ -2204,8 +2951,12 @@
         "existingRemoteAttemptMutation": {
           "const": "FORBIDDEN_PENDING_VERIFIED_CANDIDATE_AND_SEPARATE_ACTION"
         },
-        "candidateDeploymentOccurred": { "const": false },
-        "existingRemoteAttemptReconciled": { "const": false },
+        "candidateDeploymentOccurred": {
+          "const": false
+        },
+        "existingRemoteAttemptReconciled": {
+          "const": false
+        },
         "validationTotals": {
           "type": "object",
           "additionalProperties": false,
@@ -2219,20 +2970,44 @@
             "cancelled"
           ],
           "properties": {
-            "nodeUnit": { "const": 450 },
-            "deterministicBenchmark": { "const": 14 },
-            "worker": { "const": 66 },
-            "combinedUnique": { "const": 530 },
-            "failed": { "const": 0 },
-            "skipped": { "const": 0 },
-            "cancelled": { "const": 0 }
+            "nodeUnit": {
+              "const": 450
+            },
+            "deterministicBenchmark": {
+              "const": 14
+            },
+            "worker": {
+              "const": 66
+            },
+            "combinedUnique": {
+              "const": 530
+            },
+            "failed": {
+              "const": 0
+            },
+            "skipped": {
+              "const": 0
+            },
+            "cancelled": {
+              "const": 0
+            }
           }
         },
-        "testDeploymentAuthorization": { "const": false },
-        "liveProviderAuthorization": { "const": false },
-        "pilotSessionAuthorization": { "const": false },
-        "productionStatus": { "const": "NO_GO" },
-        "issueMustRemainOpen": { "const": true }
+        "testDeploymentAuthorization": {
+          "const": false
+        },
+        "liveProviderAuthorization": {
+          "const": false
+        },
+        "pilotSessionAuthorization": {
+          "const": false
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "wp8cProviderReconciliationControlledRetestPlan": {
@@ -2263,7 +3038,9 @@
         "controlBaseCommit": {
           "const": "fa5eb1505e8d1cf6fe3a88619c51f9548e60163d"
         },
-        "exactTestWorker": { "const": "malispang-lineoa-test" },
+        "exactTestWorker": {
+          "const": "malispang-lineoa-test"
+        },
         "exactTestDomain": {
           "const": "malispang-lineoa-test.eakkachai-dev.workers.dev"
         },
@@ -2288,14 +3065,30 @@
             "reconciliationDisposition"
           ],
           "properties": {
-            "sessionState": { "const": "STOPPED" },
-            "stopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
-            "admittedEvents": { "const": 1 },
-            "providerAttempts": { "const": 1 },
-            "budgetConsumedMicroUsd": { "const": 0 },
-            "budgetReservedMicroUsd": { "const": 12932 },
-            "inFlight": { "const": 1 },
-            "actualUsage": { "const": "UNKNOWN" },
+            "sessionState": {
+              "const": "STOPPED"
+            },
+            "stopReason": {
+              "const": "IN_FLIGHT_USAGE_UNKNOWN"
+            },
+            "admittedEvents": {
+              "const": 1
+            },
+            "providerAttempts": {
+              "const": 1
+            },
+            "budgetConsumedMicroUsd": {
+              "const": 0
+            },
+            "budgetReservedMicroUsd": {
+              "const": 12932
+            },
+            "inFlight": {
+              "const": 1
+            },
+            "actualUsage": {
+              "const": "UNKNOWN"
+            },
             "reconciliationDisposition": {
               "const": "CONSUME_FULL_RESERVATION_NO_REFUND"
             }
@@ -2312,11 +3105,21 @@
             "deleteEvidence"
           ],
           "properties": {
-            "authenticatedTestAdminOnly": { "const": true },
-            "exactSingleStaleDispatchedAttempt": { "const": true },
-            "originalSessionMustRemainStopped": { "const": true },
-            "idempotent": { "const": true },
-            "deleteEvidence": { "const": false }
+            "authenticatedTestAdminOnly": {
+              "const": true
+            },
+            "exactSingleStaleDispatchedAttempt": {
+              "const": true
+            },
+            "originalSessionMustRemainStopped": {
+              "const": true
+            },
+            "idempotent": {
+              "const": true
+            },
+            "deleteEvidence": {
+              "const": false
+            }
           }
         },
         "newSessionContract": {
@@ -2333,14 +3136,30 @@
             "timeoutRetryForbidden"
           ],
           "properties": {
-            "maximumNewSessions": { "const": 1 },
-            "maximumNewLineEvents": { "const": 1 },
-            "maximumTotalEvents": { "const": 200 },
-            "maximumTotalProviderAttempts": { "const": 200 },
-            "maximumTotalCostMicroUsd": { "const": 5000000 },
-            "maximumSessionMinutes": { "const": 60 },
-            "carryForwardPriorAccounting": { "const": true },
-            "timeoutRetryForbidden": { "const": true }
+            "maximumNewSessions": {
+              "const": 1
+            },
+            "maximumNewLineEvents": {
+              "const": 1
+            },
+            "maximumTotalEvents": {
+              "const": 200
+            },
+            "maximumTotalProviderAttempts": {
+              "const": 200
+            },
+            "maximumTotalCostMicroUsd": {
+              "const": 5000000
+            },
+            "maximumSessionMinutes": {
+              "const": 60
+            },
+            "carryForwardPriorAccounting": {
+              "const": true
+            },
+            "timeoutRetryForbidden": {
+              "const": true
+            }
           }
         },
         "providerLifecycleDiagnostics": {
@@ -2357,14 +3176,30 @@
             "secretOrUserIdentifierForbidden"
           ],
           "properties": {
-            "contentFree": { "const": true },
-            "requestIdAllowed": { "const": true },
-            "clientRequestIdAllowed": { "const": true },
-            "httpStatusAllowed": { "const": true },
-            "safeErrorTypeCodeAllowed": { "const": true },
-            "rateLimitHeadersAllowed": { "const": true },
-            "phaseDurationsAllowed": { "const": true },
-            "secretOrUserIdentifierForbidden": { "const": true }
+            "contentFree": {
+              "const": true
+            },
+            "requestIdAllowed": {
+              "const": true
+            },
+            "clientRequestIdAllowed": {
+              "const": true
+            },
+            "httpStatusAllowed": {
+              "const": true
+            },
+            "safeErrorTypeCodeAllowed": {
+              "const": true
+            },
+            "rateLimitHeadersAllowed": {
+              "const": true
+            },
+            "phaseDurationsAllowed": {
+              "const": true
+            },
+            "secretOrUserIdentifierForbidden": {
+              "const": true
+            }
           }
         },
         "settlementRpc": {
@@ -2376,18 +3211,32 @@
             "lateCompletion"
           ],
           "properties": {
-            "boundedDeadlineRequired": { "const": true },
-            "failureMode": { "const": "FAIL_CLOSED_NO_AI_REPLY" },
-            "lateCompletion": { "const": "IDEMPOTENT_NO_SECOND_REPLY" }
+            "boundedDeadlineRequired": {
+              "const": true
+            },
+            "failureMode": {
+              "const": "FAIL_CLOSED_NO_AI_REPLY"
+            },
+            "lateCompletion": {
+              "const": "IDEMPOTENT_NO_SECOND_REPLY"
+            }
           }
         },
         "historicalObservability": {
           "const": "UNAVAILABLE_HTTP_403_NO_SCOPE_ESCALATION"
         },
-        "testDeploymentAuthorization": { "const": true },
-        "singleLiveProviderAuthorization": { "const": true },
-        "productionStatus": { "const": "NO_GO" },
-        "issueMustRemainOpen": { "const": true }
+        "testDeploymentAuthorization": {
+          "const": true
+        },
+        "singleLiveProviderAuthorization": {
+          "const": true
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "wp8dDurableLifecycleDiagnosticsPlan": {
@@ -2418,7 +3267,9 @@
         "controlBaseCommit": {
           "const": "337fcf5c660867b31ffc2a0b56d0a32d99504821"
         },
-        "exactTestWorker": { "const": "malispang-lineoa-test" },
+        "exactTestWorker": {
+          "const": "malispang-lineoa-test"
+        },
         "exactTestDomain": {
           "const": "malispang-lineoa-test.eakkachai-dev.workers.dev"
         },
@@ -2438,16 +3289,36 @@
             "latestLifecyclePresent"
           ],
           "properties": {
-            "sessionState": { "const": "STOPPED" },
-            "stopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
-            "aiEnabled": { "const": false },
-            "admittedEvents": { "const": 2 },
-            "providerAttempts": { "const": 2 },
-            "budgetConsumedMicroUsd": { "const": 12932 },
-            "budgetReservedMicroUsd": { "const": 12932 },
-            "inFlight": { "const": 1 },
-            "actualUsage": { "const": "UNKNOWN" },
-            "latestLifecyclePresent": { "const": false }
+            "sessionState": {
+              "const": "STOPPED"
+            },
+            "stopReason": {
+              "const": "IN_FLIGHT_USAGE_UNKNOWN"
+            },
+            "aiEnabled": {
+              "const": false
+            },
+            "admittedEvents": {
+              "const": 2
+            },
+            "providerAttempts": {
+              "const": 2
+            },
+            "budgetConsumedMicroUsd": {
+              "const": 12932
+            },
+            "budgetReservedMicroUsd": {
+              "const": 12932
+            },
+            "inFlight": {
+              "const": 1
+            },
+            "actualUsage": {
+              "const": "UNKNOWN"
+            },
+            "latestLifecyclePresent": {
+              "const": false
+            }
           }
         },
         "evidenceBoundary": {
@@ -2460,10 +3331,18 @@
             "remoteRootCauseConfirmed"
           ],
           "properties": {
-            "dispatchAuthorizationProvesFetchStarted": { "const": false },
-            "fetchStartedProvesProviderReceived": { "const": false },
-            "preFetchCheckpointProvesProviderReceived": { "const": false },
-            "remoteRootCauseConfirmed": { "const": false }
+            "dispatchAuthorizationProvesFetchStarted": {
+              "const": false
+            },
+            "fetchStartedProvesProviderReceived": {
+              "const": false
+            },
+            "preFetchCheckpointProvesProviderReceived": {
+              "const": false
+            },
+            "remoteRootCauseConfirmed": {
+              "const": false
+            }
           }
         },
         "requiredCheckpoints": {
@@ -2489,11 +3368,21 @@
             "secretOrUserIdentifierForbidden"
           ],
           "properties": {
-            "preDispatchAcknowledgementRequired": { "const": true },
-            "contentFree": { "const": true },
-            "correlationIdentifiersOnly": { "const": true },
-            "rawResponseBodyForbidden": { "const": true },
-            "secretOrUserIdentifierForbidden": { "const": true }
+            "preDispatchAcknowledgementRequired": {
+              "const": true
+            },
+            "contentFree": {
+              "const": true
+            },
+            "correlationIdentifiersOnly": {
+              "const": true
+            },
+            "rawResponseBodyForbidden": {
+              "const": true
+            },
+            "secretOrUserIdentifierForbidden": {
+              "const": true
+            }
           }
         },
         "webhookLifecycle": {
@@ -2506,10 +3395,18 @@
             "allPromisesTracked"
           ],
           "properties": {
-            "executionContextWaitUntilRequired": { "const": true },
-            "waitUntilMaximumSeconds": { "const": 30 },
-            "waitUntilDurabilityGuarantee": { "const": false },
-            "allPromisesTracked": { "const": true }
+            "executionContextWaitUntilRequired": {
+              "const": true
+            },
+            "waitUntilMaximumSeconds": {
+              "const": 30
+            },
+            "waitUntilDurabilityGuarantee": {
+              "const": false
+            },
+            "allPromisesTracked": {
+              "const": true
+            }
           }
         },
         "isolatedDiagnostic": {
@@ -2523,11 +3420,21 @@
             "remoteInvocationAuthorized"
           ],
           "properties": {
-            "authenticatedTestAdminOnly": { "const": true },
-            "separateDurableObject": { "const": true },
-            "providerCalls": { "const": 0 },
-            "lineReplies": { "const": 0 },
-            "remoteInvocationAuthorized": { "const": false }
+            "authenticatedTestAdminOnly": {
+              "const": true
+            },
+            "separateDurableObject": {
+              "const": true
+            },
+            "providerCalls": {
+              "const": 0
+            },
+            "lineReplies": {
+              "const": 0
+            },
+            "remoteInvocationAuthorized": {
+              "const": false
+            }
           }
         },
         "secondAttemptReconciliationProposal": {
@@ -2554,31 +3461,77 @@
             "remoteExecutionAuthorized"
           ],
           "properties": {
-            "requiredSessionState": { "const": "STOPPED" },
-            "requiredStopReason": { "const": "IN_FLIGHT_USAGE_UNKNOWN" },
-            "requiredAdmittedEvents": { "const": 2 },
-            "requiredProviderAttempts": { "const": 2 },
-            "requiredBudgetConsumedMicroUsd": { "const": 12932 },
-            "requiredBudgetReservedMicroUsd": { "const": 12932 },
-            "requiredInFlight": { "const": 1 },
-            "requiredStaleDispatchedAttempts": { "const": 1 },
-            "requiredExistingTerminalUsageUnknownAttempts": { "const": 1 },
-            "disposition": { "const": "CONSUME_FULL_RESERVATION_NO_REFUND" },
-            "finalBudgetConsumedMicroUsd": { "const": 25864 },
-            "finalBudgetReservedMicroUsd": { "const": 0 },
-            "finalInFlight": { "const": 0 },
-            "actualUsage": { "const": "UNKNOWN" },
-            "sessionRemainsStopped": { "const": true },
-            "idempotent": { "const": true },
-            "deleteEvidence": { "const": false },
-            "remoteExecutionAuthorized": { "const": false }
+            "requiredSessionState": {
+              "const": "STOPPED"
+            },
+            "requiredStopReason": {
+              "const": "IN_FLIGHT_USAGE_UNKNOWN"
+            },
+            "requiredAdmittedEvents": {
+              "const": 2
+            },
+            "requiredProviderAttempts": {
+              "const": 2
+            },
+            "requiredBudgetConsumedMicroUsd": {
+              "const": 12932
+            },
+            "requiredBudgetReservedMicroUsd": {
+              "const": 12932
+            },
+            "requiredInFlight": {
+              "const": 1
+            },
+            "requiredStaleDispatchedAttempts": {
+              "const": 1
+            },
+            "requiredExistingTerminalUsageUnknownAttempts": {
+              "const": 1
+            },
+            "disposition": {
+              "const": "CONSUME_FULL_RESERVATION_NO_REFUND"
+            },
+            "finalBudgetConsumedMicroUsd": {
+              "const": 25864
+            },
+            "finalBudgetReservedMicroUsd": {
+              "const": 0
+            },
+            "finalInFlight": {
+              "const": 0
+            },
+            "actualUsage": {
+              "const": "UNKNOWN"
+            },
+            "sessionRemainsStopped": {
+              "const": true
+            },
+            "idempotent": {
+              "const": true
+            },
+            "deleteEvidence": {
+              "const": false
+            },
+            "remoteExecutionAuthorized": {
+              "const": false
+            }
           }
         },
-        "testDeploymentAuthorization": { "const": false },
-        "remoteReconciliationAuthorization": { "const": false },
-        "liveProviderAuthorization": { "const": false },
-        "productionStatus": { "const": "NO_GO" },
-        "issueMustRemainOpen": { "const": true }
+        "testDeploymentAuthorization": {
+          "const": false
+        },
+        "remoteReconciliationAuthorization": {
+          "const": false
+        },
+        "liveProviderAuthorization": {
+          "const": false
+        },
+        "productionStatus": {
+          "const": "NO_GO"
+        },
+        "issueMustRemainOpen": {
+          "const": true
+        }
       }
     },
     "wp8fExactDeploymentPreparation": {
@@ -2943,9 +3896,17 @@
         "falseAutoReportRequired"
       ],
       "properties": {
-        "piiFree": { "const": true },
-        "minimumTotal": { "type": "integer", "minimum": 5000 },
-        "minimumFunctional": { "type": "integer", "minimum": 3000 },
+        "piiFree": {
+          "const": true
+        },
+        "minimumTotal": {
+          "type": "integer",
+          "minimum": 5000
+        },
+        "minimumFunctional": {
+          "type": "integer",
+          "minimum": 3000
+        },
         "minimumThaiLanguageVariation": {
           "type": "integer",
           "minimum": 1000
@@ -2954,18 +3915,32 @@
           "type": "integer",
           "minimum": 1000
         },
-        "meaningfullyDistinct": { "const": true },
+        "meaningfullyDistinct": {
+          "const": true
+        },
         "minimumAutoCorrectnessPercent": {
           "type": "number",
           "minimum": 98,
           "maximum": 100
         },
-        "riskyStaffOnlyOrFailClosedPercent": { "const": 100 },
-        "maximumUnsupportedClaims": { "const": 0 },
-        "maximumPiiOrRawChatLeakage": { "const": 0 },
-        "authorityFailureFailClosedPercent": { "const": 100 },
-        "confusionMatrixRequired": { "const": true },
-        "falseAutoReportRequired": { "const": true }
+        "riskyStaffOnlyOrFailClosedPercent": {
+          "const": 100
+        },
+        "maximumUnsupportedClaims": {
+          "const": 0
+        },
+        "maximumPiiOrRawChatLeakage": {
+          "const": 0
+        },
+        "authorityFailureFailClosedPercent": {
+          "const": 100
+        },
+        "confusionMatrixRequired": {
+          "const": true
+        },
+        "falseAutoReportRequired": {
+          "const": true
+        }
       }
     },
     "nextWork": {
@@ -2973,9 +3948,18 @@
       "additionalProperties": false,
       "required": ["id", "githubIssue", "status"],
       "properties": {
-        "id": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
-        "githubIssue": { "type": "integer", "minimum": 1 },
-        "status": { "type": "string", "minLength": 1 }
+        "id": {
+          "type": "string",
+          "pattern": "^MP-(0[1-9]|1[0-2])$"
+        },
+        "githubIssue": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "conflicts": {
@@ -2985,15 +3969,30 @@
         "additionalProperties": false,
         "required": ["code", "blocking", "detail", "resolution"],
         "properties": {
-          "code": { "type": "string", "minLength": 1 },
-          "blocking": { "type": "boolean" },
-          "detail": { "type": "string", "minLength": 1 },
-          "resolution": { "type": "string", "minLength": 1 }
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolution": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
-    "workingTreePolicy": { "const": "CLEAN_OR_PRESERVE_OWNER_CHANGES" },
-    "failureMode": { "const": "ROADMAP_UNVERIFIED" },
+    "workingTreePolicy": {
+      "const": "CLEAN_OR_PRESERVE_OWNER_CHANGES"
+    },
+    "failureMode": {
+      "const": "ROADMAP_UNVERIFIED"
+    },
     "wp8fV25WorkerTimingAddendum": {
       "const": {
         "version": "2026.09.12-v25",
@@ -3014,6 +4013,80 @@
         "residual": "ROOT_CAUSE_UNRESOLVED",
         "grants": "INHERIT_EXISTING_V22_JOURNAL_NO_MINT_RESET_OR_REISSUE",
         "runtimeAndArtifact": "EXACT_UNCHANGED_V22_AUTHORIZATION"
+      }
+    },
+    "knowledgePublicationV47": {
+      "const": {
+        "version": "2026.09.30-v47.1",
+        "ownerDecision": "MP-OD-2026-09-30-V47A",
+        "supersedes": "2026.09.30-v47",
+        "projectionVersion": "2026.09.30-v46",
+        "amendsUnpublished": "2026.09.30-v47",
+        "priorUnpublishedTree": "cc947a6f2f956584c1772cc51df42f554141aa72",
+        "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+        "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+        "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+        "publishedHead": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+        "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+        "repository": "Eak-dev/malispang-lineOA",
+        "headBranch": "codex/mp06-harness-v43",
+        "baseBranch": "codex/mp-06-guardrailed-ai",
+        "pullRequest": 20,
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "stage": "FROZEN_TEST_KNOWLEDGE_EXISTING_DRAFT_PR20_ONLY",
+        "snapshotPath": "tests/fixtures/mp06-v46-local/snapshot.json",
+        "snapshotSha256": "1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109",
+        "v46FixtureAdapterSha256": "5f38fb7e2c5934b500a38b3969339bff636f61dc1f0f09019fbbfb65591f7bf8",
+        "amendedHistory": {
+          "docs/project/OWNER_DECISION_LOG.md": {
+            "bytes": 298123,
+            "sha256": "85987282050d66dc3fb038387f6cefb2c0c15e1fd7790f472f0f3888d663ce9c"
+          },
+          "docs/project/ROADMAP_CHANGELOG.md": {
+            "bytes": 165324,
+            "sha256": "a59fa4e3424b33ac758109d655bf72f0bbca6c60e168535a5c4bf189f5cb209f"
+          },
+          "docs/project/EXECUTION_GATES.md": {
+            "bytes": 798413,
+            "sha256": "13ae305b72a7fa2195cd85a2b623610c8cd2b269ce83b40970623842f7d41c82"
+          },
+          "PROJECT_CONTROL.md": {
+            "bytes": 88546,
+            "sha256": "75924a8576dfc43dcb43c10abb7ec28234fddf1927e99b6b65b70a45920a7c48"
+          }
+        },
+        "dependencyPatch": {
+          "package": "brace-expansion",
+          "upgrades": [
+            {
+              "from": "1.1.18",
+              "to": "1.1.21"
+            },
+            {
+              "from": "5.0.9",
+              "to": "5.0.12"
+            }
+          ],
+          "status": "SEALED",
+          "workspaceSha256": "1a4f86bd18f075a14d76da77b4d24735aac2659c4f1704736757c3d8f8715615",
+          "lockfileSha256": "4b7ff8fa2f0339f9ee934373c979ad55501dca88590b074c111a4efd4f1c48fd"
+        },
+        "content": "V46_SNAPSHOT_FROZEN_EXACT_ANSWERS_CHECKSUMS_AND_WORKER_CLOCK",
+        "creationGrant": "CONSUMED_NO_NEW_PR",
+        "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+        "priorReceipts": "HISTORICAL_ONLY_NEW_V47_EXACT_SOURCE_RECEIPTS_REQUIRED",
+        "sourceLineage": "ONE_DIRECT_CHILD_OF_BASELINE_ONLY",
+        "watchdogMs": 5000,
+        "retries": 0,
+        "auditGate": "FRESH_ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+        "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+        "uatReadiness": "NOT_VERIFIED",
+        "ready": false,
+        "merge": false,
+        "remoteExecution": false,
+        "production": false,
+        "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
       }
     }
   }

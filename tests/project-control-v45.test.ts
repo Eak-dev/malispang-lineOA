@@ -11,7 +11,7 @@ import {
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   evaluateProjectAction,
   projectControlGitExecutable,
@@ -35,7 +35,7 @@ import {
   type V45PushReceipt,
 } from "../src/project-control-v45.js";
 
-const root = new URL("../", import.meta.url);
+const sourceRoot = new URL("../", import.meta.url);
 const read = (path: string) =>
   JSON.parse(readFileSync(new URL(path, root), "utf8")) as Record<
     string,
@@ -63,6 +63,37 @@ const git = (cwd: string, args: string[], input?: string) =>
     ],
     { cwd, encoding: "utf8", input, stdio: ["pipe", "pipe", "pipe"] },
   ).trim();
+// Keep v45 assertions bound to its immutable committed bytes, not the v46 overlay.
+// The current dispatcher and unchanged v45 inspector remain the code under test.
+const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v45-history-"));
+afterAll(async () => {
+  await rm(historicalRoot, { recursive: true, force: true });
+  expect(existsSync(historicalRoot)).toBe(false);
+});
+try {
+  git(fileURLToPath(sourceRoot), [
+    "clone",
+    "--quiet",
+    "--shared",
+    "--no-hardlinks",
+    "--no-checkout",
+    fileURLToPath(sourceRoot),
+    historicalRoot,
+  ]);
+  git(historicalRoot, [
+    "checkout",
+    "--quiet",
+    "--detach",
+    "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  ]);
+  expect(git(historicalRoot, ["rev-parse", "HEAD^{tree}"])).toBe(
+    "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  );
+} catch (error) {
+  await rm(historicalRoot, { recursive: true, force: true });
+  throw error;
+}
+const root = pathToFileURL(historicalRoot + "/");
 const environmentKeys = [
   "GITHUB_EVENT_NAME",
   "GITHUB_EVENT_PATH",
