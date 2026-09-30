@@ -1585,3 +1585,53 @@ No new PR, Ready, merge, deploy, remote TEST/storage/SQL/LINE/provider, Producti
   "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
 }
 ```
+
+## MP-OD-2026-09-30-V49 — Node concurrency only
+
+Owner approved exactly Node maxWorkers=2 and the necessary control transition, followed by full qualification and ordinary push to existing Draft PR20. Version2026.09.30-v49 supersedes v48; MP06/Issue12 remains CURRENT/OPEN. Local baseline4167e492d3d8ad61037485f3eb0ac9545e86c401 has tree06c4c7ff78a7b6a41c77310860fee4162e06a168 and parent/published PR20 head5317849ec325bf3b18fc27d2efe902e0b3147742. Basea05bab89bc6d5cdf2914581ed658be86dd00b062 and both branches are unchanged. V48 was committed locally but not pushed: its post-commit full run-qP3i34 failed three 5000ms timeouts. Preserve that failure and all prior evidence; do not inherit the earlier precommit PASS.
+
+The only scheduling exception is the exact maxWorkers:2 insertion in vitest.config.ts, used by local Node tests and unchanged CI. Preserve includes/excludes, every assertion, 5000ms test deadlines, zero retries, Worker config/in-test concurrency, workflows, dependencies, runtime, knowledge and old inspectors. Adapt only historical v48 input sourcing to immutable4167e492 while exercising current imports and preserving/adding operator guards. Seal both exact changed files. Latest manifests must project exactly to v48; previous records remain append-only. The exact allowed paths are V49_ALLOWED_PATHS.
+
+Local diagnostic default/two-worker runs each executed1472 Node tests and15471 observed Git commands. Peak distinct Git workers fell7 to2; three problematic cases improved from4614/3312/3293ms to3087/2743/2651ms. Total elapsed increased212 to248seconds and Git p95 did not improve. This single pair supports a contention contribution, not proof of the historical hosted cause or qualification. A new source needs fresh evidence.
+
+Require exact staged-tree focused checks, audit0 and review before one normal child commit; full26 local gates, frozen install, fresh zero-all-severity audit and review on that actual clean SHA/tree/diff before push. Fresh <=120second PR20 readback must remain OPEN Draft/unmerged at published5317849e and unchanged base. Normal fast-forward push only, no blind retry of uncertain outcomes. No Ready/new PR/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/Issue closure, no grant reset or denied-action replay. This is not live TEST readiness.
+
+```json
+{
+  "version": "2026.09.30-v49",
+  "ownerDecision": "MP-OD-2026-09-30-V49",
+  "supersedes": "2026.09.30-v48",
+  "baseline": "4167e492d3d8ad61037485f3eb0ac9545e86c401",
+  "baselineTree": "06c4c7ff78a7b6a41c77310860fee4162e06a168",
+  "baselineParent": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  "publishedBaseline": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "NODE_TEST_CONCURRENCY_TWO_WORKERS_ONLY",
+  "priorPublication": "V48_NOT_PUBLISHED_PRESERVE_FAILED_POST_COMMIT_QUALIFICATION",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "nodeMaxWorkers": 2,
+  "workerTestConcurrency": "UNCHANGED",
+  "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+  "measurement": "PAIRED_LOCAL_DIAGNOSTIC_NOT_HOSTED_CAUSE_OR_QUALIFICATION",
+  "implementationSeals": {
+    "vitest.config.ts": "a2dc5aff6c074d17644405c1792ba12cf50e3b2dcd7bb5dc5d127e98a88368d3",
+    "tests/project-control-v48.test.ts": "4a8347cdfacc033fefbc7169145763d05a9119840fa5752dd137faf32c2755b0"
+  },
+  "sourceLineage": "ONE_CHILD_OF_LOCAL_V48_NORMAL_FAST_FORWARD_FROM_PUBLISHED_V47_1",
+  "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
+}
+```

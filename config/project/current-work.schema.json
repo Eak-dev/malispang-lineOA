@@ -71,7 +71,8 @@
     "wp8fV31Pr15Remediation",
     "wp8fV32GreptilePushDraft",
     "devOperationsV33",
-    "knowledgePublicationV47"
+    "knowledgePublicationV47",
+    "ciHarnessRepairV49"
   ],
   "properties": {
     "ciHarnessRepairV48": {
@@ -930,7 +931,7 @@
       "const": "MP-ROADMAP"
     },
     "roadmapVersion": {
-      "const": "2026.09.30-v48"
+      "const": "2026.09.30-v49"
     },
     "workId": {
       "type": "string",
@@ -4130,6 +4131,45 @@
         "remoteExecution": false,
         "production": false,
         "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+      }
+    },
+    "ciHarnessRepairV49": {
+      "const": {
+        "version": "2026.09.30-v49",
+        "ownerDecision": "MP-OD-2026-09-30-V49",
+        "supersedes": "2026.09.30-v48",
+        "baseline": "4167e492d3d8ad61037485f3eb0ac9545e86c401",
+        "baselineTree": "06c4c7ff78a7b6a41c77310860fee4162e06a168",
+        "baselineParent": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+        "publishedBaseline": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+        "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+        "repository": "Eak-dev/malispang-lineOA",
+        "headBranch": "codex/mp06-harness-v43",
+        "baseBranch": "codex/mp-06-guardrailed-ai",
+        "pullRequest": 20,
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "stage": "NODE_TEST_CONCURRENCY_TWO_WORKERS_ONLY",
+        "priorPublication": "V48_NOT_PUBLISHED_PRESERVE_FAILED_POST_COMMIT_QUALIFICATION",
+        "watchdogMs": 5000,
+        "retries": 0,
+        "nodeMaxWorkers": 2,
+        "workerTestConcurrency": "UNCHANGED",
+        "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+        "measurement": "PAIRED_LOCAL_DIAGNOSTIC_NOT_HOSTED_CAUSE_OR_QUALIFICATION",
+        "implementationSeals": {
+          "vitest.config.ts": "a2dc5aff6c074d17644405c1792ba12cf50e3b2dcd7bb5dc5d127e98a88368d3",
+          "tests/project-control-v48.test.ts": "4a8347cdfacc033fefbc7169145763d05a9119840fa5752dd137faf32c2755b0"
+        },
+        "sourceLineage": "ONE_CHILD_OF_LOCAL_V48_NORMAL_FAST_FORWARD_FROM_PUBLISHED_V47_1",
+        "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+        "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+        "uatReadiness": "NOT_VERIFIED",
+        "ready": false,
+        "merge": false,
+        "remoteExecution": false,
+        "production": false,
+        "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
       }
     }
   }

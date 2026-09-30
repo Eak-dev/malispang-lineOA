@@ -1,5 +1,15 @@
 # MalisPang Project Control
 
+## Effective Node scheduling amendment — v49
+
+Owner approved exactly Node maxWorkers=2 and the necessary control transition, followed by full qualification and ordinary push to existing Draft PR20. Version2026.09.30-v49 supersedes v48; MP06/Issue12 remains CURRENT/OPEN. Local baseline4167e492d3d8ad61037485f3eb0ac9545e86c401 has tree06c4c7ff78a7b6a41c77310860fee4162e06a168 and parent/published PR20 head5317849ec325bf3b18fc27d2efe902e0b3147742. Basea05bab89bc6d5cdf2914581ed658be86dd00b062 and both branches are unchanged. V48 was committed locally but not pushed: its post-commit full run-qP3i34 failed three 5000ms timeouts. Preserve that failure and all prior evidence; do not inherit the earlier precommit PASS.
+
+The only scheduling exception is the exact maxWorkers:2 insertion in vitest.config.ts, used by local Node tests and unchanged CI. Preserve includes/excludes, every assertion, 5000ms test deadlines, zero retries, Worker config/in-test concurrency, workflows, dependencies, runtime, knowledge and old inspectors. Adapt only historical v48 input sourcing to immutable4167e492 while exercising current imports and preserving/adding operator guards. Seal both exact changed files. Latest manifests must project exactly to v48; previous records remain append-only. The exact allowed paths are V49_ALLOWED_PATHS.
+
+Local diagnostic default/two-worker runs each executed1472 Node tests and15471 observed Git commands. Peak distinct Git workers fell7 to2; three problematic cases improved from4614/3312/3293ms to3087/2743/2651ms. Total elapsed increased212 to248seconds and Git p95 did not improve. This single pair supports a contention contribution, not proof of the historical hosted cause or qualification. A new source needs fresh evidence.
+
+Require exact staged-tree focused checks, audit0 and review before one normal child commit; full26 local gates, frozen install, fresh zero-all-severity audit and review on that actual clean SHA/tree/diff before push. Fresh <=120second PR20 readback must remain OPEN Draft/unmerged at published5317849e and unchanged base. Normal fast-forward push only, no blind retry of uncertain outcomes. No Ready/new PR/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/Issue closure, no grant reset or denied-action replay. This is not live TEST readiness.
+
 ## Effective CI repair — v48 / existing Draft PR20 only
 
 Owner explicitly approved scoped test-harness and CI repair and ordinary follow-up push to existing Draft PR20, without merge/deploy. MP06 / Issue12 remains CURRENT/OPEN. Baseline5317849ec325bf3b18fc27d2efe902e0b3147742 and basea05bab89bc6d5cdf2914581ed658be86dd00b062 are verified; PR20 OPEN Draft, unmerged. This transition supersedes consumed v47.1 publication, not its immutable history.

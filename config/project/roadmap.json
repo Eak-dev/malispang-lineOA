@@ -4,12 +4,12 @@
   "roadmapId": "MP-ROADMAP",
   "githubIssue": 9,
   "repository": "Eak-dev/malispang-lineOA",
-  "version": "2026.09.30-v48",
+  "version": "2026.09.30-v49",
   "status": "ACTIVE",
   "ownerDecision": {
-    "decisionId": "MP-OD-2026-09-30-V48",
+    "decisionId": "MP-OD-2026-09-30-V49",
     "decidedAt": "2026-09-30",
-    "supersedes": "2026.09.30-v47.1"
+    "supersedes": "2026.09.30-v48"
   },
   "sourceOfTruthPrecedence": [
     "OWNER_DECISION_REPOSITORY_RECORD",

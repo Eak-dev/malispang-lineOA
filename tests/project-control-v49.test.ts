@@ -9,15 +9,15 @@ import {
   runPullRequestControlValidation,
 } from "../src/project-control-cli.js";
 import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  CI_HARNESS_REPAIR_V48 as c,
-  V48_ALLOWED_PATHS,
-  evaluateV48Action,
-  inspectV48Repository,
-  projectV48ToV47,
-  validateV48PullRequestReceipt,
-} from "../src/project-control-v48.js";
+  CI_HARNESS_REPAIR_V49 as c,
+  V49_ALLOWED_PATHS,
+  evaluateV49Action,
+  inspectV49Repository,
+  projectV49ToV48,
+  validateV49PullRequestReceipt,
+} from "../src/project-control-v49.js";
 import {
   projectControlGitExecutable,
   validateProjectControl,
@@ -26,7 +26,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     projectControlGitExecutable(),
@@ -54,50 +54,18 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
-// Committed historical source inputs are immutable; exercise current imported validators.
-const root = await mkdtemp(join(tmpdir(), "mp06-v48-history-"));
-afterAll(async () => {
-  await rm(root, { recursive: true, force: true });
-  expect(existsSync(root)).toBe(false);
-});
-try {
-  git(
-    operatorRoot,
-    "clone",
-    "--quiet",
-    "--shared",
-    "--no-hardlinks",
-    "--no-checkout",
-    operatorRoot,
-    root,
-  );
-  git(
-    root,
-    "checkout",
-    "--quiet",
-    "--detach",
-    "4167e492d3d8ad61037485f3eb0ac9545e86c401",
-  );
-  expect(git(root, "rev-parse", "HEAD^{tree}")).toBe(
-    "06c4c7ff78a7b6a41c77310860fee4162e06a168",
-  );
-} catch (error) {
-  await rm(root, { recursive: true, force: true });
-  throw error;
-}
 const read = (path: string) =>
   JSON.parse(readFileSync(join(root, path), "utf8")) as Record<string, unknown>;
-const state = (cwd = root) => ({
-  head: git(cwd, "rev-parse", "HEAD"),
+const state = () => ({
+  head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(
-    join(git(cwd, "rev-parse", "--absolute-git-dir"), "index"),
+    join(git(root, "rev-parse", "--absolute-git-dir"), "index"),
   ),
-  status: git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+  status: git(root, "status", "--porcelain=v1", "--untracked-files=all"),
 });
 async function fixture(run: (cwd: string) => Promise<void> | void) {
-  const operatorBefore = state(operatorRoot),
-    before = state(),
-    cwd = await mkdtemp(join(tmpdir(), "mp06-v48-"));
+  const before = state(),
+    cwd = await mkdtemp(join(tmpdir(), "mp06-v49-"));
   try {
     git(
       root,
@@ -117,7 +85,7 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
       "origin",
       "https://github.com/" + c.repository + ".git",
     );
-    for (const p of V48_ALLOWED_PATHS) {
+    for (const p of V49_ALLOWED_PATHS) {
       await mkdir(dirname(join(cwd, p)), { recursive: true });
       await copyFile(join(root, p), join(cwd, p));
     }
@@ -126,13 +94,18 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state()).toEqual(before);
-    expect(state(operatorRoot)).toEqual(operatorBefore);
   }
 }
-describe("v48 scoped CI harness repair", () => {
+describe("v49 scoped CI harness repair", () => {
+  it("changes only maxWorkers to two without changing timeout, retry or Worker config", () => {
+    const original = git(root, "show", c.baseline + ":vitest.config.ts") + "\n";
+    expect(readFileSync(join(root, "vitest.config.ts"), "utf8")).toBe(
+      original.replace("  test: {\n", "  test: {\n    maxWorkers: 2,\n"),
+    );
+  });
   it("requires same-source qualification and fresh exact PR20 evidence for publication", () => {
     const pre = {
-      kind: "V48_EXACT_SOURCE_QUALIFICATION",
+      kind: "V49_EXACT_SOURCE_QUALIFICATION",
       controlVersion: c.version,
       baseline: c.baseline,
       implementationSeals: c.implementationSeals,
@@ -153,7 +126,7 @@ describe("v48 scoped CI harness repair", () => {
       stage: "PRE_COMMIT",
       validation: "FOCUSED_PASS",
     };
-    expect(evaluateV48Action("COMMIT", pre).allowed).toBe(true);
+    expect(evaluateV49Action("COMMIT", pre).allowed).toBe(true);
     const post = {
       ...pre,
       head: "c".repeat(40),
@@ -166,7 +139,7 @@ describe("v48 scoped CI harness repair", () => {
         headBranch: c.headBranch,
         baseBranch: c.baseBranch,
         base: c.baseHead,
-        head: c.baseline,
+        head: c.publishedBaseline,
         fastForward: true,
         state: "open",
         draft: true,
@@ -174,22 +147,28 @@ describe("v48 scoped CI harness repair", () => {
         observedAt: new Date().toISOString(),
       },
     };
-    expect(evaluateV48Action("PUSH_BRANCH", post).allowed).toBe(true);
+    expect(evaluateV49Action("PUSH_BRANCH", post).allowed).toBe(true);
+    expect(
+      evaluateV49Action("PUSH_BRANCH", {
+        ...post,
+        pr: { ...post.pr, head: c.baseline },
+      }).allowed,
+    ).toBe(false);
     for (const key of Object.keys(pre))
       expect(
-        evaluateV48Action("COMMIT", { ...pre, [key]: null }).allowed,
+        evaluateV49Action("COMMIT", { ...pre, [key]: null }).allowed,
         key,
       ).toBe(false);
     for (const key of Object.keys(post.pr))
       expect(
-        evaluateV48Action("PUSH_BRANCH", {
+        evaluateV49Action("PUSH_BRANCH", {
           ...post,
           pr: { ...post.pr, [key]: null },
         }).allowed,
         key,
       ).toBe(false);
     expect(
-      evaluateV48Action("PUSH_BRANCH", {
+      evaluateV49Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -198,7 +177,7 @@ describe("v48 scoped CI harness repair", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV48Action("PUSH_BRANCH", {
+      evaluateV49Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -207,7 +186,7 @@ describe("v48 scoped CI harness repair", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV48Action(
+      evaluateV49Action(
         "COMMIT",
         Object.defineProperty({}, "kind", {
           get() {
@@ -221,11 +200,11 @@ describe("v48 scoped CI harness repair", () => {
     await fixture((cwd) => {
       git(cwd, "add", "--all");
       expect(
-        inspectV48Repository(cwd, projectControlGitExecutable()).mode,
+        inspectV49Repository(cwd, projectControlGitExecutable()).mode,
       ).toBe("LOCAL_REPAIR");
-      git(cwd, "commit", "--quiet", "-m", "Synthetic v48 source");
+      git(cwd, "commit", "--quiet", "-m", "Synthetic v49 source");
       expect(
-        inspectV48Repository(cwd, projectControlGitExecutable()),
+        inspectV49Repository(cwd, projectControlGitExecutable()),
       ).toMatchObject({
         mode: "SOURCE_COMMIT",
         clean: true,
@@ -238,7 +217,7 @@ describe("v48 scoped CI harness repair", () => {
     async (entry) => {
       await fixture(async (cwd) => {
         git(cwd, "add", "--all");
-        git(cwd, "commit", "--quiet", "-m", "Synthetic v48 PR source");
+        git(cwd, "commit", "--quiet", "-m", "Synthetic v49 PR source");
         const source = git(cwd, "rev-parse", "HEAD"),
           tree = git(cwd, "rev-parse", "HEAD^{tree}");
         const merge = execFileSync(
@@ -255,7 +234,7 @@ describe("v48 scoped CI harness repair", () => {
             "-p",
             source,
             "-m",
-            "Synthetic v48 merge",
+            "Synthetic v49 merge",
           ],
           { cwd, encoding: "utf8" },
         ).trim();
@@ -280,7 +259,7 @@ describe("v48 scoped CI harness repair", () => {
             },
           },
         };
-        const directory = await mkdtemp(join(tmpdir(), "mp06-v48-event-"));
+        const directory = await mkdtemp(join(tmpdir(), "mp06-v49-event-"));
         try {
           const path = join(directory, "event.json");
           await writeFile(path, JSON.stringify(event));
@@ -304,7 +283,7 @@ describe("v48 scoped CI harness repair", () => {
       });
     },
   );
-  it("projects exactly to published v47.1 and retains every old grant as history", () => {
+  it("projects exactly to local v48 and retains every old grant as history", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
       s = read("config/project/current-work.schema.json");
@@ -327,7 +306,7 @@ describe("v48 scoped CI harness repair", () => {
       remoteExecutionAuthorized: false,
       productionAuthorized: false,
     });
-    projectV48ToV47(r, w, s);
+    projectV49ToV48(r, w, s);
     for (const [i, p] of [
       "config/project/roadmap.json",
       "config/project/current-work.json",
@@ -347,9 +326,9 @@ describe("v48 scoped CI harness repair", () => {
     "ACTIVATE_SUCCESSOR_V22",
     "CLOSE_ISSUE",
   ])("denies missing or historical receipt for %s", (action) => {
-    expect(evaluateV48Action(action).allowed).toBe(false);
+    expect(evaluateV49Action(action).allowed).toBe(false);
     expect(
-      evaluateV48Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
+      evaluateV49Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
     ).toBe(false);
   });
   it.each([
@@ -360,14 +339,32 @@ describe("v48 scoped CI harness repair", () => {
     "historical-control",
     "raw-index-flags",
     "staged-runtime",
+    "node-workers",
+    "node-timeout",
+    "node-retry",
   ])("rejects %s drift and preserves operator checkout", async (kind) => {
     await fixture(async (cwd) => {
       expect(
-        inspectV48Repository(cwd, projectControlGitExecutable()).mode,
+        inspectV49Repository(cwd, projectControlGitExecutable()).mode,
       ).toBe("LOCAL_REPAIR");
       if (kind === "raw-index-flags")
         git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
-      else {
+      else if (kind.startsWith("node-")) {
+        const p = join(cwd, "vitest.config.ts");
+        const original = readFileSync(p, "utf8");
+        await writeFile(
+          p,
+          kind === "node-workers"
+            ? original.replace("maxWorkers: 2", "maxWorkers: 3")
+            : original.replace(
+                "maxWorkers: 2,",
+                "maxWorkers: 2,\n" +
+                  (kind === "node-timeout"
+                    ? "testTimeout: 10000,"
+                    : "retry: 1,"),
+              ),
+        );
+      } else {
         const p =
           kind === "runtime" || kind === "staged-runtime"
             ? "src/faq.ts"
@@ -393,13 +390,13 @@ describe("v48 scoped CI harness repair", () => {
         }
       }
       expect(() =>
-        inspectV48Repository(cwd, projectControlGitExecutable()),
+        inspectV49Repository(cwd, projectControlGitExecutable()),
       ).toThrow();
     });
   });
   it("rejects absent or malformed PR identity", () => {
     expect(
-      validateV48PullRequestReceipt(
+      validateV49PullRequestReceipt(
         {},
         {
           sha: undefined,
