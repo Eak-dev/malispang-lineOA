@@ -1532,3 +1532,56 @@ The new receipt binds actual workspace/lock hashes at the outer v47.1 envelope. 
   "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-30-V48 — scoped historical-test environment and Git latency repair
+
+Owner explicitly approved scoped test-harness and CI repair and ordinary follow-up push to existing Draft PR20, without merge/deploy. MP06 / Issue12 remains CURRENT/OPEN. Baseline5317849ec325bf3b18fc27d2efe902e0b3147742 and basea05bab89bc6d5cdf2914581ed658be86dd00b062 are verified; PR20 OPEN Draft, unmerged. This transition supersedes consumed v47.1 publication, not its immutable history.
+
+Repair only historical-test environment isolation and measured Git fixture overhead in the exact V48_ALLOWED_PATHS. Pin historical v47 tests to baseline Git bytes while exercising current dispatchers. Preserve all assertions, real PR synthetic identity checks, raw-index/operator/isolation/awaited-cleanup proofs, 5000ms watchdogs and zero retries. Workflows/parallelism, dependencies, runtime, knowledge answers/lifecycle, old inspector modules and snapshots remain frozen. PENDING repair seals permit local measurement only, never publication.
+
+New exact-stage focused tests/audit0/review precede commit; all26 local gates and fresh audit0/review bind each actual source SHA/tree/diff before an ordinary fast-forward push to PR20. Fresh <=120second PR identity must verify the expected published head and unchanged base; no blind retry of ambiguous push. Read-only snapshots must preserve raw index. Failed CI36672983371 and all earlier failure evidence remain historical FAIL, never replaced by later PASS. New source invalidates prior qualification.
+
+No new PR, Ready, merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2, Issue closure, grants reset or tool-denial replay. Historical storage hold, pendingTemplate cause, accounting/UAT gaps unchanged. Local/CI repair is not live TEST readiness.
+
+```json
+{
+  "version": "2026.09.30-v48",
+  "ownerDecision": "MP-OD-2026-09-30-V48",
+  "supersedes": "2026.09.30-v47.1",
+  "baseline": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  "baselineTree": "acc2c304da576d05b225761209de1a6ca41915d9",
+  "baselineParent": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "HISTORICAL_TEST_ENVIRONMENT_AND_GIT_LATENCY_REPAIR_ONLY",
+  "failedRun": 36672983371,
+  "priorPublication": "CONSUMED_PRESERVE_V47_1_AND_ALL_FAILURE_EVIDENCE",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+  "measurement": "MEASURE_BEFORE_AFTER_NO_HOSTED_CAUSE_CLAIM_WITHOUT_EVIDENCE",
+  "implementationSeals": {
+    "tests/project-control-v45.test.ts": "d8d7951898ce50caf1f0e15cb64db1405108379089f16bc793d6f996aae7faf8",
+    "tests/project-control-v47.test.ts": "28b16f74a2cc7a11909035e38319bee2a7d30aeb49153cac89e453489828b06c",
+    "tests/project-control-v40.test.ts": "59f0acc4c0a005073855127798420c0dd6e2984202cbc6bcd0ab28957a9a5b33",
+    "tests/project-control-v43.test.ts": "18a90b5eb82723ad5e06eb6b8c2696dee95f290e357c1e25c145391fe144faa8",
+    "tests/project-control.test.ts": "84fc4c87c5da97a5115db607970d3c9a3ca2a56f8094ceea326e49f760889b68",
+    "tests/helpers/historical-environment.ts": "90f05ea8ac4a1646aef3ced5f9149c8ca0ef4bda34a549a5602c1a0fc0ebf02f",
+    "tests/historical-environment.test.ts": "c5fa300207d546d73e229fdc7e3539ef8e4a21371693ca03d9efaeee7e7c8452"
+  },
+  "sourceLineage": "ONE_REPAIR_CHILD_NEW_SOURCE_REQUIRES_SUCCESSOR_CONTROL_WITHIN_APPROVED_SCOPE",
+  "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
+}
+```

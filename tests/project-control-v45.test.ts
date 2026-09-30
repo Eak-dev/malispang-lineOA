@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
 import { existsSync, readFileSync } from "node:fs";
 import {
   copyFile,
@@ -228,6 +229,42 @@ function eventFor(
 }
 
 describe("v45 measured repair updates only existing Draft PR20", () => {
+  it("rejects inherited PR identity on historical HEAD, then isolates only the local fixture and restores PR fields", async () => {
+    const previous = environmentKeys.map(
+      (key) => [key, process.env[key]] as const,
+    );
+    const directory = await mkdtemp(
+      join(tmpdir(), "mp06-v45-inherited-event-"),
+    );
+    try {
+      const { event, observed } = eventFor();
+      const eventPath = join(directory, "event.json");
+      await writeFile(eventPath, JSON.stringify(event));
+      process.env.GITHUB_EVENT_NAME = "pull_request";
+      process.env.GITHUB_EVENT_PATH = eventPath;
+      process.env.GITHUB_REPOSITORY = c.repository;
+      process.env.GITHUB_SHA = observed.sha;
+      process.env.GITHUB_REF = observed.ref;
+      const inherited = environmentKeys.map((key) => process.env[key]);
+      await expect(runProjectControlValidation(root)).rejects.toThrow(
+        "V45_PR_MERGE_IDENTITY_MISMATCH",
+      );
+      await expect(
+        withHistoricalEnvironment(() => runProjectControlValidation(root)),
+      ).resolves.toBeUndefined();
+      expect(environmentKeys.map((key) => process.env[key])).toEqual(inherited);
+      await expect(runProjectControlValidation(root)).rejects.toThrow(
+        "V45_PR_MERGE_IDENTITY_MISMATCH",
+      );
+    } finally {
+      for (const [key, value] of previous) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+      await rm(directory, { recursive: true, force: true });
+      expect(existsSync(directory)).toBe(false);
+    }
+  });
   it("projects exactly to immutable published v43 and validates current authority", async () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
@@ -246,7 +283,9 @@ describe("v45 measured repair updates only existing Draft PR20", () => {
       conditionalActions: ["COMMIT", "PUSH_BRANCH"],
       mergeAuthorized: false,
     });
-    await expect(runProjectControlValidation(root)).resolves.toBeUndefined();
+    await expect(
+      withHistoricalEnvironment(() => runProjectControlValidation(root)),
+    ).resolves.toBeUndefined();
     projectV45ToV43(r, w, s);
     for (const [path, value] of [
       ["config/project/roadmap.json", r],

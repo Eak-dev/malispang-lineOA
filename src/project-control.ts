@@ -1,4 +1,10 @@
 import { createHash } from "node:crypto";
+import {
+  CI_HARNESS_REPAIR_V48,
+  projectV48ToV47,
+  v48AuthoritySummary,
+  evaluateV48Action,
+} from "./project-control-v48.js";
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -1078,6 +1084,12 @@ function validateProjectControlInherited(
 
 /** Local control view only. Never converts inherited booleans into tool grants. */
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === CI_HARNESS_REPAIR_V48.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v48AuthoritySummary();
   if (validateProjectControl(roadmap, work).errors.length > 0)
     return {
       status: "ROADMAP_UNVERIFIED",
@@ -1126,6 +1138,10 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (isRecord(roadmap) && roadmap.version === CI_HARNESS_REPAIR_V48.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV48Action(action, executionEvidence);
   const validation = validateProjectControl(roadmap, currentWork);
   if (validation.errors.length > 0) {
     return { allowed: false, reason: "ROADMAP_UNVERIFIED" };
@@ -8623,6 +8639,26 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (isRecord(roadmap) && roadmap.version === CI_HARNESS_REPAIR_V48.version) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = CI_HARNESS_REPAIR_V48;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.ciHarnessRepairV48) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-09-30",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV48ToV47(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V48_EXACT_REPAIR_CONTROL_INVALID");
+    return result;
+  }
   if (
     isRecord(roadmap) &&
     roadmap.version === KNOWLEDGE_PUBLICATION_V47.version
@@ -9084,6 +9120,26 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === CI_HARNESS_REPAIR_V48.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "ciHarnessRepairV48").length !== 1 ||
+      JSON.stringify(schema.properties.ciHarnessRepairV48) !==
+        JSON.stringify({ const: CI_HARNESS_REPAIR_V48 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V48_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV48ToV47({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      CI_HARNESS_REPAIR_V48.supersedes,
+    );
+  }
   if (version === KNOWLEDGE_PUBLICATION_V47.version) {
     if (
       !isRecord(schema) ||
@@ -9470,6 +9526,29 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === CI_HARNESS_REPAIR_V48.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + CI_HARNESS_REPAIR_V48.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(CI_HARNESS_REPAIR_V48) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          CI_HARNESS_REPAIR_V48.supersedes,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === KNOWLEDGE_PUBLICATION_V47.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(

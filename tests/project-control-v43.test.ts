@@ -107,6 +107,14 @@ const environmentKeys = [
   "GITHUB_REF",
 ] as const;
 async function withFixture(run: (cwd: string) => Promise<void> | void) {
+  const started = performance.now();
+  const timing = (phase: string) =>
+    console.info(
+      JSON.stringify({
+        phase: "v48_v43_fixture." + phase,
+        milliseconds: performance.now() - started,
+      }),
+    );
   const cwd = await mkdtemp(join(tmpdir(), "mp06-v43-fixture-"));
   const previous = environmentKeys.map(
     (key) => [key, process.env[key]] as const,
@@ -122,12 +130,15 @@ async function withFixture(run: (cwd: string) => Promise<void> | void) {
       cwd,
     ]);
     git(cwd, ["checkout", "--quiet", "--detach", c.baseline]);
+    timing("clone_and_checkout_complete");
     for (const path of V43_ALLOWED_PATHS) {
       if (!existsSync(new URL(path, root))) continue;
       await mkdir(dirname(join(cwd, path)), { recursive: true });
       await copyFile(new URL(path, root), join(cwd, path));
     }
+    timing("overlay_complete");
     await run(cwd);
+    timing("assertions_complete");
   } finally {
     for (const [key, value] of previous) {
       if (value === undefined) delete process.env[key];
@@ -135,6 +146,7 @@ async function withFixture(run: (cwd: string) => Promise<void> | void) {
     }
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
+    timing("cleanup_complete");
   }
 }
 const commit = (cwd: string) => {

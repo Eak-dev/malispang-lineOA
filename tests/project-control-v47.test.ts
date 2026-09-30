@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   evaluateProjectAction,
   projectControlGitExecutable,
@@ -36,7 +36,7 @@ import {
   type V47PushReceipt,
 } from "../src/project-control-v47.js";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
 const executable = projectControlGitExecutable();
 const git = (cwd: string, args: string[], input?: string) =>
   execFileSync(
@@ -60,6 +60,36 @@ const git = (cwd: string, args: string[], input?: string) =>
     ],
     { cwd, encoding: "utf8", input, stdio: ["pipe", "pipe", "pipe"] },
   ).trim();
+// v47.1 is now immutable history. Retain every assertion and use the current
+// imported inspectors, but do not copy v48 control inputs into a v47 fixture.
+const root = await mkdtemp(join(tmpdir(), "mp06-v47-history-"));
+afterAll(async () => {
+  await rm(root, { recursive: true, force: true });
+  expect(existsSync(root)).toBe(false);
+});
+try {
+  git(operatorRoot, [
+    "clone",
+    "--quiet",
+    "--shared",
+    "--no-hardlinks",
+    "--no-checkout",
+    operatorRoot,
+    root,
+  ]);
+  git(root, [
+    "checkout",
+    "--quiet",
+    "--detach",
+    "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  ]);
+  expect(git(root, ["rev-parse", "HEAD^{tree}"])).toBe(
+    "acc2c304da576d05b225761209de1a6ca41915d9",
+  );
+} catch (error) {
+  await rm(root, { recursive: true, force: true });
+  throw error;
+}
 const read = (cwd: string, path: string) =>
   JSON.parse(readFileSync(join(cwd, path), "utf8")) as Record<string, unknown>;
 const indexPath = (cwd: string) =>
@@ -77,7 +107,8 @@ const state = (cwd: string) => ({
   lock: existsSync(indexPath(cwd) + ".lock"),
 });
 async function withFixture(run: (cwd: string) => Promise<void> | void) {
-  const operator = state(root),
+  const actualOperator = state(operatorRoot),
+    operator = state(root),
     cwd = await mkdtemp(join(tmpdir(), "mp06-v47-"));
   try {
     git(root, [
@@ -105,6 +136,7 @@ async function withFixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state(root)).toEqual(operator);
+    expect(state(operatorRoot)).toEqual(actualOperator);
   }
 }
 const commit = (cwd: string) => {

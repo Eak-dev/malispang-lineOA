@@ -1297,11 +1297,22 @@ describe("committed v33 local-only checkout", () => {
     v25AssertUnchanged(before, fixture);
   });
   it("runs the real CLI on a clean checkout without requiring a dirty path", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      console.info(
+        JSON.stringify({
+          phase: "v48_v33_cli." + phase,
+          milliseconds: performance.now() - started,
+        }),
+      );
     const before = v25OperatorSnapshot(fixture);
+    timing("initial_snapshot_complete");
     await expect(
       runProjectControlValidation(pathToFileURL(fixture + "/")),
     ).resolves.toBeUndefined();
+    timing("cli_complete");
     v25AssertUnchanged(before, fixture);
+    timing("final_snapshot_complete");
   });
   it("permits dirty local tooling but preserves raw index and reports not clean", async () => {
     await v25WithChild(fixture, async (cwd) => {
@@ -8546,7 +8557,18 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
   ] as const)(
     "snapshot regression: a genuine %s mutation is still rejected",
     async (component) => {
+      const started = performance.now();
+      const timing = (phase: string) => {
+        if (component === "untracked")
+          console.info(
+            JSON.stringify({
+              phase: "v48_untracked." + phase,
+              milliseconds: performance.now() - started,
+            }),
+          );
+      };
       await v25WithChild(historical, async (cwd) => {
+        timing("fixture_ready");
         const index = resolve(
           cwd,
           v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
@@ -8554,6 +8576,7 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
         const indexBefore = await readFile(index);
         const headBefore = v25Git(cwd, "rev-parse", "HEAD");
         const before = v25OperatorSnapshot(cwd);
+        timing("snapshot_complete");
         expect(await readFile(index)).toEqual(indexBefore);
         if (component === "raw-index") {
           v25Git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
@@ -8598,12 +8621,15 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
           expect(await readFile(index)).toEqual(indexBefore);
         }
         const mutatedIndex = await readFile(index);
+        timing("mutation_complete");
         expect(() => v25AssertUnchanged(before, cwd)).toThrow(
           "ACTIVE_REPOSITORY_MUTATED",
         );
         expect(await readFile(index)).toEqual(mutatedIndex);
         expect(existsSync(index + ".lock")).toBe(false);
+        timing("assertions_complete");
       });
+      timing("cleanup_and_operator_guard_complete");
     },
   );
   it.each(["success", "failure"] as const)(

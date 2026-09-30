@@ -790,3 +790,13 @@ V47 publication checkpoint: fresh audit on30September reported brace-expansion1.
 ## 2026.09.30-v47.1 — approved brace-expansion patch exception
 
 MP-OD-2026-09-30-V47A records Owner approval of the two exact transitive patches1.1.18→1.1.21 and5.0.9→5.0.12 plus minimal lock/control changes and requalification for existing Draft PR20. Supersedes unpublished v47 while immutable projectionVersion staysv46; preserve prior Owner/failure evidence by document byte-length/hash seals. Only two dependency paths are added, all other versions/runtime/knowledge/workflows remain frozen. Actual new dependency hashes must be sealed and authenticated outside the historical nested V43 receipt. Fresh audit0, staged/final-source checks/review/install and all26 local gates precede normal push. No merge/deploy/TEST execution/Production/U2/Issue closure or historical-denial replay is authorized.
+
+## 2026.09.30-v48 — Owner-approved CI harness repair
+
+Owner explicitly approved scoped test-harness and CI repair and ordinary follow-up push to existing Draft PR20, without merge/deploy. MP06 / Issue12 remains CURRENT/OPEN. Baseline5317849ec325bf3b18fc27d2efe902e0b3147742 and basea05bab89bc6d5cdf2914581ed658be86dd00b062 are verified; PR20 OPEN Draft, unmerged. This transition supersedes consumed v47.1 publication, not its immutable history.
+
+Repair only historical-test environment isolation and measured Git fixture overhead in the exact V48_ALLOWED_PATHS. Pin historical v47 tests to baseline Git bytes while exercising current dispatchers. Preserve all assertions, real PR synthetic identity checks, raw-index/operator/isolation/awaited-cleanup proofs, 5000ms watchdogs and zero retries. Workflows/parallelism, dependencies, runtime, knowledge answers/lifecycle, old inspector modules and snapshots remain frozen. PENDING repair seals permit local measurement only, never publication.
+
+New exact-stage focused tests/audit0/review precede commit; all26 local gates and fresh audit0/review bind each actual source SHA/tree/diff before an ordinary fast-forward push to PR20. Fresh <=120second PR identity must verify the expected published head and unchanged base; no blind retry of ambiguous push. Read-only snapshots must preserve raw index. Failed CI36672983371 and all earlier failure evidence remain historical FAIL, never replaced by later PASS. New source invalidates prior qualification.
+
+No new PR, Ready, merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2, Issue closure, grants reset or tool-denial replay. Historical storage hold, pendingTemplate cause, accounting/UAT gaps unchanged. Local/CI repair is not live TEST readiness.
