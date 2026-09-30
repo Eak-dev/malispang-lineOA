@@ -1635,3 +1635,58 @@ Require exact staged-tree focused checks, audit0 and review before one normal ch
   "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
 }
 ```
+
+## MP-OD-2026-09-30-V50 — Node test deadline 7000ms only
+
+Owner explicitly approved changing the Node test deadline from five to seven seconds after asking whether it was system imposed. Vitest supplies a 5000ms Node testTimeout default (https://vitest.dev/config/testtimeout); vitest.config.ts at published v49 b1ca3a90c7a550f48c91d971b35dd9f148ce91e9 did not override it. Historical controls subsequently froze that inherited value. It is not an immutable platform limit, LINE bot response SLA, or permission grant. Version2026.09.30-v50 / MP-OD-2026-09-30-V50 supersedes v49 for exactly this Owner-approved parameter amendment. MP06/Issue12 remains CURRENT/OPEN in WP8F_TEST_ACCEPTANCE_COMPLETION.
+
+Baseline is published v49 b1ca3a90c7a550f48c91d971b35dd9f148ce91e9, tree f09f86c981adda6db7660010c54c8254a6392d24, parent4167e492d3d8ad61037485f3eb0ac9545e86c401. PR20 stays OPEN Draft on codex/mp06-harness-v43 against codex/mp-06-guardrailed-ai/basea05bab89bc6d5cdf2914581ed658be86dd00b062. Only insert testTimeout:7000 in the Node Vitest config, preserve maxWorkers:2, includes/excludes, zero retries, assertions and all business acceptance thresholds. Worker config, Worker deadlines, runtime/provider/LINE deadlines, workflow, dependencies, knowledge and old control inspectors are unchanged. No further timeout increase is authorized.
+
+Preserve hosted v49 CI run36682758857:1492/1497 Node tests passed; four timed out at5000ms and one failed a PR environment identity assertion. One timed-out case took12689ms. A /usr/bin/git version launch alone took5865.83ms while the direct installed Git path took23.05ms. The cause of hosted launch latency and the exact environment interleaving remain UNKNOWN; a seven-second ceiling is an Owner parameter decision, not proof of root-cause repair. The current change might not fix every failure. Never relabel prior failures or skipped downstream stages as PASS.
+
+Adapt historical v49 test input sourcing only to immutable baseline b1ca3a90 while retaining its assertions/current imported validators and awaited fixture cleanup plus operator guards. Seal that adapter and the exact config. New manifests must project exactly to v49; previous decisions and evidence remain append-only. V50_ALLOWED_PATHS is the complete scope. No unrelated harness behavior changes.
+
+Require fresh exact staged-source focused gates, frozen install, zero-all-severity audit and separate evidence-bound primary-agent review before one normal child commit. Require fresh full26 local gates, frozen install, audit0 and review on the actual clean SHA/tree/diff before the previously authorized ordinary push to existing Draft PR20. Fresh <=120second PR readback must match published v49 and unchanged base; read back after push and do not blindly retry uncertain publication. Hosted CI must be observed separately; local PASS is not hosted PASS or UAT readiness. No new PR/Ready/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/Issue closure, no grant reset and no replay or transport bypass of a denied action. Storage hold and live UAT gaps remain unchanged.
+
+```json
+{
+  "version": "2026.09.30-v50",
+  "ownerDecision": "MP-OD-2026-09-30-V50",
+  "supersedes": "2026.09.30-v49",
+  "baseline": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "baselineTree": "f09f86c981adda6db7660010c54c8254a6392d24",
+  "baselineParent": "4167e492d3d8ad61037485f3eb0ac9545e86c401",
+  "publishedBaseline": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "NODE_TEST_TIMEOUT_7000MS_OWNER_AMENDMENT_ONLY",
+  "priorPublication": "V49_PUBLISHED_PRESERVE_HOSTED_CI_FAILURE_36682758857",
+  "watchdogMs": 7000,
+  "retries": 0,
+  "nodeMaxWorkers": 2,
+  "workerTestConcurrency": "UNCHANGED",
+  "workerTestTimeout": "UNCHANGED",
+  "timeoutOrigin": "VITEST_NODE_DEFAULT_5000MS_OWNER_APPROVED_EXPLICIT_7000MS",
+  "rootCause": "NOT_RESOLVED_BY_TIMEOUT_AMENDMENT",
+  "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+  "measurement": "HOSTED_V49_FAILURE_PRESERVED_NEW_SOURCE_REQUIRES_FRESH_QUALIFICATION",
+  "implementationSeals": {
+    "vitest.config.ts": "3a14f5ff659e576441102fdceca352f20f220e68d32c678448b9aab10edb329c",
+    "tests/project-control-v49.test.ts": "ed44f8cef34e70ee47093368c17ec9aa041db1f42f772b6a68e00052ba7661ab"
+  },
+  "sourceLineage": "ONE_CHILD_OF_PUBLISHED_V49_NORMAL_FAST_FORWARD",
+  "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_NODE_TIMEOUT_ABOVE_7000_WORKER_OR_RUNTIME_TIMEOUT_CHANGE_RETRY_ASSERTION_REMOVAL"
+}
+```
