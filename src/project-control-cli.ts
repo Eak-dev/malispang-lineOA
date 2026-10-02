@@ -1,4 +1,8 @@
 import {
+  UAT_ROUND2_PREPARATION_V51,
+  inspectV51Repository,
+} from "./project-control-v51.js";
+import {
   CI_HARNESS_REPAIR_V50,
   inspectV50Repository,
   validateV50PullRequestReceipt,
@@ -163,6 +167,31 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === UAT_ROUND2_PREPARATION_V51.version) {
+    const errors = [
+      ...validateProjectControl(roadmap, currentWork).errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    // v51 authorizes no pull request; a PR event cannot carry this control.
+    if (process.env.GITHUB_EVENT_NAME === "pull_request")
+      throw new Error("V51_NO_PULL_REQUEST_AUTHORIZED");
+    const inspected = inspectV51Repository(
+      fileURLToPath(root),
+      projectControlGitExecutable(),
+    );
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState:
+            "STRUCTURAL_VALIDATION_NOT_QUALIFICATION_PUSH_OR_MERGE_AUTHORITY",
+        }),
+    );
+    return;
   }
   if (version === CI_HARNESS_REPAIR_V50.version) {
     const errors = [
@@ -1074,6 +1103,8 @@ export async function runPullRequestControlValidation(
   const work = JSON.parse(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
+  if (work.roadmapVersion === UAT_ROUND2_PREPARATION_V51.version)
+    throw Error("V51_NO_PULL_REQUEST_AUTHORIZED");
   if (work.roadmapVersion === CI_HARNESS_REPAIR_V50.version) {
     if (eventPath !== process.env.GITHUB_EVENT_PATH)
       throw Error("V50_PR_EVENT_PATH_MISMATCH");

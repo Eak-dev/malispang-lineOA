@@ -1690,3 +1690,64 @@ Require fresh exact staged-source focused gates, frozen install, zero-all-severi
   "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_NODE_TIMEOUT_ABOVE_7000_WORKER_OR_RUNTIME_TIMEOUT_CHANGE_RETRY_ASSERTION_REMOVAL"
 }
 ```
+
+## MP-OD-2026-10-02-V51 — UAT round 2 local preparation only
+
+Owner approved verbatim on 2026-10-02: "อนุมัติ v51 UAT_ROUND2_LOCAL_PREPARATION_ONLY ตามส่วน C", after delegating the choice of method ("ให้คุณเลือกวิธีที่ดีทีสุด") and reviewing proposal section C. Version 2026.10.02-v51 / MP-OD-2026-10-02-V51 supersedes v50. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+Local analysis (no TEST access): in the deployed candidate bfff1a553868b85e5f66144e4741a51627f4a9be the only write path that yields the observed round-1 state BOT_ACTIVE / clarificationUsed=true / pendingTemplate=null is a new processed event with an approved response. A scratch emulator test reproduced exactly that state with zero AI accounting change when a catalog follow-up arrives while the pilot is STOPPED, because admission returns PILOT_INACTIVE and the deterministic plan still runs. This proves possibility only; round-1 causality stays UNKNOWN and the held storage is not read.
+
+Decisions: (1) isolate round 2 on a separate Worker script malispang-lineoa-test-uat2 (wrangler env uat2), so every Durable Object namespace starts empty and the held malispang-lineoa-test storage is never read, written or redeployed; runtime is byte-identical to v50 and PUBLIC_ASSET_BASE_URL stays on the existing static asset host. (2) The STOPPED-does-not-freeze-conversation gap is controlled procedurally by an exact per-case gate (src/mp-06-uat-round2-gate.ts) over the generic status/audit endpoints, with a runtime fix recorded as separate work before MP-12. (3) Sequence: this local preparation, then deploy, secrets, LINE webhook and R1/R2/R3/STOP/R4, each needing separate Owner approval. (4) After UAT the webhook remains on uat2 with the pilot STOPPED and never returns to the held Worker. (5) Historical investigation is deferred; only processed events/response plans/delivery claims may be read after a renewed access review. (6) Issue #12 may close only after a full round-2 pass plus an Owner accepted-risk record for U1 GAP, A1-A3, billing and the pendingTemplate cause.
+
+V51_ALLOWED_PATHS is the complete scope: control manifests and append-only records, the v51 module/test and CLI/dispatch wiring, the wrangler uat2 env, the pure gate module, its worker tests, the round-2 runbook and the v50 historical test adapter pinned to immutable 0774131ef334e09426203cd6aff92c59bbf52a52. Runtime, policy, KB, catalog, dependencies, workflow and benchmark artifacts are read-only.
+
+Publication is one normal child commit of 0774131e on new branch codex/mp06-uat-round2-prep, pushed without a pull request after full local gates and audit0. No deploy, secret, LINE webhook change, held storage/SQL access, live provider call, PR, Ready, merge, Production, U2 or Issue closure. UAT readiness stays NOT_VERIFIED.
+
+```json
+{
+  "version": "2026.10.02-v51",
+  "ownerDecision": "MP-OD-2026-10-02-V51",
+  "supersedes": "2026.09.30-v50",
+  "baseline": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "baselineTree": "dfe6d6839fd07325f391a9ca66b8721f6f378ad6",
+  "baselineParent": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-uat-round2-prep",
+  "sourceBranch": "codex/mp06-harness-v43",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "UAT_ROUND2_LOCAL_PREPARATION_ONLY",
+  "decisions": {
+    "isolation": "SEPARATE_WORKER_SCRIPT_MALISPANG_LINEOA_TEST_UAT2",
+    "stoppedStateGap": "PROCEDURAL_PER_CASE_GATE_NO_RUNTIME_CHANGE_SEPARATE_WORK_BEFORE_MP12",
+    "sequence": "V51_LOCAL_THEN_DEPLOY_THEN_SECRETS_THEN_WEBHOOK_THEN_R1_R2_R3_STOP_R4_EACH_SEPARATELY_APPROVED",
+    "webhookAfterUat": "REMAIN_ON_UAT2_PILOT_STOPPED_NEVER_BACK_TO_HELD_WORKER",
+    "historyInvestigation": "DEFERRED_PRESERVE_HELD_STORAGE_COUNTERS_ONLY_AFTER_ACCESS_REVIEW",
+    "issue12Closure": "ROUND2_FULL_PASS_AND_OWNER_ACCEPTED_RISK_RECORD_FOR_HISTORICAL_GAPS"
+  },
+  "uatWorker": "malispang-lineoa-test-uat2",
+  "heldWorker": "malispang-lineoa-test",
+  "cases": "R1_R2_R3_STOP_R4_FINAL_FROM_EMPTY_STORAGE",
+  "runtime": "UNCHANGED_FROM_V50_BASELINE",
+  "implementationSeals": {
+    "wrangler.jsonc": "79ffd50c0e82632698ba63bb69fda5d9570075d0b0bdcb4880d1619ff8db5e62",
+    "src/mp-06-uat-round2-gate.ts": "012789dc1c81cb337311983cf3b44d4c1f65dcdafbc4814de8d6d12a23a7dd15",
+    "worker-tests/mp-06-uat-round2.test.ts": "ca6ea8a2e0ea48f8ab2690aa24e609dfb1ffb95994644049c589f142d6726632",
+    "docs/line-oa/mp-06/MP_06_UAT_ROUND2_RUNBOOK_TH.md": "9c00934d9e3545392121f4ea154a4ea8482688a3d5bf3d02a9fdf72331da2e7f",
+    "tests/project-control-v50.test.ts": "1b591efc688641db0a86c115e44e3b0db80efcc00e8c0c5d211554dd51c53ecb"
+  },
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_PENDING_TEMPLATE_CAUSE_UNKNOWN_UNCHANGED",
+  "publication": "ONE_COMMIT_PUSH_NEW_BRANCH_ONLY_NO_PULL_REQUEST",
+  "storageHold": "UNCHANGED_NO_READ_DEPLOY_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "secrets": false,
+  "lineWebhook": false,
+  "pullRequest": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_HELD_STORAGE_SQL_PROVIDER_LIVE_PR_READY_MERGE_PRODUCTION_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_CHANGE"
+}
+```

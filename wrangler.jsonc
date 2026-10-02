@@ -88,4 +88,66 @@
       "enabled": false,
     },
   },
+  // MP-06 v51 UAT round 2: a separate Worker script, so every Durable Object
+  // namespace is new and the held malispang-lineoa-test storage is never read
+  // or written. PUBLIC_ASSET_BASE_URL deliberately stays on the existing static
+  // asset host (validatedTestAssetBaseUrl); assets never run Worker code.
+  // Preparation only: deploying, secrets and LINE webhook each need separate
+  // Owner approval.
+  "env": {
+    "uat2": {
+      "name": "malispang-lineoa-test-uat2",
+      "workers_dev": true,
+      "preview_urls": false,
+      "vars": {
+        "ENVIRONMENT": "TEST",
+        "LINE_OA_ACCOUNT_NAME": "มะลิปัง TEST",
+        "FAQ_SOURCE_STATUS": "APPROVED_ONLY",
+        "TEST_STAFF_ALLOWLIST": "OWNER_TEST",
+        "PUBLIC_ASSET_BASE_URL": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+        "PROCESSED_EVENT_RETENTION_SECONDS": "86400",
+        "AUDIT_RETENTION_SECONDS": "604800",
+        "TEST_OWNER_ALLOWLIST": "OWNER_TEST",
+        "MP06_AI_NLU_MODEL": "gpt-5.6-terra",
+        "MP06_PILOT_CONTROL_ENABLED": "true",
+        "MP06_PILOT_MAX_TESTERS": "5",
+        "MP06_PILOT_EVENTS_PER_MINUTE": "20",
+        "MP06_PILOT_EVENTS_PER_HOUR": "200",
+        "MP06_PILOT_EVENTS_PER_SESSION": "200",
+        "MP06_PILOT_PROVIDER_ATTEMPTS_PER_SESSION": "200",
+        "MP06_PILOT_SESSION_MINUTES": "60",
+        "MP06_PILOT_BUDGET_MICRO_USD": "5000000",
+        "MP06_PILOT_MAX_CONCURRENCY": "1",
+      },
+      "secrets": {
+        "required": [
+          "LINE_CHANNEL_SECRET",
+          "LINE_CHANNEL_ACCESS_TOKEN",
+          "LINE_BOT_USER_ID",
+          "TEST_ADMIN_KEY",
+          "TEST_REWARD_CARD_URL",
+        ],
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "CONVERSATION_STATE",
+            "class_name": "ConversationStateDO",
+          },
+          {
+            "name": "HANDOFF_REGISTRY",
+            "class_name": "HandoffRegistryDO",
+          },
+          {
+            "name": "DRAFT_ORDER",
+            "class_name": "DraftOrderDO",
+          },
+          {
+            "name": "PROMOTION_CONTROL",
+            "class_name": "PromotionControlDO",
+          },
+        ],
+      },
+    },
+  },
 }

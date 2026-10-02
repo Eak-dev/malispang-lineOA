@@ -9,7 +9,7 @@ import {
   runPullRequestControlValidation,
 } from "../src/project-control-cli.js";
 import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   CI_HARNESS_REPAIR_V50 as c,
   V50_ALLOWED_PATHS,
@@ -26,7 +26,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     projectControlGitExecutable(),
@@ -54,17 +54,49 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
+// Committed historical source inputs are immutable; exercise current imported validators.
+const root = await mkdtemp(join(tmpdir(), "mp06-v50-history-"));
+afterAll(async () => {
+  await rm(root, { recursive: true, force: true });
+  expect(existsSync(root)).toBe(false);
+});
+try {
+  git(
+    operatorRoot,
+    "clone",
+    "--quiet",
+    "--shared",
+    "--no-hardlinks",
+    "--no-checkout",
+    operatorRoot,
+    root,
+  );
+  git(
+    root,
+    "checkout",
+    "--quiet",
+    "--detach",
+    "0774131ef334e09426203cd6aff92c59bbf52a52",
+  );
+  expect(git(root, "rev-parse", "HEAD^{tree}")).toBe(
+    "dfe6d6839fd07325f391a9ca66b8721f6f378ad6",
+  );
+} catch (error) {
+  await rm(root, { recursive: true, force: true });
+  throw error;
+}
 const read = (path: string) =>
   JSON.parse(readFileSync(join(root, path), "utf8")) as Record<string, unknown>;
-const state = () => ({
-  head: git(root, "rev-parse", "HEAD"),
+const state = (cwd = root) => ({
+  head: git(cwd, "rev-parse", "HEAD"),
   index: readFileSync(
-    join(git(root, "rev-parse", "--absolute-git-dir"), "index"),
+    join(git(cwd, "rev-parse", "--absolute-git-dir"), "index"),
   ),
-  status: git(root, "status", "--porcelain=v1", "--untracked-files=all"),
+  status: git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
 });
 async function fixture(run: (cwd: string) => Promise<void> | void) {
-  const before = state(),
+  const operatorBefore = state(operatorRoot),
+    before = state(),
     cwd = await mkdtemp(join(tmpdir(), "mp06-v50-"));
   try {
     git(
@@ -94,6 +126,7 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state()).toEqual(before);
+    expect(state(operatorRoot)).toEqual(operatorBefore);
   }
 }
 describe("v50 scoped CI harness repair", () => {

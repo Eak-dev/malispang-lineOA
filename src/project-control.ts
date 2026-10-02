@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
 import {
+  UAT_ROUND2_PREPARATION_V51,
+  projectV51ToV50,
+  v51AuthoritySummary,
+  evaluateV51Action,
+} from "./project-control-v51.js";
+import {
   CI_HARNESS_REPAIR_V50,
   projectV50ToV49,
   v50AuthoritySummary,
@@ -1098,6 +1104,12 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === UAT_ROUND2_PREPARATION_V51.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v51AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === CI_HARNESS_REPAIR_V50.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1162,6 +1174,13 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === UAT_ROUND2_PREPARATION_V51.version
+  )
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV51Action(action, executionEvidence);
   if (isRecord(roadmap) && roadmap.version === CI_HARNESS_REPAIR_V50.version)
     return validateProjectControl(roadmap, currentWork).errors.length
       ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
@@ -8671,6 +8690,29 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === UAT_ROUND2_PREPARATION_V51.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = UAT_ROUND2_PREPARATION_V51;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.uatRound2PreparationV51) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-02",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV51ToV50(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V51_EXACT_PREPARATION_CONTROL_INVALID");
+    return result;
+  }
   if (isRecord(roadmap) && roadmap.version === CI_HARNESS_REPAIR_V50.version) {
     if (!isRecord(work))
       return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
@@ -9192,6 +9234,27 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === UAT_ROUND2_PREPARATION_V51.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "uatRound2PreparationV51").length !==
+        1 ||
+      JSON.stringify(schema.properties.uatRound2PreparationV51) !==
+        JSON.stringify({ const: UAT_ROUND2_PREPARATION_V51 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V51_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV51ToV50({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      UAT_ROUND2_PREPARATION_V51.supersedes,
+    );
+  }
   if (version === CI_HARNESS_REPAIR_V50.version) {
     if (
       !isRecord(schema) ||
@@ -9638,6 +9701,29 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === UAT_ROUND2_PREPARATION_V51.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + UAT_ROUND2_PREPARATION_V51.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(UAT_ROUND2_PREPARATION_V51) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          UAT_ROUND2_PREPARATION_V51.supersedes,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === CI_HARNESS_REPAIR_V50.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(

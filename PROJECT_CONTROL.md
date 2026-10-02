@@ -1,5 +1,17 @@
 # MalisPang Project Control
 
+## Effective UAT round 2 local preparation — v51
+
+Owner approved verbatim on 2026-10-02: "อนุมัติ v51 UAT_ROUND2_LOCAL_PREPARATION_ONLY ตามส่วน C", after delegating the choice of method ("ให้คุณเลือกวิธีที่ดีทีสุด") and reviewing proposal section C. Version 2026.10.02-v51 / MP-OD-2026-10-02-V51 supersedes v50. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+Local analysis (no TEST access): in the deployed candidate bfff1a553868b85e5f66144e4741a51627f4a9be the only write path that yields the observed round-1 state BOT_ACTIVE / clarificationUsed=true / pendingTemplate=null is a new processed event with an approved response. A scratch emulator test reproduced exactly that state with zero AI accounting change when a catalog follow-up arrives while the pilot is STOPPED, because admission returns PILOT_INACTIVE and the deterministic plan still runs. This proves possibility only; round-1 causality stays UNKNOWN and the held storage is not read.
+
+Decisions: (1) isolate round 2 on a separate Worker script malispang-lineoa-test-uat2 (wrangler env uat2), so every Durable Object namespace starts empty and the held malispang-lineoa-test storage is never read, written or redeployed; runtime is byte-identical to v50 and PUBLIC_ASSET_BASE_URL stays on the existing static asset host. (2) The STOPPED-does-not-freeze-conversation gap is controlled procedurally by an exact per-case gate (src/mp-06-uat-round2-gate.ts) over the generic status/audit endpoints, with a runtime fix recorded as separate work before MP-12. (3) Sequence: this local preparation, then deploy, secrets, LINE webhook and R1/R2/R3/STOP/R4, each needing separate Owner approval. (4) After UAT the webhook remains on uat2 with the pilot STOPPED and never returns to the held Worker. (5) Historical investigation is deferred; only processed events/response plans/delivery claims may be read after a renewed access review. (6) Issue #12 may close only after a full round-2 pass plus an Owner accepted-risk record for U1 GAP, A1-A3, billing and the pendingTemplate cause.
+
+V51_ALLOWED_PATHS is the complete scope: control manifests and append-only records, the v51 module/test and CLI/dispatch wiring, the wrangler uat2 env, the pure gate module, its worker tests, the round-2 runbook and the v50 historical test adapter pinned to immutable 0774131ef334e09426203cd6aff92c59bbf52a52. Runtime, policy, KB, catalog, dependencies, workflow and benchmark artifacts are read-only.
+
+Publication is one normal child commit of 0774131e on new branch codex/mp06-uat-round2-prep, pushed without a pull request after full local gates and audit0. No deploy, secret, LINE webhook change, held storage/SQL access, live provider call, PR, Ready, merge, Production, U2 or Issue closure. UAT readiness stays NOT_VERIFIED.
+
 ## Effective Node test deadline amendment — v50
 
 Owner explicitly approved changing the Node test deadline from five to seven seconds after asking whether it was system imposed. Vitest supplies a 5000ms Node testTimeout default (https://vitest.dev/config/testtimeout); vitest.config.ts at published v49 b1ca3a90c7a550f48c91d971b35dd9f148ce91e9 did not override it. Historical controls subsequently froze that inherited value. It is not an immutable platform limit, LINE bot response SLA, or permission grant. Version2026.09.30-v50 / MP-OD-2026-09-30-V50 supersedes v49 for exactly this Owner-approved parameter amendment. MP06/Issue12 remains CURRENT/OPEN in WP8F_TEST_ACCEPTANCE_COMPLETION.
