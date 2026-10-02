@@ -44,14 +44,14 @@ Gate ตรวจ:
 
 ## 4. ลำดับขั้น (แต่ละขั้นต้องได้อนุมัติแยก)
 
-| ขั้น | การกระทำ                                                                                                                          | ต้องได้อนุมัติแยก      | ตรวจก่อนไปต่อ                                                 |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------- |
-| A    | v51 เตรียมในเครื่อง (รอบนี้)                                                                                                      | อนุมัติแล้ว 2026-10-02 | full gates, audit 0                                           |
-| B    | `wrangler deploy --env uat2` จาก source ที่ freeze                                                                                | ✔                      | Worker ใหม่ตอบ `/health`, pilot INACTIVE, webhook ยังไม่ชี้มา |
-| C    | ตั้ง secret 5 ตัว + `OPENAI_API_KEY` บน Worker ใหม่ (ตรวจได้เฉพาะชื่อ/presence)                                                   | ✔                      | `wrangler secret list --env uat2` แสดงครบตามชื่อ              |
-| D    | เปลี่ยน webhook ของ "มะลิปัง TEST" ไปที่ `https://malispang-lineoa-test-uat2.eakkachai-dev.workers.dev/webhook` เมื่อ Owner พร้อม | ✔                      | LINE verify สำเร็จ                                            |
-| E    | activate pilot (testerRefs = Owner เท่านั้น) → gate → R1 → gate → R2 → gate → R3 → STOP → gate → R4 → FINAL                       | ✔                      | gate ผ่านทุกขั้น, screenshot + backend receipt ต่อเคส         |
-| F    | STOP ซ้ำเพื่อยืนยันสถานะปลอดภัย                                                                                                   | ✔ (รวมกับ E)           | pilot STOPPED, reserved/inFlight = 0                          |
+| ขั้น | การกระทำ                                                                                                                          | ต้องได้อนุมัติแยก              | ตรวจก่อนไปต่อ                                                           |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| A    | v51 เตรียมในเครื่อง (รอบนี้)                                                                                                      | อนุมัติแล้ว 2026-10-02         | full gates, audit 0                                                     |
+| B    | `wrangler deploy --env uat2` ครั้งเดียวจาก Mac ของ Owner (ข้อ 7)                                                                  | ✔ อนุมัติแล้ว 2026-10-02 (v52) | `/health` = 200, route อื่น = 503, ยังไม่มี secret, webhook ยังไม่ชี้มา |
+| C    | ตั้ง secret 5 ตัว + `OPENAI_API_KEY` บน Worker ใหม่ (ตรวจได้เฉพาะชื่อ/presence)                                                   | ✔                              | `wrangler secret list --env uat2` แสดงครบตามชื่อ                        |
+| D    | เปลี่ยน webhook ของ "มะลิปัง TEST" ไปที่ `https://malispang-lineoa-test-uat2.eakkachai-dev.workers.dev/webhook` เมื่อ Owner พร้อม | ✔                              | LINE verify สำเร็จ                                                      |
+| E    | activate pilot (testerRefs = Owner เท่านั้น) → gate → R1 → gate → R2 → gate → R3 → STOP → gate → R4 → FINAL                       | ✔                              | gate ผ่านทุกขั้น, screenshot + backend receipt ต่อเคส                   |
+| F    | STOP ซ้ำเพื่อยืนยันสถานะปลอดภัย                                                                                                   | ✔ (รวมกับ E)                   | pilot STOPPED, reserved/inFlight = 0                                    |
 
 ## 5. งบประมาณ การหยุด และการกลับสู่สถานะปลอดภัย
 
@@ -68,3 +68,58 @@ Gate ตรวจ:
 - **#12 ปิดได้เมื่อ:** รอบ 2 ผ่านครบ R1–R4 + FINAL **และ** Owner บันทึก decision ว่าช่องว่างเดิมเป็น `UNKNOWN — ACCEPTED_RISK` พร้อมเหตุผล
 - ช่องว่าง "STOPPED ไม่ตรึง conversation state" บันทึกเป็นงานแยกที่ต้องทำก่อน MP-12 (Production) รอบนี้คุมด้วย gate เท่านั้น
 - Production: **NO_GO — NOT TOUCHED**
+
+## 7. ขั้น B — deploy `uat2` หนึ่งครั้งจาก Mac ของ Owner (v52)
+
+Owner อนุมัติขั้น B เมื่อ 2026-10-02 และเลือกให้รันจาก Mac ที่ login wrangler อยู่แล้ว เพื่อไม่ต้องเก็บ token ไว้ใน cloud
+v52 อนุญาต **deploy ได้ครั้งเดียว** เฉพาะ Worker `malispang-lineoa-test-uat2` จาก commit v52 บน branch `codex/mp06-uat-round2-prep`
+ห้ามตั้ง secret, ห้ามเปลี่ยน webhook และห้ามเปิด pilot (ขั้น C–E ต้องได้อนุมัติแยก)
+
+> ⚠️ ต้องใส่ `--env uat2` ทุกครั้ง ถ้ารัน `wrangler deploy` แบบไม่มี `--env` หรือรัน `pnpm deploy:test` จะ deploy ทับ Worker เดิม `malispang-lineoa-test` ที่ storage ติด hold ซึ่ง **ห้ามเด็ดขาด**
+
+ทำไม v52 ถอด `secrets.required` ออกจาก `env.uat2`:
+
+- Wrangler ไม่ยอม deploy Worker ใหม่ครั้งแรกถ้ายังไม่ได้ตั้ง required secrets ทางเลี่ยงคือ `--secrets-file` ซึ่งจะรวมขั้น C เข้ามาในขั้น B
+- runtime (`assertRequiredSecrets`) ตอบ 503 ทุก route ยกเว้น `/health` จนกว่าจะตั้ง secret ครบทั้ง 5 ตัว (มีเทสต์ใน `worker-tests/mp-06-uat-round2.test.ts`) Worker ที่ยังไม่มี secret จึงไม่ทำงานใด ๆ
+
+### 7.1 เตรียม (ไม่มีการเปลี่ยนแปลงระยะไกล)
+
+```sh
+git fetch origin codex/mp06-uat-round2-prep
+git switch codex/mp06-uat-round2-prep
+git reset --hard origin/codex/mp06-uat-round2-prep
+git log -1 --format=%H        # ต้องตรงกับ commit v52 ที่แจ้งใน Issue #12
+git status --porcelain        # ต้องว่าง
+pnpm install --frozen-lockfile
+pnpm validate:project-control # ต้องเป็น 2026.10.02-v52, mode SOURCE_COMMIT, clean true
+pnpm exec wrangler whoami     # account ต้องเป็น c395a1bc15b7c95267173de5ccd6407d
+pnpm exec wrangler deployments list --name malispang-lineoa-test-uat2   # ต้องไม่พบ Worker (ยังไม่เคยมี)
+pnpm exec wrangler deploy --env uat2 --minify --dry-run --outdir /tmp/mp06-uat2-dry
+```
+
+หยุดและแจ้ง Dev ทันทีถ้าข้อใดไม่ตรง เช่น commit ไม่ตรง, tree ไม่สะอาด, account ผิด หรือมี Worker `uat2` อยู่แล้ว
+
+### 7.2 Deploy (ครั้งเดียว)
+
+```sh
+pnpm exec wrangler deploy --env uat2 --minify
+```
+
+- ถ้าผลไม่ชัดเจน (timeout หรือ error กลางทาง) **ห้าม retry** ให้ถือว่าใช้สิทธิ์ deploy ไปแล้ว และส่ง output ให้ Dev
+- ห้ามใช้ `--secrets-file`
+
+### 7.3 ตรวจหลัง deploy (อ่านอย่างเดียว)
+
+```sh
+curl -s https://malispang-lineoa-test-uat2.eakkachai-dev.workers.dev/health
+#   ต้องได้ {"status":"ok","environment":"TEST",...}
+curl -s -o /dev/null -w '%{http_code}\n' https://malispang-lineoa-test-uat2.eakkachai-dev.workers.dev/admin/mp06-pilot/status
+#   ต้องได้ 503
+pnpm exec wrangler secret list --env uat2          # ต้องว่าง
+pnpm exec wrangler deployments list --name malispang-lineoa-test-uat2
+pnpm exec wrangler deployments list --name malispang-lineoa-test   # Worker เดิมต้องไม่มี deployment ใหม่
+```
+
+จากนั้นเปิด LINE Developers Console ของ "มะลิปัง TEST" และยืนยันว่า webhook URL **ยังเป็นของ Worker เดิม ไม่ได้เปลี่ยน**
+
+ส่งให้ Dev: commit, Version ID / deployment ID ของ `uat2`, ผล `/health`, รหัส 503 และผล secret list (ชื่อเท่านั้น) ห้ามส่งค่า secret หรือ token

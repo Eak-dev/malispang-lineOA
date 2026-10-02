@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
 import {
+  UAT2_DEPLOY_V52,
+  projectV52ToV51,
+  v52AuthoritySummary,
+  evaluateV52Action,
+} from "./project-control-v52.js";
+import {
   UAT_ROUND2_PREPARATION_V51,
   projectV51ToV50,
   v51AuthoritySummary,
@@ -1104,6 +1110,12 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === UAT2_DEPLOY_V52.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v52AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === UAT_ROUND2_PREPARATION_V51.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1174,6 +1186,10 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (isRecord(roadmap) && roadmap.version === UAT2_DEPLOY_V52.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV52Action(action, executionEvidence);
   if (
     isRecord(roadmap) &&
     roadmap.version === UAT_ROUND2_PREPARATION_V51.version
@@ -8690,6 +8706,26 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (isRecord(roadmap) && roadmap.version === UAT2_DEPLOY_V52.version) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = UAT2_DEPLOY_V52;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.uat2DeployV52) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-02",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV52ToV51(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V52_EXACT_DEPLOY_CONTROL_INVALID");
+    return result;
+  }
   if (
     isRecord(roadmap) &&
     roadmap.version === UAT_ROUND2_PREPARATION_V51.version
@@ -9234,6 +9270,26 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === UAT2_DEPLOY_V52.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "uat2DeployV52").length !== 1 ||
+      JSON.stringify(schema.properties.uat2DeployV52) !==
+        JSON.stringify({ const: UAT2_DEPLOY_V52 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V52_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV52ToV51({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      UAT2_DEPLOY_V52.supersedes,
+    );
+  }
   if (version === UAT_ROUND2_PREPARATION_V51.version) {
     if (
       !isRecord(schema) ||
@@ -9701,6 +9757,23 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === UAT2_DEPLOY_V52.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split("## " + UAT2_DEPLOY_V52.ownerDecision + " —");
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) === JSON.stringify(UAT2_DEPLOY_V52) &&
+        validateWp8fOwnerDecisionRecord(record, UAT2_DEPLOY_V52.supersedes)
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === UAT_ROUND2_PREPARATION_V51.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(

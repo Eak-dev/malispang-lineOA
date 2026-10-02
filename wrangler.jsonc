@@ -92,8 +92,10 @@
   // namespace is new and the held malispang-lineoa-test storage is never read
   // or written. PUBLIC_ASSET_BASE_URL deliberately stays on the existing static
   // asset host (validatedTestAssetBaseUrl); assets never run Worker code.
-  // Preparation only: deploying, secrets and LINE webhook each need separate
-  // Owner approval.
+  // No secrets.required here (v52): Wrangler refuses a first deploy of a new
+  // Worker with unset required secrets, and assertRequiredSecrets already
+  // fails every non-health route closed (503) until all five are set.
+  // Deploy, secrets and LINE webhook each need separate Owner approval.
   "env": {
     "uat2": {
       "name": "malispang-lineoa-test-uat2",
@@ -118,15 +120,6 @@
         "MP06_PILOT_SESSION_MINUTES": "60",
         "MP06_PILOT_BUDGET_MICRO_USD": "5000000",
         "MP06_PILOT_MAX_CONCURRENCY": "1",
-      },
-      "secrets": {
-        "required": [
-          "LINE_CHANNEL_SECRET",
-          "LINE_CHANNEL_ACCESS_TOKEN",
-          "LINE_BOT_USER_ID",
-          "TEST_ADMIN_KEY",
-          "TEST_REWARD_CARD_URL",
-        ],
       },
       "durable_objects": {
         "bindings": [

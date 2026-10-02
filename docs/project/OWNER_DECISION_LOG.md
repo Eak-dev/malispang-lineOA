@@ -1751,3 +1751,64 @@ Publication is one normal child commit of 0774131e on new branch codex/mp06-uat-
   "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_HELD_STORAGE_SQL_PROVIDER_LIVE_PR_READY_MERGE_PRODUCTION_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_CHANGE"
 }
 ```
+
+## MP-OD-2026-10-02-V52 — Single Owner Mac uat2 deploy only
+
+Owner approved step B on 2026-10-02 ("B") and chose to run it from their own Mac with the already authenticated wrangler, so no Cloudflare token is stored in the cloud environment. Version 2026.10.02-v52 / MP-OD-2026-10-02-V52 supersedes v51. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+Finding: Wrangler refuses the first deploy of a new Worker while any secrets.required entry is unset unless --secrets-file is used, which would merge step C into step B. v52 therefore removes secrets.required from env.uat2 only. This is safe because assertRequiredSecrets fails every route except /health closed with 503 until all five TEST secrets are set; a worker test proves it for each missing secret. Top-level config of the held malispang-lineoa-test Worker and all runtime are unchanged.
+
+Authorization: exactly one Owner-executed `pnpm exec wrangler deploy --env uat2 --minify` of the clean v52 source commit on codex/mp06-uat-round2-prep after a frozen install, account c395a1bc15b7c95267173de5ccd6407d check, absent uat2 Worker and dry run. Post-check: /health 200, other routes 503, empty secret list, no new deployment on the held Worker, LINE webhook unchanged. An ambiguous outcome consumes the deploy; no retry. Never deploy without --env and never use pnpm deploy:test or --secrets-file.
+
+V52_ALLOWED_PATHS is the complete scope: control manifests and append-only records, v52 module/test and wiring, wrangler.jsonc, the round-2 worker test, the runbook section 7 and the v51 historical test pinned to immutable 8343581c83d86da01183cf3a333449acfecb6a5d. Secrets, LINE webhook, pilot activation, held storage, live provider, PR, merge, U2 and Issue closure remain forbidden and need separate Owner approval. UAT readiness stays NOT_VERIFIED.
+
+```json
+{
+  "version": "2026.10.02-v52",
+  "ownerDecision": "MP-OD-2026-10-02-V52",
+  "supersedes": "2026.10.02-v51",
+  "baseline": "8343581c83d86da01183cf3a333449acfecb6a5d",
+  "baselineTree": "5998eea38c883f8b561bed04dc314c227c84cf77",
+  "baselineParent": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-uat-round2-prep",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "UAT2_SINGLE_OWNER_MAC_DEPLOY_ONLY",
+  "deployment": {
+    "worker": "malispang-lineoa-test-uat2",
+    "wranglerEnv": "uat2",
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "executor": "OWNER_MAC_AUTHENTICATED_WRANGLER",
+    "command": "pnpm exec wrangler deploy --env uat2 --minify",
+    "source": "V52_SOURCE_COMMIT_ON_HEAD_BRANCH_CLEAN_FROZEN_INSTALL",
+    "maximumDeployments": 1,
+    "preCheck": "COMMIT_CLEAN_ACCOUNT_MATCH_UAT2_WORKER_ABSENT_DRY_RUN",
+    "postCheck": "HEALTH_200_OTHER_ROUTES_503_NO_SECRETS_HELD_WORKER_AND_WEBHOOK_UNCHANGED",
+    "ambiguousOutcome": "CONSUMED_NO_RETRY_REPORT_TO_DEV",
+    "secretsFile": false
+  },
+  "secretsGap": "UAT2_SECRETS_REQUIRED_REMOVED_RUNTIME_FAILS_CLOSED_503_UNTIL_STEP_C",
+  "heldWorker": "malispang-lineoa-test",
+  "runtime": "UNCHANGED_FROM_V50_BASELINE",
+  "implementationSeals": {
+    "wrangler.jsonc": "56468b0292623a819b754240810aa63178f3308492d4a28d15597035a623ab16",
+    "worker-tests/mp-06-uat-round2.test.ts": "955efe93607dcacdbaa56a33a0f48238b76f0a2acad75c698a42ed3a899f6f0d",
+    "docs/line-oa/mp-06/MP_06_UAT_ROUND2_RUNBOOK_TH.md": "8273971df386594c1191d129ddab8e5a416606ee3e88886212f81a6c6b461206",
+    "tests/project-control-v51.test.ts": "06fd4dcb0fcda488beb1d06c3d32538ad9b1189175007fe6e0194c841ac54565"
+  },
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_PENDING_TEMPLATE_CAUSE_UNKNOWN_UNCHANGED",
+  "publication": "ONE_COMMIT_FAST_FORWARD_PUSH_EXISTING_BRANCH_NO_PULL_REQUEST",
+  "storageHold": "UNCHANGED_NO_READ_DEPLOY_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": true,
+  "secrets": false,
+  "lineWebhook": false,
+  "pilotActivation": false,
+  "pullRequest": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "HELD_WORKER_DEPLOY_SECOND_DEPLOY_SECRETS_FILE_SECRET_PUT_LINE_WEBHOOK_PILOT_HELD_STORAGE_SQL_PROVIDER_LIVE_PR_READY_MERGE_PRODUCTION_U2_ISSUE_CLOSE_RUNTIME_CHANGE"
+}
+```

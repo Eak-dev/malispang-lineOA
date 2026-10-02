@@ -4,7 +4,7 @@ import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   runProjectControlValidation,
   runPullRequestControlValidation,
@@ -31,7 +31,7 @@ import {
 } from "../src/mp-06-uat-round2-gate.js";
 import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     projectControlGitExecutable(),
@@ -59,17 +59,49 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
+// Committed historical source inputs are immutable; exercise current imported validators.
+const root = await mkdtemp(join(tmpdir(), "mp06-v51-history-"));
+afterAll(async () => {
+  await rm(root, { recursive: true, force: true });
+  expect(existsSync(root)).toBe(false);
+});
+try {
+  git(
+    operatorRoot,
+    "clone",
+    "--quiet",
+    "--shared",
+    "--no-hardlinks",
+    "--no-checkout",
+    operatorRoot,
+    root,
+  );
+  git(
+    root,
+    "checkout",
+    "--quiet",
+    "--detach",
+    "8343581c83d86da01183cf3a333449acfecb6a5d",
+  );
+  expect(git(root, "rev-parse", "HEAD^{tree}")).toBe(
+    "5998eea38c883f8b561bed04dc314c227c84cf77",
+  );
+} catch (error) {
+  await rm(root, { recursive: true, force: true });
+  throw error;
+}
 const read = (path: string) =>
   JSON.parse(readFileSync(join(root, path), "utf8")) as Record<string, unknown>;
-const state = () => ({
-  head: git(root, "rev-parse", "HEAD"),
+const state = (cwd = root) => ({
+  head: git(cwd, "rev-parse", "HEAD"),
   index: readFileSync(
-    join(git(root, "rev-parse", "--absolute-git-dir"), "index"),
+    join(git(cwd, "rev-parse", "--absolute-git-dir"), "index"),
   ),
-  status: git(root, "status", "--porcelain=v1", "--untracked-files=all"),
+  status: git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
 });
 async function fixture(run: (cwd: string) => Promise<void> | void) {
-  const before = state(),
+  const operatorBefore = state(operatorRoot),
+    before = state(),
     cwd = await mkdtemp(join(tmpdir(), "mp06-v51-"));
   try {
     git(
@@ -99,6 +131,7 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state()).toEqual(before);
+    expect(state(operatorRoot)).toEqual(operatorBefore);
   }
 }
 // wrangler.jsonc uses only full-line comments and trailing commas.

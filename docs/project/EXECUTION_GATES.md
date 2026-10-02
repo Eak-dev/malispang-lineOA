@@ -3234,3 +3234,13 @@ Decisions: (1) isolate round 2 on a separate Worker script malispang-lineoa-test
 V51_ALLOWED_PATHS is the complete scope: control manifests and append-only records, the v51 module/test and CLI/dispatch wiring, the wrangler uat2 env, the pure gate module, its worker tests, the round-2 runbook and the v50 historical test adapter pinned to immutable 0774131ef334e09426203cd6aff92c59bbf52a52. Runtime, policy, KB, catalog, dependencies, workflow and benchmark artifacts are read-only.
 
 Publication is one normal child commit of 0774131e on new branch codex/mp06-uat-round2-prep, pushed without a pull request after full local gates and audit0. No deploy, secret, LINE webhook change, held storage/SQL access, live provider call, PR, Ready, merge, Production, U2 or Issue closure. UAT readiness stays NOT_VERIFIED.
+
+## 2026.10.02-v52 — Single Owner Mac uat2 deploy only
+
+Owner approved step B on 2026-10-02 ("B") and chose to run it from their own Mac with the already authenticated wrangler, so no Cloudflare token is stored in the cloud environment. Version 2026.10.02-v52 / MP-OD-2026-10-02-V52 supersedes v51. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+Finding: Wrangler refuses the first deploy of a new Worker while any secrets.required entry is unset unless --secrets-file is used, which would merge step C into step B. v52 therefore removes secrets.required from env.uat2 only. This is safe because assertRequiredSecrets fails every route except /health closed with 503 until all five TEST secrets are set; a worker test proves it for each missing secret. Top-level config of the held malispang-lineoa-test Worker and all runtime are unchanged.
+
+Authorization: exactly one Owner-executed `pnpm exec wrangler deploy --env uat2 --minify` of the clean v52 source commit on codex/mp06-uat-round2-prep after a frozen install, account c395a1bc15b7c95267173de5ccd6407d check, absent uat2 Worker and dry run. Post-check: /health 200, other routes 503, empty secret list, no new deployment on the held Worker, LINE webhook unchanged. An ambiguous outcome consumes the deploy; no retry. Never deploy without --env and never use pnpm deploy:test or --secrets-file.
+
+V52_ALLOWED_PATHS is the complete scope: control manifests and append-only records, v52 module/test and wiring, wrangler.jsonc, the round-2 worker test, the runbook section 7 and the v51 historical test pinned to immutable 8343581c83d86da01183cf3a333449acfecb6a5d. Secrets, LINE webhook, pilot activation, held storage, live provider, PR, merge, U2 and Issue closure remain forbidden and need separate Owner approval. UAT readiness stays NOT_VERIFIED.

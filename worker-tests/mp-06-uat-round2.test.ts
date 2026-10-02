@@ -296,4 +296,40 @@ describe("MP-06 v51 UAT round 2 local preparation", () => {
       reason: "ROUND2_STOP_REQUIRED",
     });
   });
+  it.each([
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL",
+  ])(
+    "fails every non-health route closed before step C while %s is unset",
+    async (secret) => {
+      // v52 deploys uat2 before any secret exists; only /health may answer.
+      const bare = { ...env } as Record<string, unknown>;
+      delete bare[secret];
+      const request = async (path: string, init: RequestInit = {}) => {
+        const ctx = createExecutionContext();
+        const response = await worker.fetch(
+          new Request(host + path, init),
+          bare as unknown as Env,
+          ctx,
+        );
+        await waitOnExecutionContext(ctx);
+        return response;
+      };
+      expect((await request("/health")).status).toBe(200);
+      for (const [path, init] of [
+        ["/admin/mp06-pilot/status", {}],
+        ["/admin/mp06-pilot/status", { headers: { authorization: "Bearer " } }],
+        ["/admin/mp06-pilot/activate", { method: "POST", body: "{}" }],
+        ["/admin/audit?conversationRef=" + "a".repeat(64), {}],
+        ["/webhook", { method: "POST", body: "{}" }],
+      ] as const) {
+        const response = await request(path, init);
+        expect(response.status, path).toBe(503);
+        expect(await response.json()).toEqual({ error: "SERVICE_UNAVAILABLE" });
+      }
+    },
+  );
 });
