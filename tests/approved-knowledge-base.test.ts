@@ -50,7 +50,7 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
   });
 
   it("answers every Owner-approved Thai business-data category", async () => {
-    const manifest = await loadManifest();
+    const manifest = await loadHistoricalManifest();
     const knowledgeBase = new ApprovedFaqKnowledgeBase(
       approvedFaqRecordsFromManifest(manifest),
       () => new Date("2026-08-31T12:00:00+07:00"),
@@ -76,7 +76,7 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
   });
 
   it("fails closed for every category at the 2026-09-30 review boundary", async () => {
-    const manifest = await loadManifest();
+    const manifest = await loadHistoricalManifest();
     const knowledgeBase = new ApprovedFaqKnowledgeBase(
       approvedFaqRecordsFromManifest(manifest),
       () => new Date("2026-09-30T00:00:00+07:00"),
@@ -142,6 +142,18 @@ describe("Issue #8 Approved Knowledge Base manifest", () => {
 async function loadManifest(): Promise<ApprovedKnowledgeManifest> {
   return JSON.parse(
     await readFile(manifestPath, "utf8"),
+  ) as ApprovedKnowledgeManifest;
+}
+
+async function loadHistoricalManifest(): Promise<ApprovedKnowledgeManifest> {
+  return JSON.parse(
+    await readFile(
+      new URL(
+        "./fixtures/knowledge-base/test-knowledge-base-v1.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
   ) as ApprovedKnowledgeManifest;
 }
 

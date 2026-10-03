@@ -23,6 +23,16 @@ export const FAQ_INTENTS = [
 
 export type FaqIntent = (typeof FAQ_INTENTS)[number];
 
+/** Explicit TEST-only lifecycle; this is a release-control marker, not remote discovery. */
+export interface TestKnowledgeValidity {
+  readonly validUntil: "PRODUCTION_RELEASE";
+  readonly environment: "TEST";
+  readonly accountName: "มะลิปัง TEST";
+  readonly releaseStatus: "PRE_RELEASE" | "RELEASED" | "UNKNOWN";
+  readonly ownerDecision: "MP-OD-2026-09-30-V46";
+  readonly productionApprovalRequired: true;
+}
+
 export interface ApprovedFaqRecord {
   readonly id: string;
   readonly intent: FaqIntent;
@@ -36,13 +46,14 @@ export interface ApprovedFaqRecord {
   readonly owner: string;
   readonly approvedAt: string;
   readonly effectiveFrom: string;
-  readonly effectiveTo: string;
+  readonly effectiveTo: string | null;
   readonly freshness: {
-    readonly reviewAt: string;
-    readonly maximumAgeDays: number;
+    readonly reviewAt: string | null;
+    readonly maximumAgeDays: number | null;
   };
   readonly version: string;
   readonly checksum: string;
+  readonly testValidity?: TestKnowledgeValidity;
 }
 
 export interface FaqProvenance {
@@ -151,7 +162,15 @@ function isInsideEffectiveWindow(
   timestamp: number,
 ): boolean {
   const start = Date.parse(record.effectiveFrom);
-  const end = Date.parse(record.effectiveTo);
+  if (record.testValidity !== undefined) {
+    return (
+      isPreReleaseTestRecord(record) &&
+      Number.isFinite(start) &&
+      start <= timestamp
+    );
+  }
+  const end =
+    record.effectiveTo === null ? Number.NaN : Date.parse(record.effectiveTo);
   return (
     Number.isFinite(start) &&
     Number.isFinite(end) &&
@@ -165,8 +184,20 @@ function isAuthoritative(
   timestamp: number,
 ): boolean {
   const approvedAt = Date.parse(record.approvedAt);
-  const reviewAt = Date.parse(record.freshness.reviewAt);
-  const maximumAgeMs = record.freshness.maximumAgeDays * 24 * 60 * 60 * 1_000;
+  const reviewAt =
+    record.freshness.reviewAt === null
+      ? Number.NaN
+      : Date.parse(record.freshness.reviewAt);
+  const age = record.freshness.maximumAgeDays;
+  const fresh =
+    record.testValidity !== undefined
+      ? isPreReleaseTestRecord(record)
+      : Number.isFinite(reviewAt) &&
+        timestamp < reviewAt &&
+        typeof age === "number" &&
+        Number.isSafeInteger(age) &&
+        age > 0 &&
+        timestamp < approvedAt + age * 24 * 60 * 60 * 1_000;
   return (
     record.id.trim().length > 0 &&
     record.answer.trim().length > 0 &&
@@ -178,10 +209,23 @@ function isAuthoritative(
     /^[a-f0-9]{64}$/.test(record.checksum) &&
     Number.isFinite(approvedAt) &&
     approvedAt <= timestamp &&
-    Number.isFinite(reviewAt) &&
-    timestamp < reviewAt &&
-    Number.isSafeInteger(record.freshness.maximumAgeDays) &&
-    record.freshness.maximumAgeDays > 0 &&
-    timestamp < approvedAt + maximumAgeMs
+    fresh
+  );
+}
+
+function isPreReleaseTestRecord(record: ApprovedFaqRecord): boolean {
+  const validity = record.testValidity;
+  return (
+    validity !== undefined &&
+    validity !== null &&
+    validity.validUntil === "PRODUCTION_RELEASE" &&
+    validity.environment === "TEST" &&
+    validity.accountName === "มะลิปัง TEST" &&
+    validity.releaseStatus === "PRE_RELEASE" &&
+    validity.ownerDecision === "MP-OD-2026-09-30-V46" &&
+    validity.productionApprovalRequired === true &&
+    record.effectiveTo === null &&
+    record.freshness.reviewAt === null &&
+    record.freshness.maximumAgeDays === null
   );
 }

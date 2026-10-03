@@ -1297,11 +1297,22 @@ describe("committed v33 local-only checkout", () => {
     v25AssertUnchanged(before, fixture);
   });
   it("runs the real CLI on a clean checkout without requiring a dirty path", async () => {
+    const started = performance.now();
+    const timing = (phase: string) =>
+      console.info(
+        JSON.stringify({
+          phase: "v48_v33_cli." + phase,
+          milliseconds: performance.now() - started,
+        }),
+      );
     const before = v25OperatorSnapshot(fixture);
+    timing("initial_snapshot_complete");
     await expect(
       runProjectControlValidation(pathToFileURL(fixture + "/")),
     ).resolves.toBeUndefined();
+    timing("cli_complete");
     v25AssertUnchanged(before, fixture);
+    timing("final_snapshot_complete");
   });
   it("permits dirty local tooling but preserves raw index and reports not clean", async () => {
     await v25WithChild(fixture, async (cwd) => {
@@ -7731,21 +7742,35 @@ async function v25CreateHistorical(): Promise<string> {
     v25AssertUnchanged(before);
   }
 }
+type V25ChildOptions = {
+  deferCheckout?: boolean;
+  onPhase?: (
+    phase:
+      | "operator_snapshot_complete"
+      | "temporary_directory_created"
+      | "clone_complete",
+  ) => void;
+};
 async function v25WithChild<T>(
   source: string,
-  run: (cwd: string) => Promise<T>,
+  run: (cwd: string) => Promise<T> | T,
+  options: V25ChildOptions = {},
 ): Promise<T> {
   const before = v25OperatorSnapshot();
+  options.onPhase?.("operator_snapshot_complete");
   const fixture = await mkdtemp(join(tmpdir(), "mp06-v25-child-"));
   try {
+    options.onPhase?.("temporary_directory_created");
     v25Git(
       fileURLToPath(root),
       "clone",
       "--quiet",
       "--shared",
+      ...(options.deferCheckout ? ["--no-checkout"] : []),
       source,
       fixture,
     );
+    options.onPhase?.("clone_complete");
     return await run(fixture);
   } finally {
     try {
@@ -8532,7 +8557,18 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
   ] as const)(
     "snapshot regression: a genuine %s mutation is still rejected",
     async (component) => {
+      const started = performance.now();
+      const timing = (phase: string) => {
+        if (component === "untracked")
+          console.info(
+            JSON.stringify({
+              phase: "v48_untracked." + phase,
+              milliseconds: performance.now() - started,
+            }),
+          );
+      };
       await v25WithChild(historical, async (cwd) => {
+        timing("fixture_ready");
         const index = resolve(
           cwd,
           v25Git(cwd, "rev-parse", "--git-path", "index").trim(),
@@ -8540,6 +8576,7 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
         const indexBefore = await readFile(index);
         const headBefore = v25Git(cwd, "rev-parse", "HEAD");
         const before = v25OperatorSnapshot(cwd);
+        timing("snapshot_complete");
         expect(await readFile(index)).toEqual(indexBefore);
         if (component === "raw-index") {
           v25Git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
@@ -8584,12 +8621,15 @@ describe("v25 exact two-commit seal and isolated historical fixture", () => {
           expect(await readFile(index)).toEqual(indexBefore);
         }
         const mutatedIndex = await readFile(index);
+        timing("mutation_complete");
         expect(() => v25AssertUnchanged(before, cwd)).toThrow(
           "ACTIVE_REPOSITORY_MUTATED",
         );
         expect(await readFile(index)).toEqual(mutatedIndex);
         expect(existsSync(index + ".lock")).toBe(false);
+        timing("assertions_complete");
       });
+      timing("cleanup_and_operator_guard_complete");
     },
   );
   it.each(["success", "failure"] as const)(
@@ -9534,6 +9574,7 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
   const timed = async (
     name: string,
     work: (cwd: string, mark: (phase: string) => void) => Promise<void> | void,
+    options: Pick<V25ChildOptions, "deferCheckout"> = {},
   ) => {
     const started = performance.now();
     const mark = (phase: string) =>
@@ -9545,11 +9586,15 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
       );
     mark("started");
     try {
-      await v25WithChild(fixture, async (cwd) => {
-        mark("isolated_fixture_ready");
-        await work(cwd, mark);
-        mark("assertions_complete");
-      });
+      await v25WithChild(
+        fixture,
+        async (cwd) => {
+          mark("isolated_fixture_ready");
+          await work(cwd, mark);
+          mark("assertions_complete");
+        },
+        { ...options, onPhase: mark },
+      );
     } finally {
       mark("cleanup_and_operator_guard_complete");
     }
@@ -10116,21 +10161,81 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
   it("rejects substituted historical commit/path bytes and cleans the isolated fixture on failure", async () => {
     let child = "";
     await expect(
-      timed("historical_failure", async (cwd, mark) => {
+      timed(
+        "historical_failure",
+        async (cwd, mark) => {
+          child = cwd;
+          // Materialize only the pinned revision, without an intermediate checkout.
+          v25Git(
+            cwd,
+            "checkout",
+            "--quiet",
+            "--detach",
+            v27HistoricalV26Commit,
+          );
+          mark("historical_checkout_complete");
+          v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true);
+          expect(() => v27AssertHistoricalV26(cwd, "HEAD")).toThrow(
+            "V27_HISTORICAL_COMMIT_SUBSTITUTED",
+          );
+          await writeFile(join(cwd, "config/project/current-work.json"), "{}");
+          expect(() =>
+            v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true),
+          ).toThrow("V27_HISTORICAL_BYTES_SUBSTITUTED");
+          mark("negative_assertions_complete");
+          throw new Error("SYNTHETIC_V27_FIXTURE_FAILURE");
+        },
+        { deferCheckout: true },
+      ),
+    ).rejects.toThrow("SYNTHETIC_V27_FIXTURE_FAILURE");
+    expect(existsSync(child)).toBe(false);
+    expect(v25OperatorSnapshot()).toBe(operatorBefore);
+  });
+  it("keeps eager child checkout as the default and removes the fixture after success", async () => {
+    let child = "";
+    await v25WithChild(fixture, (cwd) => {
+      child = cwd;
+      expect(existsSync(join(cwd, "PROJECT_CONTROL.md"))).toBe(true);
+      expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(
+        v25Git(fixture, "rev-parse", "HEAD"),
+      );
+      expect(v25Git(cwd, "status", "--porcelain=v1")).toBe("");
+    });
+    expect(existsSync(child)).toBe(false);
+    expect(v25OperatorSnapshot()).toBe(operatorBefore);
+  });
+  it("defers only child materialization while retaining exact historical objects, bytes and cleanup", async () => {
+    let child = "";
+    await v25WithChild(
+      fixture,
+      (cwd) => {
         child = cwd;
+        expect(existsSync(join(cwd, "PROJECT_CONTROL.md"))).toBe(false);
+        expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(
+          v25Git(fixture, "rev-parse", "HEAD"),
+        );
         v25Git(cwd, "checkout", "--quiet", "--detach", v27HistoricalV26Commit);
         v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true);
-        expect(() => v27AssertHistoricalV26(cwd, "HEAD")).toThrow(
-          "V27_HISTORICAL_COMMIT_SUBSTITUTED",
-        );
-        await writeFile(join(cwd, "config/project/current-work.json"), "{}");
-        expect(() =>
-          v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true),
-        ).toThrow("V27_HISTORICAL_BYTES_SUBSTITUTED");
-        mark("negative_assertions_complete");
-        throw new Error("SYNTHETIC_V27_FIXTURE_FAILURE");
-      }),
-    ).rejects.toThrow("SYNTHETIC_V27_FIXTURE_FAILURE");
+        expect(v25Git(cwd, "status", "--porcelain=v1")).toBe("");
+      },
+      { deferCheckout: true },
+    );
+    expect(existsSync(child)).toBe(false);
+    expect(v25OperatorSnapshot()).toBe(operatorBefore);
+  });
+  it("preserves deferred child cleanup and operator guards when the callback fails before checkout", async () => {
+    let child = "";
+    await expect(
+      v25WithChild(
+        fixture,
+        (cwd) => {
+          child = cwd;
+          expect(existsSync(join(cwd, "PROJECT_CONTROL.md"))).toBe(false);
+          throw new Error("SYNTHETIC_DEFERRED_CHILD_FAILURE");
+        },
+        { deferCheckout: true },
+      ),
+    ).rejects.toThrow("SYNTHETIC_DEFERRED_CHILD_FAILURE");
     expect(existsSync(child)).toBe(false);
     expect(v25OperatorSnapshot()).toBe(operatorBefore);
   });

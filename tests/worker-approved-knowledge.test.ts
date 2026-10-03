@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   approvedAnswerForReplyKind,
@@ -12,6 +12,20 @@ import {
 } from "../worker/routing.js";
 
 describe("Worker Approved Knowledge gate", () => {
+  // Pin only Date for repeatability; runtime code still uses the live clock.
+  beforeEach(() => vi.setSystemTime(new Date("2026-10-01T00:00:00+07:00")));
+  afterEach(() => vi.useRealTimers());
+
+  it("does not answer from the renewed data before its effective start", () => {
+    vi.setSystemTime(new Date("2026-09-30T02:34:47.999Z"));
+    expect(enforceApprovedKnowledge(classifyText("ขอเมนู"))).toMatchObject({
+      replyKind: "SAFE_FALLBACK",
+      handoff: true,
+      allowDuringHandoff: false,
+    });
+    expect(approvedAnswerForReplyKind("MENU")).toBeUndefined();
+  });
+
   it.each([
     "MENU",
     "PRICE",

@@ -1,7 +1,16 @@
-import { FAQ_INTENTS, type ApprovedFaqRecord, type FaqIntent } from "./faq.js";
+import {
+  FAQ_INTENTS,
+  type ApprovedFaqRecord,
+  type FaqIntent,
+  type TestKnowledgeValidity,
+} from "./faq.js";
 
 export interface ApprovedKnowledgeManifest {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 1 | 2;
+  readonly validity?: Omit<
+    TestKnowledgeValidity,
+    "environment" | "accountName"
+  >;
   readonly environment: "TEST";
   readonly accountName: "มะลิปัง TEST";
   readonly sourceOfTruth: "VERSIONED_REPOSITORY_MANIFEST";
@@ -19,12 +28,13 @@ export type KnowledgeManifestRecord =
       readonly owner: string;
       readonly approvedAt: string;
       readonly effectiveFrom: string;
-      readonly effectiveTo: string;
+      readonly effectiveTo: string | null;
       readonly freshness: {
-        readonly reviewAt: string;
-        readonly maximumAgeDays: number;
+        readonly reviewAt: string | null;
+        readonly maximumAgeDays: number | null;
       };
       readonly version: string;
+      readonly supersedes?: string;
       readonly checksum: string;
       readonly keywords: readonly string[];
       readonly customerFacingAnswer: string;
@@ -57,7 +67,28 @@ export function validateApprovedKnowledgeManifest(
 ): readonly string[] {
   if (!isRecord(input)) return ["MANIFEST_NOT_OBJECT"];
   const errors: string[] = [];
-  if (input.schemaVersion !== 1) errors.push("INVALID_SCHEMA_VERSION");
+  if (input.schemaVersion !== 1 && input.schemaVersion !== 2)
+    errors.push("INVALID_SCHEMA_VERSION");
+  const lifecycleMode = input.schemaVersion === 2;
+  if (lifecycleMode) {
+    const validity = input.validity;
+    if (
+      !isRecord(validity) ||
+      Object.keys(validity).sort().join(",") !==
+        "ownerDecision,productionApprovalRequired,releaseStatus,validUntil" ||
+      validity.validUntil !== "PRODUCTION_RELEASE" ||
+      typeof validity.releaseStatus !== "string" ||
+      !["PRE_RELEASE", "RELEASED", "UNKNOWN"].includes(
+        validity.releaseStatus,
+      ) ||
+      validity.ownerDecision !== "MP-OD-2026-09-30-V46" ||
+      validity.productionApprovalRequired !== true
+    ) {
+      errors.push("INVALID_TEST_LIFECYCLE_VALIDITY");
+    }
+  } else if ("validity" in input) {
+    errors.push("LIFECYCLE_REQUIRES_SCHEMA_2");
+  }
   if (input.environment !== "TEST") errors.push("INVALID_ENVIRONMENT");
   if (input.accountName !== "มะลิปัง TEST") errors.push("INVALID_ACCOUNT_NAME");
   if (input.sourceOfTruth !== "VERSIONED_REPOSITORY_MANIFEST") {
@@ -77,9 +108,11 @@ export function validateApprovedKnowledgeManifest(
       errors.push(`${intent}_MISSING`);
       continue;
     }
+    if ("testValidity" in record)
+      errors.push(`${intent}_INLINE_LIFECYCLE_PROHIBITED`);
     validateCommonFields(intent, record, errors);
     if (record.status === "APPROVED") {
-      validateApproved(intent, record, errors);
+      validateApproved(intent, record, errors, lifecycleMode);
     } else if (record.status === "BLOCKED") {
       validateBlocked(intent, record, errors);
     } else {
@@ -102,6 +135,9 @@ export function parseApprovedKnowledgeManifest(
 export function approvedFaqRecordsFromManifest(
   manifest: ApprovedKnowledgeManifest,
 ): readonly ApprovedFaqRecord[] {
+  // Do not allow callers to bypass schema/environment validation with a type assertion.
+  parseApprovedKnowledgeManifest(manifest);
+  const validity = manifest.schemaVersion === 2 ? manifest.validity : undefined;
   return FAQ_INTENTS.flatMap((intent) => {
     const record = manifest.categories[intent];
     if (record.status !== "APPROVED") return [];
@@ -120,6 +156,15 @@ export function approvedFaqRecordsFromManifest(
         freshness: record.freshness,
         version: record.version,
         checksum: record.checksum,
+        ...(validity
+          ? {
+              testValidity: {
+                ...validity,
+                environment: manifest.environment,
+                accountName: manifest.accountName,
+              },
+            }
+          : {}),
       },
     ];
   });
@@ -150,6 +195,7 @@ function validateApproved(
   intent: FaqIntent,
   record: Record<string, unknown>,
   errors: string[],
+  lifecycleMode: boolean,
 ): void {
   if (
     !isRecord(record.source) ||
@@ -165,7 +211,6 @@ function validateApproved(
   for (const field of [
     "approvedAt",
     "effectiveFrom",
-    "effectiveTo",
     "version",
     "checksum",
     "customerFacingAnswer",
@@ -193,7 +238,26 @@ function validateApproved(
   ) {
     errors.push(`${intent}_TEST_DATA_PROHIBITED`);
   }
-  if (isRecord(record.freshness)) {
+  if (lifecycleMode) {
+    if (
+      record.effectiveTo !== null ||
+      !isRecord(record.freshness) ||
+      record.freshness.reviewAt !== null ||
+      record.freshness.maximumAgeDays !== null
+    ) {
+      errors.push(`${intent}_LIFECYCLE_DATES_MUST_BE_NULL`);
+    }
+    if (
+      typeof record.supersedes !== "string" ||
+      !record.supersedes.trim() ||
+      record.supersedes === record.version
+    ) {
+      errors.push(`${intent}_SUPERSEDED_VERSION_REQUIRED`);
+    }
+  } else if (isRecord(record.freshness)) {
+    if (typeof record.effectiveTo !== "string" || !record.effectiveTo.trim()) {
+      errors.push(`${intent}_EFFECTIVETO_MISSING`);
+    }
     if (
       typeof record.freshness.reviewAt !== "string" ||
       !record.freshness.reviewAt.trim()
@@ -208,16 +272,24 @@ function validateApproved(
       errors.push(`${intent}_INVALID_MAXIMUM_AGE`);
     }
   }
-  validateApprovedDates(intent, record, errors);
+  validateApprovedDates(intent, record, errors, lifecycleMode);
 }
 
 function validateApprovedDates(
   intent: FaqIntent,
   record: Record<string, unknown>,
   errors: string[],
+  lifecycleMode: boolean,
 ): void {
   const approvedAt = parseDate(record.approvedAt);
   const effectiveFrom = parseDate(record.effectiveFrom);
+  if (lifecycleMode) {
+    if (![approvedAt, effectiveFrom].every(Number.isFinite))
+      errors.push(`${intent}_INVALID_DATE`);
+    else if (approvedAt > effectiveFrom)
+      errors.push(`${intent}_INVALID_DATE_ORDER`);
+    return;
+  }
   const effectiveTo = parseDate(record.effectiveTo);
   const reviewAt = isRecord(record.freshness)
     ? parseDate(record.freshness.reviewAt)
