@@ -54,10 +54,10 @@ import {
 import { parseWebhook, type ParsedLineEvent } from "./webhook-schema.js";
 
 export {
-  ConversationStateDO,
-  DraftOrderDO,
-  HandoffRegistryDO,
-  PromotionControlDO,
+  ConversationStateDO as ConversationStateDOV2,
+  DraftOrderDO as DraftOrderDOV2,
+  HandoffRegistryDO as HandoffRegistryDOV2,
+  PromotionControlDO as PromotionControlDOV2,
 };
 
 const decoder = new TextDecoder();
@@ -538,6 +538,43 @@ async function handleAdmin(
     );
     return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
+
+  if (url.pathname === "/admin/mp06/conversation-observation") {
+    const reply = (body: unknown, status: number) =>
+      Response.json(body, { status, headers: { "cache-control": "no-store" } });
+    if (request.method !== "GET")
+      return reply({ error: "METHOD_NOT_ALLOWED" }, 405);
+    const conversationRef = url.searchParams.get("conversationRef");
+    const eventRef = url.searchParams.get("eventRef");
+    if (
+      url.origin !==
+        "https://malispang-lineoa-test.eakkachai-dev.workers.dev" ||
+      env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      !conversationRef ||
+      !isMp06PilotReference(conversationRef) ||
+      url.searchParams.getAll("conversationRef").length !== 1 ||
+      url.searchParams.getAll("eventRef").length > 1 ||
+      (eventRef !== null && !isMp06PilotReference(eventRef)) ||
+      [...url.searchParams.keys()].some(
+        (key) => key !== "conversationRef" && key !== "eventRef",
+      )
+    )
+      return reply({ error: "INVALID_OBSERVATION_REQUEST" }, 400);
+    try {
+      // No resolver/enumeration, cleanup or activation. Waking an object still
+      // runs its existing constructor; this route is not permission to read
+      // retained/held storage. Future remote use requires its own action gate.
+      const observation = await env.CONVERSATION_STATE.getByName(
+        conversationRef,
+      ).conversationObservation(eventRef ?? undefined);
+      return observation
+        ? reply({ observedAt: new Date().toISOString(), observation }, 200)
+        : reply({ error: "OBSERVATION_UNAVAILABLE" }, 409);
+    } catch {
+      return reply({ error: "OBSERVATION_UNAVAILABLE" }, 503);
+    }
+  }
+
   if (url.pathname === "/admin/mp06-pilot/owner-uat-readiness") {
     const receipt = {
       actor: "AUTHENTICATED_TEST_ADMIN",

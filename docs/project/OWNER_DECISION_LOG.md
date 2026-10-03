@@ -1799,3 +1799,189 @@ Before one normal child commit: fresh frozen install, focused exact-stage gates,
   "nextBaseline": "OPTION3_PROPOSAL_AFTER_OPTION1_NO_IMPLEMENTATION_REMOTE_DEPLOY_UAT_OR_PAUSED_BRANCH_RESUME"
 }
 ```
+
+## MP-OD-2026-10-03-V55 — TEST reset local implementation
+
+Owner decision 2026-10-03 D1–D4: TEST has only the Owner, no real customers, and all TEST state may be discarded without retaining live evidence. Retire WP8F/v16/v22; the unused v22 grant is RETIRED_UNUSED and cannot be reissued. September cause remains permanently UNKNOWN; U1 GAP/A1–A3/billing remain unresolved, never PASS. Production NO_GO — NOT TOUCHED; paused v51/v52 unchanged.
+
+v55 is LOCAL IMPLEMENTATION ONLY from 47cf2f2: four V2 class export aliases, matching SQLite exports and deleted original-class tombstones; authenticated SELECT-only conversation observation; fix rejected resumeMp06Acceptance so it creates no activation journal; new local synthetic/mock tests and control validation. No policy/KB/catalog/model/prompt/response-schema/threshold/dependency/workflow changes. Existing database schema is queried, not expanded.
+
+No deployment, secret, webhook, pilot, live UAT, storage access, Data Studio/SQL, provider call, commit or push is authorized in this phase. Old safety hold stays intact; local implementation is neither safety clearance nor a transport bypass. Request Claude VERIFY on the complete local patch before any separately authorized publication. No old grant is inherited.
+
+Cloudflare documentation https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/ (checked 2026-10-03) says deletion permanently removes the class namespace and stored data with no Trash; old class must no longer be exported and external Worker bindings block deletion. Local config targets malispang-lineoa-test, but remote bindings/target isolation are NOT_OBSERVED. Before proposing deploy, require independently permitted exact account/Worker/binding preflight, quiescence/redelivery/alarm assessment and explicit irreversible-destruction approval; do not infer Production isolation from a dry-run. No deploy or real deletion occurred. Code rollback cannot recover deleted namespace data. Provider charges do not disappear with the local ledger.
+
+New observation SELECT methods do not mutate rows, but constructor startup can initialize/backfill: read-only method does not mean side-effect-free remote invocation. Do not call it on held old storage. No test result retroactively repairs old acceptance; U4 remains text silence in HUMAN_HANDOFF after explicit STOP, not universal LINE-egress silence.
+
+```json
+{
+  "version": "2026.10.03-v55",
+  "ownerDecision": "MP-OD-2026-10-03-V55",
+  "supersedes": "2026.10.03-v54",
+  "technicalBase": "2026.10.03-v54",
+  "baseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baselineTree": "f60f768b072750f0273138dd25edeee234a4f53b",
+  "baselineParent": "9e703552f1392d5107c90bf34a9f28eff8963414",
+  "publishedBaseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_NAMESPACE_RESET_LOCAL_IMPLEMENTATION_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "RETIRE_OLD_UAT_PREPARE_FRESH_TEST_LOCALLY_NO_REMOTE_ACTION",
+  "evidencePolicy": "SANITIZED_SUMMARIES_AND_APPROVED_PREPUSH_PATCH_ONLY_NO_PII_RAW_CHAT_OR_REMOTE_ACCESS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "implementationSeals": {
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "1ceb96fc8ae1dcb469006c614872534df559633277cb6b2b0363c3da3d78cda8",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def"
+  },
+  "publication": "NOT_AUTHORIZED_LOCAL_ONLY_CLAUDE_VERIFY_BEFORE_ANY_FUTURE_PUSH",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "COMMIT_PUSH_DEPLOY_SECRET_WEBHOOK_PILOT_UAT_REMOTE_STORAGE_SQL_DATA_STUDIO_PROVIDER_HOLD_BYPASS_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_PRODUCTION",
+  "prePushReview": "PR20_COMPLETE_LOCAL_PATCH_REVIEW_REQUIRED_NOT_PUBLICATION_AUTHORITY",
+  "postPushReview": "ONLY_AFTER_SEPARATE_PUBLICATION_AUTHORITY",
+  "nextBaseline": "FRESH_TEST_UAT_REQUIRES_SEPARATE_DECISION",
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "ownerFacts": {
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "production": "NO_GO_NOT_TOUCHED"
+  },
+  "localScope": "V2_EXPORT_ALIASES_FOUR_CLASSES_DELETED_CONFIG_SELECT_ONLY_OBSERVATION_DENIED_RESUME_NO_DDL",
+  "destruction": "NOT_EXECUTED_DEPLOY_FORBIDDEN_IRREVERSIBLE_IF_LATER_AUTHORIZED",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "commit": false,
+  "push": false
+}
+```
+
+### Owner v55 local scope amendment — 2026-10-03 (ICT)
+
+Owner replied "อนุมัติ" to adding only worker-configuration.d.ts for eight V2 type-name replacements: four binding imports and four durableNamespaces literals. Scope is now 18 paths. No generated runtime-library or header change is authorized; the retained header records the historical generation, not a claim that the V2 file was regenerated. No model/policy/schema/threshold/dependency or remote authority changes. This supplements the unpublished v55 local decision, superseding the earlier 17-path scope only. Complete local qualification and Claude VERIFY remain required; commit/push/deploy stay unauthorized.
+
+## MP-OD-2026-10-04-V56 — Frozen v55 publication only
+
+Owner approved “อนุมัติ” on 2026-10-04 (Asia/Bangkok), replying to the request for the next publication control, commit/push existing Draft PR20 and hosted CI. This is NOT deploy/reset/remote TEST/UAT/Production approval. MP-06/#12 stays CURRENT/OPEN, MP-07 blocked. Supersedes 2026.10.03-v55; actual Git baseline 47cf2f2c1c24ca365627ce515df30ed12fcea2f0; v55 was never committed. The one child contains the reviewed v55 implementation and v56 publication control together.
+
+Freeze v55 runtime/config/type-name changes, Worker tests, v55 module and historical v54 adapter byte-identically to RES-10 (PR20 comment5969226493). The original 18-file uncommitted patch has SHA256 cce49bb3c0d8bc3e352f286d0892726fc654e17dcd1f09a6bc6cb724e93e7b25 and reconstructs tree 82a7121e032ef14bbac1ea3e85aea3c2414df0ed on both Mac and Claude cloud. The 21-path scope is the original 18 paths plus src/project-control-v56.ts, tests/project-control-v56.test.ts and tests/fixtures/project-control/v55-local-patch.json. The v55 test may change only its historical adapter; its original tests remain in the hash-bound fixture. No additional runtime fix or generated header change.
+
+Before commit: exact staged complete patch, full local gates (including actual Mac rendering), zero-all-severity fresh audit, source/index stability, Claude PR20 review of that complete patch and tree. Before push: actual clean sole-child commit, full local gates/audit0 bound to its SHA/tree/diff, Claude exact reconstruction of the nonpersonal raw commit (not a tree-only PASS), fresh <=120s OPEN Draft/unmerged PR20 at head47cf2f2/basea05bab89 and exact branches. Normal push once only; unknown publication outcome requires readback, not blind retry. Immediately request postpush VERIFY; verify remote SHA/parent/history and hosted CI. A structural validator PASS is never a qualification receipt or publication permission.
+
+Historical v55 control and all old decision/journal text remain intact. v22 stays RETIRED_UNUSED_NO_REISSUE; September cause permanently UNKNOWN; U1 GAP/A1–A3/billing unresolved, not PASS. Paused v51/v52 at d63d620820a4f1ea6f452e553724d34d16535a90 is untouched. No old grant is inherited.
+
+No deploy, actual namespace deletion, secret, webhook, pilot, live UAT/provider, old storage/SQL/Data Studio, hold bypass/replay/reroute, policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow change, new PR, Ready/merge, Issue closure or Production. Production NO_GO — NOT TOUCHED. Deletion is irreversible if separately authorized in future; live isolation/external bindings and destructive preflight remain NOT_VERIFIED. Aggregate counts are not per-event delivery proof; eventRef provenance and hardcoded close-route accounting remain future blockers. U4 is text silence in HUMAN_HANDOFF after STOP, not universal LINE-egress silence.
+
+```json
+{
+  "version": "2026.10.04-v56",
+  "ownerDecision": "MP-OD-2026-10-04-V56",
+  "supersedes": "2026.10.03-v55",
+  "technicalBase": "2026.10.03-v55",
+  "baseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baselineTree": "f60f768b072750f0273138dd25edeee234a4f53b",
+  "baselineParent": "9e703552f1392d5107c90bf34a9f28eff8963414",
+  "publishedBaseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "REVIEWED_V55_EXISTING_DRAFT_PR20_PUBLICATION_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "PUBLISH_FROZEN_V55_PLUS_V56_ONE_CHILD_NO_DEPLOY_RESET_OR_LIVE_UAT",
+  "evidencePolicy": "SANITIZED_SUMMARIES_AND_APPROVED_PREPUSH_PATCH_ONLY_NO_PII_RAW_CHAT_OR_REMOTE_ACCESS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_CLAUDE_STAGED_REVIEW_COMMIT_EXACT_COMMIT_REVIEW_NORMAL_PUSH_CI",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "DEPLOY_RESET_SECRET_WEBHOOK_PILOT_UAT_REMOTE_STORAGE_SQL_DATA_STUDIO_PROVIDER_HOLD_BYPASS_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_PRODUCTION_NEW_PR_READY_MERGE_ISSUE_CLOSE",
+  "prePushReview": "PR20_COMPLETE_PATCH_NONPERSONAL_RAW_COMMIT_RECONSTRUCT_EXACT_SHA_TREE_PARENT_DIFF_FULL_GATES_AUDIT0",
+  "postPushReview": "REQ_VERIFY_REMOTE_EXACT_SHA_PARENT_HISTORY_HOSTED_CI",
+  "nextBaseline": "FRESH_TEST_UAT_REQUIRES_SEPARATE_DECISION",
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "ownerFacts": {
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "production": "NO_GO_NOT_TOUCHED"
+  },
+  "localScope": "V2_EXPORT_ALIASES_FOUR_CLASSES_DELETED_CONFIG_SELECT_ONLY_OBSERVATION_DENIED_RESUME_NO_DDL",
+  "destruction": "NOT_EXECUTED_DEPLOY_FORBIDDEN_IRREVERSIBLE_IF_LATER_AUTHORIZED",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "commit": "CONDITIONAL_FULL_STAGE_GATES_CLAUDE_REVIEW",
+  "push": "CONDITIONAL_EXACT_COMMIT_GATES_CLAUDE_REVIEW_FRESH_PR20",
+  "reviewedV55": {
+    "baseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+    "tree": "82a7121e032ef14bbac1ea3e85aea3c2414df0ed",
+    "diffSha256": "cce49bb3c0d8bc3e352f286d0892726fc654e17dcd1f09a6bc6cb724e93e7b25",
+    "files": {
+      "PROJECT_CONTROL.md": "ff1e00e2e02f81c95ea05863b4d96ff5e770fd433db667e8b37e563627fd5265",
+      "config/project/current-work.json": "a102f875288095261ac1d579cdc561581f6d9b71db39ba7ad2c70ff091988dc7",
+      "config/project/current-work.schema.json": "89920e66ba05bd564e4e21a4652122509636d973134c233bccf14119488f86ba",
+      "config/project/roadmap.json": "5332ecbb99111db6d89dffdd67d3fa846958fc796ce7006cde8296fed322adb4",
+      "docs/project/EXECUTION_GATES.md": "0c65c206eeba470d7e4cfa1b6b72980cae72e3ea9c90c605715bc67bfb0555de",
+      "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "1ceb96fc8ae1dcb469006c614872534df559633277cb6b2b0363c3da3d78cda8",
+      "docs/project/OWNER_DECISION_LOG.md": "45bed3b1c75d4380fbb9b4ccbc3e0e1f7c29f117965017b51ab214d0feb4eb88",
+      "docs/project/ROADMAP_CHANGELOG.md": "3a683b8f01d6f620d4a9ec43838decab155f94543c162b6dfa5ae1591200beb9",
+      "src/project-control-cli.ts": "ea321e20a1a1d17af8cf5a1e16fca9d6140b7d7863c74c6456e5b9ad9046ceab",
+      "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+      "src/project-control.ts": "1e8fa98f3127d9d14228df712df2bc536ef4ae39d9e59c946b20419a10e04ab1",
+      "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+      "tests/project-control-v55.test.ts": "54bb2c35122c5bc2b2a81129d605f0e32d1e8206a69149cb0a4ea271c0bae41e",
+      "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+      "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+      "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+      "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+      "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+    }
+  },
+  "fixturePath": "tests/fixtures/project-control/v55-local-patch.json"
+}
+```

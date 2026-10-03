@@ -1,3 +1,39 @@
+# MP-06 — v56 publication handoff (current)
+
+Control: 2026.10.04-v56 / MP-OD-2026-10-04-V56. Codex sole writer; Claude cloud through PR20 only, no CLI or branch handoff. Read current #9/#12/PR20 before writing; avoid duplicate REQ. REQ-11 / RES-11 comment5972582333 is plan advice, not code PASS or Owner authority.
+
+Owner approved “อนุมัติ” on 2026-10-04 (Asia/Bangkok), replying to the request for the next publication control, commit/push existing Draft PR20 and hosted CI. This is NOT deploy/reset/remote TEST/UAT/Production approval. MP-06/#12 stays CURRENT/OPEN, MP-07 blocked. Supersedes 2026.10.03-v55; actual Git baseline 47cf2f2c1c24ca365627ce515df30ed12fcea2f0; v55 was never committed. The one child contains the reviewed v55 implementation and v56 publication control together.
+
+Freeze v55 runtime/config/type-name changes, Worker tests, v55 module and historical v54 adapter byte-identically to RES-10 (PR20 comment5969226493). The original 18-file uncommitted patch has SHA256 cce49bb3c0d8bc3e352f286d0892726fc654e17dcd1f09a6bc6cb724e93e7b25 and reconstructs tree 82a7121e032ef14bbac1ea3e85aea3c2414df0ed on both Mac and Claude cloud. The 21-path scope is the original 18 paths plus src/project-control-v56.ts, tests/project-control-v56.test.ts and tests/fixtures/project-control/v55-local-patch.json. The v55 test may change only its historical adapter; its original tests remain in the hash-bound fixture. No additional runtime fix or generated header change.
+
+Before commit: exact staged complete patch, full local gates (including actual Mac rendering), zero-all-severity fresh audit, source/index stability, Claude PR20 review of that complete patch and tree. Before push: actual clean sole-child commit, full local gates/audit0 bound to its SHA/tree/diff, Claude exact reconstruction of the nonpersonal raw commit (not a tree-only PASS), fresh <=120s OPEN Draft/unmerged PR20 at head47cf2f2/basea05bab89 and exact branches. Normal push once only; unknown publication outcome requires readback, not blind retry. Immediately request postpush VERIFY; verify remote SHA/parent/history and hosted CI. A structural validator PASS is never a qualification receipt or publication permission.
+
+Historical v55 control and all old decision/journal text remain intact. v22 stays RETIRED_UNUSED_NO_REISSUE; September cause permanently UNKNOWN; U1 GAP/A1–A3/billing unresolved, not PASS. Paused v51/v52 at d63d620820a4f1ea6f452e553724d34d16535a90 is untouched. No old grant is inherited.
+
+No deploy, actual namespace deletion, secret, webhook, pilot, live UAT/provider, old storage/SQL/Data Studio, hold bypass/replay/reroute, policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow change, new PR, Ready/merge, Issue closure or Production. Production NO_GO — NOT TOUCHED. Deletion is irreversible if separately authorized in future; live isolation/external bindings and destructive preflight remain NOT_VERIFIED. Aggregate counts are not per-event delivery proof; eventRef provenance and hardcoded close-route accounting remain future blockers. U4 is text silence in HUMAN_HANDOFF after STOP, not universal LINE-egress silence.
+
+## Retained complete historical v55 handoff (not current publication authority)
+
+### Owner v55 local scope amendment — 2026-10-03 (ICT)
+
+Owner replied "อนุมัติ" to adding only worker-configuration.d.ts for eight V2 type-name replacements: four binding imports and four durableNamespaces literals. Scope is now 18 paths. No generated runtime-library or header change is authorized; the retained header records the historical generation, not a claim that the V2 file was regenerated. No model/policy/schema/threshold/dependency or remote authority changes. This supplements the unpublished v55 local decision, superseding the earlier 17-path scope only. Complete local qualification and Claude VERIFY remain required; commit/push/deploy stay unauthorized.
+
+# MP-06 — current handoff v55
+
+Control 2026.10.03-v55 / MP-OD-2026-10-03-V55 supersedes 2026.10.03-v54. Baseline 47cf2f2c1c24ca365627ce515df30ed12fcea2f0; local implementation only, not qualification or publication authority.
+
+Owner decision 2026-10-03 D1–D4: TEST has only the Owner, no real customers, and all TEST state may be discarded without retaining live evidence. Retire WP8F/v16/v22; the unused v22 grant is RETIRED_UNUSED and cannot be reissued. September cause remains permanently UNKNOWN; U1 GAP/A1–A3/billing remain unresolved, never PASS. Production NO_GO — NOT TOUCHED; paused v51/v52 unchanged.
+
+v55 is LOCAL IMPLEMENTATION ONLY from 47cf2f2: four V2 class export aliases, matching SQLite exports and deleted original-class tombstones; authenticated SELECT-only conversation observation; fix rejected resumeMp06Acceptance so it creates no activation journal; new local synthetic/mock tests and control validation. No policy/KB/catalog/model/prompt/response-schema/threshold/dependency/workflow changes. Existing database schema is queried, not expanded.
+
+No deployment, secret, webhook, pilot, live UAT, storage access, Data Studio/SQL, provider call, commit or push is authorized in this phase. Old safety hold stays intact; local implementation is neither safety clearance nor a transport bypass. Request Claude VERIFY on the complete local patch before any separately authorized publication. No old grant is inherited.
+
+Cloudflare documentation https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/ (checked 2026-10-03) says deletion permanently removes the class namespace and stored data with no Trash; old class must no longer be exported and external Worker bindings block deletion. Local config targets malispang-lineoa-test, but remote bindings/target isolation are NOT_OBSERVED. Before proposing deploy, require independently permitted exact account/Worker/binding preflight, quiescence/redelivery/alarm assessment and explicit irreversible-destruction approval; do not infer Production isolation from a dry-run. No deploy or real deletion occurred. Code rollback cannot recover deleted namespace data. Provider charges do not disappear with the local ledger.
+
+New observation SELECT methods do not mutate rows, but constructor startup can initialize/backfill: read-only method does not mean side-effect-free remote invocation. Do not call it on held old storage. No test result retroactively repairs old acceptance; U4 remains text silence in HUMAN_HANDOFF after explicit STOP, not universal LINE-egress silence.
+
+## Retained historical v54 handoff (not current authority)
+
 # MP-06 — ไฟล์ส่งต่องาน Codex ↔ Claude Code (v54)
 
 > Control: **2026.10.03-v54** / **MP-OD-2026-10-03-V54**, supersedes v53

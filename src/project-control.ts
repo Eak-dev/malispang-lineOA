@@ -1,4 +1,16 @@
+import {
+  REVIEWED_V55_PUBLICATION_V56,
+  projectV56ToV55,
+  v56AuthoritySummary,
+  evaluateV56Action,
+} from "./project-control-v56.js";
 import { createHash } from "node:crypto";
+import {
+  TEST_NAMESPACE_RESET_V55,
+  projectV55ToV54,
+  v55AuthoritySummary,
+  evaluateV55Action,
+} from "./project-control-v55.js";
 import {
   TIME_AWARE_EVIDENCE_V54,
   projectV54ToV53,
@@ -1110,6 +1122,18 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === REVIEWED_V55_PUBLICATION_V56.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v56AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_NAMESPACE_RESET_V55.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v55AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === TIME_AWARE_EVIDENCE_V54.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1186,6 +1210,17 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === REVIEWED_V55_PUBLICATION_V56.version
+  )
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV56Action(action, executionEvidence);
+  if (isRecord(roadmap) && roadmap.version === TEST_NAMESPACE_RESET_V55.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV55Action(action, executionEvidence);
   if (isRecord(roadmap) && roadmap.version === TIME_AWARE_EVIDENCE_V54.version)
     return validateProjectControl(roadmap, currentWork).errors.length
       ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
@@ -8705,6 +8740,52 @@ export function validateProjectControl(
 ): ProjectControlValidation {
   if (
     isRecord(roadmap) &&
+    roadmap.version === REVIEWED_V55_PUBLICATION_V56.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = REVIEWED_V55_PUBLICATION_V56;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.publicationV56) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-04",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV56ToV55(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V56_EXACT_RESUME_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TEST_NAMESPACE_RESET_V55.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = TEST_NAMESPACE_RESET_V55;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.testResetV55) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-03",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV55ToV54(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V55_EXACT_RESUME_CONTROL_INVALID");
+    return result;
+  }
+  if (
+    isRecord(roadmap) &&
     roadmap.version === TIME_AWARE_EVIDENCE_V54.version
   ) {
     if (!isRecord(work))
@@ -9267,6 +9348,46 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === REVIEWED_V55_PUBLICATION_V56.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "publicationV56").length !== 1 ||
+      JSON.stringify(schema.properties.publicationV56) !==
+        JSON.stringify({ const: REVIEWED_V55_PUBLICATION_V56 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V56_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV56ToV55({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      REVIEWED_V55_PUBLICATION_V56.technicalBase,
+    );
+  }
+  if (version === TEST_NAMESPACE_RESET_V55.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "testResetV55").length !== 1 ||
+      JSON.stringify(schema.properties.testResetV55) !==
+        JSON.stringify({ const: TEST_NAMESPACE_RESET_V55 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V55_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV55ToV54({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      TEST_NAMESPACE_RESET_V55.technicalBase,
+    );
+  }
   if (version === TIME_AWARE_EVIDENCE_V54.version) {
     if (
       !isRecord(schema) ||
@@ -9754,6 +9875,52 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === REVIEWED_V55_PUBLICATION_V56.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + REVIEWED_V55_PUBLICATION_V56.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(REVIEWED_V55_PUBLICATION_V56) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          REVIEWED_V55_PUBLICATION_V56.technicalBase,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
+  if (version === TEST_NAMESPACE_RESET_V55.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + TEST_NAMESPACE_RESET_V55.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(TEST_NAMESPACE_RESET_V55) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          TEST_NAMESPACE_RESET_V55.technicalBase,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === TIME_AWARE_EVIDENCE_V54.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(

@@ -9,15 +9,16 @@ import {
   runPullRequestControlValidation,
 } from "../src/project-control-cli.js";
 import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  TIME_AWARE_EVIDENCE_V54 as c,
-  V54_ALLOWED_PATHS,
-  evaluateV54Action,
-  inspectV54Repository,
-  projectV54ToV53,
-  validateV54PullRequestReceipt,
-} from "../src/project-control-v54.js";
+  REVIEWED_V55_PUBLICATION_V56 as c,
+  V56_ALLOWED_PATHS,
+  evaluateV56Action,
+  inspectV56Repository,
+  reconstructReviewedV55,
+  projectV56ToV55,
+  validateV56PullRequestReceipt,
+} from "../src/project-control-v56.js";
 import {
   projectControlGitExecutable,
   validateProjectControl,
@@ -26,7 +27,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     projectControlGitExecutable(),
@@ -54,50 +55,18 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
-// Committed historical source inputs are immutable; exercise current imported validators.
-const root = await mkdtemp(join(tmpdir(), "mp06-v54-history-"));
-afterAll(async () => {
-  await rm(root, { recursive: true, force: true });
-  expect(existsSync(root)).toBe(false);
-});
-try {
-  git(
-    operatorRoot,
-    "clone",
-    "--quiet",
-    "--shared",
-    "--no-hardlinks",
-    "--no-checkout",
-    operatorRoot,
-    root,
-  );
-  git(
-    root,
-    "checkout",
-    "--quiet",
-    "--detach",
-    "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
-  );
-  expect(git(root, "rev-parse", "HEAD^{tree}")).toBe(
-    "f60f768b072750f0273138dd25edeee234a4f53b",
-  );
-} catch (error) {
-  await rm(root, { recursive: true, force: true });
-  throw error;
-}
 const read = (path: string) =>
   JSON.parse(readFileSync(join(root, path), "utf8")) as Record<string, unknown>;
-const state = (cwd = root) => ({
-  head: git(cwd, "rev-parse", "HEAD"),
+const state = () => ({
+  head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(
-    join(git(cwd, "rev-parse", "--absolute-git-dir"), "index"),
+    join(git(root, "rev-parse", "--absolute-git-dir"), "index"),
   ),
-  status: git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+  status: git(root, "status", "--porcelain=v1", "--untracked-files=all"),
 });
 async function fixture(run: (cwd: string) => Promise<void> | void) {
-  const operatorBefore = state(operatorRoot),
-    before = state(),
-    cwd = await mkdtemp(join(tmpdir(), "mp06-v54-"));
+  const before = state(),
+    cwd = await mkdtemp(join(tmpdir(), "mp06-v56-"));
   try {
     git(
       root,
@@ -117,7 +86,7 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
       "origin",
       "https://github.com/" + c.repository + ".git",
     );
-    for (const p of V54_ALLOWED_PATHS) {
+    for (const p of V56_ALLOWED_PATHS) {
       await mkdir(dirname(join(cwd, p)), { recursive: true });
       await copyFile(join(root, p), join(cwd, p));
     }
@@ -126,62 +95,81 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state()).toEqual(before);
-    expect(state(operatorRoot)).toEqual(operatorBefore);
   }
 }
-describe("v54 time-aware evidence and handoff only", () => {
-  it("keeps runtime, workflow, dependencies, policy, knowledge and test config byte-identical to v53", () => {
-    expect(
-      git(
-        root,
-        "diff",
-        "--name-only",
-        c.baseline,
-        "--",
-        "worker",
-        "wrangler.jsonc",
-        "vitest.config.ts",
-        "vitest.worker.config.ts",
-        "config/mp-06",
-        "package.json",
-        "pnpm-lock.yaml",
-        "pnpm-workspace.yaml",
-        ".github",
-        "benchmark",
-      ),
-    ).toBe("");
-  });
-  it("records the paused v51/v52 lineage and the Codex step A handoff without granting remote work", () => {
-    expect(c.pausedLineage).toEqual({
-      versions: ["2026.10.02-v51", "2026.10.02-v52"],
-      branch: "codex/mp06-uat-round2-prep",
-      head: "d63d620820a4f1ea6f452e553724d34d16535a90",
-      status: "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY",
-    });
-    expect(c.technicalBase).toBe("2026.10.02-v53");
-    expect([
-      c.deploy,
-      c.ready,
-      c.merge,
-      c.remoteExecution,
-      c.production,
-    ]).toEqual([false, false, false, false, false]);
-    const handoff = readFileSync(
-      join(root, "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md"),
-      "utf8",
+describe("v56 frozen v55 publication only", () => {
+  it("freezes the complete reviewed tree and 18-file snapshot without a fabricated commit", () => {
+    expect(V56_ALLOWED_PATHS).toHaveLength(21);
+    const snapshot = reconstructReviewedV55(
+      root,
+      projectControlGitExecutable(),
     );
-    for (const marker of [
-      c.version,
-      c.ownerDecision,
-      c.pausedLineage.head,
-      "NO_GO — NOT TOUCHED",
-      "ห้าม commit",
-    ])
-      expect(handoff).toContain(marker);
+    expect(snapshot.tree).toBe(c.reviewedV55.tree);
+    expect(snapshot.files.size).toBe(18);
+    expect(c.retiredLineage.v22).toBe("RETIRED_UNUSED_NO_REISSUE");
+  });
+  it.each([
+    "fixture-digest",
+    "fixture-tree",
+    "v55-module",
+    "types",
+    "worker-tests",
+    "wrangler",
+    "v55-prefix",
+    "second-child",
+    "incomplete-stage",
+  ])("rejects %s relative to the exact reviewed local v55", async (kind) => {
+    await fixture(async (cwd) => {
+      if (kind === "second-child") {
+        git(cwd, "add", "--all");
+        git(cwd, "commit", "--quiet", "-m", "Synthetic first");
+        git(
+          cwd,
+          "commit",
+          "--quiet",
+          "--allow-empty",
+          "-m",
+          "Synthetic second",
+        );
+      } else if (kind === "incomplete-stage") {
+        git(cwd, "add", "--", "PROJECT_CONTROL.md");
+      } else if (kind.startsWith("fixture-")) {
+        const p = join(cwd, c.fixturePath),
+          v = JSON.parse(readFileSync(p, "utf8")) as Record<string, unknown>;
+        v[kind === "fixture-digest" ? "diffSha256" : "tree"] = "a".repeat(
+          kind === "fixture-digest" ? 64 : 40,
+        );
+        await writeFile(p, JSON.stringify(v));
+      } else {
+        const p =
+          kind === "v55-module"
+            ? "src/project-control-v55.ts"
+            : kind === "types"
+              ? "worker-configuration.d.ts"
+              : kind === "worker-tests"
+                ? "worker-tests/mp-06-v55-fresh-baseline.test.ts"
+                : kind === "wrangler"
+                  ? "wrangler.jsonc"
+                  : "docs/project/OWNER_DECISION_LOG.md";
+        const original = readFileSync(join(cwd, p), "utf8");
+        await writeFile(
+          join(cwd, p),
+          kind === "v55-prefix"
+            ? original.replace(
+                "Owner v55 local scope amendment",
+                "Rewritten v55 amendment",
+              )
+            : original + "\n// synthetic drift\n",
+        );
+      }
+      expect(() =>
+        inspectV56Repository(cwd, projectControlGitExecutable()),
+      ).toThrow();
+    });
   });
   it("requires same-source qualification and fresh exact PR20 evidence for publication", () => {
     const pre = {
-      kind: "V54_EXACT_SOURCE_QUALIFICATION",
+      kind: "V56_EXACT_SOURCE_QUALIFICATION",
       controlVersion: c.version,
       baseline: c.baseline,
       implementationSeals: c.implementationSeals,
@@ -200,9 +188,22 @@ describe("v54 time-aware evidence and handoff only", () => {
       auditTree: "a".repeat(40),
       review: "NO_ACTIONABLE_FINDINGS",
       stage: "PRE_COMMIT",
-      validation: "FOCUSED_PASS",
+      validation: "FULL_PASS",
+      claudeReview: {
+        channel: "PR20_COMMENTS",
+        verdict: "PASS",
+        stage: "PRE_COMMIT",
+        parent: c.baseline,
+        tree: "a".repeat(40),
+        diffSha256: "b".repeat(64),
+        completePatch: true,
+        fullGates: "PASS",
+        audit: "ZERO_AT_EVERY_SEVERITY",
+        responseComment:
+          "https://github.com/Eak-dev/malispang-lineOA/pull/20#issuecomment-123",
+      },
     };
-    expect(evaluateV54Action("COMMIT", pre).allowed).toBe(true);
+    expect(evaluateV56Action("COMMIT", pre).allowed).toBe(true);
     const post = {
       ...pre,
       head: "c".repeat(40),
@@ -237,46 +238,46 @@ describe("v54 time-aware evidence and handoff only", () => {
         observedAt: new Date().toISOString(),
       },
     };
-    expect(evaluateV54Action("PUSH_BRANCH", post).allowed).toBe(true);
+    expect(evaluateV56Action("PUSH_BRANCH", post).allowed).toBe(true);
     expect(
-      evaluateV54Action("PUSH_BRANCH", {
+      evaluateV56Action("PUSH_BRANCH", {
         ...post,
         pr: { ...post.pr, head: c.baselineParent },
       }).allowed,
     ).toBe(false);
     for (const key of Object.keys(pre))
       expect(
-        evaluateV54Action("COMMIT", { ...pre, [key]: null }).allowed,
+        evaluateV56Action("COMMIT", { ...pre, [key]: null }).allowed,
         key,
       ).toBe(false);
     for (const key of Object.keys(post.claudeReview))
       expect(
-        evaluateV54Action("PUSH_BRANCH", {
+        evaluateV56Action("PUSH_BRANCH", {
           ...post,
           claudeReview: { ...post.claudeReview, [key]: null },
         }).allowed,
         key,
       ).toBe(false);
     expect(
-      evaluateV54Action("PUSH_BRANCH", { ...post, claudeReview: undefined })
+      evaluateV56Action("PUSH_BRANCH", { ...post, claudeReview: undefined })
         .allowed,
     ).toBe(false);
     expect(
-      evaluateV54Action("PUSH_BRANCH", {
+      evaluateV56Action("PUSH_BRANCH", {
         ...post,
         claudeReview: { ...post.claudeReview, commit: "d".repeat(40) },
       }).allowed,
     ).toBe(false);
     for (const key of Object.keys(post.pr))
       expect(
-        evaluateV54Action("PUSH_BRANCH", {
+        evaluateV56Action("PUSH_BRANCH", {
           ...post,
           pr: { ...post.pr, [key]: null },
         }).allowed,
         key,
       ).toBe(false);
     expect(
-      evaluateV54Action("PUSH_BRANCH", {
+      evaluateV56Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -285,7 +286,7 @@ describe("v54 time-aware evidence and handoff only", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV54Action("PUSH_BRANCH", {
+      evaluateV56Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -294,7 +295,7 @@ describe("v54 time-aware evidence and handoff only", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV54Action(
+      evaluateV56Action(
         "COMMIT",
         Object.defineProperty({}, "kind", {
           get() {
@@ -308,11 +309,11 @@ describe("v54 time-aware evidence and handoff only", () => {
     await fixture((cwd) => {
       git(cwd, "add", "--all");
       expect(
-        inspectV54Repository(cwd, projectControlGitExecutable()).mode,
+        inspectV56Repository(cwd, projectControlGitExecutable()).mode,
       ).toBe("LOCAL_PREPARATION");
-      git(cwd, "commit", "--quiet", "-m", "Synthetic v54 source");
+      git(cwd, "commit", "--quiet", "-m", "Synthetic v56 source");
       expect(
-        inspectV54Repository(cwd, projectControlGitExecutable()),
+        inspectV56Repository(cwd, projectControlGitExecutable()),
       ).toMatchObject({
         mode: "SOURCE_COMMIT",
         clean: true,
@@ -325,7 +326,7 @@ describe("v54 time-aware evidence and handoff only", () => {
     async (entry) => {
       await fixture(async (cwd) => {
         git(cwd, "add", "--all");
-        git(cwd, "commit", "--quiet", "-m", "Synthetic v54 PR source");
+        git(cwd, "commit", "--quiet", "-m", "Synthetic v56 PR source");
         const source = git(cwd, "rev-parse", "HEAD"),
           tree = git(cwd, "rev-parse", "HEAD^{tree}");
         const merge = execFileSync(
@@ -342,7 +343,7 @@ describe("v54 time-aware evidence and handoff only", () => {
             "-p",
             source,
             "-m",
-            "Synthetic v54 merge",
+            "Synthetic v56 merge",
           ],
           { cwd, encoding: "utf8" },
         ).trim();
@@ -367,7 +368,7 @@ describe("v54 time-aware evidence and handoff only", () => {
             },
           },
         };
-        const directory = await mkdtemp(join(tmpdir(), "mp06-v54-event-"));
+        const directory = await mkdtemp(join(tmpdir(), "mp06-v56-event-"));
         try {
           const path = join(directory, "event.json");
           await writeFile(path, JSON.stringify(event));
@@ -391,7 +392,7 @@ describe("v54 time-aware evidence and handoff only", () => {
       });
     },
   );
-  it("projects exactly to published v50 and retains every old grant as history", () => {
+  it("projects exactly to reviewed uncommitted v55 and retains every old grant as history", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
       s = read("config/project/current-work.schema.json");
@@ -414,14 +415,18 @@ describe("v54 time-aware evidence and handoff only", () => {
       remoteExecutionAuthorized: false,
       productionAuthorized: false,
     });
-    projectV54ToV53(r, w, s);
+    projectV56ToV55(r, w, s);
     for (const [i, p] of [
       "config/project/roadmap.json",
       "config/project/current-work.json",
       "config/project/current-work.schema.json",
     ].entries())
       expect([r, w, s][i]).toEqual(
-        JSON.parse(git(root, "show", c.baseline + ":" + p)),
+        JSON.parse(
+          reconstructReviewedV55(root, projectControlGitExecutable())
+            .files.get(p)!
+            .toString(),
+        ),
       );
   });
   it.each([
@@ -438,9 +443,9 @@ describe("v54 time-aware evidence and handoff only", () => {
     "DEPLOY_UAT2",
     "CHANGE_LINE_WEBHOOK",
   ])("denies missing or historical receipt for %s", (action) => {
-    expect(evaluateV54Action(action).allowed).toBe(false);
+    expect(evaluateV56Action(action).allowed).toBe(false);
     expect(
-      evaluateV54Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
+      evaluateV56Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
     ).toBe(false);
   });
   it.each([
@@ -458,7 +463,7 @@ describe("v54 time-aware evidence and handoff only", () => {
   ])("rejects %s drift and preserves operator checkout", async (kind) => {
     await fixture(async (cwd) => {
       expect(
-        inspectV54Repository(cwd, projectControlGitExecutable()).mode,
+        inspectV56Repository(cwd, projectControlGitExecutable()).mode,
       ).toBe("LOCAL_PREPARATION");
       if (kind === "raw-index-flags")
         git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
@@ -507,13 +512,13 @@ describe("v54 time-aware evidence and handoff only", () => {
         }
       }
       expect(() =>
-        inspectV54Repository(cwd, projectControlGitExecutable()),
+        inspectV56Repository(cwd, projectControlGitExecutable()),
       ).toThrow();
     });
   });
   it("rejects absent or malformed PR identity", () => {
     expect(
-      validateV54PullRequestReceipt(
+      validateV56PullRequestReceipt(
         {},
         {
           sha: undefined,
