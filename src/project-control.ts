@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
 import {
+  TIME_AWARE_EVIDENCE_V54,
+  projectV54ToV53,
+  v54AuthoritySummary,
+  evaluateV54Action,
+} from "./project-control-v54.js";
+import {
   RESUME_CODEX_PLAN_V53,
   projectV53ToV50,
   v53AuthoritySummary,
@@ -1104,6 +1110,12 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === TIME_AWARE_EVIDENCE_V54.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v54AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === RESUME_CODEX_PLAN_V53.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1174,6 +1186,10 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (isRecord(roadmap) && roadmap.version === TIME_AWARE_EVIDENCE_V54.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV54Action(action, executionEvidence);
   if (isRecord(roadmap) && roadmap.version === RESUME_CODEX_PLAN_V53.version)
     return validateProjectControl(roadmap, currentWork).errors.length
       ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
@@ -8687,6 +8703,29 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === TIME_AWARE_EVIDENCE_V54.version
+  ) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = TIME_AWARE_EVIDENCE_V54;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.timeAwareEvidenceV54) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-03",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV54ToV53(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V54_EXACT_RESUME_CONTROL_INVALID");
+    return result;
+  }
   if (isRecord(roadmap) && roadmap.version === RESUME_CODEX_PLAN_V53.version) {
     if (!isRecord(work))
       return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
@@ -9228,6 +9267,27 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === TIME_AWARE_EVIDENCE_V54.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "timeAwareEvidenceV54").length !==
+        1 ||
+      JSON.stringify(schema.properties.timeAwareEvidenceV54) !==
+        JSON.stringify({ const: TIME_AWARE_EVIDENCE_V54 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V54_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV54ToV53({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      TIME_AWARE_EVIDENCE_V54.technicalBase,
+    );
+  }
   if (version === RESUME_CODEX_PLAN_V53.version) {
     if (
       !isRecord(schema) ||
@@ -9694,6 +9754,29 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === TIME_AWARE_EVIDENCE_V54.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + TIME_AWARE_EVIDENCE_V54.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(TIME_AWARE_EVIDENCE_V54) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          TIME_AWARE_EVIDENCE_V54.technicalBase,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === RESUME_CODEX_PLAN_V53.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(

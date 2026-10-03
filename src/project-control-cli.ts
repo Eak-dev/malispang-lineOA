@@ -1,4 +1,9 @@
 import {
+  TIME_AWARE_EVIDENCE_V54,
+  inspectV54Repository,
+  validateV54PullRequestReceipt,
+} from "./project-control-v54.js";
+import {
   RESUME_CODEX_PLAN_V53,
   inspectV53Repository,
   validateV53PullRequestReceipt,
@@ -168,6 +173,58 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (version === TIME_AWARE_EVIDENCE_V54.version) {
+    const errors = [
+      ...validateProjectControl(roadmap, currentWork).errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length)
+      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
+    const cwd = fileURLToPath(root),
+      binary = projectControlGitExecutable();
+    const git = (...args: string[]) =>
+      execFileSync(
+        binary,
+        ["--no-replace-objects", "--no-optional-locks", ...args],
+        { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      ).trim();
+    let receipt: V43PrReceipt | undefined;
+    if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+      if (
+        !process.env.GITHUB_EVENT_PATH ||
+        process.env.GITHUB_REPOSITORY !== TIME_AWARE_EVIDENCE_V54.repository
+      )
+        throw new Error("V54_PR_EVENT_REQUIRED");
+      const event: unknown = JSON.parse(
+        await readFile(process.env.GITHUB_EVENT_PATH, "utf8"),
+      );
+      const merge = git("rev-parse", "HEAD");
+      const parents = git("rev-list", "--parents", "-n", "1", merge)
+        .split(" ")
+        .slice(1);
+      const verified = validateV54PullRequestReceipt(event, {
+        sha: process.env.GITHUB_SHA,
+        ref: process.env.GITHUB_REF,
+        merge,
+        parents,
+        tree: git("rev-parse", "HEAD^{tree}"),
+        sourceTree: parents[1] ? git("rev-parse", parents[1] + "^{tree}") : "",
+      });
+      if (!verified) throw new Error("V54_PR_MERGE_IDENTITY_MISMATCH");
+      receipt = verified;
+    }
+    const inspected = inspectV54Repository(cwd, binary, receipt);
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState:
+            "STRUCTURAL_VALIDATION_NOT_QUALIFICATION_PUSH_OR_MERGE_AUTHORITY",
+        }),
+    );
+    return;
   }
   if (version === RESUME_CODEX_PLAN_V53.version) {
     const errors = [
@@ -1131,6 +1188,12 @@ export async function runPullRequestControlValidation(
   const work = JSON.parse(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
+  if (work.roadmapVersion === TIME_AWARE_EVIDENCE_V54.version) {
+    if (eventPath !== process.env.GITHUB_EVENT_PATH)
+      throw Error("V54_PR_EVENT_PATH_MISMATCH");
+    await runProjectControlValidation(root);
+    return;
+  }
   if (work.roadmapVersion === RESUME_CODEX_PLAN_V53.version) {
     if (eventPath !== process.env.GITHUB_EVENT_PATH)
       throw Error("V53_PR_EVENT_PATH_MISMATCH");

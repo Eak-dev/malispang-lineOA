@@ -2,7 +2,7 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.10.02-v53",
+  "roadmapVersion": "2026.10.03-v54",
   "ciHarnessRepairV48": {
     "version": "2026.09.30-v48",
     "ownerDecision": "MP-OD-2026-09-30-V48",
@@ -2134,5 +2134,48 @@
     "remoteExecution": false,
     "production": false,
     "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_PILOT_STORAGE_SQL_DATA_STUDIO_PROVIDER_LIVE_NEW_PR_READY_MERGE_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_PAUSED_LINEAGE_CHANGE_PRODUCTION"
+  },
+  "timeAwareEvidenceV54": {
+    "version": "2026.10.03-v54",
+    "ownerDecision": "MP-OD-2026-10-03-V54",
+    "supersedes": "2026.10.02-v53",
+    "technicalBase": "2026.10.02-v53",
+    "baseline": "9e703552f1392d5107c90bf34a9f28eff8963414",
+    "baselineTree": "53165684d7a041b889606c27cd31e629965b5de3",
+    "baselineParent": "0774131ef334e09426203cd6aff92c59bbf52a52",
+    "publishedBaseline": "9e703552f1392d5107c90bf34a9f28eff8963414",
+    "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+    "repository": "Eak-dev/malispang-lineOA",
+    "headBranch": "codex/mp06-harness-v43",
+    "baseBranch": "codex/mp-06-guardrailed-ai",
+    "pullRequest": 20,
+    "workId": "MP-06",
+    "githubIssue": 12,
+    "stage": "TIME_AWARE_EVIDENCE_RECORD_AND_HANDOFF_CORRECTION_ONLY",
+    "pausedLineage": {
+      "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+      "branch": "codex/mp06-uat-round2-prep",
+      "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+      "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+    },
+    "codexPlan": "A_EVIDENCE_REVIEW_RECORDED_B_DOCUMENT_ONLY_OPTION3_NEXT_PROPOSAL_C_D_E_NOT_AUTHORIZED",
+    "evidencePolicy": "SANITIZED_SUMMARIES_AND_APPROVED_PREPUSH_PATCH_ONLY_NO_PII_RAW_CHAT_OR_REMOTE_ACCESS",
+    "rootCause": "UNKNOWN_CODE_PATH_POSSIBLE_NOT_PROVEN",
+    "implementationSeals": {
+      "tests/project-control-v53.test.ts": "1ab90351c082e4856e85f6c43ac32704a9d2636ac610d7685fddfb633bfd9035",
+      "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "beca2ebeb50c012e9a35a5c347c1a546a965187c82feab5ff5e381e57699d3a6"
+    },
+    "publication": "EXISTING_DRAFT_PR20_ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_EXACT_COMMIT_PREPUSH_VERIFY_FRESH_PR_READBACK",
+    "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+    "uatReadiness": "NOT_VERIFIED",
+    "deploy": false,
+    "ready": false,
+    "merge": false,
+    "remoteExecution": false,
+    "production": false,
+    "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_PILOT_STORAGE_SQL_DATA_STUDIO_PROVIDER_LIVE_NEW_PR_READY_MERGE_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_PAUSED_LINEAGE_CHANGE_PRODUCTION",
+    "prePushReview": "PR20_SANITIZED_COMPLETE_PATCH_AND_NONPERSONAL_COMMIT_OBJECT_RECONSTRUCT_EXACT_SHA_TREE_DIFF_NO_PUSH_ON_REVIEW_GAP",
+    "postPushReview": "REQ_VERIFY_EXACT_REMOTE_SHA_PARENT_HISTORY_HOSTED_CI_REQUIRED",
+    "nextBaseline": "OPTION3_PROPOSAL_AFTER_OPTION1_NO_IMPLEMENTATION_REMOTE_DEPLOY_UAT_OR_PAUSED_BRANCH_RESUME"
   }
 }

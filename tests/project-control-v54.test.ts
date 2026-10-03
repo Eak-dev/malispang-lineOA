@@ -9,15 +9,15 @@ import {
   runPullRequestControlValidation,
 } from "../src/project-control-cli.js";
 import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  RESUME_CODEX_PLAN_V53 as c,
-  V53_ALLOWED_PATHS,
-  evaluateV53Action,
-  inspectV53Repository,
-  projectV53ToV50,
-  validateV53PullRequestReceipt,
-} from "../src/project-control-v53.js";
+  TIME_AWARE_EVIDENCE_V54 as c,
+  V54_ALLOWED_PATHS,
+  evaluateV54Action,
+  inspectV54Repository,
+  projectV54ToV53,
+  validateV54PullRequestReceipt,
+} from "../src/project-control-v54.js";
 import {
   projectControlGitExecutable,
   validateProjectControl,
@@ -26,7 +26,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     projectControlGitExecutable(),
@@ -54,50 +54,18 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
-// Committed historical source inputs are immutable; exercise current imported validators.
-const root = await mkdtemp(join(tmpdir(), "mp06-v53-history-"));
-afterAll(async () => {
-  await rm(root, { recursive: true, force: true });
-  expect(existsSync(root)).toBe(false);
-});
-try {
-  git(
-    operatorRoot,
-    "clone",
-    "--quiet",
-    "--shared",
-    "--no-hardlinks",
-    "--no-checkout",
-    operatorRoot,
-    root,
-  );
-  git(
-    root,
-    "checkout",
-    "--quiet",
-    "--detach",
-    "9e703552f1392d5107c90bf34a9f28eff8963414",
-  );
-  expect(git(root, "rev-parse", "HEAD^{tree}")).toBe(
-    "53165684d7a041b889606c27cd31e629965b5de3",
-  );
-} catch (error) {
-  await rm(root, { recursive: true, force: true });
-  throw error;
-}
 const read = (path: string) =>
   JSON.parse(readFileSync(join(root, path), "utf8")) as Record<string, unknown>;
-const state = (cwd = root) => ({
-  head: git(cwd, "rev-parse", "HEAD"),
+const state = () => ({
+  head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(
-    join(git(cwd, "rev-parse", "--absolute-git-dir"), "index"),
+    join(git(root, "rev-parse", "--absolute-git-dir"), "index"),
   ),
-  status: git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+  status: git(root, "status", "--porcelain=v1", "--untracked-files=all"),
 });
 async function fixture(run: (cwd: string) => Promise<void> | void) {
-  const operatorBefore = state(operatorRoot),
-    before = state(),
-    cwd = await mkdtemp(join(tmpdir(), "mp06-v53-"));
+  const before = state(),
+    cwd = await mkdtemp(join(tmpdir(), "mp06-v54-"));
   try {
     git(
       root,
@@ -117,7 +85,7 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
       "origin",
       "https://github.com/" + c.repository + ".git",
     );
-    for (const p of V53_ALLOWED_PATHS) {
+    for (const p of V54_ALLOWED_PATHS) {
       await mkdir(dirname(join(cwd, p)), { recursive: true });
       await copyFile(join(root, p), join(cwd, p));
     }
@@ -126,11 +94,10 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state()).toEqual(before);
-    expect(state(operatorRoot)).toEqual(operatorBefore);
   }
 }
-describe("v53 resume Codex plan step A", () => {
-  it("keeps runtime, workflow, dependencies, policy, knowledge and test config byte-identical to v50", () => {
+describe("v54 time-aware evidence and handoff only", () => {
+  it("keeps runtime, workflow, dependencies, policy, knowledge and test config byte-identical to v53", () => {
     expect(
       git(
         root,
@@ -158,7 +125,7 @@ describe("v53 resume Codex plan step A", () => {
       head: "d63d620820a4f1ea6f452e553724d34d16535a90",
       status: "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY",
     });
-    expect(c.technicalBase).toBe("2026.09.30-v50");
+    expect(c.technicalBase).toBe("2026.10.02-v53");
     expect([
       c.deploy,
       c.ready,
@@ -181,7 +148,7 @@ describe("v53 resume Codex plan step A", () => {
   });
   it("requires same-source qualification and fresh exact PR20 evidence for publication", () => {
     const pre = {
-      kind: "V53_EXACT_SOURCE_QUALIFICATION",
+      kind: "V54_EXACT_SOURCE_QUALIFICATION",
       controlVersion: c.version,
       baseline: c.baseline,
       implementationSeals: c.implementationSeals,
@@ -202,13 +169,27 @@ describe("v53 resume Codex plan step A", () => {
       stage: "PRE_COMMIT",
       validation: "FOCUSED_PASS",
     };
-    expect(evaluateV53Action("COMMIT", pre).allowed).toBe(true);
+    expect(evaluateV54Action("COMMIT", pre).allowed).toBe(true);
     const post = {
       ...pre,
       head: "c".repeat(40),
       stage: "POST_COMMIT",
       validation: "FULL_PASS",
       clean: true,
+      claudeReview: {
+        channel: "PR20_COMMENTS",
+        verdict: "PASS",
+        commit: "c".repeat(40),
+        parent: c.baseline,
+        tree: pre.tree,
+        diffSha256: pre.diffSha256,
+        completePatch: true,
+        exactCommitReconstructed: true,
+        fullGates: "PASS",
+        audit: "ZERO_AT_EVERY_SEVERITY",
+        responseComment:
+          "https://github.com/Eak-dev/malispang-lineOA/pull/20#issuecomment-123",
+      },
       pr: {
         repository: c.repository,
         number: 20,
@@ -223,28 +204,46 @@ describe("v53 resume Codex plan step A", () => {
         observedAt: new Date().toISOString(),
       },
     };
-    expect(evaluateV53Action("PUSH_BRANCH", post).allowed).toBe(true);
+    expect(evaluateV54Action("PUSH_BRANCH", post).allowed).toBe(true);
     expect(
-      evaluateV53Action("PUSH_BRANCH", {
+      evaluateV54Action("PUSH_BRANCH", {
         ...post,
         pr: { ...post.pr, head: c.baselineParent },
       }).allowed,
     ).toBe(false);
     for (const key of Object.keys(pre))
       expect(
-        evaluateV53Action("COMMIT", { ...pre, [key]: null }).allowed,
+        evaluateV54Action("COMMIT", { ...pre, [key]: null }).allowed,
         key,
       ).toBe(false);
+    for (const key of Object.keys(post.claudeReview))
+      expect(
+        evaluateV54Action("PUSH_BRANCH", {
+          ...post,
+          claudeReview: { ...post.claudeReview, [key]: null },
+        }).allowed,
+        key,
+      ).toBe(false);
+    expect(
+      evaluateV54Action("PUSH_BRANCH", { ...post, claudeReview: undefined })
+        .allowed,
+    ).toBe(false);
+    expect(
+      evaluateV54Action("PUSH_BRANCH", {
+        ...post,
+        claudeReview: { ...post.claudeReview, commit: "d".repeat(40) },
+      }).allowed,
+    ).toBe(false);
     for (const key of Object.keys(post.pr))
       expect(
-        evaluateV53Action("PUSH_BRANCH", {
+        evaluateV54Action("PUSH_BRANCH", {
           ...post,
           pr: { ...post.pr, [key]: null },
         }).allowed,
         key,
       ).toBe(false);
     expect(
-      evaluateV53Action("PUSH_BRANCH", {
+      evaluateV54Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -253,7 +252,7 @@ describe("v53 resume Codex plan step A", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV53Action("PUSH_BRANCH", {
+      evaluateV54Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -262,7 +261,7 @@ describe("v53 resume Codex plan step A", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV53Action(
+      evaluateV54Action(
         "COMMIT",
         Object.defineProperty({}, "kind", {
           get() {
@@ -276,11 +275,11 @@ describe("v53 resume Codex plan step A", () => {
     await fixture((cwd) => {
       git(cwd, "add", "--all");
       expect(
-        inspectV53Repository(cwd, projectControlGitExecutable()).mode,
+        inspectV54Repository(cwd, projectControlGitExecutable()).mode,
       ).toBe("LOCAL_PREPARATION");
-      git(cwd, "commit", "--quiet", "-m", "Synthetic v53 source");
+      git(cwd, "commit", "--quiet", "-m", "Synthetic v54 source");
       expect(
-        inspectV53Repository(cwd, projectControlGitExecutable()),
+        inspectV54Repository(cwd, projectControlGitExecutable()),
       ).toMatchObject({
         mode: "SOURCE_COMMIT",
         clean: true,
@@ -293,7 +292,7 @@ describe("v53 resume Codex plan step A", () => {
     async (entry) => {
       await fixture(async (cwd) => {
         git(cwd, "add", "--all");
-        git(cwd, "commit", "--quiet", "-m", "Synthetic v53 PR source");
+        git(cwd, "commit", "--quiet", "-m", "Synthetic v54 PR source");
         const source = git(cwd, "rev-parse", "HEAD"),
           tree = git(cwd, "rev-parse", "HEAD^{tree}");
         const merge = execFileSync(
@@ -310,7 +309,7 @@ describe("v53 resume Codex plan step A", () => {
             "-p",
             source,
             "-m",
-            "Synthetic v53 merge",
+            "Synthetic v54 merge",
           ],
           { cwd, encoding: "utf8" },
         ).trim();
@@ -335,7 +334,7 @@ describe("v53 resume Codex plan step A", () => {
             },
           },
         };
-        const directory = await mkdtemp(join(tmpdir(), "mp06-v53-event-"));
+        const directory = await mkdtemp(join(tmpdir(), "mp06-v54-event-"));
         try {
           const path = join(directory, "event.json");
           await writeFile(path, JSON.stringify(event));
@@ -382,7 +381,7 @@ describe("v53 resume Codex plan step A", () => {
       remoteExecutionAuthorized: false,
       productionAuthorized: false,
     });
-    projectV53ToV50(r, w, s);
+    projectV54ToV53(r, w, s);
     for (const [i, p] of [
       "config/project/roadmap.json",
       "config/project/current-work.json",
@@ -406,9 +405,9 @@ describe("v53 resume Codex plan step A", () => {
     "DEPLOY_UAT2",
     "CHANGE_LINE_WEBHOOK",
   ])("denies missing or historical receipt for %s", (action) => {
-    expect(evaluateV53Action(action).allowed).toBe(false);
+    expect(evaluateV54Action(action).allowed).toBe(false);
     expect(
-      evaluateV53Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
+      evaluateV54Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
     ).toBe(false);
   });
   it.each([
@@ -426,7 +425,7 @@ describe("v53 resume Codex plan step A", () => {
   ])("rejects %s drift and preserves operator checkout", async (kind) => {
     await fixture(async (cwd) => {
       expect(
-        inspectV53Repository(cwd, projectControlGitExecutable()).mode,
+        inspectV54Repository(cwd, projectControlGitExecutable()).mode,
       ).toBe("LOCAL_PREPARATION");
       if (kind === "raw-index-flags")
         git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
@@ -475,13 +474,13 @@ describe("v53 resume Codex plan step A", () => {
         }
       }
       expect(() =>
-        inspectV53Repository(cwd, projectControlGitExecutable()),
+        inspectV54Repository(cwd, projectControlGitExecutable()),
       ).toThrow();
     });
   });
   it("rejects absent or malformed PR identity", () => {
     expect(
-      validateV53PullRequestReceipt(
+      validateV54PullRequestReceipt(
         {},
         {
           sha: undefined,
