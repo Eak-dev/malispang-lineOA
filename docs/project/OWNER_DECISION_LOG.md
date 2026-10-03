@@ -1690,3 +1690,56 @@ Require fresh exact staged-source focused gates, frozen install, zero-all-severi
   "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_NODE_TIMEOUT_ABOVE_7000_WORKER_OR_RUNTIME_TIMEOUT_CHANGE_RETRY_ASSERTION_REMOVAL"
 }
 ```
+
+## MP-OD-2026-10-02-V53 — Pause v51/v52 and resume the Codex plan at step A
+
+Owner approved verbatim on 2026-10-02: "อนุมัติ v53", after instructing: "อยากให้ทำต่อจากโค้ดเอ็กซ์เลย ส่วนงานของคุณที่ทำก่อนหน้านี้ให้พักไว้ก่อน". Version 2026.10.02-v53 / MP-OD-2026-10-02-V53 supersedes v52 in the governance chain. Its technical base on this branch is v50 (0774131ef334e09426203cd6aff92c59bbf52a52); the v51/v52 decision records live on the paused branch codex/mp06-uat-round2-prep @ d63d620820a4f1ea6f452e553724d34d16535a90, which stays frozen: no deploy, delete or edit, reference only. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+The Codex five-step plan resumes: A non-invasive evidence (current), B a targeted storage inspection kit as a document only, C fix only a proven cause, D TEST UAT, E PR #20 merge. Step A uses Owner-provided evidence that needs no storage access: the Owner's LINE chat history with มะลิปัง TEST after T-C01 until 2026-09-20, the Cloudflare account audit log and Workers metrics for malispang-lineoa-test. Screenshots are summarized only; personal data is never committed.
+
+Local analysis carried into the handoff: in deployed candidate bfff1a553868b85e5f66144e4741a51627f4a9be the only write path consistent with the observed BOT_ACTIVE / clarificationUsed=true / pendingTemplate=null is a new processed event with an approved response; an emulator scratch test reproduced it with unchanged AI accounting for a catalog follow-up while the pilot is STOPPED. This proves possibility only; root cause stays UNKNOWN. Data Studio stays forbidden and denied actions are never replayed or rerouted.
+
+V53_ALLOWED_PATHS is the complete scope: control manifests and append-only records, the v53 module/test and wiring, the v50 historical test pinned to immutable 0774131e, and docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md as the agent handoff point. One normal child commit of 0774131e may be pushed to existing Draft PR #20 after full local gates, audit0 and a fresh PR readback. No deploy, secret, LINE webhook, pilot, TEST storage/SQL, live provider, new PR, Ready, merge, U2, Issue closure, runtime/policy/KB/catalog/dependency change or Production.
+
+```json
+{
+  "version": "2026.10.02-v53",
+  "ownerDecision": "MP-OD-2026-10-02-V53",
+  "supersedes": "2026.10.02-v52",
+  "technicalBase": "2026.09.30-v50",
+  "baseline": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "baselineTree": "dfe6d6839fd07325f391a9ca66b8721f6f378ad6",
+  "baselineParent": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "publishedBaseline": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "RESUME_CODEX_PLAN_STEP_A_NON_INVASIVE_EVIDENCE_AND_HANDOFF_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "A_NON_INVASIVE_EVIDENCE_CURRENT_B_DRAFT_DOCUMENT_ONLY_C_D_E_NOT_AUTHORIZED",
+  "evidencePolicy": "OWNER_PROVIDED_LINE_CHAT_AUDIT_LOG_METRICS_SUMMARY_ONLY_NO_PII_COMMIT",
+  "rootCause": "UNKNOWN_CODE_PATH_POSSIBLE_NOT_PROVEN",
+  "implementationSeals": {
+    "tests/project-control-v50.test.ts": "1b591efc688641db0a86c115e44e3b0db80efcc00e8c0c5d211554dd51c53ecb",
+    "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "714d97e5fd8043f8383fd4d98decd69db73625cf41c9f654091d1d16b6e6c647"
+  },
+  "publication": "EXISTING_DRAFT_PR20_ONLY_ONE_CHILD_COMMIT_FULL_GATES_AUDIT0_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_PILOT_STORAGE_SQL_DATA_STUDIO_PROVIDER_LIVE_NEW_PR_READY_MERGE_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_PAUSED_LINEAGE_CHANGE_PRODUCTION"
+}
+```

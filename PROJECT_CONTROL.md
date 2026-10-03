@@ -1,5 +1,15 @@
 # MalisPang Project Control
 
+## Effective resume of the Codex plan — v53
+
+Owner approved verbatim on 2026-10-02: "อนุมัติ v53", after instructing: "อยากให้ทำต่อจากโค้ดเอ็กซ์เลย ส่วนงานของคุณที่ทำก่อนหน้านี้ให้พักไว้ก่อน". Version 2026.10.02-v53 / MP-OD-2026-10-02-V53 supersedes v52 in the governance chain. Its technical base on this branch is v50 (0774131ef334e09426203cd6aff92c59bbf52a52); the v51/v52 decision records live on the paused branch codex/mp06-uat-round2-prep @ d63d620820a4f1ea6f452e553724d34d16535a90, which stays frozen: no deploy, delete or edit, reference only. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+The Codex five-step plan resumes: A non-invasive evidence (current), B a targeted storage inspection kit as a document only, C fix only a proven cause, D TEST UAT, E PR #20 merge. Step A uses Owner-provided evidence that needs no storage access: the Owner's LINE chat history with มะลิปัง TEST after T-C01 until 2026-09-20, the Cloudflare account audit log and Workers metrics for malispang-lineoa-test. Screenshots are summarized only; personal data is never committed.
+
+Local analysis carried into the handoff: in deployed candidate bfff1a553868b85e5f66144e4741a51627f4a9be the only write path consistent with the observed BOT_ACTIVE / clarificationUsed=true / pendingTemplate=null is a new processed event with an approved response; an emulator scratch test reproduced it with unchanged AI accounting for a catalog follow-up while the pilot is STOPPED. This proves possibility only; root cause stays UNKNOWN. Data Studio stays forbidden and denied actions are never replayed or rerouted.
+
+V53_ALLOWED_PATHS is the complete scope: control manifests and append-only records, the v53 module/test and wiring, the v50 historical test pinned to immutable 0774131e, and docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md as the agent handoff point. One normal child commit of 0774131e may be pushed to existing Draft PR #20 after full local gates, audit0 and a fresh PR readback. No deploy, secret, LINE webhook, pilot, TEST storage/SQL, live provider, new PR, Ready, merge, U2, Issue closure, runtime/policy/KB/catalog/dependency change or Production.
+
 ## Effective Node test deadline amendment — v50
 
 Owner explicitly approved changing the Node test deadline from five to seven seconds after asking whether it was system imposed. Vitest supplies a 5000ms Node testTimeout default (https://vitest.dev/config/testtimeout); vitest.config.ts at published v49 b1ca3a90c7a550f48c91d971b35dd9f148ce91e9 did not override it. Historical controls subsequently froze that inherited value. It is not an immutable platform limit, LINE bot response SLA, or permission grant. Version2026.09.30-v50 / MP-OD-2026-09-30-V50 supersedes v49 for exactly this Owner-approved parameter amendment. MP06/Issue12 remains CURRENT/OPEN in WP8F_TEST_ACCEPTANCE_COMPLETION.

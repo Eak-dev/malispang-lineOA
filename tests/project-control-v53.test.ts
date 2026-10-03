@@ -9,15 +9,15 @@ import {
   runPullRequestControlValidation,
 } from "../src/project-control-cli.js";
 import { withHistoricalEnvironment } from "./helpers/historical-environment.js";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  CI_HARNESS_REPAIR_V50 as c,
-  V50_ALLOWED_PATHS,
-  evaluateV50Action,
-  inspectV50Repository,
-  projectV50ToV49,
-  validateV50PullRequestReceipt,
-} from "../src/project-control-v50.js";
+  RESUME_CODEX_PLAN_V53 as c,
+  V53_ALLOWED_PATHS,
+  evaluateV53Action,
+  inspectV53Repository,
+  projectV53ToV50,
+  validateV53PullRequestReceipt,
+} from "../src/project-control-v53.js";
 import {
   projectControlGitExecutable,
   validateProjectControl,
@@ -26,7 +26,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     projectControlGitExecutable(),
@@ -54,50 +54,18 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
-// Committed historical source inputs are immutable; exercise current imported validators.
-const root = await mkdtemp(join(tmpdir(), "mp06-v50-history-"));
-afterAll(async () => {
-  await rm(root, { recursive: true, force: true });
-  expect(existsSync(root)).toBe(false);
-});
-try {
-  git(
-    operatorRoot,
-    "clone",
-    "--quiet",
-    "--shared",
-    "--no-hardlinks",
-    "--no-checkout",
-    operatorRoot,
-    root,
-  );
-  git(
-    root,
-    "checkout",
-    "--quiet",
-    "--detach",
-    "0774131ef334e09426203cd6aff92c59bbf52a52",
-  );
-  expect(git(root, "rev-parse", "HEAD^{tree}")).toBe(
-    "dfe6d6839fd07325f391a9ca66b8721f6f378ad6",
-  );
-} catch (error) {
-  await rm(root, { recursive: true, force: true });
-  throw error;
-}
 const read = (path: string) =>
   JSON.parse(readFileSync(join(root, path), "utf8")) as Record<string, unknown>;
-const state = (cwd = root) => ({
-  head: git(cwd, "rev-parse", "HEAD"),
+const state = () => ({
+  head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(
-    join(git(cwd, "rev-parse", "--absolute-git-dir"), "index"),
+    join(git(root, "rev-parse", "--absolute-git-dir"), "index"),
   ),
-  status: git(cwd, "status", "--porcelain=v1", "--untracked-files=all"),
+  status: git(root, "status", "--porcelain=v1", "--untracked-files=all"),
 });
 async function fixture(run: (cwd: string) => Promise<void> | void) {
-  const operatorBefore = state(operatorRoot),
-    before = state(),
-    cwd = await mkdtemp(join(tmpdir(), "mp06-v50-"));
+  const before = state(),
+    cwd = await mkdtemp(join(tmpdir(), "mp06-v53-"));
   try {
     git(
       root,
@@ -117,7 +85,7 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
       "origin",
       "https://github.com/" + c.repository + ".git",
     );
-    for (const p of V50_ALLOWED_PATHS) {
+    for (const p of V53_ALLOWED_PATHS) {
       await mkdir(dirname(join(cwd, p)), { recursive: true });
       await copyFile(join(root, p), join(cwd, p));
     }
@@ -126,22 +94,61 @@ async function fixture(run: (cwd: string) => Promise<void> | void) {
     await rm(cwd, { recursive: true, force: true });
     expect(existsSync(cwd)).toBe(false);
     expect(state()).toEqual(before);
-    expect(state(operatorRoot)).toEqual(operatorBefore);
   }
 }
-describe("v50 scoped CI harness repair", () => {
-  it("changes only Node testTimeout to 7000 without changing workers, retries or Worker config", () => {
-    const original = git(root, "show", c.baseline + ":vitest.config.ts") + "\n";
-    expect(readFileSync(join(root, "vitest.config.ts"), "utf8")).toBe(
-      original.replace(
-        "    maxWorkers: 2,\n",
-        "    maxWorkers: 2,\n    testTimeout: 7000,\n",
+describe("v53 resume Codex plan step A", () => {
+  it("keeps runtime, workflow, dependencies, policy, knowledge and test config byte-identical to v50", () => {
+    expect(
+      git(
+        root,
+        "diff",
+        "--name-only",
+        c.baseline,
+        "--",
+        "worker",
+        "wrangler.jsonc",
+        "vitest.config.ts",
+        "vitest.worker.config.ts",
+        "config/mp-06",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".github",
+        "benchmark",
       ),
+    ).toBe("");
+  });
+  it("records the paused v51/v52 lineage and the Codex step A handoff without granting remote work", () => {
+    expect(c.pausedLineage).toEqual({
+      versions: ["2026.10.02-v51", "2026.10.02-v52"],
+      branch: "codex/mp06-uat-round2-prep",
+      head: "d63d620820a4f1ea6f452e553724d34d16535a90",
+      status: "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY",
+    });
+    expect(c.technicalBase).toBe("2026.09.30-v50");
+    expect([
+      c.deploy,
+      c.ready,
+      c.merge,
+      c.remoteExecution,
+      c.production,
+    ]).toEqual([false, false, false, false, false]);
+    const handoff = readFileSync(
+      join(root, "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md"),
+      "utf8",
     );
+    for (const marker of [
+      c.version,
+      c.ownerDecision,
+      c.pausedLineage.head,
+      "NO_GO — NOT TOUCHED",
+      "ห้าม commit",
+    ])
+      expect(handoff).toContain(marker);
   });
   it("requires same-source qualification and fresh exact PR20 evidence for publication", () => {
     const pre = {
-      kind: "V50_EXACT_SOURCE_QUALIFICATION",
+      kind: "V53_EXACT_SOURCE_QUALIFICATION",
       controlVersion: c.version,
       baseline: c.baseline,
       implementationSeals: c.implementationSeals,
@@ -162,7 +169,7 @@ describe("v50 scoped CI harness repair", () => {
       stage: "PRE_COMMIT",
       validation: "FOCUSED_PASS",
     };
-    expect(evaluateV50Action("COMMIT", pre).allowed).toBe(true);
+    expect(evaluateV53Action("COMMIT", pre).allowed).toBe(true);
     const post = {
       ...pre,
       head: "c".repeat(40),
@@ -183,28 +190,28 @@ describe("v50 scoped CI harness repair", () => {
         observedAt: new Date().toISOString(),
       },
     };
-    expect(evaluateV50Action("PUSH_BRANCH", post).allowed).toBe(true);
+    expect(evaluateV53Action("PUSH_BRANCH", post).allowed).toBe(true);
     expect(
-      evaluateV50Action("PUSH_BRANCH", {
+      evaluateV53Action("PUSH_BRANCH", {
         ...post,
         pr: { ...post.pr, head: c.baselineParent },
       }).allowed,
     ).toBe(false);
     for (const key of Object.keys(pre))
       expect(
-        evaluateV50Action("COMMIT", { ...pre, [key]: null }).allowed,
+        evaluateV53Action("COMMIT", { ...pre, [key]: null }).allowed,
         key,
       ).toBe(false);
     for (const key of Object.keys(post.pr))
       expect(
-        evaluateV50Action("PUSH_BRANCH", {
+        evaluateV53Action("PUSH_BRANCH", {
           ...post,
           pr: { ...post.pr, [key]: null },
         }).allowed,
         key,
       ).toBe(false);
     expect(
-      evaluateV50Action("PUSH_BRANCH", {
+      evaluateV53Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -213,7 +220,7 @@ describe("v50 scoped CI harness repair", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV50Action("PUSH_BRANCH", {
+      evaluateV53Action("PUSH_BRANCH", {
         ...post,
         pr: {
           ...post.pr,
@@ -222,7 +229,7 @@ describe("v50 scoped CI harness repair", () => {
       }).allowed,
     ).toBe(false);
     expect(
-      evaluateV50Action(
+      evaluateV53Action(
         "COMMIT",
         Object.defineProperty({}, "kind", {
           get() {
@@ -236,11 +243,11 @@ describe("v50 scoped CI harness repair", () => {
     await fixture((cwd) => {
       git(cwd, "add", "--all");
       expect(
-        inspectV50Repository(cwd, projectControlGitExecutable()).mode,
-      ).toBe("LOCAL_REPAIR");
-      git(cwd, "commit", "--quiet", "-m", "Synthetic v50 source");
+        inspectV53Repository(cwd, projectControlGitExecutable()).mode,
+      ).toBe("LOCAL_PREPARATION");
+      git(cwd, "commit", "--quiet", "-m", "Synthetic v53 source");
       expect(
-        inspectV50Repository(cwd, projectControlGitExecutable()),
+        inspectV53Repository(cwd, projectControlGitExecutable()),
       ).toMatchObject({
         mode: "SOURCE_COMMIT",
         clean: true,
@@ -253,7 +260,7 @@ describe("v50 scoped CI harness repair", () => {
     async (entry) => {
       await fixture(async (cwd) => {
         git(cwd, "add", "--all");
-        git(cwd, "commit", "--quiet", "-m", "Synthetic v50 PR source");
+        git(cwd, "commit", "--quiet", "-m", "Synthetic v53 PR source");
         const source = git(cwd, "rev-parse", "HEAD"),
           tree = git(cwd, "rev-parse", "HEAD^{tree}");
         const merge = execFileSync(
@@ -270,7 +277,7 @@ describe("v50 scoped CI harness repair", () => {
             "-p",
             source,
             "-m",
-            "Synthetic v50 merge",
+            "Synthetic v53 merge",
           ],
           { cwd, encoding: "utf8" },
         ).trim();
@@ -295,7 +302,7 @@ describe("v50 scoped CI harness repair", () => {
             },
           },
         };
-        const directory = await mkdtemp(join(tmpdir(), "mp06-v50-event-"));
+        const directory = await mkdtemp(join(tmpdir(), "mp06-v53-event-"));
         try {
           const path = join(directory, "event.json");
           await writeFile(path, JSON.stringify(event));
@@ -319,7 +326,7 @@ describe("v50 scoped CI harness repair", () => {
       });
     },
   );
-  it("projects exactly to published v49 and retains every old grant as history", () => {
+  it("projects exactly to published v50 and retains every old grant as history", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
       s = read("config/project/current-work.schema.json");
@@ -342,7 +349,7 @@ describe("v50 scoped CI harness repair", () => {
       remoteExecutionAuthorized: false,
       productionAuthorized: false,
     });
-    projectV50ToV49(r, w, s);
+    projectV53ToV50(r, w, s);
     for (const [i, p] of [
       "config/project/roadmap.json",
       "config/project/current-work.json",
@@ -361,10 +368,14 @@ describe("v50 scoped CI harness repair", () => {
     "CREATE_DRAFT_PR",
     "ACTIVATE_SUCCESSOR_V22",
     "CLOSE_ISSUE",
+    "READ_TEST_STORAGE",
+    "DATA_STUDIO_QUERY",
+    "DEPLOY_UAT2",
+    "CHANGE_LINE_WEBHOOK",
   ])("denies missing or historical receipt for %s", (action) => {
-    expect(evaluateV50Action(action).allowed).toBe(false);
+    expect(evaluateV53Action(action).allowed).toBe(false);
     expect(
-      evaluateV50Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
+      evaluateV53Action(action, { kind: "V47_LOCAL_QUALIFICATION" }).allowed,
     ).toBe(false);
   });
   it.each([
@@ -378,11 +389,12 @@ describe("v50 scoped CI harness repair", () => {
     "node-workers",
     "node-timeout",
     "node-retry",
+    "handoff",
   ])("rejects %s drift and preserves operator checkout", async (kind) => {
     await fixture(async (cwd) => {
       expect(
-        inspectV50Repository(cwd, projectControlGitExecutable()).mode,
-      ).toBe("LOCAL_REPAIR");
+        inspectV53Repository(cwd, projectControlGitExecutable()).mode,
+      ).toBe("LOCAL_PREPARATION");
       if (kind === "raw-index-flags")
         git(cwd, "update-index", "--assume-unchanged", "--", "README.md");
       else if (kind.startsWith("node-")) {
@@ -412,7 +424,9 @@ describe("v50 scoped CI harness repair", () => {
                 ? "PROJECT_CONTROL.md"
                 : kind === "owner"
                   ? "docs/project/OWNER_DECISION_LOG.md"
-                  : "config/project/current-work.json";
+                  : kind === "handoff"
+                    ? "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md"
+                    : "config/project/current-work.json";
         const original = readFileSync(join(cwd, p));
         if (kind === "journal") {
           const value = JSON.parse(original.toString()) as Record<
@@ -428,13 +442,13 @@ describe("v50 scoped CI harness repair", () => {
         }
       }
       expect(() =>
-        inspectV50Repository(cwd, projectControlGitExecutable()),
+        inspectV53Repository(cwd, projectControlGitExecutable()),
       ).toThrow();
     });
   });
   it("rejects absent or malformed PR identity", () => {
     expect(
-      validateV50PullRequestReceipt(
+      validateV53PullRequestReceipt(
         {},
         {
           sha: undefined,
