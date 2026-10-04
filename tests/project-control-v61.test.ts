@@ -4,16 +4,16 @@ import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  TEST_DEPLOYMENT_V60 as c,
-  V60_ALLOWED_PATHS,
-  evaluateV60Action,
-  inspectV60Repository,
-  readV60GitBlobs,
-  projectV60ToV59,
-  validateV60PullRequestReceipt,
-} from "../src/project-control-v60.js";
+  TEST_DEPLOYMENT_V61 as c,
+  V61_ALLOWED_PATHS,
+  evaluateV61Action,
+  inspectV61Repository,
+  readV61GitBlobs,
+  projectV61ToV60,
+  validateV61PullRequestReceipt,
+} from "../src/project-control-v61.js";
 import {
   validateProjectControl,
   validateSchemaDocuments,
@@ -21,7 +21,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     "git",
@@ -49,63 +49,6 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
-// Preserve every v60 assertion using its real immutable published checkout.
-const operatorBefore = {
-  head: git(operatorRoot, "rev-parse", "HEAD"),
-  index: readFileSync(
-    join(git(operatorRoot, "rev-parse", "--absolute-git-dir"), "index"),
-  ),
-  status: git(
-    operatorRoot,
-    "status",
-    "--porcelain=v1",
-    "--untracked-files=all",
-  ),
-};
-const root = await mkdtemp(join(tmpdir(), "mp06-v60-published-"));
-afterAll(async () => {
-  await rm(root, { recursive: true, force: true });
-  expect(existsSync(root)).toBe(false);
-  expect(git(operatorRoot, "rev-parse", "HEAD")).toBe(operatorBefore.head);
-  expect(
-    readFileSync(
-      join(git(operatorRoot, "rev-parse", "--absolute-git-dir"), "index"),
-    ),
-  ).toEqual(operatorBefore.index);
-  expect(
-    git(operatorRoot, "status", "--porcelain=v1", "--untracked-files=all"),
-  ).toBe(operatorBefore.status);
-});
-try {
-  git(
-    operatorRoot,
-    "clone",
-    "--quiet",
-    "--shared",
-    "--no-hardlinks",
-    "--no-checkout",
-    operatorRoot,
-    root,
-  );
-  git(
-    root,
-    "checkout",
-    "--quiet",
-    "-B",
-    c.headBranch,
-    "ff37ec6e2d3268701bf55b6e7a94eb34046d3d55",
-  );
-  git(
-    root,
-    "remote",
-    "set-url",
-    "origin",
-    "https://github.com/" + c.repository + ".git",
-  );
-} catch (error) {
-  await rm(root, { recursive: true, force: true });
-  throw error;
-}
 const state = () => ({
   head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(
@@ -117,7 +60,7 @@ const read = (p: string) =>
   JSON.parse(readFileSync(join(root, p), "utf8")) as Record<string, unknown>;
 async function fixture(run: (dir: string) => void | Promise<void>) {
   const before = state(),
-    dir = await mkdtemp(join(tmpdir(), "mp06-v60-"));
+    dir = await mkdtemp(join(tmpdir(), "mp06-v61-"));
   try {
     git(
       root,
@@ -137,7 +80,7 @@ async function fixture(run: (dir: string) => void | Promise<void>) {
       "origin",
       "https://github.com/" + c.repository + ".git",
     );
-    for (const p of V60_ALLOWED_PATHS) {
+    for (const p of V61_ALLOWED_PATHS) {
       await mkdir(dirname(join(dir, p)), { recursive: true });
       await copyFile(join(root, p), join(dir, p));
     }
@@ -160,7 +103,7 @@ const comment12 =
 function receipt() {
   return {
     controlVersion: c.version,
-    kind: "V60_REMOTE_QUALIFICATION",
+    kind: "V61_REMOTE_QUALIFICATION",
     repository: c.repository,
     branch: c.headBranch,
     source: sha,
@@ -289,8 +232,8 @@ const target = {
   sourceCommit: sha,
   artifactSha256: c.artifact.sha256,
 };
-describe("v60 conditional TEST-only reset", () => {
-  it("projects precisely to the real published v59 without modifying historical authority", () => {
+describe("v61 conditional TEST-only reset", () => {
+  it("projects precisely to the real published v60 without modifying historical authority", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
       s = read("config/project/current-work.schema.json");
@@ -311,14 +254,14 @@ describe("v60 conditional TEST-only reset", () => {
     expect(summarizeProjectAuthority(r, w)?.remoteExecutionAuthorized).toBe(
       false,
     );
-    projectV60ToV59(r, w, s);
+    projectV61ToV60(r, w, s);
     for (const [p, v] of [
       ["config/project/roadmap.json", r],
       ["config/project/current-work.json", w],
       ["config/project/current-work.schema.json", s],
     ] as const)
       expect(v).toEqual(JSON.parse(git(root, "show", c.baseline + ":" + p)));
-    expect(V60_ALLOWED_PATHS).toHaveLength(13);
+    expect(V61_ALLOWED_PATHS).toHaveLength(14);
   });
   it("reads allowlisted baseline, index and revision blobs byte-identically to git show", async () =>
     fixture(async (dir) => {
@@ -329,10 +272,10 @@ describe("v60 conditional TEST-only reset", () => {
         join(dir, binary),
         Buffer.from([0, 255, 128, 10, 13, 0, 254]),
       );
-      git(dir, "add", "--", ...V60_ALLOWED_PATHS);
+      git(dir, "add", "--", ...V61_ALLOWED_PATHS);
       git(dir, "commit", "--quiet", "-m", "Synthetic binary framing");
       for (const revision of [c.baseline, "", git(dir, "rev-parse", "HEAD")]) {
-        const blobs = readV60GitBlobs(dir, "git", revision);
+        const blobs = readV61GitBlobs(dir, "git", revision);
         for (const [p, bytes] of blobs) {
           expect(
             bytes.equals(
@@ -359,7 +302,7 @@ describe("v60 conditional TEST-only reset", () => {
           );
         }
       }
-      expect(() => readV60GitBlobs(dir, "git", "HEAD")).toThrow(
+      expect(() => readV61GitBlobs(dir, "git", "HEAD")).toThrow(
         /REVISION_INVALID/,
       );
     }));
@@ -398,7 +341,7 @@ process.stdout.write(b);
 `,
           { mode: 0o700 },
         );
-        expect(() => readV60GitBlobs(dir, stub, c.baseline)).toThrow(
+        expect(() => readV61GitBlobs(dir, stub, c.baseline)).toThrow(
           malformed === "child-error" ? /Command failed/ : /BLOB_BATCH_INVALID/,
         );
       }),
@@ -406,32 +349,32 @@ process.stdout.write(b);
   it("requires exact manifest, schema and Owner record", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json");
-    (w.testDeploymentV60 as Record<string, unknown>).production = true;
+    (w.testDeploymentV61 as Record<string, unknown>).production = true;
     expect(validateProjectControl(r, w).errors.length).toBeGreaterThan(0);
     const s = read("config/project/current-work.schema.json");
-    (s.required as string[]).push("testDeploymentV60");
+    (s.required as string[]).push("testDeploymentV61");
     expect(
       validateSchemaDocuments(
         read("config/project/roadmap.schema.json"),
         s,
         c.version,
       ),
-    ).toContain("V60_SCHEMA_NOT_CLOSED");
+    ).toContain("V61_SCHEMA_NOT_CLOSED");
     expect(validateWp8fOwnerDecisionRecord("", c.version)).toBe(false);
   });
   it("structurally validates worktree/stage and preserves operator", async () =>
     fixture((dir) => {
-      expect(inspectV60Repository(dir, "git").mode).toBe("LOCAL_PREPARATION");
-      git(dir, "add", "--", ...V60_ALLOWED_PATHS);
-      expect(inspectV60Repository(dir, "git").clean).toBe(false);
+      expect(inspectV61Repository(dir, "git").mode).toBe("LOCAL_PREPARATION");
+      git(dir, "add", "--", ...V61_ALLOWED_PATHS);
+      expect(inspectV61Repository(dir, "git").clean).toBe(false);
     }));
   it("accepts exact sole child and PR merge mapping, rejects reversed parents and a second child", async () =>
     fixture((dir) => {
-      git(dir, "add", "--", ...V60_ALLOWED_PATHS);
-      git(dir, "commit", "--quiet", "-m", "Synthetic v60 source");
+      git(dir, "add", "--", ...V61_ALLOWED_PATHS);
+      git(dir, "commit", "--quiet", "-m", "Synthetic v61 source");
       const source = git(dir, "rev-parse", "HEAD"),
         tree = git(dir, "rev-parse", "HEAD^{tree}");
-      expect(inspectV60Repository(dir, "git").mode).toBe("SOURCE_COMMIT");
+      expect(inspectV61Repository(dir, "git").mode).toBe("SOURCE_COMMIT");
       const merge = git(
         dir,
         "commit-tree",
@@ -471,16 +414,16 @@ process.stdout.write(b);
         tree,
         sourceTree: tree,
       };
-      const receipt = validateV60PullRequestReceipt(event, observed);
+      const receipt = validateV61PullRequestReceipt(event, observed);
       expect(receipt).not.toBeNull();
       expect(
-        validateV60PullRequestReceipt(event, {
+        validateV61PullRequestReceipt(event, {
           ...observed,
           parents: [source, c.baseHead],
         }),
       ).toBeNull();
       git(dir, "checkout", "--quiet", "--detach", merge);
-      expect(inspectV60Repository(dir, "git", receipt!).mode).toBe(
+      expect(inspectV61Repository(dir, "git", receipt!).mode).toBe(
         "DRAFT_PR20_SYNTHETIC_MERGE",
       );
       git(dir, "checkout", "--quiet", c.headBranch);
@@ -492,15 +435,15 @@ process.stdout.write(b);
         "-m",
         "Forbidden second child",
       );
-      expect(() => inspectV60Repository(dir, "git")).toThrow(
+      expect(() => inspectV61Repository(dir, "git")).toThrow(
         /SUCCESSOR_CONTROL/,
       );
     }));
   it("rejects any edit to the reviewed historical-test adapter", async () =>
     fixture(async (dir) => {
-      const p = join(dir, "tests/project-control-v59.test.ts");
+      const p = join(dir, "tests/project-control-v60.test.ts");
       await writeFile(p, readFileSync(p, "utf8") + "\n// changed\n");
-      expect(() => inspectV60Repository(dir, "git")).toThrow(/ADAPTER_DRIFT/);
+      expect(() => inspectV61Repository(dir, "git")).toThrow(/ADAPTER_DRIFT/);
     }));
   for (const p of [
     "worker/index.ts",
@@ -514,14 +457,14 @@ process.stdout.write(b);
           join(dir, p),
           readFileSync(join(dir, p), "utf8") + "\n// drift\n",
         );
-        expect(() => inspectV60Repository(dir, "git")).toThrow(/OUTSIDE_SCOPE/);
+        expect(() => inspectV61Repository(dir, "git")).toThrow(/OUTSIDE_SCOPE/);
       }),
     );
   it("rejects historical rewrite and inherited authority drift", async () =>
     fixture(async (dir) => {
       const p = join(dir, "docs/project/OWNER_DECISION_LOG.md");
       await writeFile(p, "changed\n" + readFileSync(p, "utf8"));
-      expect(() => inspectV60Repository(dir, "git")).toThrow(
+      expect(() => inspectV61Repository(dir, "git")).toThrow(
         /HISTORY_REWRITTEN/,
       );
     }));
@@ -541,31 +484,31 @@ process.stdout.write(b);
       "MERGE",
       "ROLLBACK",
     ])
-      expect(evaluateV60Action(a).allowed, a).toBe(false);
+      expect(evaluateV61Action(a).allowed, a).toBe(false);
     for (const a of [
       "LOCAL_IMPLEMENTATION",
       "LOCAL_ANALYSIS",
       "LOCAL_VALIDATION",
     ])
-      expect(evaluateV60Action(a).allowed).toBe(true);
+      expect(evaluateV61Action(a).allowed).toBe(true);
   });
   it("accepts only complete synthetic receipt shapes; not operational authority", () => {
     const e = receipt();
-    expect(evaluateV60Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(true);
+    expect(evaluateV61Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(true);
     expect(
-      evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+      evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
         .allowed,
     ).toBe(true);
     e.journal.attempts = 1;
     e.journal.outcome = "SUCCEEDED";
-    expect(evaluateV60Action("POSTVERIFY_NEW_V2", e).allowed).toBe(true);
+    expect(evaluateV61Action("POSTVERIFY_NEW_V2", e).allowed).toBe(true);
     e.journal.outcome = "UNKNOWN";
-    expect(evaluateV60Action("READBACK_UNKNOWN_DEPLOYMENT", e).allowed).toBe(
+    expect(evaluateV61Action("READBACK_UNKNOWN_DEPLOYMENT", e).allowed).toBe(
       true,
     );
-    expect(evaluateV60Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
+    expect(evaluateV61Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
     expect(
-      evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+      evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
         .allowed,
     ).toBe(false);
   });
@@ -581,7 +524,7 @@ process.stdout.write(b);
         const e = receipt();
         delete (e[section] as Record<string, unknown>)[k];
         expect(
-          evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+          evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
             .allowed,
           section + "." + k,
         ).toBe(false);
@@ -614,7 +557,7 @@ process.stdout.write(b);
       const e = receipt();
       delete (e as Record<string, unknown>)[k];
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
         k,
       ).toBe(false);
@@ -636,7 +579,7 @@ process.stdout.write(b);
       { maximumDeployInvocations: 2 },
     ]) {
       expect(
-        evaluateV60Action(
+        evaluateV61Action(
           "DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET",
           { ...receipt(), ...changes },
           target,
@@ -649,14 +592,14 @@ process.stdout.write(b);
     const preflight: Record<string, unknown> = { ...e.preflight };
     delete preflight.targetAccountAccessProven;
     expect(
-      evaluateV60Action(
+      evaluateV61Action(
         "DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET",
         { ...e, preflight: { ...preflight, identityMatched: true } },
         target,
       ).allowed,
     ).toBe(false);
     expect(
-      evaluateV60Action("PREFLIGHT_METADATA_READ", {
+      evaluateV61Action("PREFLIGHT_METADATA_READ", {
         ...e,
         operation: "IDENTITY",
       }).allowed,
@@ -671,7 +614,7 @@ process.stdout.write(b);
       const e = receipt();
       e.preflight.observedAt = time;
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
       ).toBe(false);
     }
@@ -682,12 +625,12 @@ process.stdout.write(b);
       undefined,
     ])
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", receipt(), bad)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", receipt(), bad)
           .allowed,
       ).toBe(false);
     const e = receipt();
     e.controlVersion = "2026.10.04-v56" as typeof e.controlVersion;
-    expect(evaluateV60Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+    expect(evaluateV61Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
   });
   it("never interprets rejection/unknown/partial as unused or permits old endpoints", () => {
     for (const outcome of [
@@ -701,7 +644,7 @@ process.stdout.write(b);
       e.journal.attempts = 1;
       e.journal.outcome = outcome;
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
       ).toBe(false);
     }
@@ -716,7 +659,7 @@ process.stdout.write(b);
       e.journal.attempts = 1;
       e.journal.outcome = "SUCCEEDED";
       e.probe.path = path;
-      expect(evaluateV60Action("POSTVERIFY_NEW_V2", e).allowed, path).toBe(
+      expect(evaluateV61Action("POSTVERIFY_NEW_V2", e).allowed, path).toBe(
         false,
       );
     }
@@ -728,7 +671,7 @@ process.stdout.write(b);
       e.journal.outcome = "SUCCEEDED";
       delete (e.deployment as Record<string, unknown>)[k];
       expect(
-        evaluateV60Action("POSTVERIFY_NEW_V2", e).allowed,
+        evaluateV61Action("POSTVERIFY_NEW_V2", e).allowed,
         "deployment." + k,
       ).toBe(false);
     }
@@ -738,7 +681,7 @@ process.stdout.write(b);
       e.journal.outcome = "SUCCEEDED";
       delete (e.probe as Record<string, unknown>)[k];
       expect(
-        evaluateV60Action("POSTVERIFY_NEW_V2", e).allowed,
+        evaluateV61Action("POSTVERIFY_NEW_V2", e).allowed,
         "probe." + k,
       ).toBe(false);
     }
@@ -746,7 +689,7 @@ process.stdout.write(b);
     e.journal.attempts = 1;
     e.journal.outcome = "SUCCEEDED";
     e.probe.previousInvocations = 1;
-    expect(evaluateV60Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
+    expect(evaluateV61Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
   });
   it("rejects nested getters without invoking them", () => {
     const e = receipt();
@@ -755,26 +698,26 @@ process.stdout.write(b);
         throw Error("must not execute");
       },
     });
-    expect(evaluateV60Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+    expect(evaluateV61Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
   });
 });
 
 // Pure synthetic receipts only; never executable remote evidence.
-describe("v60 exact native exception and inherited single grant", () => {
+describe("v61 exact native exception and inherited single grant", () => {
   it("rejects every account/refresh exception drift", () => {
     for (const section of ["accountSelection", "nativeRefresh"] as const) {
       for (const key of Object.keys(receipt()[section])) {
         const e = receipt();
         (e[section] as Record<string, unknown>)[key] = "UNAPPROVED";
         expect(
-          evaluateV60Action("PREFLIGHT_METADATA_READ", e).allowed,
+          evaluateV61Action("PREFLIGHT_METADATA_READ", e).allowed,
           section + "." + key,
         ).toBe(false);
       }
     }
     const e = receipt();
     e.nativeContainmentVerified = false;
-    expect(evaluateV60Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+    expect(evaluateV61Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
   });
   it("does not mint a replacement for any prior started invocation", () => {
     for (const [key, value] of [
@@ -786,49 +729,135 @@ describe("v60 exact native exception and inherited single grant", () => {
       const e = receipt();
       (e.journal as Record<string, unknown>)[key] = value;
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
       ).toBe(false);
     }
   });
 });
 
-describe("v60 preserves Owner timeout amendment", () => {
-  it("changes only the Node timeout literal without rewriting history or test policy", () => {
-    const old = git(root, "show", c.baseline + ":vitest.config.ts") + "\n";
-    expect(readFileSync(join(root, "vitest.config.ts"), "utf8")).toBe(old);
+describe("v61 exact Owner test and hook timing margin", () => {
+  it("applies exactly the two approved settings while preserving all other bytes", () => {
+    const baseline = git(root, "show", c.baseline + ":vitest.config.ts") + "\n";
+    const expected = baseline.replace(
+      "    testTimeout: 10000,\n",
+      "    testTimeout: 30000,\n    hookTimeout: 30000,\n",
+    );
+    expect(expected).not.toBe(baseline);
+    expect(readFileSync(join(root, "vitest.config.ts"), "utf8")).toBe(expected);
     expect(c.nodeTestTimeout).toMatchObject({
-      from: 7000,
-      to: 10000,
+      from: 10000,
+      to: 30000,
+      hookFrom: 10000,
+      hookTo: 30000,
+      hookPreviouslyExplicit: false,
+      explicitCaseBudgets: "UNCHANGED",
       maxWorkers: 2,
       retries: 0,
       assertions: "UNCHANGED",
+      purpose: "OWNER_ACCEPTED_CI_TIMING_MARGIN_NOT_ROOT_CAUSE_FIX",
     });
     expect(c.deploymentGrant.originControl).toBe("2026.10.04-v57");
     expect(c.uatPreparation.ownerPreauthorized).toBe(true);
-    expect(evaluateV60Action("ACTIVATE_PILOT", receipt()).allowed).toBe(false);
-    expect(evaluateV60Action("CHANGE_WEBHOOK", receipt()).allowed).toBe(false);
+    expect(evaluateV61Action("ACTIVATE_PILOT", receipt()).allowed).toBe(false);
+    expect(evaluateV61Action("CHANGE_WEBHOOK", receipt()).allowed).toBe(false);
   });
-  it("rejects any extra Vitest delta and preserves the operator checkout", async () => {
-    await fixture(async (dir) => {
-      const p = join(dir, "vitest.config.ts"),
-        before = readFileSync(p, "utf8");
-      for (const replacement of [
-        before.replace("testTimeout: 10000", "testTimeout: 11000"),
-        before.replace("maxWorkers: 2", "maxWorkers: 3"),
-        before.replace("maxWorkers: 2,", "maxWorkers: 2,\n    retry: 1,"),
-      ]) {
-        expect(replacement).not.toBe(before);
-        await writeFile(p, replacement);
-        expect(() => inspectV60Repository(dir, "git")).toThrow(
-          /OUTSIDE_SCOPE|FROZEN_NODE_TEST_POLICY_REQUIRED/,
-        );
-      }
-    });
-  });
+  const drift = {
+    hookOmitted: (v: string) => v.replace("    hookTimeout: 30000,\n", ""),
+    hookValue: (v: string) =>
+      v.replace("hookTimeout: 30000", "hookTimeout: 30001"),
+    testValue: (v: string) =>
+      v.replace("testTimeout: 30000", "testTimeout: 30001"),
+    workers: (v: string) => v.replace("maxWorkers: 2", "maxWorkers: 3"),
+    retry: (v: string) =>
+      v.replace("maxWorkers: 2,", "maxWorkers: 2,\n    retry: 1,"),
+    include: (v: string) =>
+      v.replace(
+        'include: ["tests/**/*.test.ts"]',
+        'include: ["tests/only.test.ts"]',
+      ),
+    exclude: (v: string) =>
+      v.replace(
+        'exclude: ["worker-tests/**/*.test.ts"]',
+        'exclude: ["tests/**/*.test.ts"]',
+      ),
+    extraByte: (v: string) => v + "\n",
+  };
+  for (const [name, mutate] of Object.entries(drift))
+    it(
+      "rejects substantive config drift in worktree/index/source/merge: " +
+        name,
+      async () =>
+        fixture(async (dir) => {
+          const p = join(dir, "vitest.config.ts"),
+            before = readFileSync(p, "utf8");
+          const mutated = mutate(before);
+          expect(mutated).not.toBe(before);
+          await writeFile(p, mutated);
+          expect(() => inspectV61Repository(dir, "git")).toThrow(
+            /FROZEN_NODE_TEST_POLICY_REQUIRED/,
+          );
+          git(dir, "add", "--", ...V61_ALLOWED_PATHS);
+          await writeFile(p, before);
+          expect(() => inspectV61Repository(dir, "git")).toThrow(
+            /FROZEN_NODE_TEST_POLICY_REQUIRED/,
+          );
+          await writeFile(p, mutated);
+          git(dir, "commit", "--quiet", "-m", "Synthetic invalid v61 config");
+          const source = git(dir, "rev-parse", "HEAD"),
+            tree = git(dir, "rev-parse", "HEAD^{tree}");
+          expect(() => inspectV61Repository(dir, "git")).toThrow(
+            /FROZEN_NODE_TEST_POLICY_REQUIRED/,
+          );
+          const merge = git(
+            dir,
+            "commit-tree",
+            tree,
+            "-p",
+            c.baseHead,
+            "-p",
+            source,
+            "-m",
+            "Synthetic invalid merge",
+          );
+          git(dir, "checkout", "--quiet", "--detach", merge);
+          const event = {
+            number: 20,
+            repository: { full_name: c.repository },
+            pull_request: {
+              number: 20,
+              state: "open",
+              draft: true,
+              merged: false,
+              head: {
+                ref: c.headBranch,
+                sha: source,
+                repo: { full_name: c.repository },
+              },
+              base: {
+                ref: c.baseBranch,
+                sha: c.baseHead,
+                repo: { full_name: c.repository },
+              },
+            },
+          };
+          const pr = validateV61PullRequestReceipt(event, {
+            sha: merge,
+            ref: "refs/pull/20/merge",
+            merge,
+            parents: [c.baseHead, source],
+            tree,
+            sourceTree: tree,
+          });
+          expect(pr).not.toBeNull();
+          expect(() => inspectV61Repository(dir, "git", pr!)).toThrow(
+            /FROZEN_NODE_TEST_POLICY_REQUIRED/,
+          );
+        }),
+    );
 });
 
-describe("v60 independent native assets bounds", () => {
+describe("v61 independent native assets bounds", () => {
   it("accepts only the exact separate assets contract", () => {
     expect(c.nativeRetry.maximumAttemptsPerUploadCall).toBe(3);
     expect(c.nativeAssetsRetry.ordinaryAttemptsPerBucket).toBe(6);
@@ -839,7 +868,7 @@ describe("v60 independent native assets bounds", () => {
       const e = receipt();
       (e.nativeAssetsRetry as Record<string, unknown>)[key] = "UNAPPROVED";
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
         key,
       ).toBe(false);
@@ -856,20 +885,20 @@ describe("v60 independent native assets bounds", () => {
       const e = receipt();
       Object.assign(e.nativeAssetsRetry, changes);
       expect(
-        evaluateV60Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV61Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
       ).toBe(false);
     }
   });
-  it("does not allow v59 evidence or a new grant origin", () => {
+  it("does not allow v60 evidence or a new grant origin", () => {
     for (const changes of [
-      { controlVersion: "2026.10.04-v59" },
-      { kind: "V59_REMOTE_QUALIFICATION" },
+      { controlVersion: "2026.10.04-v60" },
+      { kind: "V60_REMOTE_QUALIFICATION" },
       { journal: { ...receipt().journal, originControl: c.version } },
       { nativeAssetsRetry: undefined },
     ])
       expect(
-        evaluateV60Action(
+        evaluateV61Action(
           "DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET",
           { ...receipt(), ...changes },
           target,

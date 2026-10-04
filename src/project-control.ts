@@ -1,4 +1,10 @@
 import {
+  TEST_DEPLOYMENT_V61,
+  projectV61ToV60,
+  v61AuthoritySummary,
+  evaluateV61Action,
+} from "./project-control-v61.js";
+import {
   TEST_DEPLOYMENT_V60,
   projectV60ToV59,
   v60AuthoritySummary,
@@ -1146,6 +1152,12 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === TEST_DEPLOYMENT_V61.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v61AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === TEST_DEPLOYMENT_V60.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1258,6 +1270,10 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V61.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV61Action(action, executionEvidence, deploymentTarget);
   if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V60.version)
     return validateProjectControl(roadmap, currentWork).errors.length
       ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
@@ -8802,6 +8818,26 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V61.version) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = TEST_DEPLOYMENT_V61;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.testDeploymentV61) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-04",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV61ToV60(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V61_EXACT_RESUME_CONTROL_INVALID");
+    return result;
+  }
   if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V60.version) {
     if (!isRecord(work))
       return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
@@ -9492,6 +9528,26 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === TEST_DEPLOYMENT_V61.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "testDeploymentV61").length !== 1 ||
+      JSON.stringify(schema.properties.testDeploymentV61) !==
+        JSON.stringify({ const: TEST_DEPLOYMENT_V61 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V61_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV61ToV60({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      TEST_DEPLOYMENT_V61.technicalBase,
+    );
+  }
   if (version === TEST_DEPLOYMENT_V60.version) {
     if (
       !isRecord(schema) ||
@@ -10099,6 +10155,29 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === TEST_DEPLOYMENT_V61.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + TEST_DEPLOYMENT_V61.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(TEST_DEPLOYMENT_V61) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          TEST_DEPLOYMENT_V61.technicalBase,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === TEST_DEPLOYMENT_V60.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(
