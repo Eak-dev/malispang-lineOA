@@ -2116,3 +2116,155 @@ References: Owner receipt #12comment5973501168 and #9comment5973501356; correcte
   "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK"
 }
 ```
+
+## MP-OD-2026-10-04-V58 — TEST account pinning and native refresh
+
+Owner replied “อนุมัติทั้งสองข้อ และยังงดส่งข้อความเข้า TEST” on 2026-10-04 ICT to the narrow D-A/D-B decision after RES-25 BLOCKED (PR20comment5976559431). Receipt #12comment5976595607 / #9comment5976595765. This supersedes v57 only for the exact account selector and native refresh exceptions; Codex sole writer, Claude cloud reviewer via PR20, no CLI fallback. MP-06/#12 CURRENT/OPEN; Production NO_GO.
+
+D-A: remove inherited CLOUDFLARE__/CF__ values from the child environment, then explicitly set ONLY CLOUDFLARE_ACCOUNT_ID=c395a1bc15b7c95267173de5ccd6407d. This nonsecret value must equal the approved TEST target. No inherited token/account/API-base/environment override, config rewrite, cache seeding/copying, whoami, account enumeration or other Worker/Production scan. Use frozen clean checkout, native default profile, --env-file /dev/null; tracked example templates are not real credential files.
+
+D-B: allow normal native silent refresh and ordinary provider refresh-token rotation for the SAME existing default OAuth profile/account/scopes, persisted only through its existing encrypted/Keychain store. This is not creation of a new API key or new login/consent/secret. Force CI/noninteractive, stdin not TTY. Failure, denial or UNKNOWN means STOP, no operator retry, new login or alternate credential/transport. No credential values/length/fragments/hashes in argv/env/logs/files/chat/GitHub. Existing admin key only short-lived memory for authorized new-only checks. Native log containment remains checked private *.log symlink to /dev/null, suppress/capture all raw output, no optional output files, metrics or error reports.
+
+Admin credential source is the existing macOS Keychain generic-password item service malispang-lineoa-test, account TEST_ADMIN_KEY, exact item only with no search/list/create/update. Before destructive deployment, require successful safe local availability/readability verification, emitting only a boolean; absence/denial/UNKNOWN blocks deployment. No request to an old admin endpoint to test it. For each approved NEW V2 admin probe, acquire just-in-time inside the same short-lived process that sends the exact HTTPS request, redirects forbidden; never argv/URL/parent environment/clipboard/disk/log. Clear buffers/references and exit. If acquisition later fails after a successful deploy, record admin verification BLOCKED and deployment consumed/SUCCEEDED (not retroactive deploy failure); no retry, replacement grant or secret reset. No credential value is requested from Owner in chat.
+
+Owner confirms TEST messages remain withheld. This is current Owner-reported quiet, not proof of no queued LINE redelivery; stop if contradicted. Old data remains disposable; irreversible partial/UNKNOWN risk accepted. Frozen Worker/config/dependencies and exact258400-byte artifact SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42 unchanged. Native Wrangler4.122.0 up to3 attempts per upload wrapper within ONE CLI invocation is accepted; operator retry/rollback forbidden.
+
+Preserve published6d22347954fd3735545959685bde2ae5b5255c17/tree65bf84fc72b55ae56a4aba7871400acb5ac47578 and all historical decisions/failed evidence. v58 has one normal control-only child, exact13paths, staged full Mac gates/audit0/Claude review before commit, actual-commit full gates/exact reconstruction before normal push, hostedCI/postpushPASS before remote. Prior v57 successful CI37176133295/RES24 is baseline evidence, NOT v58 qualification. Historical v57 tests use immutable published checkout with every assertion/watchdog/cleanup/operator guard retained.
+
+The SAME unused v57 destructive grant carries forward, maximum1 CLI invocation across v57/v58, never reminted. Read complete Issue12 history before action and bind priorJournalChecked/priorStartedInvocations=0; any earlier STARTED/UNKNOWN consumes it even if success was never recorded. Append durable sanitized STARTED before invocation. No deploy until genuine fresh source/artifact/account/script/binding/secret-presence/native-admin/quiet-window evidence and actual action gate. Unknown/rejected/partial after start stops with scoped metadata readback only. Verified all4new V2 namespaces and old-class deletion/100% exactversion precede the same bounded3new-only GETs (one empty synthetic object), with constructor initialization acknowledged.
+
+No old storage/DataStudio/SQL/selector replay or hold bypass; no policy/KB/catalog/model/prompt/schema/threshold/dependencies/runtime/config changes, pausedv51/v52 touch, secrets/webhook/pilot/liveUAT/provider, newPR/Ready/merge/Issueclose/Production. v22 stays RETIRED_UNUSED_NO_REISSUE, September rootcause permanently UNKNOWN, U1GAP/A1-A3/billing unresolved, never PASS. Reset does not solve future UAT event provenance/close accounting. Current test/source/credential/deployment receipts must be authenticated, not copied from synthetic fixtures.
+
+```json
+{
+  "version": "2026.10.04-v58",
+  "ownerDecision": "MP-OD-2026-10-04-V58",
+  "supersedes": "2026.10.04-v57",
+  "technicalBase": "2026.10.04-v57",
+  "baseline": "6d22347954fd3735545959685bde2ae5b5255c17",
+  "baselineTree": "65bf84fc72b55ae56a4aba7871400acb5ac47578",
+  "baselineParent": "7ce7b99e87f1677ab83d527ba114c3e4a049d193",
+  "publishedBaseline": "6d22347954fd3735545959685bde2ae5b5255c17",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "94a37a9460c51ad6a3e990a9ebb6bfd50f3717f14e7b163e7e06867327f487a5",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "UPLOAD_CALL_ONLY_NOT_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK"
+}
+```

@@ -4,16 +4,16 @@ import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  TEST_DEPLOYMENT_V57 as c,
-  V57_ALLOWED_PATHS,
-  evaluateV57Action,
-  inspectV57Repository,
-  readV57GitBlobs,
-  projectV57ToV56,
-  validateV57PullRequestReceipt,
-} from "../src/project-control-v57.js";
+  TEST_DEPLOYMENT_V58 as c,
+  V58_ALLOWED_PATHS,
+  evaluateV58Action,
+  inspectV58Repository,
+  readV58GitBlobs,
+  projectV58ToV57,
+  validateV58PullRequestReceipt,
+} from "../src/project-control-v58.js";
 import {
   validateProjectControl,
   validateSchemaDocuments,
@@ -21,7 +21,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     "git",
@@ -49,63 +49,6 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
-// Preserve every v57 assertion using its real immutable published checkout.
-const operatorBefore = {
-  head: git(operatorRoot, "rev-parse", "HEAD"),
-  index: readFileSync(
-    join(git(operatorRoot, "rev-parse", "--absolute-git-dir"), "index"),
-  ),
-  status: git(
-    operatorRoot,
-    "status",
-    "--porcelain=v1",
-    "--untracked-files=all",
-  ),
-};
-const root = await mkdtemp(join(tmpdir(), "mp06-v57-published-"));
-afterAll(async () => {
-  await rm(root, { recursive: true, force: true });
-  expect(existsSync(root)).toBe(false);
-  expect(git(operatorRoot, "rev-parse", "HEAD")).toBe(operatorBefore.head);
-  expect(
-    readFileSync(
-      join(git(operatorRoot, "rev-parse", "--absolute-git-dir"), "index"),
-    ),
-  ).toEqual(operatorBefore.index);
-  expect(
-    git(operatorRoot, "status", "--porcelain=v1", "--untracked-files=all"),
-  ).toBe(operatorBefore.status);
-});
-try {
-  git(
-    operatorRoot,
-    "clone",
-    "--quiet",
-    "--shared",
-    "--no-hardlinks",
-    "--no-checkout",
-    operatorRoot,
-    root,
-  );
-  git(
-    root,
-    "checkout",
-    "--quiet",
-    "-B",
-    c.headBranch,
-    "6d22347954fd3735545959685bde2ae5b5255c17",
-  );
-  git(
-    root,
-    "remote",
-    "set-url",
-    "origin",
-    "https://github.com/" + c.repository + ".git",
-  );
-} catch (error) {
-  await rm(root, { recursive: true, force: true });
-  throw error;
-}
 const state = () => ({
   head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(
@@ -117,7 +60,7 @@ const read = (p: string) =>
   JSON.parse(readFileSync(join(root, p), "utf8")) as Record<string, unknown>;
 async function fixture(run: (dir: string) => void | Promise<void>) {
   const before = state(),
-    dir = await mkdtemp(join(tmpdir(), "mp06-v57-"));
+    dir = await mkdtemp(join(tmpdir(), "mp06-v58-"));
   try {
     git(
       root,
@@ -137,7 +80,7 @@ async function fixture(run: (dir: string) => void | Promise<void>) {
       "origin",
       "https://github.com/" + c.repository + ".git",
     );
-    for (const p of V57_ALLOWED_PATHS) {
+    for (const p of V58_ALLOWED_PATHS) {
       await mkdir(dirname(join(dir, p)), { recursive: true });
       await copyFile(join(root, p), join(dir, p));
     }
@@ -160,7 +103,7 @@ const comment12 =
 function receipt() {
   return {
     controlVersion: c.version,
-    kind: "V57_REMOTE_QUALIFICATION",
+    kind: "V58_REMOTE_QUALIFICATION",
     repository: c.repository,
     branch: c.headBranch,
     source: sha,
@@ -180,6 +123,9 @@ function receipt() {
     noProductionAccess: true,
     noOldStorageAccess: true,
     holdPreserved: true,
+    accountSelection: { ...c.accountSelection },
+    nativeRefresh: { ...c.nativeRefresh },
+    nativeContainmentVerified: true,
     qualification: {
       source: sha,
       tree,
@@ -237,6 +183,9 @@ function receipt() {
       worker: c.target.worker,
       receipt: comment12,
       maximumAttempts: 1,
+      originControl: c.deploymentGrant.originControl,
+      priorJournalChecked: true,
+      priorStartedInvocations: 0,
       attempts: 0,
       outcome: "NOT_STARTED",
     },
@@ -282,8 +231,8 @@ const target = {
   sourceCommit: sha,
   artifactSha256: c.artifact.sha256,
 };
-describe("v57 conditional TEST-only reset", () => {
-  it("projects precisely to the real published v56 without modifying historical authority", () => {
+describe("v58 conditional TEST-only reset", () => {
+  it("projects precisely to the real published v57 without modifying historical authority", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json"),
       s = read("config/project/current-work.schema.json");
@@ -304,14 +253,14 @@ describe("v57 conditional TEST-only reset", () => {
     expect(summarizeProjectAuthority(r, w)?.remoteExecutionAuthorized).toBe(
       false,
     );
-    projectV57ToV56(r, w, s);
+    projectV58ToV57(r, w, s);
     for (const [p, v] of [
       ["config/project/roadmap.json", r],
       ["config/project/current-work.json", w],
       ["config/project/current-work.schema.json", s],
     ] as const)
       expect(v).toEqual(JSON.parse(git(root, "show", c.baseline + ":" + p)));
-    expect(V57_ALLOWED_PATHS).toHaveLength(13);
+    expect(V58_ALLOWED_PATHS).toHaveLength(13);
   });
   it("reads allowlisted baseline, index and revision blobs byte-identically to git show", async () =>
     fixture(async (dir) => {
@@ -322,10 +271,10 @@ describe("v57 conditional TEST-only reset", () => {
         join(dir, binary),
         Buffer.from([0, 255, 128, 10, 13, 0, 254]),
       );
-      git(dir, "add", "--", ...V57_ALLOWED_PATHS);
+      git(dir, "add", "--", ...V58_ALLOWED_PATHS);
       git(dir, "commit", "--quiet", "-m", "Synthetic binary framing");
       for (const revision of [c.baseline, "", git(dir, "rev-parse", "HEAD")]) {
-        const blobs = readV57GitBlobs(dir, "git", revision);
+        const blobs = readV58GitBlobs(dir, "git", revision);
         for (const [p, bytes] of blobs) {
           expect(
             bytes.equals(
@@ -352,7 +301,7 @@ describe("v57 conditional TEST-only reset", () => {
           );
         }
       }
-      expect(() => readV57GitBlobs(dir, "git", "HEAD")).toThrow(
+      expect(() => readV58GitBlobs(dir, "git", "HEAD")).toThrow(
         /REVISION_INVALID/,
       );
     }));
@@ -391,7 +340,7 @@ process.stdout.write(b);
 `,
           { mode: 0o700 },
         );
-        expect(() => readV57GitBlobs(dir, stub, c.baseline)).toThrow(
+        expect(() => readV58GitBlobs(dir, stub, c.baseline)).toThrow(
           malformed === "child-error" ? /Command failed/ : /BLOB_BATCH_INVALID/,
         );
       }),
@@ -399,32 +348,32 @@ process.stdout.write(b);
   it("requires exact manifest, schema and Owner record", () => {
     const r = read("config/project/roadmap.json"),
       w = read("config/project/current-work.json");
-    (w.testDeploymentV57 as Record<string, unknown>).production = true;
+    (w.testDeploymentV58 as Record<string, unknown>).production = true;
     expect(validateProjectControl(r, w).errors.length).toBeGreaterThan(0);
     const s = read("config/project/current-work.schema.json");
-    (s.required as string[]).push("testDeploymentV57");
+    (s.required as string[]).push("testDeploymentV58");
     expect(
       validateSchemaDocuments(
         read("config/project/roadmap.schema.json"),
         s,
         c.version,
       ),
-    ).toContain("V57_SCHEMA_NOT_CLOSED");
+    ).toContain("V58_SCHEMA_NOT_CLOSED");
     expect(validateWp8fOwnerDecisionRecord("", c.version)).toBe(false);
   });
   it("structurally validates worktree/stage and preserves operator", async () =>
     fixture((dir) => {
-      expect(inspectV57Repository(dir, "git").mode).toBe("LOCAL_PREPARATION");
-      git(dir, "add", "--", ...V57_ALLOWED_PATHS);
-      expect(inspectV57Repository(dir, "git").clean).toBe(false);
+      expect(inspectV58Repository(dir, "git").mode).toBe("LOCAL_PREPARATION");
+      git(dir, "add", "--", ...V58_ALLOWED_PATHS);
+      expect(inspectV58Repository(dir, "git").clean).toBe(false);
     }));
   it("accepts exact sole child and PR merge mapping, rejects reversed parents and a second child", async () =>
     fixture((dir) => {
-      git(dir, "add", "--", ...V57_ALLOWED_PATHS);
-      git(dir, "commit", "--quiet", "-m", "Synthetic v57 source");
+      git(dir, "add", "--", ...V58_ALLOWED_PATHS);
+      git(dir, "commit", "--quiet", "-m", "Synthetic v58 source");
       const source = git(dir, "rev-parse", "HEAD"),
         tree = git(dir, "rev-parse", "HEAD^{tree}");
-      expect(inspectV57Repository(dir, "git").mode).toBe("SOURCE_COMMIT");
+      expect(inspectV58Repository(dir, "git").mode).toBe("SOURCE_COMMIT");
       const merge = git(
         dir,
         "commit-tree",
@@ -464,16 +413,16 @@ process.stdout.write(b);
         tree,
         sourceTree: tree,
       };
-      const receipt = validateV57PullRequestReceipt(event, observed);
+      const receipt = validateV58PullRequestReceipt(event, observed);
       expect(receipt).not.toBeNull();
       expect(
-        validateV57PullRequestReceipt(event, {
+        validateV58PullRequestReceipt(event, {
           ...observed,
           parents: [source, c.baseHead],
         }),
       ).toBeNull();
       git(dir, "checkout", "--quiet", "--detach", merge);
-      expect(inspectV57Repository(dir, "git", receipt!).mode).toBe(
+      expect(inspectV58Repository(dir, "git", receipt!).mode).toBe(
         "DRAFT_PR20_SYNTHETIC_MERGE",
       );
       git(dir, "checkout", "--quiet", c.headBranch);
@@ -485,15 +434,15 @@ process.stdout.write(b);
         "-m",
         "Forbidden second child",
       );
-      expect(() => inspectV57Repository(dir, "git")).toThrow(
+      expect(() => inspectV58Repository(dir, "git")).toThrow(
         /SUCCESSOR_CONTROL/,
       );
     }));
   it("rejects any edit to the reviewed historical-test adapter", async () =>
     fixture(async (dir) => {
-      const p = join(dir, "tests/project-control-v56.test.ts");
+      const p = join(dir, "tests/project-control-v57.test.ts");
       await writeFile(p, readFileSync(p, "utf8") + "\n// changed\n");
-      expect(() => inspectV57Repository(dir, "git")).toThrow(/ADAPTER_DRIFT/);
+      expect(() => inspectV58Repository(dir, "git")).toThrow(/ADAPTER_DRIFT/);
     }));
   for (const p of [
     "worker/index.ts",
@@ -507,14 +456,14 @@ process.stdout.write(b);
           join(dir, p),
           readFileSync(join(dir, p), "utf8") + "\n// drift\n",
         );
-        expect(() => inspectV57Repository(dir, "git")).toThrow(/OUTSIDE_SCOPE/);
+        expect(() => inspectV58Repository(dir, "git")).toThrow(/OUTSIDE_SCOPE/);
       }),
     );
   it("rejects historical rewrite and inherited authority drift", async () =>
     fixture(async (dir) => {
       const p = join(dir, "docs/project/OWNER_DECISION_LOG.md");
       await writeFile(p, "changed\n" + readFileSync(p, "utf8"));
-      expect(() => inspectV57Repository(dir, "git")).toThrow(
+      expect(() => inspectV58Repository(dir, "git")).toThrow(
         /HISTORY_REWRITTEN/,
       );
     }));
@@ -534,31 +483,31 @@ process.stdout.write(b);
       "MERGE",
       "ROLLBACK",
     ])
-      expect(evaluateV57Action(a).allowed, a).toBe(false);
+      expect(evaluateV58Action(a).allowed, a).toBe(false);
     for (const a of [
       "LOCAL_IMPLEMENTATION",
       "LOCAL_ANALYSIS",
       "LOCAL_VALIDATION",
     ])
-      expect(evaluateV57Action(a).allowed).toBe(true);
+      expect(evaluateV58Action(a).allowed).toBe(true);
   });
   it("accepts only complete synthetic receipt shapes; not operational authority", () => {
     const e = receipt();
-    expect(evaluateV57Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(true);
+    expect(evaluateV58Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(true);
     expect(
-      evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+      evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
         .allowed,
     ).toBe(true);
     e.journal.attempts = 1;
     e.journal.outcome = "SUCCEEDED";
-    expect(evaluateV57Action("POSTVERIFY_NEW_V2", e).allowed).toBe(true);
+    expect(evaluateV58Action("POSTVERIFY_NEW_V2", e).allowed).toBe(true);
     e.journal.outcome = "UNKNOWN";
-    expect(evaluateV57Action("READBACK_UNKNOWN_DEPLOYMENT", e).allowed).toBe(
+    expect(evaluateV58Action("READBACK_UNKNOWN_DEPLOYMENT", e).allowed).toBe(
       true,
     );
-    expect(evaluateV57Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
+    expect(evaluateV58Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
     expect(
-      evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+      evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
         .allowed,
     ).toBe(false);
   });
@@ -573,7 +522,7 @@ process.stdout.write(b);
         const e = receipt();
         delete (e[section] as Record<string, unknown>)[k];
         expect(
-          evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+          evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
             .allowed,
           section + "." + k,
         ).toBe(false);
@@ -605,7 +554,7 @@ process.stdout.write(b);
       const e = receipt();
       delete (e as Record<string, unknown>)[k];
       expect(
-        evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
         k,
       ).toBe(false);
@@ -627,7 +576,7 @@ process.stdout.write(b);
       { maximumDeployInvocations: 2 },
     ]) {
       expect(
-        evaluateV57Action(
+        evaluateV58Action(
           "DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET",
           { ...receipt(), ...changes },
           target,
@@ -640,14 +589,14 @@ process.stdout.write(b);
     const preflight: Record<string, unknown> = { ...e.preflight };
     delete preflight.targetAccountAccessProven;
     expect(
-      evaluateV57Action(
+      evaluateV58Action(
         "DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET",
         { ...e, preflight: { ...preflight, identityMatched: true } },
         target,
       ).allowed,
     ).toBe(false);
     expect(
-      evaluateV57Action("PREFLIGHT_METADATA_READ", {
+      evaluateV58Action("PREFLIGHT_METADATA_READ", {
         ...e,
         operation: "IDENTITY",
       }).allowed,
@@ -662,7 +611,7 @@ process.stdout.write(b);
       const e = receipt();
       e.preflight.observedAt = time;
       expect(
-        evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
       ).toBe(false);
     }
@@ -673,12 +622,12 @@ process.stdout.write(b);
       undefined,
     ])
       expect(
-        evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", receipt(), bad)
+        evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", receipt(), bad)
           .allowed,
       ).toBe(false);
     const e = receipt();
     e.controlVersion = "2026.10.04-v56" as typeof e.controlVersion;
-    expect(evaluateV57Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+    expect(evaluateV58Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
   });
   it("never interprets rejection/unknown/partial as unused or permits old endpoints", () => {
     for (const outcome of [
@@ -692,7 +641,7 @@ process.stdout.write(b);
       e.journal.attempts = 1;
       e.journal.outcome = outcome;
       expect(
-        evaluateV57Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+        evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
           .allowed,
       ).toBe(false);
     }
@@ -707,7 +656,7 @@ process.stdout.write(b);
       e.journal.attempts = 1;
       e.journal.outcome = "SUCCEEDED";
       e.probe.path = path;
-      expect(evaluateV57Action("POSTVERIFY_NEW_V2", e).allowed, path).toBe(
+      expect(evaluateV58Action("POSTVERIFY_NEW_V2", e).allowed, path).toBe(
         false,
       );
     }
@@ -719,7 +668,7 @@ process.stdout.write(b);
       e.journal.outcome = "SUCCEEDED";
       delete (e.deployment as Record<string, unknown>)[k];
       expect(
-        evaluateV57Action("POSTVERIFY_NEW_V2", e).allowed,
+        evaluateV58Action("POSTVERIFY_NEW_V2", e).allowed,
         "deployment." + k,
       ).toBe(false);
     }
@@ -729,7 +678,7 @@ process.stdout.write(b);
       e.journal.outcome = "SUCCEEDED";
       delete (e.probe as Record<string, unknown>)[k];
       expect(
-        evaluateV57Action("POSTVERIFY_NEW_V2", e).allowed,
+        evaluateV58Action("POSTVERIFY_NEW_V2", e).allowed,
         "probe." + k,
       ).toBe(false);
     }
@@ -737,7 +686,7 @@ process.stdout.write(b);
     e.journal.attempts = 1;
     e.journal.outcome = "SUCCEEDED";
     e.probe.previousInvocations = 1;
-    expect(evaluateV57Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
+    expect(evaluateV58Action("POSTVERIFY_NEW_V2", e).allowed).toBe(false);
   });
   it("rejects nested getters without invoking them", () => {
     const e = receipt();
@@ -746,6 +695,40 @@ process.stdout.write(b);
         throw Error("must not execute");
       },
     });
-    expect(evaluateV57Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+    expect(evaluateV58Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+  });
+});
+
+// Pure synthetic receipts only; never executable remote evidence.
+describe("v58 exact native exception and inherited single grant", () => {
+  it("rejects every account/refresh exception drift", () => {
+    for (const section of ["accountSelection", "nativeRefresh"] as const) {
+      for (const key of Object.keys(receipt()[section])) {
+        const e = receipt();
+        (e[section] as Record<string, unknown>)[key] = "UNAPPROVED";
+        expect(
+          evaluateV58Action("PREFLIGHT_METADATA_READ", e).allowed,
+          section + "." + key,
+        ).toBe(false);
+      }
+    }
+    const e = receipt();
+    e.nativeContainmentVerified = false;
+    expect(evaluateV58Action("PREFLIGHT_METADATA_READ", e).allowed).toBe(false);
+  });
+  it("does not mint a replacement for any prior started invocation", () => {
+    for (const [key, value] of [
+      ["originControl", c.version],
+      ["priorJournalChecked", false],
+      ["priorStartedInvocations", 1],
+      ["priorStartedInvocations", "UNKNOWN"],
+    ] as const) {
+      const e = receipt();
+      (e.journal as Record<string, unknown>)[key] = value;
+      expect(
+        evaluateV58Action("DEPLOY_EXACT_ONCE_DESTRUCTIVE_RESET", e, target)
+          .allowed,
+      ).toBe(false);
+    }
   });
 });
