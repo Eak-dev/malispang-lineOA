@@ -2440,3 +2440,188 @@ This v59 execution module does not enable pilot/webhook/UAT actions yet. Runtime
   }
 }
 ```
+
+## MP-OD-2026-10-04-V60 — Owner native assets retry exception and same single TEST reset
+
+### Effective native assets retry exception — v60
+
+Owner directly instructed “เห็นด้วยกับ Claude ทำต่อเพื่อ deploy ได้เลย” on 2026-10-04. The detailed Owner decision relayed verbatim in PR20comment5978769457 accepts native assets ordinary6 / gateway10 attempts per bucket, Worker upload3 unchanged, a control successor to v59 and then TEST reset using the SAME single grant, no operator retry, Production forbidden. Receipts #12comment5979361841 / #9comment5979362019. This supersedes v59 only for separate native assets bounds; historical evidence and all other permissions/acceptance stay unchanged.
+
+One normal control-only child of6973a12f0c54d51945830b4ad635250e7612fdba/tree6d6f0c30b3124108331b17c83bd361d70af3461c, exact13paths (V60_ALLOWED_PATHS). Freeze runtime, wrangler.jsonc including ./public assets, dependencies, workflow, Worker types/tests, Vitest timeout10000ms/maxWorkers2/retry0 and earlier modules. The v59 historical test-input adapter reads its immutable published checkout and preserves assertions/isolation/cleanup/operator guards. No second child/amend under v59. Staged full Mac gates/audit0/Claude precommit, actual-commit full gates/exact reconstruction/prepush, fresh PR20 identity, then hostedCI/postpush PASS required; new control bytes cannot inherit qualification.
+
+Pinned Wrangler4.122.0 awaits syncAssets before Worker upload. Assets loop permits ordinary6 and maximum10 gateway/mixed calls per returned bucket. Worker upload wrapper remains3; neither bound is a total network-request cap or wall-clock guarantee. Server bucket count UNOBSERVED; unchanged local files do not prove upload skipped. Content-hash addressing is not proof of provider-wide idempotence. No dependency/config/transport/retry override. Only native retries in ONE CLI invocation are accepted; no operator retry/rollback/remint. Any started CLI consumes the SAME originv57 maximum1 grant across v57/v58/v59/v60, including assets-stage failure; partial/UNKNOWN stops with exact metadata-only readback. Unchanged version/bindings cannot prove absence of every remote side effect.
+
+Preserve exact258400-byte artifact SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42 and all D-A/D-B native default/encrypted existing credentials/exact TEST target/log containment/admin-memory rules. Fresh<=120s source/artifact/PR/credentials/quiet/journal/metadata gates precede durable sanitized Issue12 STARTED and exactly one deployment. Stale09:28 observations are review evidence only. No whoami/account enumeration/Production or otherWorker scans/new login/secret mutation/old storage/admin request.
+
+RES36 corrections remain: absentV2 preflight means exact current-script bindings/exports; account-wide inventory UNPROVEN. Old/new namespace identities stay only in the same short-lived process memory for comparison acrossall4, emit booleans/counts, wipe/exit; no identifiers/fingerprints in private journals/logs/chat/GitHub. Require actual reconciliation Createdexact4V2/Deletedexact4old, exact newversion/sourceartifactmessage/100%traffic/distinct newIDs before once-only newV2 health, INACTIVE_ZERO and one syntheticemptyconversation probes. Missing/partial/unknown/warning stops. Old-class-only Info codes require Claude review before probes; never emit referencing_scripts. Future tombstone cleanup must use actual removable_entries. Bounded probes are not global/Owner-chat freshness proof.
+
+This does not enable UAT/pilot/webhook yet. After verified reset, a reviewed action-specific successor must resolve B1 readiness3/3/27824 and B2close6/6/34082 retired-lineage dependencies without removing attribution or STOPPED/EXPIRED/accounting safety. Owner alone sends UAT, coordinate availability before activation, retain approved botmodel/caps, explicit STOP/accounting/handoff. No new destructive grant, old-storage hold bypass, pausedv51/v52 access/edit/delete, policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow changes, newPR/Ready/merge/Issueclose. Production NO_GO. September UNKNOWN, U1 GAP/A1-A3/billing UNKNOWN stay unresolved. Old CI140 FAIL retained;10s is timing margin, not proven rootcause repair.
+
+```json
+{
+  "version": "2026.10.04-v60",
+  "ownerDecision": "MP-OD-2026-10-04-V60",
+  "supersedes": "2026.10.04-v59",
+  "technicalBase": "2026.10.04-v59",
+  "baseline": "6973a12f0c54d51945830b4ad635250e7612fdba",
+  "baselineTree": "6d6f0c30b3124108331b17c83bd361d70af3461c",
+  "baselineParent": "6aa87dcb75d6e20d5fbf65351119b0fac259f255",
+  "publishedBaseline": "6973a12f0c54d51945830b4ad635250e7612fdba",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "2361b900fe4ecb8302cddc669fef2d3950082fbc146693bf1fc768429c986a60",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "WORKER_UPLOAD_WRAPPER_ONLY_NOT_ASSETS_OR_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK",
+  "nodeTestTimeout": {
+    "file": "vitest.config.ts",
+    "sha256": "33b9cdf167339c56e94e4e2b222a849d76d14fee60a0355f5a82668b178e8264",
+    "from": 7000,
+    "to": 10000,
+    "maxWorkers": 2,
+    "retries": 0,
+    "assertions": "UNCHANGED",
+    "purpose": "OWNER_ACCEPTED_CI_TIMING_MARGIN_NOT_ROOT_CAUSE_FIX",
+    "failedEvidence": "CI37178910961_RETAINED_FAIL"
+  },
+  "uatPreparation": {
+    "ownerPreauthorized": true,
+    "execution": "REQUIRES_REVIEWED_ACTION_SPECIFIC_CONTROL_AFTER_RESET",
+    "target": "EXISTING_TEST_ONLY",
+    "messages": "OWNER_ONLY",
+    "sameApprovedCaps": true,
+    "production": false,
+    "heldOldStorage": false,
+    "secretExposure": false,
+    "ready": false,
+    "merge": false,
+    "issueClosure": false
+  },
+  "nativeAssetsRetry": {
+    "wrangler": "4.122.0",
+    "phase": "BEFORE_WORKER_UPLOAD",
+    "ordinaryAttemptsPerBucket": 6,
+    "maximumAttemptsPerBucketIncludingGateway": 10,
+    "exactFrozenAssetsConfig": true,
+    "serverBucketCount": "UNOBSERVED_NO_TOTAL_REQUEST_BOUND",
+    "operatorRetry": false,
+    "providerWideIdempotence": "UNPROVEN",
+    "partialOrUnknown": "CONSUMES_SAME_SINGLE_CLI_GRANT_STOP_METADATA_ONLY"
+  }
+}
+```
