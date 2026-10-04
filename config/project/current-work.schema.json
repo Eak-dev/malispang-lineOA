@@ -77,7 +77,8 @@
     "resumeCodexPlanV53",
     "timeAwareEvidenceV54",
     "testResetV55",
-    "publicationV56"
+    "publicationV56",
+    "testDeploymentV57"
   ],
   "properties": {
     "ciHarnessRepairV48": {
@@ -936,7 +937,7 @@
       "const": "MP-ROADMAP"
     },
     "roadmapVersion": {
-      "const": "2026.10.04-v56"
+      "const": "2026.10.04-v57"
     },
     "workId": {
       "type": "string",
@@ -4460,6 +4461,112 @@
           }
         },
         "fixturePath": "tests/fixtures/project-control/v55-local-patch.json"
+      }
+    },
+    "testDeploymentV57": {
+      "const": {
+        "version": "2026.10.04-v57",
+        "ownerDecision": "MP-OD-2026-10-04-V57",
+        "supersedes": "2026.10.04-v56",
+        "technicalBase": "2026.10.04-v56",
+        "baseline": "7ce7b99e87f1677ab83d527ba114c3e4a049d193",
+        "baselineTree": "f763acf01a648ec7f40b41ab4111aab5ac48add7",
+        "baselineParent": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+        "publishedBaseline": "7ce7b99e87f1677ab83d527ba114c3e4a049d193",
+        "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+        "repository": "Eak-dev/malispang-lineOA",
+        "headBranch": "codex/mp06-harness-v43",
+        "baseBranch": "codex/mp-06-guardrailed-ai",
+        "pullRequest": 20,
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+        "historicalTestAdapterSha256": "a0530e725947be4a199be2837ae4336ff3233c598a9b5411ad44d43fb77612dd",
+        "target": {
+          "account": "c395a1bc15b7c95267173de5ccd6407d",
+          "worker": "malispang-lineoa-test",
+          "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+          "environment": "TEST",
+          "profile": "default"
+        },
+        "artifact": {
+          "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+          "bytes": 258400,
+          "wrangler": "4.122.0",
+          "minify": true
+        },
+        "ownerFacts": {
+          "lastTestMessageDate": "2026-09-13",
+          "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+          "testOnlyOwner": true,
+          "testDataDisposable": true,
+          "partialUnknownUnavailableRiskAccepted": true,
+          "syntheticEmptyObjects": 1
+        },
+        "pausedLineage": {
+          "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+          "branch": "codex/mp06-uat-round2-prep",
+          "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+          "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+        },
+        "retiredLineage": {
+          "WP8F": "RETIRED",
+          "v16": "RETIRED",
+          "v22": "RETIRED_UNUSED_NO_REISSUE"
+        },
+        "implementationSeals": {
+          "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+          "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+          "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+          "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+          "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+          "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+          "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+        },
+        "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+        "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+        "nativeRetry": {
+          "wrangler": "4.122.0",
+          "maximumAttemptsPerUploadCall": 3,
+          "exactBundleConfigAndTarget": true,
+          "scope": "UPLOAD_CALL_ONLY_NOT_TOTAL_NETWORK_REQUESTS",
+          "ambiguousOutcomeRetryAccepted": true
+        },
+        "operatorRetry": false,
+        "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+        "credential": "EXISTING_NATIVE_DEFAULT_PROFILE_ONLY_NO_PLAINTEXT_EXPORT_NEW_LOGIN_OR_SECRET_CHANGE",
+        "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+        "requiredSecrets": [
+          "LINE_CHANNEL_SECRET",
+          "LINE_CHANNEL_ACCESS_TOKEN",
+          "LINE_BOT_USER_ID",
+          "TEST_ADMIN_KEY",
+          "TEST_REWARD_CARD_URL"
+        ],
+        "oldClasses": [
+          "ConversationStateDO",
+          "DraftOrderDO",
+          "HandoffRegistryDO",
+          "PromotionControlDO"
+        ],
+        "newClasses": [
+          "ConversationStateDOV2",
+          "DraftOrderDOV2",
+          "HandoffRegistryDOV2",
+          "PromotionControlDOV2"
+        ],
+        "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+        "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+        "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+        "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+        "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+        "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+        "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+        "uatReadiness": "NOT_VERIFIED",
+        "ready": false,
+        "merge": false,
+        "production": false,
+        "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK"
       }
     }
   }

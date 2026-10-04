@@ -1,4 +1,10 @@
 import {
+  TEST_DEPLOYMENT_V57,
+  projectV57ToV56,
+  v57AuthoritySummary,
+  evaluateV57Action,
+} from "./project-control-v57.js";
+import {
   REVIEWED_V55_PUBLICATION_V56,
   projectV56ToV55,
   v56AuthoritySummary,
@@ -1122,6 +1128,12 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === TEST_DEPLOYMENT_V57.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v57AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === REVIEWED_V55_PUBLICATION_V56.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1210,6 +1222,10 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V57.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV57Action(action, executionEvidence, deploymentTarget);
   if (
     isRecord(roadmap) &&
     roadmap.version === REVIEWED_V55_PUBLICATION_V56.version
@@ -8738,6 +8754,26 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V57.version) {
+    if (!isRecord(work))
+      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
+    const c = TEST_DEPLOYMENT_V57;
+    const valid =
+      work.roadmapVersion === c.version &&
+      JSON.stringify(work.testDeploymentV57) === JSON.stringify(c) &&
+      JSON.stringify(roadmap.ownerDecision) ===
+        JSON.stringify({
+          decisionId: c.ownerDecision,
+          decidedAt: "2026-10-04",
+          supersedes: c.supersedes,
+        });
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV57ToV56(r, w);
+    const result = validateProjectControl(r, w);
+    if (!valid) result.errors.push("V57_EXACT_RESUME_CONTROL_INVALID");
+    return result;
+  }
   if (
     isRecord(roadmap) &&
     roadmap.version === REVIEWED_V55_PUBLICATION_V56.version
@@ -9348,6 +9384,26 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === TEST_DEPLOYMENT_V57.version) {
+    if (
+      !isRecord(schema) ||
+      !isRecord(schema.properties) ||
+      !Array.isArray(schema.required) ||
+      schema.required.filter((k) => k === "testDeploymentV57").length !== 1 ||
+      JSON.stringify(schema.properties.testDeploymentV57) !==
+        JSON.stringify({ const: TEST_DEPLOYMENT_V57 }) ||
+      JSON.stringify(schema.properties.roadmapVersion) !==
+        JSON.stringify({ const: version })
+    )
+      return ["V57_SCHEMA_NOT_CLOSED"];
+    const projected = structuredClone(schema);
+    projectV57ToV56({ version }, {}, projected);
+    return validateSchemaDocuments(
+      roadmapSchema,
+      projected,
+      TEST_DEPLOYMENT_V57.technicalBase,
+    );
+  }
   if (version === REVIEWED_V55_PUBLICATION_V56.version) {
     if (
       !isRecord(schema) ||
@@ -9875,6 +9931,29 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === TEST_DEPLOYMENT_V57.version) {
+    if (typeof record !== "string") return false;
+    const sections = record.split(
+      "## " + TEST_DEPLOYMENT_V57.ownerDecision + " —",
+    );
+    if (sections.length !== 2) return false;
+    try {
+      const json = sections[1]
+        ?.split("\n## ")[0]
+        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
+      return (
+        json !== undefined &&
+        JSON.stringify(JSON.parse(json)) ===
+          JSON.stringify(TEST_DEPLOYMENT_V57) &&
+        validateWp8fOwnerDecisionRecord(
+          record,
+          TEST_DEPLOYMENT_V57.technicalBase,
+        )
+      );
+    } catch {
+      return false;
+    }
+  }
   if (version === REVIEWED_V55_PUBLICATION_V56.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(
