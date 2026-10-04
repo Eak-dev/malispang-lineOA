@@ -2268,3 +2268,175 @@ No old storage/DataStudio/SQL/selector replay or hold bypass; no policy/KB/catal
   "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK"
 }
 ```
+
+## MP-OD-2026-10-04-V59 — Owner 10-second Node timeout and bounded TEST-to-UAT authority
+
+Owner approved the 7000 to 10000ms Node testTimeout amendment and progression to UAT-ready TEST on 2026-10-04 ICT. Owner decision relayed in PR20comment5976953529 and the same plan supplied directly in this Codex task: “เรื่องเวลาไม่ได้ซีเรียสอะไรเลยคุณจะปรับเป็น 10 วินาทีก็ได้ ... อยากจะเทสต์ ... พบปัญหาคุณสามารถแก้ไขได้เลย”. Receipts #12comment5977292735 / #9comment5977292859. This supersedes v58 for this package; MP06/#12 CURRENT/OPEN, Codex sole writer and Claude cloud PR20 reviewer.
+
+v59 is one normal child of published6aa87dcb75d6e20d5fbf65351119b0fac259f255/treee4e13ff39a52a271cd7cfb669a86c54dea5503b8, exact14paths: the control/docs/new-v59 module and tests/historical-v58 adapter plus vitest.config.ts. The only test-policy change is the literal testTimeout7000→10000; maxWorkers2, test retries0, assertions, Worker test configuration, workflow, dependencies and runtime remain unchanged. Historical v58 assertions use its immutable published checkout with source/index/cleanup guards intact. Earlier control/test bytes and append-only decisions are retained.
+
+This is Owner-accepted timing margin, NOT a demonstrated fix for the CI stall. CI37178910961/job111367264099 remains FAIL (1717 passed/2 timeouts at7235ms and7637ms); its skipped audit/secret/stability stages remain NOT_EXECUTED. RES29 identityPASS did not qualify deployment; RES30 host-stall explanation is a hypothesis, exactcauseUNKNOWN. No rerun of that old job is requested. Fresh exact-stage full Mac gates/audit0/Claude review precede commit; fresh actual-commit full Mac gates, exact reconstructed Claude review and freshPR20identity precede normalpush; new hostedCI plus postpushPASS precede remote TEST.
+
+The SAME unused destructive grant from v57 carries across v58/v59, maximum1 native CLI invocation total, never reminted. Preserve exact258400-byte artifact SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42, Wrangler4.122.0 native retries up to3 per upload wrapper in that one invocation, operator retry/rollback forbidden. All v58 target/account-selection/native-refresh/encrypted existing credential/admin availability/log-containment/freshpreflight/currentOwnerquiet/durableSTARTED/newnamespace-only postverify conditions remain required. No request to old storage or old admin endpoints. Historical v22 RETIRED_UNUSED_NO_REISSUE and September rootcause permanentlyUNKNOWN/U1GAP/A1-A3/billing unresolved remain unchanged. Failed or ambiguous deployment consumes the grant; broad troubleshooting permission is not another destructive attempt.
+
+Owner additionally preauthorizes necessary TEST-only UAT preparation, pilot/webhook configuration and scoped fixes, with Owner alone sending customer-style UAT messages. This is recorded goal authority, NOT immediate pilot activation or a fabricated UAT PASS. After verified reset, Codex and Claude must specify the actual TEST channel/webhook identity, existing credential availability, approved tester/caps/session time, per-case initial conditions and event provenance, stop/in-flight/accounting/handoff, then record a reviewed action-specific control before enabling that phase. Reuse approved limits, never silently increase cost/risk or reduce acceptance; do not wait for repeated approval of the same in-scope step. New irreversible actions beyond the approved reset, missing credential/security/scope conflicts still require escalation. EventRef provenance and hardcoded readiness/close accounting are not solved by reset and must be resolved before claiming UAT-ready.
+
+This v59 execution module does not enable pilot/webhook/UAT actions yet. Runtime/policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow changes are outside this exact package. Future necessary fixes require scoped successor controls/review under the newly delegated TEST goal, not rewriting v59's one-child history. No new credentials or secret exposure, held-action replay/reroute, pausedv51/v52 changes, Production metadata or mutation, newPR/Ready/merge/Issueclosure. Production NO_GO. Owner continues withholding TEST messages until the controlled UAT handoff; no continuous quiet/redelivery-absence proof is invented.
+
+```json
+{
+  "version": "2026.10.04-v59",
+  "ownerDecision": "MP-OD-2026-10-04-V59",
+  "supersedes": "2026.10.04-v58",
+  "technicalBase": "2026.10.04-v58",
+  "baseline": "6aa87dcb75d6e20d5fbf65351119b0fac259f255",
+  "baselineTree": "e4e13ff39a52a271cd7cfb669a86c54dea5503b8",
+  "baselineParent": "6d22347954fd3735545959685bde2ae5b5255c17",
+  "publishedBaseline": "6aa87dcb75d6e20d5fbf65351119b0fac259f255",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "4612b3ead083c823e28d58e476e1b440b1e2294ee57b9d2fc0c2ff96414178c3",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "UPLOAD_CALL_ONLY_NOT_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK",
+  "nodeTestTimeout": {
+    "file": "vitest.config.ts",
+    "sha256": "33b9cdf167339c56e94e4e2b222a849d76d14fee60a0355f5a82668b178e8264",
+    "from": 7000,
+    "to": 10000,
+    "maxWorkers": 2,
+    "retries": 0,
+    "assertions": "UNCHANGED",
+    "purpose": "OWNER_ACCEPTED_CI_TIMING_MARGIN_NOT_ROOT_CAUSE_FIX",
+    "failedEvidence": "CI37178910961_RETAINED_FAIL"
+  },
+  "uatPreparation": {
+    "ownerPreauthorized": true,
+    "execution": "REQUIRES_REVIEWED_ACTION_SPECIFIC_CONTROL_AFTER_RESET",
+    "target": "EXISTING_TEST_ONLY",
+    "messages": "OWNER_ONLY",
+    "sameApprovedCaps": true,
+    "production": false,
+    "heldOldStorage": false,
+    "secretExposure": false,
+    "ready": false,
+    "merge": false,
+    "issueClosure": false
+  }
+}
+```
