@@ -53,10 +53,17 @@ import {
 } from "./security.js";
 import { parseWebhook, type ParsedLineEvent } from "./webhook-schema.js";
 
+// v62 step 1 (transitional): bindings move to the V2 classes while the
+// original names stay exported, so their namespaces are unbound but live.
+// Step 2 drops these exports and deploys the `deleted` tombstones.
 export {
+  ConversationStateDO,
   ConversationStateDO as ConversationStateDOV2,
+  DraftOrderDO,
   DraftOrderDO as DraftOrderDOV2,
+  HandoffRegistryDO,
   HandoffRegistryDO as HandoffRegistryDOV2,
+  PromotionControlDO,
   PromotionControlDO as PromotionControlDOV2,
 };
 

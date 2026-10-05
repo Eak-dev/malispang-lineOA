@@ -91,14 +91,14 @@ describe("v55 local-only fresh TEST namespace preparation", () => {
       expect(await snapshot(target)).toEqual(before);
     },
   );
-  it("exports only the four V2 classes, never the tombstoned names", () => {
+  it("v62 step 1 keeps the original class names exported beside V2", () => {
     for (const name of [
       "ConversationStateDO",
       "DraftOrderDO",
       "HandoffRegistryDO",
       "PromotionControlDO",
     ]) {
-      expect(Object.keys(entry)).not.toContain(name);
+      expect(Object.keys(entry)).toContain(name);
       expect(Object.keys(entry)).toContain(name + "V2");
     }
   });

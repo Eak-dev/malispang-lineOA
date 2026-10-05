@@ -62,7 +62,7 @@
   "exports": {
     "ConversationStateDO": {
       "type": "durable-object",
-      "state": "deleted",
+      "storage": "sqlite",
     },
     "ConversationStateDOV2": {
       "type": "durable-object",
@@ -70,7 +70,7 @@
     },
     "HandoffRegistryDO": {
       "type": "durable-object",
-      "state": "deleted",
+      "storage": "sqlite",
     },
     "HandoffRegistryDOV2": {
       "type": "durable-object",
@@ -78,7 +78,7 @@
     },
     "DraftOrderDO": {
       "type": "durable-object",
-      "state": "deleted",
+      "storage": "sqlite",
     },
     "DraftOrderDOV2": {
       "type": "durable-object",
@@ -86,7 +86,7 @@
     },
     "PromotionControlDO": {
       "type": "durable-object",
-      "state": "deleted",
+      "storage": "sqlite",
     },
     "PromotionControlDOV2": {
       "type": "durable-object",
