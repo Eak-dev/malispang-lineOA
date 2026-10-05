@@ -1253,6 +1253,65 @@ export class ConversationStateDO extends DurableObject<Env> {
     }
   }
 
+  /**
+   * SELECT-only v63 close target for storage without WP8F lineage: the sole
+   * tester of a quiescent (STOPPED or EXPIRED) pilot session. Generic
+   * invariants replace the retired session's exact accounting; client input
+   * still cannot select the conversation.
+   */
+  freshHandoffCloseTarget() {
+    try {
+      const sql = this.ctx.storage.sql;
+      if (
+        this.env.ENVIRONMENT !== "TEST" ||
+        this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+        this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+        sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM sqlite_master WHERE name IN ('mp06_wp8f_activation', 'mp06_wp8f_v16_continuation', 'mp06_wp8f_v22_successor')",
+          )
+          .one().count !== 0
+      )
+        return null;
+      const session = this.mp06PilotSession();
+      if (
+        !session ||
+        !isMp06PilotReference(session.session_ref) ||
+        !["STOPPED", "EXPIRED"].includes(session.state) ||
+        session.budget_reserved_micro_usd !== 0 ||
+        session.in_flight !== 0
+      )
+        return null;
+      const pendingAttempts = sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM mp06_pilot_attempts WHERE state IN ('RESERVED', 'DISPATCHED')",
+        )
+        .one().count;
+      const testers = sql
+        .exec<{ session_ref: string; tester_ref: string }>(
+          "SELECT session_ref, tester_ref FROM mp06_pilot_testers ORDER BY session_ref, tester_ref",
+        )
+        .toArray();
+      if (
+        pendingAttempts !== 0 ||
+        testers.length !== 1 ||
+        testers[0]!.session_ref !== session.session_ref ||
+        !isMp06PilotReference(testers[0]!.tester_ref)
+      )
+        return null;
+      return {
+        ownerRef: testers[0]!.tester_ref,
+        sessionRef: session.session_ref,
+        state: session.state,
+        events: session.admitted_events,
+        attempts: session.provider_attempts,
+        consumedMicroUsd: session.budget_consumed_micro_usd,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async ownerUatPilotObservation() {
     try {
       const sql = this.ctx.storage.sql;

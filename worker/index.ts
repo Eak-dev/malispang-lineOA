@@ -1341,13 +1341,14 @@ async function handleAdmin(
     }
   }
   if (request.method === "POST" && url.pathname === "/admin/handoff/close") {
+    let target = "RETAINED_WP8E_OWNER_CONVERSATION";
     const response = (code: string, status: number, receipt?: unknown) => {
       console.info(
         JSON.stringify({
           outcome: "OWNER_HANDOFF_CLOSE",
           code,
           actor: "AUTHENTICATED_TEST_ADMIN",
-          target: "RETAINED_WP8E_OWNER_CONVERSATION",
+          target,
           requestId: crypto.randomUUID(),
           observedAt: new Date().toISOString(),
         }),
@@ -1378,37 +1379,63 @@ async function handleAdmin(
     )
       return response("STAFF_NOT_AUTHORIZED", 403);
     try {
-      // Resolve the retained Owner through the existing SELECT-only lineage contract.
-      // Client input cannot select a different conversation or supply a receipt.
-      const before = await pilot.ownerUatPilotObservation();
+      // Resolve the Owner through a SELECT-only contract: the retained WP8F
+      // lineage when present, otherwise (v63) the sole tester of a quiescent
+      // fresh-storage pilot session. Client input cannot select a different
+      // conversation or supply a receipt.
+      const legacy = await pilot.ownerUatPilotObservation();
+      const fresh = legacy ? null : await pilot.freshHandoffCloseTarget();
+      const observeTarget = async () =>
+        JSON.stringify(
+          legacy
+            ? await pilot.ownerUatPilotObservation()
+            : await pilot.freshHandoffCloseTarget(),
+        );
+      const before = legacy ?? fresh;
       if (
         !before ||
-        before.state !== "STOPPED" ||
-        before.aiAdmission !== false ||
-        before.events !== 6 ||
-        before.attempts !== 6 ||
-        before.consumedMicroUsd !== 34082 ||
-        before.reservedMicroUsd !== 0 ||
-        before.inFlight !== 0 ||
-        before.pendingAttempts !== 0
+        (legacy &&
+          (legacy.state !== "STOPPED" ||
+            legacy.aiAdmission !== false ||
+            legacy.events !== 6 ||
+            legacy.attempts !== 6 ||
+            legacy.consumedMicroUsd !== 34082 ||
+            legacy.reservedMicroUsd !== 0 ||
+            legacy.inFlight !== 0 ||
+            legacy.pendingAttempts !== 0))
       )
         return response("HANDOFF_CLOSE_READINESS_UNAVAILABLE", 409);
+      if (fresh) target = "SOLE_PILOT_TESTER_CONVERSATION";
       const conversation = env.CONVERSATION_STATE.getByName(before.ownerRef);
-      const context = await conversation.ownerUatConversationObservation(
-        before.eventRef,
-      );
+      let contextReady: boolean;
+      if (legacy) {
+        const context = await conversation.ownerUatConversationObservation(
+          legacy.eventRef,
+        );
+        contextReady =
+          !!context &&
+          context.pendingReplies === 0 &&
+          context.pendingTemplate === null;
+      } else {
+        // No outbound work may be pending or unresolved before the close.
+        const context = await conversation.conversationObservation();
+        contextReady =
+          !!context &&
+          context.pendingProcessedEvents === 0 &&
+          context.pendingResponsePlans === 0 &&
+          context.deliveryClaims.CLAIMED === 0 &&
+          context.deliveryClaims.LEGACY_UNKNOWN === 0 &&
+          context.deliveryClaims.DELIVERY_UNKNOWN === 0;
+      }
       const order = await env.DRAFT_ORDER.getByName(
         before.ownerRef,
       ).ownerUatDraftObservation();
       if (
-        !context ||
-        context.pendingReplies !== 0 ||
-        context.pendingTemplate !== null ||
+        !contextReady ||
         !order ||
         !order.nonBlocking ||
         order.pendingReplies !== 0 ||
-        JSON.stringify(before) !==
-          JSON.stringify(await pilot.ownerUatPilotObservation())
+        JSON.stringify(before) !== (await observeTarget())
       )
         return response("HANDOFF_CLOSE_READINESS_UNAVAILABLE", 409);
       const result = await conversation.closeHandoff({
