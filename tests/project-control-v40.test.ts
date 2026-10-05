@@ -306,6 +306,16 @@ describe("v40 local control repair with one effective authority summary", () => 
     "committed-baseline-reset",
     "shallow-history",
   ])("rejects independently inspected %s", async (variant) => {
+    const started = performance.now();
+    const timing = (phase: string) => {
+      if (variant === "committed-baseline-reset")
+        console.info(
+          JSON.stringify({
+            phase: "v48_v40_reset." + phase,
+            milliseconds: performance.now() - started,
+          }),
+        );
+    };
     const cwd = await mkdtemp(join(tmpdir(), "mp06-v40-negative-"));
     const git = (args: string[]) =>
       execFileSync(projectControlGitExecutable(), args, {
@@ -326,8 +336,19 @@ describe("v40 local control repair with one effective authority summary", () => 
       ]);
     };
     try {
-      git(["clone", "--shared", "--no-hardlinks", fileURLToPath(root), cwd]);
+      // The next command selects the exact baseline. Avoid materializing the
+      // source's unrelated default HEAD only to overwrite it immediately.
+      git([
+        "clone",
+        "--shared",
+        "--no-hardlinks",
+        "--no-checkout",
+        fileURLToPath(root),
+        cwd,
+      ]);
+      timing("clone_complete");
       git(["checkout", "--detach", TEST_POLICY_REPAIR_V40.baseline]);
+      timing("baseline_checkout_complete");
       for (const path of V40_ALLOWED_PATHS) {
         if (!existsSync(new URL(path, root))) continue;
         await mkdir(dirname(join(cwd, path)), { recursive: true });
@@ -336,6 +357,7 @@ describe("v40 local control repair with one effective authority summary", () => 
       expect(() =>
         inspectV40Repository(cwd, projectControlGitExecutable()),
       ).not.toThrow();
+      timing("baseline_inspection_complete");
       if (variant.startsWith("committed")) commit();
       const path =
         variant.includes("symlink") || variant.includes("gitlink")
@@ -430,11 +452,14 @@ describe("v40 local control repair with one effective authority summary", () => 
         }
         commit();
       }
+      timing("mutations_complete");
       expect(() =>
         inspectV40Repository(cwd, projectControlGitExecutable()),
       ).toThrow();
+      timing("negative_inspection_complete");
     } finally {
       await rm(cwd, { recursive: true, force: true });
+      timing("cleanup_complete");
     }
   });
 });

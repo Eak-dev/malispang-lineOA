@@ -1186,3 +1186,1629 @@ The downstream PR16 stays Draft and review-only. No default merge, runtime/model
   "forbidden": "RUNTIME_DEPLOY_ACTIVATE_STORAGE_LINE_PROVIDER_PRODUCTION_DEFAULT_MERGE_RESET_REBASE_FORCE_PUSH_ISSUE_CLOSE"
 }
 ```
+
+## MP-OD-2026-09-29-V42 — local historical harness repair
+
+Owner approved “อนุมัติซ่อมชุดทดสอบเฉพาะ local” after the scoped proposal, including necessary control transition. Only local measurement, harness performance repair and regression validation are authorized. PR19 is already merged at the exact baseline and its single integration grant is consumed. Read-only GitHub reconciliation observed Issue9/Issue12 OPEN and the actual MP06 merge; no external reconciliation write is authorized. Preserve all historical assertions, hashes, paths, operator/cleanup guards, 5000ms and zero retries. No commit, publication, remote TEST, Production or Issue closure.
+
+```json
+{
+  "version": "2026.09.29-v42",
+  "ownerDecision": "MP-OD-2026-09-29-V42",
+  "supersedes": "2026.09.29-v41",
+  "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "baselineTree": "7d3ede2902d545092300171faa83fa403f5d3e1e",
+  "sourceCommit": "b1ab0d6ce86487c324df291235d53e86ca5da66e",
+  "publishedParent": "35b67ab87ecd052ab80f450d766c9eabd2991861",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "LOCAL_HISTORICAL_HARNESS_REPAIR_ONLY",
+  "targetEnvironment": "LOCAL_ONLY",
+  "integrationPr": 19,
+  "integrationGrant": "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
+  "localImplementation": true,
+  "commit": false,
+  "publication": false,
+  "remoteExecution": false,
+  "production": false,
+  "watchdogMs": 5000,
+  "retries": 0,
+  "invariants": "HISTORICAL_ASSERTIONS_HASHES_PATHS_CLEANUP_OPERATOR_GUARDS_UNCHANGED",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "forbidden": "RUNTIME_WORKFLOW_DEPENDENCY_COMMIT_PUSH_PR_MERGE_DEPLOY_REMOTE_TEST_PRODUCTION_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-29-V43 — qualified harness Draft publication and exact undici remediation
+
+Owner approved publishing the qualified local harness repair to GitHub and running CI, then approved only undici 7.29.0 to 7.29.1 via miniflare@5.20260811.0-alpha scoped override in pnpm-workspace.yaml and pnpm-lock.yaml for GHSA-3wwx-pv8p-q78v. No broader dependency update or audit suppression. Preserve the sealed never-committed v42 qualification and all historical grants/holds/acceptance. PR19 is consumed; one separate Draft PR only. COMMIT needs exact staged-tree focused checks/review and fresh audit0; push/PR need complete exact-source post-commit qualification/review. No Ready, merge, deployment, remote TEST/SQL/storage, Production, U2 or closure. The minimal generated dependency pair below is independently reviewed and hash-sealed; sealing is not audit, qualification or publication evidence.
+
+```json
+{
+  "version": "2026.09.29-v43",
+  "ownerDecision": "MP-OD-2026-09-29-V43",
+  "supersedes": "2026.09.29-v42",
+  "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "QUALIFIED_HARNESS_DRAFT_PUBLICATION_ONLY",
+  "snapshotSha256": "0161cfb6213ed869ea23b7370ad147aec12e7c96baa4fcfcb76e461aa1e6c4f1",
+  "patchSha256": "4a271328b3822f4c1fd84a1e05fed040612ce4e034f95f2fa1397b3ff2835115",
+  "priorV42SourceSealSha256": "8a33f2339e6cc801ad5ca8a5e9c935e83fc7b604d54702859f1bcd085be51353",
+  "maximumDraftPullRequests": 1,
+  "priorIntegrationPr": 19,
+  "priorIntegrationGrant": "CONSUMED_NO_REPLACEMENT",
+  "dependencyPatch": {
+    "parent": "miniflare@5.20260811.0-alpha",
+    "package": "undici",
+    "from": "7.29.0",
+    "to": "7.29.1",
+    "advisory": "GHSA-3wwx-pv8p-q78v",
+    "status": "SEALED",
+    "workspaceSha256": "6003269d4862bed78638c80e0610ebdf2a6eb9edf9bc4041754700ce85f9f92a",
+    "lockfileSha256": "9000c0273ad14ca8876409d0b240f5737390aebf5c8f28509f720d3a4a6d810b"
+  },
+  "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "remoteExecution": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "forbidden": "RUNTIME_WORKFLOW_OTHER_DEPENDENCY_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V44 — measured harness repair / existing Draft PR20
+
+Owner approved measuring and repairing the new v33 Git-harness timeout, all original assertions/operator/raw-index/isolation/awaited-cleanup checks and 5000ms/zero retries unchanged, full exact-source requalification and normal update of PR20 only. Baseline is published v43 S; MP06 M and Issues9/12 stay unchanged. Creation and PR19 integration grants are consumed. No dependency/runtime/workflow/parallelism change, new PR, Ready, merge, deployment, remote TEST, storage/SQL, LINE/provider, Production, U2 or closure. Local measurements cannot establish the historical hosted slow phase. Candidate sealing follows measured repair/review; it does not itself claim qualification or an observed improvement.
+
+```json
+{
+  "version": "2026.09.30-v44",
+  "ownerDecision": "MP-OD-2026-09-30-V44",
+  "supersedes": "2026.09.29-v43",
+  "baseline": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baselineTree": "69ba68699b20f5c93bf078aef66d3b4f76a9514f",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "MEASURED_HARNESS_REPAIR_EXISTING_DRAFT_ONLY",
+  "harnessPath": "tests/project-control.test.ts",
+  "priorHarnessSha256": "feec02a8e5536ea91354a6744b75e5b69409fd2358826eed271efdbb82deaff2",
+  "harnessSha256": "PENDING_MEASURED_REPAIR",
+  "measurement": "PAIRED_MEASUREMENT_REQUIRED_NO_HOSTED_CAUSE_CLAIM",
+  "invariants": "ALL_ASSERTIONS_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP_UNCHANGED",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "node": "24.19.0",
+  "pnpm": "11.19.0",
+  "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "remoteExecution": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_RUNTIME_WORKFLOW_PARALLELISM_DEPENDENCY_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V45 — immutable current inspector batching / PR20 only
+
+Owner replied “อนุญาต” to the exact proposal extending the current local Git inspector to batch immutable reads while preserving all historical/path/blob/hash/index/provenance checks and 5000ms/zero retries, fully qualifying the exact source, then updating existing Draft PR20 only. V44 was never published: its helper-only child experiment showed no benefit (one observed comparison 3451.251ms to3638.068ms, +5.41%) and was rejected; original harness bytes remain unchanged. Preserve the unpublished 12-file draft externally, not as an invented Git ancestor or qualification. V45 supersedes published v43 directly; prior V44 text is retained historical evidence.
+
+Only the exact14 V45_ALLOWED_PATHS apply. Freeze main historical harness, older modules, sealed snapshots, runtime/workflows/parallelism/dependencies and all old grants/holds. Pending seals for src/project-control.ts and the new batch module/test are not qualification. No new PR/Ready/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/closure. Normal same-branch PR20 update remains conditional on independently verified exact-source checks/review/full qualification/fresh audit0 and fresh existing-PR readback.
+
+```json
+{
+  "version": "2026.09.30-v45",
+  "ownerDecision": "MP-OD-2026-09-30-V45",
+  "supersedes": "2026.09.29-v43",
+  "replacesUnpublishedDraft": "2026.09.30-v44",
+  "baseline": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baselineTree": "69ba68699b20f5c93bf078aef66d3b4f76a9514f",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "IMMUTABLE_GIT_BATCHING_EXISTING_DRAFT_ONLY",
+  "harnessPath": "tests/project-control.test.ts",
+  "harnessSha256": "feec02a8e5536ea91354a6744b75e5b69409fd2358826eed271efdbb82deaff2",
+  "implementationSeals": {
+    "src/project-control.ts": "707998f462fca122e7d59e1d3ebf10f5930130603353ce90d8fcffcda53ba1d6",
+    "src/project-control-git-batch.ts": "c899f89dcef27dc5c59ad9b508564e2ebca046e94679ab0ff905441367cade61",
+    "tests/project-control-git-batch.test.ts": "e3d872ec4af95beddb5bb740d8887edd12488ce46251b7c464d000c108d6a906"
+  },
+  "implementationScope": "CURRENT_INSPECTOR_INVOCATION_IMMUTABLE_BLOB_BATCHING_ONLY_NO_CACHE_OR_CHECK_OMISSION",
+  "measurement": "PAIRED_MEASUREMENT_REQUIRED_NO_HOSTED_CAUSE_CLAIM",
+  "invariants": "ALL_ASSERTIONS_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP_UNCHANGED",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "node": "24.19.0",
+  "pnpm": "11.19.0",
+  "auditGate": "ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "remoteExecution": false,
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_RUNTIME_WORKFLOW_PARALLELISM_DEPENDENCY_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V46 — TEST knowledge validity until Production release
+
+Owner requested changing the TEST data validity from the 30 September cutoff to until Production release. Supersedes v45 for this local implementation only; it does not renew or inherit publication permissions. MP-06 / Issue12 remains CURRENT / OPEN. Read-only reconciliation observed Issue9 and Issue12 OPEN, and PR20 OPEN Draft at d0f63188c50da6e204a4ecc1e91bed97f5ec44eb into a05bab89bc6d5cdf2914581ed658be86dd00b062. Exact local baseline 86e5c967dd29e669ee0bc66e594fc9636a188c4e has not been pushed.
+
+Use an explicit TEST-only PRE_RELEASE lifecycle, not an invented future date. It ends when Production release is recorded or Owner revokes it. Production requires separately reviewed data and authorization; this record is not a claim of current Production state. Preserve the exact prior manifest as a historical fixture, preserve old dated-record expiry behavior, and keep every existing customer answer/checksum unchanged. New validity records must have their own version and provenance. A missing, invalid, unknown or released lifecycle must fail closed.
+
+The successor records use observed decision-record time `2026-09-30T02:34:48.000Z` for `approvedAt` and `effectiveFrom`, carry the prior record version as `supersedes`, and reference this Owner decision. This timestamp records the TEST-only validity renewal, not a reapproval for Production or a change to any customer answer. The release marker is explicit local configuration: it does not automatically observe remote Production. A separately approved Production release workflow must first record release/revocation and verify this TEST validity is closed; no remote observation or deployment is authorized here.
+
+The allowed local package is V46_ALLOWED_PATHS, including only the necessary v45 historical-fixture sourcing adapter, with original assertions/watchdogs/cleanup unchanged. No unrelated runtime, workflow, dependency or fixture repair. V45 implementation history, failed full suite, unresolved raw-index drift, storage hold, accounting and UAT gaps are retained; no prior result is converted to PASS. No commit, push, PR, Ready, merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2 or Issue closure.
+
+Necessary compatibility within this uncommitted v46 package: the full local Worker suite first reported 293 PASS / 1 FAIL because the provider-hang webhook fixture fixed its clock at 2026-09-08, before the renewed TEST records take effect. Fail-closed knowledge routing correctly prevented the fixture from reaching the intended provider-hang checkpoints. Align only that single `vi.setSystemTime` literal in `worker-tests/mp-06-pilot-control.test.ts` to `2026-10-01T00:00:00.000Z`; do not backdate data approval. The v46 inspector accepts only the exact baseline file or its exact one-literal replacement, comparing all file bytes. Every assertion, deadline, timer, retry, cleanup and all other bytes stay unchanged. The original baseline and all prior seals remain historical, not overwritten; final acceptance requires the aligned candidate and focused/full Worker PASS. Structural acceptance of the baseline during editing is not test qualification.
+
+```json
+{
+  "version": "2026.09.30-v46",
+  "ownerDecision": "MP-OD-2026-09-30-V46",
+  "supersedes": "2026.09.30-v45",
+  "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "repository": "Eak-dev/malispang-lineOA",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "LOCAL_TEST_KNOWLEDGE_UNTIL_PRODUCTION_RELEASE_ONLY",
+  "targetEnvironment": "LOCAL_ONLY_TEST_CONFIGURATION",
+  "accountName": "มะลิปัง TEST",
+  "validity": "PRE_RELEASE_ONLY_CLOSE_ON_PRODUCTION_RELEASE_OR_OWNER_REVOCATION",
+  "content": "EXACT_EXISTING_ANSWERS_AND_CHECKSUMS_UNCHANGED",
+  "history": "ARCHIVE_EXACT_PRIOR_MANIFEST_KEEP_DATED_RECORD_EXPIRY",
+  "workerHangClockFixture": {
+    "path": "worker-tests/mp-06-pilot-control.test.ts",
+    "before": "2026-09-08T00:00:00.000Z",
+    "after": "2026-10-01T00:00:00.000Z",
+    "scope": "ONE_EXACT_CLOCK_LITERAL_ONLY_ALL_OTHER_BYTES_UNCHANGED"
+  },
+  "localImplementation": true,
+  "commit": false,
+  "publication": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "priorPublicationAuthority": "SUSPENDED_NO_V45_OR_OLDER_RECEIPT_INHERITANCE",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "forbidden": "COMMIT_PUSH_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V47 — publish frozen TEST knowledge through existing Draft PR20
+
+The approved publication is one direct source child of H only, not a sequence of follow-up commits. Candidate parent must be H in both staged and final-source receipts. This preserves newly appended evidence without allowing a later source revision to erase it.
+
+Owner explicitly approved the proposed successor control followed by ordinary commit/push to existing Draft PR20 only after qualification. Supersedes v46's local-only stage for this bounded publication; it does not retroactively authorize prior actions or revive v45/older grants. MP06 / Issue12 remains CURRENT / OPEN. Read-only reconciliation confirms Issue9 and Issue12 OPEN, PR20 OPEN Draft at published source d0f63188c50da6e204a4ecc1e91bed97f5ec44eb into MP06 base a05bab89bc6d5cdf2914581ed658be86dd00b062. Local baseline 86e5c967dd29e669ee0bc66e594fc9636a188c4e and the uncommitted v46 overlay are preserved.
+
+Seal the exact22-file v46 local overlay before publication adapters in tests/fixtures/mp06-v46-local/snapshot.json, SHA256 1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109. V47_ALLOWED_PATHS adds only the new control module/test and that snapshot. Preserve frozen runtime, all14 answers/checksums/keywords, explicit TEST-only PRE_RELEASE validity, archived dated manifest, old expiry behavior, v46 inspector and the exact Worker clock correction. V46 regressions source their immutable snapshot (and unchanged schema at H) while exercising the current dispatcher; every original assertion/watchdog/cleanup stays unchanged, and the sourcing adapter is hash-sealed.
+
+Authenticate exact staged-tree focused checks, fresh zero-all-severity audit and independent review before COMMIT. Authenticate full original26 local gates, frozen-install proof, fresh audit0 and independent exact-source review after commit. Raw HEAD/index/source observations must remain byte-preserving; keep stage/process evidence and stop on drift without rewriting operator state. Old failed v45 receipts and RAW_INDEX_WRITER_UNKNOWN remain unresolved historical evidence, not new qualification. A new SHA or changed tree requires fresh applicable evidence.
+
+Normal PUSH_BRANCH is conditional on the complete new v47 source receipt and independent fresh PR20 OPEN Draft/unmerged readback, expected published source/base/repository/branches, and fast-forward ancestry. Creation grant remains consumed; no new PR or Ready. Ordered synthetic CI parents [M,source], exact runner SHA/ref and source-identical tree establish validation identity only. No merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2, permission changes or Issue closure. The historical denied action is not replayed; retained-state cause, accounting and UAT evidence remain incomplete. This approval publishes reviewable code only, not a test-session launch.
+
+```json
+{
+  "version": "2026.09.30-v47",
+  "ownerDecision": "MP-OD-2026-09-30-V47",
+  "supersedes": "2026.09.30-v46",
+  "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "publishedHead": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "FROZEN_TEST_KNOWLEDGE_EXISTING_DRAFT_PR20_ONLY",
+  "snapshotPath": "tests/fixtures/mp06-v46-local/snapshot.json",
+  "snapshotSha256": "1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109",
+  "v46FixtureAdapterSha256": "5f38fb7e2c5934b500a38b3969339bff636f61dc1f0f09019fbbfb65591f7bf8",
+  "content": "V46_SNAPSHOT_FROZEN_EXACT_ANSWERS_CHECKSUMS_AND_WORKER_CLOCK",
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "priorReceipts": "HISTORICAL_ONLY_NEW_V47_EXACT_SOURCE_RECEIPTS_REQUIRED",
+  "sourceLineage": "ONE_DIRECT_CHILD_OF_BASELINE_ONLY",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "auditGate": "FRESH_ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V47A — exact brace-expansion exception for Draft PR20
+
+Owner approved the specific proposed security fixes brace-expansion1.1.18 to1.1.21 and5.0.9 to5.0.12, the minimal lockfile/control update and fresh testing before normal push to existing Draft PR20. This amendment supersedes unpublished v47, not its historical facts; retain all prior v47 Owner text, failed audit/qualification records and v46 immutable snapshot. The main control version becomes2026.09.30-v47.1 with explicit projectionVersion2026.09.30-v46. MP06/Issue12 remains CURRENT/OPEN; current HEADH86e5c967, published sourceSd0f63188 and baseMa05bab89 remain pinned.
+
+Permit only two new dependency paths, pnpm-workspace.yaml and pnpm-lock.yaml, within the27-path set. Only minimatch@3.1.5>brace-expansion and minimatch@10.2.6>brace-expansion may resolve to the exact approved patch versions. Preserve all other resolutions, existing overrides, importer semantics, undici7.29.1 and package/workflow/runtime/knowledge bytes. Verify public registry metadata, exact package integrity and narrow pair diff; seal the reviewed pair together. PENDING/mixed/incomplete pairs cannot authorize commit/push. Fresh audit must report zero at every severity without suppression.
+
+The new receipt binds actual workspace/lock hashes at the outer v47.1 envelope. Frozen nested V43 dependency hashes remain historical identifiers only; do not replace old records or label old failures PASS. Both staged-tree and final-source qualification/review must authenticate the actual new pair. One direct source child of H remains the only publication candidate; exact clean-source26-stage local qualification, fresh audit/install evidence and fresh PR20 OPEN Draft/head/base/fast-forward readback precede ordinary push. No new PR, Ready, merge, reset/rebase/force-push, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2 or Issue closure. The existing Data Studio hold and pendingTemplate/UAT/accounting gaps remain unchanged.
+
+```json
+{
+  "version": "2026.09.30-v47.1",
+  "ownerDecision": "MP-OD-2026-09-30-V47A",
+  "supersedes": "2026.09.30-v47",
+  "projectionVersion": "2026.09.30-v46",
+  "amendsUnpublished": "2026.09.30-v47",
+  "priorUnpublishedTree": "cc947a6f2f956584c1772cc51df42f554141aa72",
+  "baseline": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baselineTree": "b9f39bc1d309f186d042f6d0ec9926c764112b2a",
+  "baselineParent": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "publishedHead": "d0f63188c50da6e204a4ecc1e91bed97f5ec44eb",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "FROZEN_TEST_KNOWLEDGE_EXISTING_DRAFT_PR20_ONLY",
+  "snapshotPath": "tests/fixtures/mp06-v46-local/snapshot.json",
+  "snapshotSha256": "1934b50063f6cc3ec4dd3407f943f61888a1dde3e77180e01e2fb39fe5a74109",
+  "v46FixtureAdapterSha256": "5f38fb7e2c5934b500a38b3969339bff636f61dc1f0f09019fbbfb65591f7bf8",
+  "amendedHistory": {
+    "docs/project/OWNER_DECISION_LOG.md": {
+      "bytes": 298123,
+      "sha256": "85987282050d66dc3fb038387f6cefb2c0c15e1fd7790f472f0f3888d663ce9c"
+    },
+    "docs/project/ROADMAP_CHANGELOG.md": {
+      "bytes": 165324,
+      "sha256": "a59fa4e3424b33ac758109d655bf72f0bbca6c60e168535a5c4bf189f5cb209f"
+    },
+    "docs/project/EXECUTION_GATES.md": {
+      "bytes": 798413,
+      "sha256": "13ae305b72a7fa2195cd85a2b623610c8cd2b269ce83b40970623842f7d41c82"
+    },
+    "PROJECT_CONTROL.md": {
+      "bytes": 88546,
+      "sha256": "75924a8576dfc43dcb43c10abb7ec28234fddf1927e99b6b65b70a45920a7c48"
+    }
+  },
+  "dependencyPatch": {
+    "package": "brace-expansion",
+    "upgrades": [
+      {
+        "from": "1.1.18",
+        "to": "1.1.21"
+      },
+      {
+        "from": "5.0.9",
+        "to": "5.0.12"
+      }
+    ],
+    "status": "SEALED",
+    "workspaceSha256": "1a4f86bd18f075a14d76da77b4d24735aac2659c4f1704736757c3d8f8715615",
+    "lockfileSha256": "4b7ff8fa2f0339f9ee934373c979ad55501dca88590b074c111a4efd4f1c48fd"
+  },
+  "content": "V46_SNAPSHOT_FROZEN_EXACT_ANSWERS_CHECKSUMS_AND_WORKER_CLOCK",
+  "creationGrant": "CONSUMED_NO_NEW_PR",
+  "priorIntegrationGrant": "PR19_CONSUMED_NO_REPLACEMENT",
+  "priorReceipts": "HISTORICAL_ONLY_NEW_V47_EXACT_SOURCE_RECEIPTS_REQUIRED",
+  "sourceLineage": "ONE_DIRECT_CHILD_OF_BASELINE_ONLY",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "auditGate": "FRESH_ZERO_AT_EVERY_SEVERITY_NO_SUPPRESSION",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE"
+}
+```
+
+## MP-OD-2026-09-30-V48 — scoped historical-test environment and Git latency repair
+
+Owner explicitly approved scoped test-harness and CI repair and ordinary follow-up push to existing Draft PR20, without merge/deploy. MP06 / Issue12 remains CURRENT/OPEN. Baseline5317849ec325bf3b18fc27d2efe902e0b3147742 and basea05bab89bc6d5cdf2914581ed658be86dd00b062 are verified; PR20 OPEN Draft, unmerged. This transition supersedes consumed v47.1 publication, not its immutable history.
+
+Repair only historical-test environment isolation and measured Git fixture overhead in the exact V48_ALLOWED_PATHS. Pin historical v47 tests to baseline Git bytes while exercising current dispatchers. Preserve all assertions, real PR synthetic identity checks, raw-index/operator/isolation/awaited-cleanup proofs, 5000ms watchdogs and zero retries. Workflows/parallelism, dependencies, runtime, knowledge answers/lifecycle, old inspector modules and snapshots remain frozen. PENDING repair seals permit local measurement only, never publication.
+
+New exact-stage focused tests/audit0/review precede commit; all26 local gates and fresh audit0/review bind each actual source SHA/tree/diff before an ordinary fast-forward push to PR20. Fresh <=120second PR identity must verify the expected published head and unchanged base; no blind retry of ambiguous push. Read-only snapshots must preserve raw index. Failed CI36672983371 and all earlier failure evidence remain historical FAIL, never replaced by later PASS. New source invalidates prior qualification.
+
+No new PR, Ready, merge, deploy, remote TEST/storage/SQL/LINE/provider, Production, U2, Issue closure, grants reset or tool-denial replay. Historical storage hold, pendingTemplate cause, accounting/UAT gaps unchanged. Local/CI repair is not live TEST readiness.
+
+```json
+{
+  "version": "2026.09.30-v48",
+  "ownerDecision": "MP-OD-2026-09-30-V48",
+  "supersedes": "2026.09.30-v47.1",
+  "baseline": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  "baselineTree": "acc2c304da576d05b225761209de1a6ca41915d9",
+  "baselineParent": "86e5c967dd29e669ee0bc66e594fc9636a188c4e",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "HISTORICAL_TEST_ENVIRONMENT_AND_GIT_LATENCY_REPAIR_ONLY",
+  "failedRun": 36672983371,
+  "priorPublication": "CONSUMED_PRESERVE_V47_1_AND_ALL_FAILURE_EVIDENCE",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+  "measurement": "MEASURE_BEFORE_AFTER_NO_HOSTED_CAUSE_CLAIM_WITHOUT_EVIDENCE",
+  "implementationSeals": {
+    "tests/project-control-v45.test.ts": "d8d7951898ce50caf1f0e15cb64db1405108379089f16bc793d6f996aae7faf8",
+    "tests/project-control-v47.test.ts": "28b16f74a2cc7a11909035e38319bee2a7d30aeb49153cac89e453489828b06c",
+    "tests/project-control-v40.test.ts": "59f0acc4c0a005073855127798420c0dd6e2984202cbc6bcd0ab28957a9a5b33",
+    "tests/project-control-v43.test.ts": "18a90b5eb82723ad5e06eb6b8c2696dee95f290e357c1e25c145391fe144faa8",
+    "tests/project-control.test.ts": "84fc4c87c5da97a5115db607970d3c9a3ca2a56f8094ceea326e49f760889b68",
+    "tests/helpers/historical-environment.ts": "90f05ea8ac4a1646aef3ced5f9149c8ca0ef4bda34a549a5602c1a0fc0ebf02f",
+    "tests/historical-environment.test.ts": "c5fa300207d546d73e229fdc7e3539ef8e4a21371693ca03d9efaeee7e7c8452"
+  },
+  "sourceLineage": "ONE_REPAIR_CHILD_NEW_SOURCE_REQUIRES_SUCCESSOR_CONTROL_WITHIN_APPROVED_SCOPE",
+  "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
+}
+```
+
+## MP-OD-2026-09-30-V49 — Node concurrency only
+
+Owner approved exactly Node maxWorkers=2 and the necessary control transition, followed by full qualification and ordinary push to existing Draft PR20. Version2026.09.30-v49 supersedes v48; MP06/Issue12 remains CURRENT/OPEN. Local baseline4167e492d3d8ad61037485f3eb0ac9545e86c401 has tree06c4c7ff78a7b6a41c77310860fee4162e06a168 and parent/published PR20 head5317849ec325bf3b18fc27d2efe902e0b3147742. Basea05bab89bc6d5cdf2914581ed658be86dd00b062 and both branches are unchanged. V48 was committed locally but not pushed: its post-commit full run-qP3i34 failed three 5000ms timeouts. Preserve that failure and all prior evidence; do not inherit the earlier precommit PASS.
+
+The only scheduling exception is the exact maxWorkers:2 insertion in vitest.config.ts, used by local Node tests and unchanged CI. Preserve includes/excludes, every assertion, 5000ms test deadlines, zero retries, Worker config/in-test concurrency, workflows, dependencies, runtime, knowledge and old inspectors. Adapt only historical v48 input sourcing to immutable4167e492 while exercising current imports and preserving/adding operator guards. Seal both exact changed files. Latest manifests must project exactly to v48; previous records remain append-only. The exact allowed paths are V49_ALLOWED_PATHS.
+
+Local diagnostic default/two-worker runs each executed1472 Node tests and15471 observed Git commands. Peak distinct Git workers fell7 to2; three problematic cases improved from4614/3312/3293ms to3087/2743/2651ms. Total elapsed increased212 to248seconds and Git p95 did not improve. This single pair supports a contention contribution, not proof of the historical hosted cause or qualification. A new source needs fresh evidence.
+
+Require exact staged-tree focused checks, audit0 and review before one normal child commit; full26 local gates, frozen install, fresh zero-all-severity audit and review on that actual clean SHA/tree/diff before push. Fresh <=120second PR20 readback must remain OPEN Draft/unmerged at published5317849e and unchanged base. Normal fast-forward push only, no blind retry of uncertain outcomes. No Ready/new PR/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/Issue closure, no grant reset or denied-action replay. This is not live TEST readiness.
+
+```json
+{
+  "version": "2026.09.30-v49",
+  "ownerDecision": "MP-OD-2026-09-30-V49",
+  "supersedes": "2026.09.30-v48",
+  "baseline": "4167e492d3d8ad61037485f3eb0ac9545e86c401",
+  "baselineTree": "06c4c7ff78a7b6a41c77310860fee4162e06a168",
+  "baselineParent": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  "publishedBaseline": "5317849ec325bf3b18fc27d2efe902e0b3147742",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "NODE_TEST_CONCURRENCY_TWO_WORKERS_ONLY",
+  "priorPublication": "V48_NOT_PUBLISHED_PRESERVE_FAILED_POST_COMMIT_QUALIFICATION",
+  "watchdogMs": 5000,
+  "retries": 0,
+  "nodeMaxWorkers": 2,
+  "workerTestConcurrency": "UNCHANGED",
+  "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+  "measurement": "PAIRED_LOCAL_DIAGNOSTIC_NOT_HOSTED_CAUSE_OR_QUALIFICATION",
+  "implementationSeals": {
+    "vitest.config.ts": "a2dc5aff6c074d17644405c1792ba12cf50e3b2dcd7bb5dc5d127e98a88368d3",
+    "tests/project-control-v48.test.ts": "4a8347cdfacc033fefbc7169145763d05a9119840fa5752dd137faf32c2755b0"
+  },
+  "sourceLineage": "ONE_CHILD_OF_LOCAL_V48_NORMAL_FAST_FORWARD_FROM_PUBLISHED_V47_1",
+  "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_TIMEOUT_INCREASE_RETRY_ASSERTION_REMOVAL"
+}
+```
+
+## MP-OD-2026-09-30-V50 — Node test deadline 7000ms only
+
+Owner explicitly approved changing the Node test deadline from five to seven seconds after asking whether it was system imposed. Vitest supplies a 5000ms Node testTimeout default (https://vitest.dev/config/testtimeout); vitest.config.ts at published v49 b1ca3a90c7a550f48c91d971b35dd9f148ce91e9 did not override it. Historical controls subsequently froze that inherited value. It is not an immutable platform limit, LINE bot response SLA, or permission grant. Version2026.09.30-v50 / MP-OD-2026-09-30-V50 supersedes v49 for exactly this Owner-approved parameter amendment. MP06/Issue12 remains CURRENT/OPEN in WP8F_TEST_ACCEPTANCE_COMPLETION.
+
+Baseline is published v49 b1ca3a90c7a550f48c91d971b35dd9f148ce91e9, tree f09f86c981adda6db7660010c54c8254a6392d24, parent4167e492d3d8ad61037485f3eb0ac9545e86c401. PR20 stays OPEN Draft on codex/mp06-harness-v43 against codex/mp-06-guardrailed-ai/basea05bab89bc6d5cdf2914581ed658be86dd00b062. Only insert testTimeout:7000 in the Node Vitest config, preserve maxWorkers:2, includes/excludes, zero retries, assertions and all business acceptance thresholds. Worker config, Worker deadlines, runtime/provider/LINE deadlines, workflow, dependencies, knowledge and old control inspectors are unchanged. No further timeout increase is authorized.
+
+Preserve hosted v49 CI run36682758857:1492/1497 Node tests passed; four timed out at5000ms and one failed a PR environment identity assertion. One timed-out case took12689ms. A /usr/bin/git version launch alone took5865.83ms while the direct installed Git path took23.05ms. The cause of hosted launch latency and the exact environment interleaving remain UNKNOWN; a seven-second ceiling is an Owner parameter decision, not proof of root-cause repair. The current change might not fix every failure. Never relabel prior failures or skipped downstream stages as PASS.
+
+Adapt historical v49 test input sourcing only to immutable baseline b1ca3a90 while retaining its assertions/current imported validators and awaited fixture cleanup plus operator guards. Seal that adapter and the exact config. New manifests must project exactly to v49; previous decisions and evidence remain append-only. V50_ALLOWED_PATHS is the complete scope. No unrelated harness behavior changes.
+
+Require fresh exact staged-source focused gates, frozen install, zero-all-severity audit and separate evidence-bound primary-agent review before one normal child commit. Require fresh full26 local gates, frozen install, audit0 and review on the actual clean SHA/tree/diff before the previously authorized ordinary push to existing Draft PR20. Fresh <=120second PR readback must match published v49 and unchanged base; read back after push and do not blindly retry uncertain publication. Hosted CI must be observed separately; local PASS is not hosted PASS or UAT readiness. No new PR/Ready/merge/deploy/remote TEST/storage/SQL/LINE/provider/Production/U2/Issue closure, no grant reset and no replay or transport bypass of a denied action. Storage hold and live UAT gaps remain unchanged.
+
+```json
+{
+  "version": "2026.09.30-v50",
+  "ownerDecision": "MP-OD-2026-09-30-V50",
+  "supersedes": "2026.09.30-v49",
+  "baseline": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "baselineTree": "f09f86c981adda6db7660010c54c8254a6392d24",
+  "baselineParent": "4167e492d3d8ad61037485f3eb0ac9545e86c401",
+  "publishedBaseline": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "NODE_TEST_TIMEOUT_7000MS_OWNER_AMENDMENT_ONLY",
+  "priorPublication": "V49_PUBLISHED_PRESERVE_HOSTED_CI_FAILURE_36682758857",
+  "watchdogMs": 7000,
+  "retries": 0,
+  "nodeMaxWorkers": 2,
+  "workerTestConcurrency": "UNCHANGED",
+  "workerTestTimeout": "UNCHANGED",
+  "timeoutOrigin": "VITEST_NODE_DEFAULT_5000MS_OWNER_APPROVED_EXPLICIT_7000MS",
+  "rootCause": "NOT_RESOLVED_BY_TIMEOUT_AMENDMENT",
+  "invariants": "PRESERVE_ASSERTIONS_PR_IDENTITY_RAW_INDEX_OPERATOR_ISOLATION_AWAITED_CLEANUP",
+  "measurement": "HOSTED_V49_FAILURE_PRESERVED_NEW_SOURCE_REQUIRES_FRESH_QUALIFICATION",
+  "implementationSeals": {
+    "vitest.config.ts": "3a14f5ff659e576441102fdceca352f20f220e68d32c678448b9aab10edb329c",
+    "tests/project-control-v49.test.ts": "ed44f8cef34e70ee47093368c17ec9aa041db1f42f772b6a68e00052ba7661ab"
+  },
+  "sourceLineage": "ONE_CHILD_OF_PUBLISHED_V49_NORMAL_FAST_FORWARD",
+  "publication": "EXISTING_DRAFT_PR20_ONLY_EXACT_SOURCE_FULL_GATES_AUDIT0_REVIEW_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "NEW_PR_READY_MERGE_DEPLOY_REMOTE_TEST_STORAGE_SQL_LINE_PROVIDER_PRODUCTION_U2_ISSUE_CLOSE_NODE_TIMEOUT_ABOVE_7000_WORKER_OR_RUNTIME_TIMEOUT_CHANGE_RETRY_ASSERTION_REMOVAL"
+}
+```
+
+## MP-OD-2026-10-02-V53 — Pause v51/v52 and resume the Codex plan at step A
+
+Owner approved verbatim on 2026-10-02: "อนุมัติ v53", after instructing: "อยากให้ทำต่อจากโค้ดเอ็กซ์เลย ส่วนงานของคุณที่ทำก่อนหน้านี้ให้พักไว้ก่อน". Version 2026.10.02-v53 / MP-OD-2026-10-02-V53 supersedes v52 in the governance chain. Its technical base on this branch is v50 (0774131ef334e09426203cd6aff92c59bbf52a52); the v51/v52 decision records live on the paused branch codex/mp06-uat-round2-prep @ d63d620820a4f1ea6f452e553724d34d16535a90, which stays frozen: no deploy, delete or edit, reference only. MP-06/Issue #12 remains CURRENT/OPEN; MP-07 stays blocked. Production NO_GO — NOT TOUCHED.
+
+The Codex five-step plan resumes: A non-invasive evidence (current), B a targeted storage inspection kit as a document only, C fix only a proven cause, D TEST UAT, E PR #20 merge. Step A uses Owner-provided evidence that needs no storage access: the Owner's LINE chat history with มะลิปัง TEST after T-C01 until 2026-09-20, the Cloudflare account audit log and Workers metrics for malispang-lineoa-test. Screenshots are summarized only; personal data is never committed.
+
+Local analysis carried into the handoff: in deployed candidate bfff1a553868b85e5f66144e4741a51627f4a9be the only write path consistent with the observed BOT_ACTIVE / clarificationUsed=true / pendingTemplate=null is a new processed event with an approved response; an emulator scratch test reproduced it with unchanged AI accounting for a catalog follow-up while the pilot is STOPPED. This proves possibility only; root cause stays UNKNOWN. Data Studio stays forbidden and denied actions are never replayed or rerouted.
+
+V53_ALLOWED_PATHS is the complete scope: control manifests and append-only records, the v53 module/test and wiring, the v50 historical test pinned to immutable 0774131e, and docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md as the agent handoff point. One normal child commit of 0774131e may be pushed to existing Draft PR #20 after full local gates, audit0 and a fresh PR readback. No deploy, secret, LINE webhook, pilot, TEST storage/SQL, live provider, new PR, Ready, merge, U2, Issue closure, runtime/policy/KB/catalog/dependency change or Production.
+
+```json
+{
+  "version": "2026.10.02-v53",
+  "ownerDecision": "MP-OD-2026-10-02-V53",
+  "supersedes": "2026.10.02-v52",
+  "technicalBase": "2026.09.30-v50",
+  "baseline": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "baselineTree": "dfe6d6839fd07325f391a9ca66b8721f6f378ad6",
+  "baselineParent": "b1ca3a90c7a550f48c91d971b35dd9f148ce91e9",
+  "publishedBaseline": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "RESUME_CODEX_PLAN_STEP_A_NON_INVASIVE_EVIDENCE_AND_HANDOFF_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "A_NON_INVASIVE_EVIDENCE_CURRENT_B_DRAFT_DOCUMENT_ONLY_C_D_E_NOT_AUTHORIZED",
+  "evidencePolicy": "OWNER_PROVIDED_LINE_CHAT_AUDIT_LOG_METRICS_SUMMARY_ONLY_NO_PII_COMMIT",
+  "rootCause": "UNKNOWN_CODE_PATH_POSSIBLE_NOT_PROVEN",
+  "implementationSeals": {
+    "tests/project-control-v50.test.ts": "1b591efc688641db0a86c115e44e3b0db80efcc00e8c0c5d211554dd51c53ecb",
+    "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "714d97e5fd8043f8383fd4d98decd69db73625cf41c9f654091d1d16b6e6c647"
+  },
+  "publication": "EXISTING_DRAFT_PR20_ONLY_ONE_CHILD_COMMIT_FULL_GATES_AUDIT0_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_PILOT_STORAGE_SQL_DATA_STUDIO_PROVIDER_LIVE_NEW_PR_READY_MERGE_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_PAUSED_LINEAGE_CHANGE_PRODUCTION"
+}
+```
+
+## MP-OD-2026-10-03-V54 — Time-aware evidence and handoff correction only
+
+Owner approved on 2026-10-03: "1 แล้วต่อด้วยทาง 3", selecting option 1 from Issue #12 comment5967494810 and then preparation of option 3. Version 2026.10.03-v54 / MP-OD-2026-10-03-V54 supersedes 2026.10.02-v53; technical base is published 9e703552f1392d5107c90bf34a9f28eff8963414. MP-06/#12 remains CURRENT/OPEN; MP-07 blocked; Production NO_GO — NOT TOUCHED.
+
+Scope is exactly V54_ALLOWED_PATHS (13 files): control manifests/wiring/new v54 module and tests, append-only Owner/changelog/execution records, PROJECT_CONTROL header, immutable historical v53 test adapter and resealed HANDOFF. No new evidence/work-package file. Record obtained LINE/Audit/Metrics/timezone evidence with coverage limits; correct time-aware text/postback/KB analysis and counts/claim-provenance overclaims. Root cause UNKNOWN. B is a document only. Historical source/version association does not prove serving version at each event. Equal claim/event timestamps do not distinguish fresh claims from constructor backfill. Missing audit is not absence of events.
+
+Option 3 is the next baseline/UAT proposal after option 1, not remote implementation approval. Preserve paused codex/mp06-uat-round2-prep @ d63d620820a4f1ea6f452e553724d34d16535a90 with no checkout/edit/delete/deploy. No TEST/uat2 deployment, secret, webhook, pilot, storage/SQL/DO/Data Studio, live provider, denied-action replay or transport bypass, runtime/policy/KB/catalog/dependency/workflow changes, new PR/Ready/merge/U2/Issue closure or Production. No reset or refill of T-C01.
+
+Before one normal child commit: fresh frozen install, focused exact-stage gates, zero-all-severity audit and evidence-bound local review. Before push: fresh full required local gates/audit0 on actual clean SHA/tree/diff; Claude pre-push VERIFY through PR20 sanitized complete patch and non-personal commit-object reconstruction of exact SHA/parent/tree/diff. Owner authorizes only this scoped patch publication in existing PR20 comments; no personal author metadata, secrets, raw chats or sensitive identifiers. A gap in full reconstruction/verification is a stop, not permission to push first. Fresh PR20 readback <=120 seconds must be OPEN Draft/unmerged at published9e70355 and unchanged basea05bab89/branches. No blind retry on unknown publication outcome. After push send REQ-VERIFY immediately, verify exact remote SHA/parent/history and hosted CI, reconcile #9/#12. Structural validator PASS is never publication or remote authority. Full/hosted results are pending until separately observed for the actual new source.
+
+```json
+{
+  "version": "2026.10.03-v54",
+  "ownerDecision": "MP-OD-2026-10-03-V54",
+  "supersedes": "2026.10.02-v53",
+  "technicalBase": "2026.10.02-v53",
+  "baseline": "9e703552f1392d5107c90bf34a9f28eff8963414",
+  "baselineTree": "53165684d7a041b889606c27cd31e629965b5de3",
+  "baselineParent": "0774131ef334e09426203cd6aff92c59bbf52a52",
+  "publishedBaseline": "9e703552f1392d5107c90bf34a9f28eff8963414",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TIME_AWARE_EVIDENCE_RECORD_AND_HANDOFF_CORRECTION_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "A_EVIDENCE_REVIEW_RECORDED_B_DOCUMENT_ONLY_OPTION3_NEXT_PROPOSAL_C_D_E_NOT_AUTHORIZED",
+  "evidencePolicy": "SANITIZED_SUMMARIES_AND_APPROVED_PREPUSH_PATCH_ONLY_NO_PII_RAW_CHAT_OR_REMOTE_ACCESS",
+  "rootCause": "UNKNOWN_CODE_PATH_POSSIBLE_NOT_PROVEN",
+  "implementationSeals": {
+    "tests/project-control-v53.test.ts": "1ab90351c082e4856e85f6c43ac32704a9d2636ac610d7685fddfb633bfd9035",
+    "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "beca2ebeb50c012e9a35a5c347c1a546a965187c82feab5ff5e381e57699d3a6"
+  },
+  "publication": "EXISTING_DRAFT_PR20_ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_EXACT_COMMIT_PREPUSH_VERIFY_FRESH_PR_READBACK",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "DEPLOY_SECRET_LINE_WEBHOOK_PILOT_STORAGE_SQL_DATA_STUDIO_PROVIDER_LIVE_NEW_PR_READY_MERGE_U2_ISSUE_CLOSE_RUNTIME_POLICY_KB_CATALOG_DEPENDENCY_PAUSED_LINEAGE_CHANGE_PRODUCTION",
+  "prePushReview": "PR20_SANITIZED_COMPLETE_PATCH_AND_NONPERSONAL_COMMIT_OBJECT_RECONSTRUCT_EXACT_SHA_TREE_DIFF_NO_PUSH_ON_REVIEW_GAP",
+  "postPushReview": "REQ_VERIFY_EXACT_REMOTE_SHA_PARENT_HISTORY_HOSTED_CI_REQUIRED",
+  "nextBaseline": "OPTION3_PROPOSAL_AFTER_OPTION1_NO_IMPLEMENTATION_REMOTE_DEPLOY_UAT_OR_PAUSED_BRANCH_RESUME"
+}
+```
+
+## MP-OD-2026-10-03-V55 — TEST reset local implementation
+
+Owner decision 2026-10-03 D1–D4: TEST has only the Owner, no real customers, and all TEST state may be discarded without retaining live evidence. Retire WP8F/v16/v22; the unused v22 grant is RETIRED_UNUSED and cannot be reissued. September cause remains permanently UNKNOWN; U1 GAP/A1–A3/billing remain unresolved, never PASS. Production NO_GO — NOT TOUCHED; paused v51/v52 unchanged.
+
+v55 is LOCAL IMPLEMENTATION ONLY from 47cf2f2: four V2 class export aliases, matching SQLite exports and deleted original-class tombstones; authenticated SELECT-only conversation observation; fix rejected resumeMp06Acceptance so it creates no activation journal; new local synthetic/mock tests and control validation. No policy/KB/catalog/model/prompt/response-schema/threshold/dependency/workflow changes. Existing database schema is queried, not expanded.
+
+No deployment, secret, webhook, pilot, live UAT, storage access, Data Studio/SQL, provider call, commit or push is authorized in this phase. Old safety hold stays intact; local implementation is neither safety clearance nor a transport bypass. Request Claude VERIFY on the complete local patch before any separately authorized publication. No old grant is inherited.
+
+Cloudflare documentation https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/ (checked 2026-10-03) says deletion permanently removes the class namespace and stored data with no Trash; old class must no longer be exported and external Worker bindings block deletion. Local config targets malispang-lineoa-test, but remote bindings/target isolation are NOT_OBSERVED. Before proposing deploy, require independently permitted exact account/Worker/binding preflight, quiescence/redelivery/alarm assessment and explicit irreversible-destruction approval; do not infer Production isolation from a dry-run. No deploy or real deletion occurred. Code rollback cannot recover deleted namespace data. Provider charges do not disappear with the local ledger.
+
+New observation SELECT methods do not mutate rows, but constructor startup can initialize/backfill: read-only method does not mean side-effect-free remote invocation. Do not call it on held old storage. No test result retroactively repairs old acceptance; U4 remains text silence in HUMAN_HANDOFF after explicit STOP, not universal LINE-egress silence.
+
+```json
+{
+  "version": "2026.10.03-v55",
+  "ownerDecision": "MP-OD-2026-10-03-V55",
+  "supersedes": "2026.10.03-v54",
+  "technicalBase": "2026.10.03-v54",
+  "baseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baselineTree": "f60f768b072750f0273138dd25edeee234a4f53b",
+  "baselineParent": "9e703552f1392d5107c90bf34a9f28eff8963414",
+  "publishedBaseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_NAMESPACE_RESET_LOCAL_IMPLEMENTATION_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "RETIRE_OLD_UAT_PREPARE_FRESH_TEST_LOCALLY_NO_REMOTE_ACTION",
+  "evidencePolicy": "SANITIZED_SUMMARIES_AND_APPROVED_PREPUSH_PATCH_ONLY_NO_PII_RAW_CHAT_OR_REMOTE_ACCESS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "implementationSeals": {
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "1ceb96fc8ae1dcb469006c614872534df559633277cb6b2b0363c3da3d78cda8",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def"
+  },
+  "publication": "NOT_AUTHORIZED_LOCAL_ONLY_CLAUDE_VERIFY_BEFORE_ANY_FUTURE_PUSH",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "COMMIT_PUSH_DEPLOY_SECRET_WEBHOOK_PILOT_UAT_REMOTE_STORAGE_SQL_DATA_STUDIO_PROVIDER_HOLD_BYPASS_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_PRODUCTION",
+  "prePushReview": "PR20_COMPLETE_LOCAL_PATCH_REVIEW_REQUIRED_NOT_PUBLICATION_AUTHORITY",
+  "postPushReview": "ONLY_AFTER_SEPARATE_PUBLICATION_AUTHORITY",
+  "nextBaseline": "FRESH_TEST_UAT_REQUIRES_SEPARATE_DECISION",
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "ownerFacts": {
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "production": "NO_GO_NOT_TOUCHED"
+  },
+  "localScope": "V2_EXPORT_ALIASES_FOUR_CLASSES_DELETED_CONFIG_SELECT_ONLY_OBSERVATION_DENIED_RESUME_NO_DDL",
+  "destruction": "NOT_EXECUTED_DEPLOY_FORBIDDEN_IRREVERSIBLE_IF_LATER_AUTHORIZED",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "commit": false,
+  "push": false
+}
+```
+
+### Owner v55 local scope amendment — 2026-10-03 (ICT)
+
+Owner replied "อนุมัติ" to adding only worker-configuration.d.ts for eight V2 type-name replacements: four binding imports and four durableNamespaces literals. Scope is now 18 paths. No generated runtime-library or header change is authorized; the retained header records the historical generation, not a claim that the V2 file was regenerated. No model/policy/schema/threshold/dependency or remote authority changes. This supplements the unpublished v55 local decision, superseding the earlier 17-path scope only. Complete local qualification and Claude VERIFY remain required; commit/push/deploy stay unauthorized.
+
+## MP-OD-2026-10-04-V56 — Frozen v55 publication only
+
+Owner approved “อนุมัติ” on 2026-10-04 (Asia/Bangkok), replying to the request for the next publication control, commit/push existing Draft PR20 and hosted CI. This is NOT deploy/reset/remote TEST/UAT/Production approval. MP-06/#12 stays CURRENT/OPEN, MP-07 blocked. Supersedes 2026.10.03-v55; actual Git baseline 47cf2f2c1c24ca365627ce515df30ed12fcea2f0; v55 was never committed. The one child contains the reviewed v55 implementation and v56 publication control together.
+
+Freeze v55 runtime/config/type-name changes, Worker tests, v55 module and historical v54 adapter byte-identically to RES-10 (PR20 comment5969226493). The original 18-file uncommitted patch has SHA256 cce49bb3c0d8bc3e352f286d0892726fc654e17dcd1f09a6bc6cb724e93e7b25 and reconstructs tree 82a7121e032ef14bbac1ea3e85aea3c2414df0ed on both Mac and Claude cloud. The 21-path scope is the original 18 paths plus src/project-control-v56.ts, tests/project-control-v56.test.ts and tests/fixtures/project-control/v55-local-patch.json. The v55 test may change only its historical adapter; its original tests remain in the hash-bound fixture. No additional runtime fix or generated header change.
+
+Before commit: exact staged complete patch, full local gates (including actual Mac rendering), zero-all-severity fresh audit, source/index stability, Claude PR20 review of that complete patch and tree. Before push: actual clean sole-child commit, full local gates/audit0 bound to its SHA/tree/diff, Claude exact reconstruction of the nonpersonal raw commit (not a tree-only PASS), fresh <=120s OPEN Draft/unmerged PR20 at head47cf2f2/basea05bab89 and exact branches. Normal push once only; unknown publication outcome requires readback, not blind retry. Immediately request postpush VERIFY; verify remote SHA/parent/history and hosted CI. A structural validator PASS is never a qualification receipt or publication permission.
+
+Historical v55 control and all old decision/journal text remain intact. v22 stays RETIRED_UNUSED_NO_REISSUE; September cause permanently UNKNOWN; U1 GAP/A1–A3/billing unresolved, not PASS. Paused v51/v52 at d63d620820a4f1ea6f452e553724d34d16535a90 is untouched. No old grant is inherited.
+
+No deploy, actual namespace deletion, secret, webhook, pilot, live UAT/provider, old storage/SQL/Data Studio, hold bypass/replay/reroute, policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow change, new PR, Ready/merge, Issue closure or Production. Production NO_GO — NOT TOUCHED. Deletion is irreversible if separately authorized in future; live isolation/external bindings and destructive preflight remain NOT_VERIFIED. Aggregate counts are not per-event delivery proof; eventRef provenance and hardcoded close-route accounting remain future blockers. U4 is text silence in HUMAN_HANDOFF after STOP, not universal LINE-egress silence.
+
+```json
+{
+  "version": "2026.10.04-v56",
+  "ownerDecision": "MP-OD-2026-10-04-V56",
+  "supersedes": "2026.10.03-v55",
+  "technicalBase": "2026.10.03-v55",
+  "baseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baselineTree": "f60f768b072750f0273138dd25edeee234a4f53b",
+  "baselineParent": "9e703552f1392d5107c90bf34a9f28eff8963414",
+  "publishedBaseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "REVIEWED_V55_EXISTING_DRAFT_PR20_PUBLICATION_ONLY",
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "codexPlan": "PUBLISH_FROZEN_V55_PLUS_V56_ONE_CHILD_NO_DEPLOY_RESET_OR_LIVE_UAT",
+  "evidencePolicy": "SANITIZED_SUMMARIES_AND_APPROVED_PREPUSH_PATCH_ONLY_NO_PII_RAW_CHAT_OR_REMOTE_ACCESS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_CLAUDE_STAGED_REVIEW_COMMIT_EXACT_COMMIT_REVIEW_NORMAL_PUSH_CI",
+  "storageHold": "UNCHANGED_NO_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "uatReadiness": "NOT_VERIFIED",
+  "deploy": false,
+  "ready": false,
+  "merge": false,
+  "remoteExecution": false,
+  "production": false,
+  "forbidden": "DEPLOY_RESET_SECRET_WEBHOOK_PILOT_UAT_REMOTE_STORAGE_SQL_DATA_STUDIO_PROVIDER_HOLD_BYPASS_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_PRODUCTION_NEW_PR_READY_MERGE_ISSUE_CLOSE",
+  "prePushReview": "PR20_COMPLETE_PATCH_NONPERSONAL_RAW_COMMIT_RECONSTRUCT_EXACT_SHA_TREE_PARENT_DIFF_FULL_GATES_AUDIT0",
+  "postPushReview": "REQ_VERIFY_REMOTE_EXACT_SHA_PARENT_HISTORY_HOSTED_CI",
+  "nextBaseline": "FRESH_TEST_UAT_REQUIRES_SEPARATE_DECISION",
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "ownerFacts": {
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "production": "NO_GO_NOT_TOUCHED"
+  },
+  "localScope": "V2_EXPORT_ALIASES_FOUR_CLASSES_DELETED_CONFIG_SELECT_ONLY_OBSERVATION_DENIED_RESUME_NO_DDL",
+  "destruction": "NOT_EXECUTED_DEPLOY_FORBIDDEN_IRREVERSIBLE_IF_LATER_AUTHORIZED",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "commit": "CONDITIONAL_FULL_STAGE_GATES_CLAUDE_REVIEW",
+  "push": "CONDITIONAL_EXACT_COMMIT_GATES_CLAUDE_REVIEW_FRESH_PR20",
+  "reviewedV55": {
+    "baseline": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+    "tree": "82a7121e032ef14bbac1ea3e85aea3c2414df0ed",
+    "diffSha256": "cce49bb3c0d8bc3e352f286d0892726fc654e17dcd1f09a6bc6cb724e93e7b25",
+    "files": {
+      "PROJECT_CONTROL.md": "ff1e00e2e02f81c95ea05863b4d96ff5e770fd433db667e8b37e563627fd5265",
+      "config/project/current-work.json": "a102f875288095261ac1d579cdc561581f6d9b71db39ba7ad2c70ff091988dc7",
+      "config/project/current-work.schema.json": "89920e66ba05bd564e4e21a4652122509636d973134c233bccf14119488f86ba",
+      "config/project/roadmap.json": "5332ecbb99111db6d89dffdd67d3fa846958fc796ce7006cde8296fed322adb4",
+      "docs/project/EXECUTION_GATES.md": "0c65c206eeba470d7e4cfa1b6b72980cae72e3ea9c90c605715bc67bfb0555de",
+      "docs/project/HANDOFF_MP06_CLAUDE_TO_CODEX_TH.md": "1ceb96fc8ae1dcb469006c614872534df559633277cb6b2b0363c3da3d78cda8",
+      "docs/project/OWNER_DECISION_LOG.md": "45bed3b1c75d4380fbb9b4ccbc3e0e1f7c29f117965017b51ab214d0feb4eb88",
+      "docs/project/ROADMAP_CHANGELOG.md": "3a683b8f01d6f620d4a9ec43838decab155f94543c162b6dfa5ae1591200beb9",
+      "src/project-control-cli.ts": "ea321e20a1a1d17af8cf5a1e16fca9d6140b7d7863c74c6456e5b9ad9046ceab",
+      "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+      "src/project-control.ts": "1e8fa98f3127d9d14228df712df2bc536ef4ae39d9e59c946b20419a10e04ab1",
+      "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+      "tests/project-control-v55.test.ts": "54bb2c35122c5bc2b2a81129d605f0e32d1e8206a69149cb0a4ea271c0bae41e",
+      "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+      "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+      "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+      "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+      "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+    }
+  },
+  "fixturePath": "tests/fixtures/project-control/v55-local-patch.json"
+}
+```
+
+## MP-OD-2026-10-04-V57 — TEST-only conditional deploy/reset once
+
+Owner approved TEST deploy/reset after v56 publication, then answered on 2026-10-04 (Asia/Bangkok): last TEST message sent 13 September; accepts partial/UNKNOWN deletion and temporary TEST unavailability with stop/no operator retry; permits one empty synthetic observation object. This is an Owner report, not continuous remote observation or proof that LINE has no queued redelivery. Keep TEST quiet during execution; confirm current quiet window before deploy. Codex remains operator; Claude cloud reviews through PR20 only.
+
+Owner amendment 2026-10-04 (Asia/Bangkok), choice 1: accept pinned Wrangler4.122.0 native retries up to THREE attempts per upload retry wrapper within ONE CLI invocation, using the identical bundle/config/TEST script. This is not a total network-request cap, proof of idempotence, or proof of atomic namespace deletion; ambiguous timeout/network retries and possible duplicate versions remain accepted risks. Operator retry is forbidden. Journal attempts counts CLI invocations, not native HTTP attempts; any started invocation consumes the grant regardless of outcome. No dependency patch, injected retry suppression, proxy or alternate transport is authorized. Replace the rejected draft automaticRetry=false assertion with exact nativeRetry bounds and operatorRetry=false. Original draft qualification/review does not qualify these amended bytes; rerun gates and Claude review. Owner receipt #12comment5976110049 / #9comment5976110180; RES-18 CHANGES / RES-19 BLOCKED comment5973717559 retained as historical evidence, not a PASS.
+
+Pre-publication review retained: RES-20/RES-21 comment5976204049 accepted Owner choice1 but returned CHANGES because tree90dfaaf961de92a8c1ddacaecf08c76093bb28ee failed Mac full qualification (one Git-history test exceeded unchanged7000ms; 1674 passed). Cloud pass did not override that failure. Bounded Mac diagnostic measured the same combined scenario at6228ms; batching fresh allowlisted Git blobs reduced a disposable prototype to3847ms without changing assertions, isolation, cleanup, timeout7000ms or maxWorkers2. The new v57 module uses strict binary cat-file framing/content identity and fresh reads, with empty/non-UTF8 equivalence and malformed/child-failure regression tests. Existing historical modules/adapters remain frozen. This amended source requires a new exact-tree full qualification and Claude review; the failed tree remains failed evidence, not retroactive PASS.
+
+Scope: exactly 13 control/docs/test paths. Freeze all deployed runtime/config/types/Worker tests and earlier modules/fixture byte-identically to published7ce7b99e87f1677ab83d527ba114c3e4a049d193. Preserve earlier decisions, grants and failed evidence; v22 RETIRED_UNUSED_NO_REISSUE. September root cause permanently UNKNOWN; U1 GAP/A1-A3/billing unresolved, not PASS. UAT eventRef provenance and hardcoded close-route accounting are not solved by resetting. U4 is text silence after handoff+STOP, not universal LINE-egress silence.
+
+Before any remote TEST operation: one normal control-only child, complete staged-tree Mac gates/audit0 and Claude review before commit, actual exact-commit gates/reconstructed Claude review before normal push, fresh PR20 identity, then hosted CI and Claude postpush PASS. Deployment artifact must reproduce the independently proposed 258400-byte SHA256 6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42 with pinned Wrangler4.122.0/minify; this is a required gate, not an observed Mac build receipt. No code or dependencies may be changed to force a match.
+
+New authority is conditional and never inherited from v22: existing configured native Wrangler default profile for exact account/TEST script metadata only; no plaintext credential extraction/new login, other Worker scan or raw CLI logs. Prove access to the exact account/script through successful scoped native deployments/version metadata requests; this is not user identity or ownership. Do not call whoami (JSON ignores the account filter). Verify existing default-profile selection without changing it, prohibit account/base-URL overrides, and route native logs to a checked private *.log symlink to /dev/null with captured/allowlisted output; no raw log retention. Inspect deployed version/traffic, exact script bindings/exports and five required secret names only. Optional OPENAI_API_KEY is not a reset prerequisite. No secret write/webhook/pilot/UAT/provider action. Existing admin credential may be used only in memory for the bounded NEW V2 probes if safely available; otherwise STOP, never request a token in chat. Old storage/Data Studio/Coordinator selector/browser-bootstrap hold remains unchanged; do not repeat or reroute the denied action.
+
+Target only account c395a1bc15b7c95267173de5ccd6407d, Worker malispang-lineoa-test, exact TEST origin. Owner accepts relying on Cloudflare external-binding refusal without querying Production/other Workers. This is NOT advance isolation PASS and NOT proof of atomic deletion of all four namespaces. Deletion is irreversible, no Trash; code rollback cannot restore data and provider charges survive ledger deletion. A partial/rejected/UNKNOWN outcome consumes the sole CLI invocation: STOP, only bounded metadata readback, no operator retry/rollback/fix-forward without a new decision. Record an append-only sanitized Issue12 STARTED receipt BEFORE invoking deployment; never infer an unused grant from missing success output.
+
+Preflight must authenticate source/artifact/account/script and existing native access (targetAccountAccessProven, not identityMatched); required secret names; current quiet window; old class bindings and absent V2; exact version/traffic. Alarm assessment is source-only, not a live absence claim: draft/promotion alarms perform expiry. No old admin/DO invocation or schema/data query. Owner last-message report does not prove no redelivery; this remains UNKNOWN, not a waiver to label empty.
+
+After unambiguous success, fresh metadata must match exact source/artifact/version, 100% traffic, all four V2 namespaces and deleted old classes before probes. Once per endpoint: GET /health; GET /admin/mp06-pilot/status expecting INACTIVE and zero counters; GET /admin/mp06/conversation-observation for one locally generated synthetic hex64 (no eventRef, no Owner identity, no state seeding) expecting BOT_ACTIVE/clarificationUsed=false/pendingTemplate=null/zero claims. These new-only calls can initialize SQLite via constructors and status may expire state; NOT side-effect-free read-only. Suppress raw admin payloads; emit only allowlisted booleans/counters/states. A synthetic empty object is not proof about Owner chat. Any mismatch stops; no old owner-uat-readiness/activate/resume/reconcile/stop/close endpoint.
+
+Production remains NO_GO — NOT TOUCHED. No Production metadata, paused v51/v52 access/edit/deploy, new PR/Ready/merge/Issue close or next-work start. Structural validator PASS is not an action receipt. Source/gates/Claude/CI/metadata/journal facts must be independently authenticated, never fabricated from test fixtures. Full qualification, publication and deploy results are pending until genuinely observed.
+
+References: Owner receipt #12comment5973501168 and #9comment5973501356; corrected technical plan RES-17comment5973230167 (not Owner authority). Official sources reviewed 2026-10-04: https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/ and https://developers.line.biz/en/docs/messaging-api/receiving-messages/ .
+
+```json
+{
+  "version": "2026.10.04-v57",
+  "ownerDecision": "MP-OD-2026-10-04-V57",
+  "supersedes": "2026.10.04-v56",
+  "technicalBase": "2026.10.04-v56",
+  "baseline": "7ce7b99e87f1677ab83d527ba114c3e4a049d193",
+  "baselineTree": "f763acf01a648ec7f40b41ab4111aab5ac48add7",
+  "baselineParent": "47cf2f2c1c24ca365627ce515df30ed12fcea2f0",
+  "publishedBaseline": "7ce7b99e87f1677ab83d527ba114c3e4a049d193",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "a0530e725947be4a199be2837ae4336ff3233c598a9b5411ad44d43fb77612dd",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "UPLOAD_CALL_ONLY_NOT_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_NATIVE_DEFAULT_PROFILE_ONLY_NO_PLAINTEXT_EXPORT_NEW_LOGIN_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK"
+}
+```
+
+## MP-OD-2026-10-04-V58 — TEST account pinning and native refresh
+
+Owner replied “อนุมัติทั้งสองข้อ และยังงดส่งข้อความเข้า TEST” on 2026-10-04 ICT to the narrow D-A/D-B decision after RES-25 BLOCKED (PR20comment5976559431). Receipt #12comment5976595607 / #9comment5976595765. This supersedes v57 only for the exact account selector and native refresh exceptions; Codex sole writer, Claude cloud reviewer via PR20, no CLI fallback. MP-06/#12 CURRENT/OPEN; Production NO_GO.
+
+D-A: remove inherited CLOUDFLARE__/CF__ values from the child environment, then explicitly set ONLY CLOUDFLARE_ACCOUNT_ID=c395a1bc15b7c95267173de5ccd6407d. This nonsecret value must equal the approved TEST target. No inherited token/account/API-base/environment override, config rewrite, cache seeding/copying, whoami, account enumeration or other Worker/Production scan. Use frozen clean checkout, native default profile, --env-file /dev/null; tracked example templates are not real credential files.
+
+D-B: allow normal native silent refresh and ordinary provider refresh-token rotation for the SAME existing default OAuth profile/account/scopes, persisted only through its existing encrypted/Keychain store. This is not creation of a new API key or new login/consent/secret. Force CI/noninteractive, stdin not TTY. Failure, denial or UNKNOWN means STOP, no operator retry, new login or alternate credential/transport. No credential values/length/fragments/hashes in argv/env/logs/files/chat/GitHub. Existing admin key only short-lived memory for authorized new-only checks. Native log containment remains checked private *.log symlink to /dev/null, suppress/capture all raw output, no optional output files, metrics or error reports.
+
+Admin credential source is the existing macOS Keychain generic-password item service malispang-lineoa-test, account TEST_ADMIN_KEY, exact item only with no search/list/create/update. Before destructive deployment, require successful safe local availability/readability verification, emitting only a boolean; absence/denial/UNKNOWN blocks deployment. No request to an old admin endpoint to test it. For each approved NEW V2 admin probe, acquire just-in-time inside the same short-lived process that sends the exact HTTPS request, redirects forbidden; never argv/URL/parent environment/clipboard/disk/log. Clear buffers/references and exit. If acquisition later fails after a successful deploy, record admin verification BLOCKED and deployment consumed/SUCCEEDED (not retroactive deploy failure); no retry, replacement grant or secret reset. No credential value is requested from Owner in chat.
+
+Owner confirms TEST messages remain withheld. This is current Owner-reported quiet, not proof of no queued LINE redelivery; stop if contradicted. Old data remains disposable; irreversible partial/UNKNOWN risk accepted. Frozen Worker/config/dependencies and exact258400-byte artifact SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42 unchanged. Native Wrangler4.122.0 up to3 attempts per upload wrapper within ONE CLI invocation is accepted; operator retry/rollback forbidden.
+
+Preserve published6d22347954fd3735545959685bde2ae5b5255c17/tree65bf84fc72b55ae56a4aba7871400acb5ac47578 and all historical decisions/failed evidence. v58 has one normal control-only child, exact13paths, staged full Mac gates/audit0/Claude review before commit, actual-commit full gates/exact reconstruction before normal push, hostedCI/postpushPASS before remote. Prior v57 successful CI37176133295/RES24 is baseline evidence, NOT v58 qualification. Historical v57 tests use immutable published checkout with every assertion/watchdog/cleanup/operator guard retained.
+
+The SAME unused v57 destructive grant carries forward, maximum1 CLI invocation across v57/v58, never reminted. Read complete Issue12 history before action and bind priorJournalChecked/priorStartedInvocations=0; any earlier STARTED/UNKNOWN consumes it even if success was never recorded. Append durable sanitized STARTED before invocation. No deploy until genuine fresh source/artifact/account/script/binding/secret-presence/native-admin/quiet-window evidence and actual action gate. Unknown/rejected/partial after start stops with scoped metadata readback only. Verified all4new V2 namespaces and old-class deletion/100% exactversion precede the same bounded3new-only GETs (one empty synthetic object), with constructor initialization acknowledged.
+
+No old storage/DataStudio/SQL/selector replay or hold bypass; no policy/KB/catalog/model/prompt/schema/threshold/dependencies/runtime/config changes, pausedv51/v52 touch, secrets/webhook/pilot/liveUAT/provider, newPR/Ready/merge/Issueclose/Production. v22 stays RETIRED_UNUSED_NO_REISSUE, September rootcause permanently UNKNOWN, U1GAP/A1-A3/billing unresolved, never PASS. Reset does not solve future UAT event provenance/close accounting. Current test/source/credential/deployment receipts must be authenticated, not copied from synthetic fixtures.
+
+```json
+{
+  "version": "2026.10.04-v58",
+  "ownerDecision": "MP-OD-2026-10-04-V58",
+  "supersedes": "2026.10.04-v57",
+  "technicalBase": "2026.10.04-v57",
+  "baseline": "6d22347954fd3735545959685bde2ae5b5255c17",
+  "baselineTree": "65bf84fc72b55ae56a4aba7871400acb5ac47578",
+  "baselineParent": "7ce7b99e87f1677ab83d527ba114c3e4a049d193",
+  "publishedBaseline": "6d22347954fd3735545959685bde2ae5b5255c17",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "94a37a9460c51ad6a3e990a9ebb6bfd50f3717f14e7b163e7e06867327f487a5",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "UPLOAD_CALL_ONLY_NOT_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK"
+}
+```
+
+## MP-OD-2026-10-04-V59 — Owner 10-second Node timeout and bounded TEST-to-UAT authority
+
+Owner approved the 7000 to 10000ms Node testTimeout amendment and progression to UAT-ready TEST on 2026-10-04 ICT. Owner decision relayed in PR20comment5976953529 and the same plan supplied directly in this Codex task: “เรื่องเวลาไม่ได้ซีเรียสอะไรเลยคุณจะปรับเป็น 10 วินาทีก็ได้ ... อยากจะเทสต์ ... พบปัญหาคุณสามารถแก้ไขได้เลย”. Receipts #12comment5977292735 / #9comment5977292859. This supersedes v58 for this package; MP06/#12 CURRENT/OPEN, Codex sole writer and Claude cloud PR20 reviewer.
+
+v59 is one normal child of published6aa87dcb75d6e20d5fbf65351119b0fac259f255/treee4e13ff39a52a271cd7cfb669a86c54dea5503b8, exact14paths: the control/docs/new-v59 module and tests/historical-v58 adapter plus vitest.config.ts. The only test-policy change is the literal testTimeout7000→10000; maxWorkers2, test retries0, assertions, Worker test configuration, workflow, dependencies and runtime remain unchanged. Historical v58 assertions use its immutable published checkout with source/index/cleanup guards intact. Earlier control/test bytes and append-only decisions are retained.
+
+This is Owner-accepted timing margin, NOT a demonstrated fix for the CI stall. CI37178910961/job111367264099 remains FAIL (1717 passed/2 timeouts at7235ms and7637ms); its skipped audit/secret/stability stages remain NOT_EXECUTED. RES29 identityPASS did not qualify deployment; RES30 host-stall explanation is a hypothesis, exactcauseUNKNOWN. No rerun of that old job is requested. Fresh exact-stage full Mac gates/audit0/Claude review precede commit; fresh actual-commit full Mac gates, exact reconstructed Claude review and freshPR20identity precede normalpush; new hostedCI plus postpushPASS precede remote TEST.
+
+The SAME unused destructive grant from v57 carries across v58/v59, maximum1 native CLI invocation total, never reminted. Preserve exact258400-byte artifact SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42, Wrangler4.122.0 native retries up to3 per upload wrapper in that one invocation, operator retry/rollback forbidden. All v58 target/account-selection/native-refresh/encrypted existing credential/admin availability/log-containment/freshpreflight/currentOwnerquiet/durableSTARTED/newnamespace-only postverify conditions remain required. No request to old storage or old admin endpoints. Historical v22 RETIRED_UNUSED_NO_REISSUE and September rootcause permanentlyUNKNOWN/U1GAP/A1-A3/billing unresolved remain unchanged. Failed or ambiguous deployment consumes the grant; broad troubleshooting permission is not another destructive attempt.
+
+Owner additionally preauthorizes necessary TEST-only UAT preparation, pilot/webhook configuration and scoped fixes, with Owner alone sending customer-style UAT messages. This is recorded goal authority, NOT immediate pilot activation or a fabricated UAT PASS. After verified reset, Codex and Claude must specify the actual TEST channel/webhook identity, existing credential availability, approved tester/caps/session time, per-case initial conditions and event provenance, stop/in-flight/accounting/handoff, then record a reviewed action-specific control before enabling that phase. Reuse approved limits, never silently increase cost/risk or reduce acceptance; do not wait for repeated approval of the same in-scope step. New irreversible actions beyond the approved reset, missing credential/security/scope conflicts still require escalation. EventRef provenance and hardcoded readiness/close accounting are not solved by reset and must be resolved before claiming UAT-ready.
+
+This v59 execution module does not enable pilot/webhook/UAT actions yet. Runtime/policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow changes are outside this exact package. Future necessary fixes require scoped successor controls/review under the newly delegated TEST goal, not rewriting v59's one-child history. No new credentials or secret exposure, held-action replay/reroute, pausedv51/v52 changes, Production metadata or mutation, newPR/Ready/merge/Issueclosure. Production NO_GO. Owner continues withholding TEST messages until the controlled UAT handoff; no continuous quiet/redelivery-absence proof is invented.
+
+```json
+{
+  "version": "2026.10.04-v59",
+  "ownerDecision": "MP-OD-2026-10-04-V59",
+  "supersedes": "2026.10.04-v58",
+  "technicalBase": "2026.10.04-v58",
+  "baseline": "6aa87dcb75d6e20d5fbf65351119b0fac259f255",
+  "baselineTree": "e4e13ff39a52a271cd7cfb669a86c54dea5503b8",
+  "baselineParent": "6d22347954fd3735545959685bde2ae5b5255c17",
+  "publishedBaseline": "6aa87dcb75d6e20d5fbf65351119b0fac259f255",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "4612b3ead083c823e28d58e476e1b440b1e2294ee57b9d2fc0c2ff96414178c3",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "UPLOAD_CALL_ONLY_NOT_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK",
+  "nodeTestTimeout": {
+    "file": "vitest.config.ts",
+    "sha256": "33b9cdf167339c56e94e4e2b222a849d76d14fee60a0355f5a82668b178e8264",
+    "from": 7000,
+    "to": 10000,
+    "maxWorkers": 2,
+    "retries": 0,
+    "assertions": "UNCHANGED",
+    "purpose": "OWNER_ACCEPTED_CI_TIMING_MARGIN_NOT_ROOT_CAUSE_FIX",
+    "failedEvidence": "CI37178910961_RETAINED_FAIL"
+  },
+  "uatPreparation": {
+    "ownerPreauthorized": true,
+    "execution": "REQUIRES_REVIEWED_ACTION_SPECIFIC_CONTROL_AFTER_RESET",
+    "target": "EXISTING_TEST_ONLY",
+    "messages": "OWNER_ONLY",
+    "sameApprovedCaps": true,
+    "production": false,
+    "heldOldStorage": false,
+    "secretExposure": false,
+    "ready": false,
+    "merge": false,
+    "issueClosure": false
+  }
+}
+```
+
+## MP-OD-2026-10-04-V60 — Owner native assets retry exception and same single TEST reset
+
+### Effective native assets retry exception — v60
+
+Owner directly instructed “เห็นด้วยกับ Claude ทำต่อเพื่อ deploy ได้เลย” on 2026-10-04. The detailed Owner decision relayed verbatim in PR20comment5978769457 accepts native assets ordinary6 / gateway10 attempts per bucket, Worker upload3 unchanged, a control successor to v59 and then TEST reset using the SAME single grant, no operator retry, Production forbidden. Receipts #12comment5979361841 / #9comment5979362019. This supersedes v59 only for separate native assets bounds; historical evidence and all other permissions/acceptance stay unchanged.
+
+One normal control-only child of6973a12f0c54d51945830b4ad635250e7612fdba/tree6d6f0c30b3124108331b17c83bd361d70af3461c, exact13paths (V60_ALLOWED_PATHS). Freeze runtime, wrangler.jsonc including ./public assets, dependencies, workflow, Worker types/tests, Vitest timeout10000ms/maxWorkers2/retry0 and earlier modules. The v59 historical test-input adapter reads its immutable published checkout and preserves assertions/isolation/cleanup/operator guards. No second child/amend under v59. Staged full Mac gates/audit0/Claude precommit, actual-commit full gates/exact reconstruction/prepush, fresh PR20 identity, then hostedCI/postpush PASS required; new control bytes cannot inherit qualification.
+
+Pinned Wrangler4.122.0 awaits syncAssets before Worker upload. Assets loop permits ordinary6 and maximum10 gateway/mixed calls per returned bucket. Worker upload wrapper remains3; neither bound is a total network-request cap or wall-clock guarantee. Server bucket count UNOBSERVED; unchanged local files do not prove upload skipped. Content-hash addressing is not proof of provider-wide idempotence. No dependency/config/transport/retry override. Only native retries in ONE CLI invocation are accepted; no operator retry/rollback/remint. Any started CLI consumes the SAME originv57 maximum1 grant across v57/v58/v59/v60, including assets-stage failure; partial/UNKNOWN stops with exact metadata-only readback. Unchanged version/bindings cannot prove absence of every remote side effect.
+
+Preserve exact258400-byte artifact SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42 and all D-A/D-B native default/encrypted existing credentials/exact TEST target/log containment/admin-memory rules. Fresh<=120s source/artifact/PR/credentials/quiet/journal/metadata gates precede durable sanitized Issue12 STARTED and exactly one deployment. Stale09:28 observations are review evidence only. No whoami/account enumeration/Production or otherWorker scans/new login/secret mutation/old storage/admin request.
+
+RES36 corrections remain: absentV2 preflight means exact current-script bindings/exports; account-wide inventory UNPROVEN. Old/new namespace identities stay only in the same short-lived process memory for comparison acrossall4, emit booleans/counts, wipe/exit; no identifiers/fingerprints in private journals/logs/chat/GitHub. Require actual reconciliation Createdexact4V2/Deletedexact4old, exact newversion/sourceartifactmessage/100%traffic/distinct newIDs before once-only newV2 health, INACTIVE_ZERO and one syntheticemptyconversation probes. Missing/partial/unknown/warning stops. Old-class-only Info codes require Claude review before probes; never emit referencing_scripts. Future tombstone cleanup must use actual removable_entries. Bounded probes are not global/Owner-chat freshness proof.
+
+This does not enable UAT/pilot/webhook yet. After verified reset, a reviewed action-specific successor must resolve B1 readiness3/3/27824 and B2close6/6/34082 retired-lineage dependencies without removing attribution or STOPPED/EXPIRED/accounting safety. Owner alone sends UAT, coordinate availability before activation, retain approved botmodel/caps, explicit STOP/accounting/handoff. No new destructive grant, old-storage hold bypass, pausedv51/v52 access/edit/delete, policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow changes, newPR/Ready/merge/Issueclose. Production NO_GO. September UNKNOWN, U1 GAP/A1-A3/billing UNKNOWN stay unresolved. Old CI140 FAIL retained;10s is timing margin, not proven rootcause repair.
+
+```json
+{
+  "version": "2026.10.04-v60",
+  "ownerDecision": "MP-OD-2026-10-04-V60",
+  "supersedes": "2026.10.04-v59",
+  "technicalBase": "2026.10.04-v59",
+  "baseline": "6973a12f0c54d51945830b4ad635250e7612fdba",
+  "baselineTree": "6d6f0c30b3124108331b17c83bd361d70af3461c",
+  "baselineParent": "6aa87dcb75d6e20d5fbf65351119b0fac259f255",
+  "publishedBaseline": "6973a12f0c54d51945830b4ad635250e7612fdba",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "2361b900fe4ecb8302cddc669fef2d3950082fbc146693bf1fc768429c986a60",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "WORKER_UPLOAD_WRAPPER_ONLY_NOT_ASSETS_OR_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK",
+  "nodeTestTimeout": {
+    "file": "vitest.config.ts",
+    "sha256": "33b9cdf167339c56e94e4e2b222a849d76d14fee60a0355f5a82668b178e8264",
+    "from": 7000,
+    "to": 10000,
+    "maxWorkers": 2,
+    "retries": 0,
+    "assertions": "UNCHANGED",
+    "purpose": "OWNER_ACCEPTED_CI_TIMING_MARGIN_NOT_ROOT_CAUSE_FIX",
+    "failedEvidence": "CI37178910961_RETAINED_FAIL"
+  },
+  "uatPreparation": {
+    "ownerPreauthorized": true,
+    "execution": "REQUIRES_REVIEWED_ACTION_SPECIFIC_CONTROL_AFTER_RESET",
+    "target": "EXISTING_TEST_ONLY",
+    "messages": "OWNER_ONLY",
+    "sameApprovedCaps": true,
+    "production": false,
+    "heldOldStorage": false,
+    "secretExposure": false,
+    "ready": false,
+    "merge": false,
+    "issueClosure": false
+  },
+  "nativeAssetsRetry": {
+    "wrangler": "4.122.0",
+    "phase": "BEFORE_WORKER_UPLOAD",
+    "ordinaryAttemptsPerBucket": 6,
+    "maximumAttemptsPerBucketIncludingGateway": 10,
+    "exactFrozenAssetsConfig": true,
+    "serverBucketCount": "UNOBSERVED_NO_TOTAL_REQUEST_BOUND",
+    "operatorRetry": false,
+    "providerWideIdempotence": "UNPROVEN",
+    "partialOrUnknown": "CONSUMES_SAME_SINGLE_CLI_GRANT_STOP_METADATA_ONLY"
+  }
+}
+```
+
+## MP-OD-2026-10-04-V61 — Owner test and hook timing margin
+
+Owner timing amendment received verbatim via PR20comment5979969369 on 2026-10-04: “อนุมัติ: ปรับ testTimeout และ hookTimeout เป็น 30 วินาที (v61) ส่วนอื่นคงเดิม แล้วเดินหน้าต่อได้เลย”. Accepted #12comment5980005086 / #9comment5980005256; scoped technical RES44PASS5980008111, not precommit or deploy qualification. MP06/#12 CURRENT/OPEN, Codex sole writer; Production NO_GO.
+
+v61 permits one normal child of ff37ec6e2d3268701bf55b6e7a94eb34046d3d55/tree474cc16cd79fcb4764b4d593fb29f31ea237b3cf, exact14 V61_ALLOWED_PATHS. Only test-policy change: testTimeout10000→30000 plus explicit hookTimeout30000 (previous nonbrowser default10000). Freeze maxWorkers2/retry0/include/exclude, all assertions and explicit per-case budgets. Exact baseline-derived two-setting config bytes and SHA256 are required in worktree/index/source/synthetic merge. Negative config cases must assert actual mutation before rejection. Preserve all inherited controls and append-only history; historical-v60 adapter uses immutable published ff37ec6 with original assertions, isolation, awaited cleanup, temp-dir and operator HEAD/raw-index/status guards. No main historical harness or earlier module change.
+
+Accepted timing margin NOT proven root-cause repair. CI142/run37200965892/job111432384877 remains FAIL: v27 beforeAll exceeded10000ms; Node1763PASS26SKIPPED, later secret/audit/stability NOT_EXECUTED. Exact slow operation/cause UNKNOWN, not proven host stall. CI140 failure and all previous evidence stay unchanged. Optional RES43 diagnostic prepared only in separate scratch, ZERO runs/no measurements; deferred and not copied into this package. No rerun of old CI.
+
+Fresh exact-stage Mac27/audit0/Claude precommit precede one nonpersonal commit. Actual-commit Mac27, complete patch plus exact rawcommit reconstruction/prepush review precede fresh<=120s PR20 identity/audit0/action gate and one normal push; hostedCI allstepsSUCCESS plus exact postpushPASS precede credentials/native progression. Earlier v60/v59 qualification never qualifies new bytes. Pure gate objects must be authenticated with actual evidence, never synthetic test receipts.
+
+All v60 remote constraints remain identical: exact TEST, frozen artifact258400bytes SHA2566e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42, Worker3 versus separate assets6ordinary/10gateway-mixed perbucket; not a total network/wallclock bound or provider idempotence proof. SAME originv57 maximumONE native destructive CLI across all successors, currently0/1 NOT_STARTED; no retry/rollback/remint. Full journal plus fresh source/artifact/PR/credential/quiet/exactscriptmetadata gates, durable sanitized STARTED before invocation and complete actual Created4V2/Deleted4old reconciliation/newversion100%/source message/distinct new identities before bounded new-only probes. IDs memory-only, no fingerprints/logs; old storage hold intact. Partial/UNKNOWN consumes grant and stops with allowed metadata only.
+
+No pilot/webhook/UAT authority by this timing change. Later reviewed action-specific UAT successor must preserve B1/B2 attribution/accounting/STOPPED/EXPIRED safety and existing approved bot model/caps; Owner alone sends UAT and must be available before activation; explicit STOP/accounting/handoff. No Production, secrets/PII/rawchat, pausedv51/v52 access/edit/delete, policy/KB/catalog/model/prompt/schema/threshold/dependency/workflow changes, newPR/Ready/merge/Issueclose. SeptemberUNKNOWN, U1GAP/A1-A3/billingUNKNOWN permanently retained.
+
+```json
+{
+  "version": "2026.10.04-v61",
+  "ownerDecision": "MP-OD-2026-10-04-V61",
+  "supersedes": "2026.10.04-v60",
+  "technicalBase": "2026.10.04-v60",
+  "baseline": "ff37ec6e2d3268701bf55b6e7a94eb34046d3d55",
+  "baselineTree": "474cc16cd79fcb4764b4d593fb29f31ea237b3cf",
+  "baselineParent": "6973a12f0c54d51945830b4ad635250e7612fdba",
+  "publishedBaseline": "ff37ec6e2d3268701bf55b6e7a94eb34046d3d55",
+  "baseHead": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+  "repository": "Eak-dev/malispang-lineOA",
+  "headBranch": "codex/mp06-harness-v43",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "pullRequest": 20,
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "TEST_ONLY_EXACT_DEPLOY_RESET_ONCE_CONDITIONAL",
+  "historicalTestAdapterSha256": "eafeebbf72a7b9243bbadb19483125e73f5276ccd9de05e55e703df6e91e50f5",
+  "target": {
+    "account": "c395a1bc15b7c95267173de5ccd6407d",
+    "worker": "malispang-lineoa-test",
+    "origin": "https://malispang-lineoa-test.eakkachai-dev.workers.dev",
+    "environment": "TEST",
+    "profile": "default"
+  },
+  "artifact": {
+    "sha256": "6e38d93410d645b2c02d29d171fab2ebd5bdd281b735b707de6f76b6adc76d42",
+    "bytes": 258400,
+    "wrangler": "4.122.0",
+    "minify": true
+  },
+  "ownerFacts": {
+    "lastTestMessageDate": "2026-09-13",
+    "source": "OWNER_REPORT_NOT_CONTINUOUS_OBSERVATION",
+    "testOnlyOwner": true,
+    "testDataDisposable": true,
+    "partialUnknownUnavailableRiskAccepted": true,
+    "syntheticEmptyObjects": 1
+  },
+  "pausedLineage": {
+    "versions": ["2026.10.02-v51", "2026.10.02-v52"],
+    "branch": "codex/mp06-uat-round2-prep",
+    "head": "d63d620820a4f1ea6f452e553724d34d16535a90",
+    "status": "PAUSED_FROZEN_NO_DEPLOY_NO_DELETE_NO_EDIT_REFERENCE_ONLY"
+  },
+  "retiredLineage": {
+    "WP8F": "RETIRED",
+    "v16": "RETIRED",
+    "v22": "RETIRED_UNUSED_NO_REISSUE"
+  },
+  "implementationSeals": {
+    "src/project-control-v55.ts": "ee425a2ba08662c2666831c1c6c0819bd6bdca7240bdea4b1f9ed5bbd33d0598",
+    "tests/project-control-v54.test.ts": "0e6a9d7e7b6afb5632f6beaf0aabf8993e0dc8b953fb3704845a56e98bbb64b7",
+    "worker-configuration.d.ts": "1d0487801b1eb667f01ce1bccf541bbb6acd86b18acecbc54fc916d73a184def",
+    "worker-tests/mp-06-v55-fresh-baseline.test.ts": "44c0684c9fe3fb374aaadd103e909049d9469b462e9c248906a9cfd3f42967fe",
+    "worker/durable-objects.ts": "a859439445d75295572f0f561eb4407d41f49f94008fb992c56e778cf847ef9b",
+    "worker/index.ts": "640558da1a92e60d3ace3d00cd1f44a7bbd52f5aedb81662fd52bfbe3260d872",
+    "wrangler.jsonc": "d529ceddee36678bb672ec88c49cd6c21a9e02f1c92a5f2ba184fa89b94d79d5"
+  },
+  "publication": "ONE_CHILD_FULL_GATES_AUDIT0_CLAUDE_PRECOMMIT_EXACT_PREPUSH_POSTPUSH_HOSTED_CI",
+  "deploy": "CONDITIONAL_ONE_EXACT_TEST_CLI_INVOCATION_WITH_BOUNDED_NATIVE_UPLOAD_RETRIES_AFTER_PUBLICATION_AND_FRESH_PREFLIGHT",
+  "nativeRetry": {
+    "wrangler": "4.122.0",
+    "maximumAttemptsPerUploadCall": 3,
+    "exactBundleConfigAndTarget": true,
+    "scope": "WORKER_UPLOAD_WRAPPER_ONLY_NOT_ASSETS_OR_TOTAL_NETWORK_REQUESTS",
+    "ambiguousOutcomeRetryAccepted": true
+  },
+  "operatorRetry": false,
+  "accountSelection": {
+    "variable": "CLOUDFLARE_ACCOUNT_ID",
+    "value": "c395a1bc15b7c95267173de5ccd6407d",
+    "mode": "EXPLICIT_CHILD_ONLY_AFTER_REMOVE_INHERITED_CLOUDFLARE_CF",
+    "otherOverrides": false,
+    "accountEnumeration": false,
+    "configOrCacheMutation": false
+  },
+  "nativeRefresh": {
+    "profile": "default",
+    "sameAccountAndScopes": true,
+    "storage": "EXISTING_ENCRYPTED_KEYCHAIN",
+    "silentRefresh": true,
+    "providerRefreshTokenRotation": true,
+    "nonInteractive": true,
+    "newLogin": false,
+    "newConsent": false,
+    "newApiKey": false,
+    "plaintextExport": false,
+    "failureOrUnknown": "STOP_NO_OPERATOR_RETRY_OR_FALLBACK"
+  },
+  "deploymentGrant": {
+    "originControl": "2026.10.04-v57",
+    "maximumInvocationsAcrossLineage": 1,
+    "carryForward": "SAME_UNUSED_GRANT_NOT_REISSUED",
+    "priorJournalRequired": true
+  },
+  "metadata": "EXACT_TEST_ACCOUNT_ACCESS_DEPLOYMENTS_VERSION_BINDINGS_SECRET_NAMES_NO_WHOAMI_OBJECT_OR_OTHER_WORKER_SCAN",
+  "credential": "EXISTING_DEFAULT_NATIVE_SILENT_REFRESH_ENCRYPTED_KEYCHAIN_NO_NEW_LOGIN_CONSENT_APIKEY_OR_SECRET_CHANGE",
+  "postverify": "VERIFIED_NEW_V2_ONLY_HEALTH_INACTIVE_COORDINATOR_ONE_SYNTHETIC_EMPTY_CONVERSATION",
+  "requiredSecrets": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "LINE_BOT_USER_ID",
+    "TEST_ADMIN_KEY",
+    "TEST_REWARD_CARD_URL"
+  ],
+  "oldClasses": [
+    "ConversationStateDO",
+    "DraftOrderDO",
+    "HandoffRegistryDO",
+    "PromotionControlDO"
+  ],
+  "newClasses": [
+    "ConversationStateDOV2",
+    "DraftOrderDOV2",
+    "HandoffRegistryDOV2",
+    "PromotionControlDOV2"
+  ],
+  "externalBindingPolicy": "CLOUDFLARE_REJECTION_NO_PRODUCTION_SCAN_NO_ADVANCE_ISOLATION_OR_ATOMICITY_PASS",
+  "quiescence": "OWNER_REPORTED_QUIET_NOT_PROOF_OF_NO_QUEUED_REDELIVERY_REQUIRE_CURRENT_QUIET_WINDOW",
+  "destruction": "IRREVERSIBLE_NO_DATA_RECOVERY_PARTIAL_UNKNOWN_CONSUMES_INVOCATION_NO_OPERATOR_RETRY_OR_ROLLBACK",
+  "journal": "APPEND_SANITIZED_ISSUE12_START_BEFORE_INVOCATION_ANY_STARTED_OUTCOME_CONSUMED",
+  "storageHold": "UNCHANGED_NO_OLD_READ_REPLAY_OR_TRANSPORT_BYPASS",
+  "historicalGaps": "U1_GAP_A1_A3_UNRESOLVED_BILLING_UNKNOWN_NOT_PASS",
+  "rootCause": "SEPTEMBER_UNKNOWN_PERMANENT_HISTORICAL_GAPS_UNCHANGED",
+  "uatReadiness": "NOT_VERIFIED",
+  "ready": false,
+  "merge": false,
+  "production": false,
+  "forbidden": "OLD_STORAGE_SQL_DATA_STUDIO_SELECTOR_REPLAY_PRODUCTION_OTHER_WORKER_SCAN_SECRET_CHANGE_WEBHOOK_PILOT_LIVE_UAT_PROVIDER_RUNTIME_POLICY_KB_CATALOG_MODEL_PROMPT_SCHEMA_THRESHOLD_DEPENDENCY_WORKFLOW_PAUSED_LINEAGE_NEW_PR_READY_MERGE_ISSUE_CLOSE_OPERATOR_RETRY_ROLLBACK",
+  "nodeTestTimeout": {
+    "file": "vitest.config.ts",
+    "sha256": "1e792da7806f75b5f6f4a499d37c7a2e00c4b910b645e1a99f471e520041ac76",
+    "from": 10000,
+    "to": 30000,
+    "maxWorkers": 2,
+    "retries": 0,
+    "assertions": "UNCHANGED",
+    "purpose": "OWNER_ACCEPTED_CI_TIMING_MARGIN_NOT_ROOT_CAUSE_FIX",
+    "failedEvidence": "CI37200965892_RETAINED_FAIL_CAUSE_UNKNOWN_SKIPPED_NOT_EXECUTED",
+    "hookFrom": 10000,
+    "hookTo": 30000,
+    "hookPreviouslyExplicit": false,
+    "explicitCaseBudgets": "UNCHANGED"
+  },
+  "uatPreparation": {
+    "ownerPreauthorized": true,
+    "execution": "REQUIRES_REVIEWED_ACTION_SPECIFIC_CONTROL_AFTER_RESET",
+    "target": "EXISTING_TEST_ONLY",
+    "messages": "OWNER_ONLY",
+    "sameApprovedCaps": true,
+    "production": false,
+    "heldOldStorage": false,
+    "secretExposure": false,
+    "ready": false,
+    "merge": false,
+    "issueClosure": false
+  },
+  "nativeAssetsRetry": {
+    "wrangler": "4.122.0",
+    "phase": "BEFORE_WORKER_UPLOAD",
+    "ordinaryAttemptsPerBucket": 6,
+    "maximumAttemptsPerBucketIncludingGateway": 10,
+    "exactFrozenAssetsConfig": true,
+    "serverBucketCount": "UNOBSERVED_NO_TOTAL_REQUEST_BOUND",
+    "operatorRetry": false,
+    "providerWideIdempotence": "UNPROVEN",
+    "partialOrUnknown": "CONSUMES_SAME_SINGLE_CLI_GRANT_STOP_METADATA_ONLY"
+  }
+}
+```

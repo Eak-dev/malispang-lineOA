@@ -1032,6 +1032,174 @@ export class ConversationStateDO extends DurableObject<Env> {
       : {};
   }
 
+  /** SELECT-only snapshot of this object. No identifiers, tokens, text or
+   * fingerprints leave the method. Absence is explicit, never proof of delivery
+   * or of a globally fresh namespace. Constructor migrations are separate. */
+  conversationObservation(expectedEventRef?: string) {
+    if (
+      this.env.ENVIRONMENT !== "TEST" ||
+      this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+      this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+      (expectedEventRef !== undefined &&
+        !isMp06PilotReference(expectedEventRef))
+    )
+      return null;
+    try {
+      return this.ctx.storage.transactionSync(() => {
+        const sql = this.ctx.storage.sql;
+        const mode = sql
+          .exec<{ mode: string }>(
+            "SELECT mode FROM conversation_state WHERE id = 1",
+          )
+          .one().mode;
+        const context = sql
+          .exec<{
+            clarification_used: number;
+            pending_template_id: string | null;
+          }>(
+            "SELECT clarification_used, pending_template_id FROM mp06_conversation_state WHERE id = 1",
+          )
+          .one();
+        if (
+          !["BOT_ACTIVE", "HUMAN_HANDOFF"].includes(mode) ||
+          ![0, 1].includes(context.clarification_used) ||
+          ![null, "T-C01", "T-C04"].includes(context.pending_template_id)
+        )
+          return null;
+        // Counts are diagnostics, not event provenance or readiness decisions.
+        const counts = sql
+          .exec<{
+            pending_events: number;
+            pending_plans: number;
+          }>(
+            "SELECT (SELECT COUNT(*) FROM processed_events WHERE delivered != 1) AS pending_events, (SELECT COUNT(*) FROM mp06_response_plans WHERE delivered != 1) AS pending_plans",
+          )
+          .one();
+        const claims = sql
+          .exec<{ state: string; count: number }>(
+            "SELECT state, COUNT(*) AS count FROM delivery_claims GROUP BY state ORDER BY state",
+          )
+          .toArray();
+        const claimStates = [
+          "CLAIMED",
+          "DELIVERED",
+          "LEGACY_UNKNOWN",
+          "DELIVERY_UNKNOWN",
+        ];
+        if (claims.some((row) => !claimStates.includes(row.state))) return null;
+        let event = null;
+        if (expectedEventRef !== undefined) {
+          const processed = sql
+            .exec<{
+              reply_kind: string;
+              delivered: number;
+              entered_handoff: number;
+              created_at: number;
+            }>(
+              "SELECT reply_kind, delivered, entered_handoff, created_at FROM processed_events WHERE event_ref = ?",
+              expectedEventRef,
+            )
+            .toArray()[0];
+          const plan = sql
+            .exec<{ delivered: number; created_at: number }>(
+              "SELECT delivered, created_at FROM mp06_response_plans WHERE event_ref = ?",
+              expectedEventRef,
+            )
+            .toArray()[0];
+          const claim = sql
+            .exec<{
+              state: string;
+              revision: number;
+              claimed_at: number;
+              acknowledged_at: number | null;
+            }>(
+              "SELECT state, revision, claimed_at, acknowledged_at FROM delivery_claims WHERE event_ref = ?",
+              expectedEventRef,
+            )
+            .toArray()[0];
+          if (
+            (processed &&
+              (![0, 1].includes(processed.delivered) ||
+                ![0, 1].includes(processed.entered_handoff) ||
+                !isMp06PilotTimestamp(processed.created_at))) ||
+            (plan &&
+              (![0, 1].includes(plan.delivered) ||
+                !isMp06PilotTimestamp(plan.created_at))) ||
+            (claim &&
+              (!claimStates.includes(claim.state) ||
+                !Number.isSafeInteger(claim.revision) ||
+                claim.revision < 1 ||
+                !isMp06PilotTimestamp(claim.claimed_at) ||
+                (claim.acknowledged_at !== null &&
+                  !isMp06PilotTimestamp(claim.acknowledged_at))))
+          )
+            return null;
+          // Do not echo arbitrary database text if a row is malformed.
+          const replyKinds = {
+            NONE: true,
+            SAFE_FALLBACK: true,
+            HANDOFF_ACK: true,
+            SLIP_ACK: true,
+            FLEX_MENU: true,
+            MENU: true,
+            PRICE: true,
+            LOCATION: true,
+            HOURS: true,
+            CONTACT: true,
+            PICKUP: true,
+            STORAGE: true,
+            ALLERGEN: true,
+            WHOLESALE: true,
+            ADVANCE_ORDER: true,
+            DELIVERY: true,
+            PROMOTION: true,
+            LOYALTY: true,
+            STOCK: true,
+          } satisfies Record<ReplyKind, true>;
+          if (processed && !Object.hasOwn(replyKinds, processed.reply_kind))
+            return null;
+          event = {
+            processed: processed
+              ? {
+                  replyKind: processed.reply_kind,
+                  delivered: processed.delivered === 1,
+                  enteredHandoff: processed.entered_handoff === 1,
+                  createdAt: processed.created_at,
+                }
+              : null,
+            plan: plan
+              ? { delivered: plan.delivered === 1, createdAt: plan.created_at }
+              : null,
+            claim: claim
+              ? {
+                  state: claim.state,
+                  revision: claim.revision,
+                  claimedAt: claim.claimed_at,
+                  acknowledgedAt: claim.acknowledged_at,
+                }
+              : null,
+          };
+        }
+        return {
+          mode,
+          clarificationUsed: context.clarification_used === 1,
+          pendingTemplate: context.pending_template_id,
+          pendingProcessedEvents: counts.pending_events,
+          pendingResponsePlans: counts.pending_plans,
+          deliveryClaims: Object.fromEntries(
+            claimStates.map((state) => [
+              state,
+              claims.find((row) => row.state === state)?.count ?? 0,
+            ]),
+          ),
+          event,
+        };
+      });
+    } catch {
+      return null;
+    }
+  }
+
   // Observation only: never call expiry, cleanup, settlement or activation helpers.
   ownerUatConversationObservation(expectedEventRef: string) {
     try {
@@ -1079,6 +1247,65 @@ export class ConversationStateDO extends DurableObject<Env> {
         clarificationUsed: context.clarification_used === 1,
         pendingTemplate: context.pending_template_id,
         pendingReplies,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * SELECT-only v63 close target for storage without WP8F lineage: the sole
+   * tester of a quiescent (STOPPED or EXPIRED) pilot session. Generic
+   * invariants replace the retired session's exact accounting; client input
+   * still cannot select the conversation.
+   */
+  freshHandoffCloseTarget() {
+    try {
+      const sql = this.ctx.storage.sql;
+      if (
+        this.env.ENVIRONMENT !== "TEST" ||
+        this.env.LINE_OA_ACCOUNT_NAME !== "มะลิปัง TEST" ||
+        this.env.MP06_PILOT_CONTROL_ENABLED !== "true" ||
+        sql
+          .exec<{ count: number }>(
+            "SELECT COUNT(*) AS count FROM sqlite_master WHERE name IN ('mp06_wp8f_activation', 'mp06_wp8f_v16_continuation', 'mp06_wp8f_v22_successor')",
+          )
+          .one().count !== 0
+      )
+        return null;
+      const session = this.mp06PilotSession();
+      if (
+        !session ||
+        !isMp06PilotReference(session.session_ref) ||
+        !["STOPPED", "EXPIRED"].includes(session.state) ||
+        session.budget_reserved_micro_usd !== 0 ||
+        session.in_flight !== 0
+      )
+        return null;
+      const pendingAttempts = sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM mp06_pilot_attempts WHERE state IN ('RESERVED', 'DISPATCHED')",
+        )
+        .one().count;
+      const testers = sql
+        .exec<{ session_ref: string; tester_ref: string }>(
+          "SELECT session_ref, tester_ref FROM mp06_pilot_testers ORDER BY session_ref, tester_ref",
+        )
+        .toArray();
+      if (
+        pendingAttempts !== 0 ||
+        testers.length !== 1 ||
+        testers[0]!.session_ref !== session.session_ref ||
+        !isMp06PilotReference(testers[0]!.tester_ref)
+      )
+        return null;
+      return {
+        ownerRef: testers[0]!.tester_ref,
+        sessionRef: session.session_ref,
+        state: session.state,
+        events: session.admitted_events,
+        attempts: session.provider_attempts,
+        consumedMicroUsd: session.budget_consumed_micro_usd,
       };
     } catch {
       return null;
@@ -1764,23 +1991,25 @@ export class ConversationStateDO extends DurableObject<Env> {
     try {
       return this.ctx.storage.transactionSync(() => {
         const sql = this.ctx.storage.sql;
-        // TEST-only additive one-shot audit; never deleted by activation, stop or restart.
-        sql.exec(`CREATE TABLE IF NOT EXISTS mp06_wp8f_activation (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        previous_session_ref TEXT NOT NULL,
-        operation_ref TEXT NOT NULL,
-        session_ref TEXT NOT NULL,
-        activated_at INTEGER NOT NULL
-      )`);
-        const applied = sql
-          .exec<{
-            previous_session_ref: string;
-            operation_ref: string;
-            session_ref: string;
-          }>(
-            "SELECT previous_session_ref, operation_ref, session_ref FROM mp06_wp8f_activation WHERE id = 1",
-          )
-          .toArray()[0];
+        // A rejected legacy resume must not create a lineage marker: generic
+        // activation intentionally refuses even an empty historical table.
+        const activationTableExists =
+          sql
+            .exec<{ count: number }>(
+              "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'mp06_wp8f_activation'",
+            )
+            .one().count === 1;
+        const applied = activationTableExists
+          ? sql
+              .exec<{
+                previous_session_ref: string;
+                operation_ref: string;
+                session_ref: string;
+              }>(
+                "SELECT previous_session_ref, operation_ref, session_ref FROM mp06_wp8f_activation WHERE id = 1",
+              )
+              .toArray()[0]
+          : undefined;
         const current = this.mp06PilotSession();
         if (applied) {
           if (
@@ -1834,6 +2063,14 @@ export class ConversationStateDO extends DurableObject<Env> {
           !testers.every((row) => isMp06PilotReference(row.tester_ref))
         )
           return denied();
+        // TEST-only additive one-shot audit; never deleted by activation, stop or restart.
+        sql.exec(`CREATE TABLE IF NOT EXISTS mp06_wp8f_activation (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        previous_session_ref TEXT NOT NULL,
+        operation_ref TEXT NOT NULL,
+        session_ref TEXT NOT NULL,
+        activated_at INTEGER NOT NULL
+      )`);
         sql.exec(
           "INSERT INTO mp06_wp8f_activation VALUES (1, ?, ?, ?, ?)",
           current.session_ref,

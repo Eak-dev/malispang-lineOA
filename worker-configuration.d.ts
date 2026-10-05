@@ -26,24 +26,24 @@ interface __BaseEnv_Env {
   TEST_ADMIN_KEY: string;
   TEST_REWARD_CARD_URL: string;
   CONVERSATION_STATE: DurableObjectNamespace<
-    import("./worker/index").ConversationStateDO
+    import("./worker/index").ConversationStateDOV2
   >;
   HANDOFF_REGISTRY: DurableObjectNamespace<
-    import("./worker/index").HandoffRegistryDO
+    import("./worker/index").HandoffRegistryDOV2
   >;
-  DRAFT_ORDER: DurableObjectNamespace<import("./worker/index").DraftOrderDO>;
+  DRAFT_ORDER: DurableObjectNamespace<import("./worker/index").DraftOrderDOV2>;
   PROMOTION_CONTROL: DurableObjectNamespace<
-    import("./worker/index").PromotionControlDO
+    import("./worker/index").PromotionControlDOV2
   >;
 }
 declare namespace Cloudflare {
   interface GlobalProps {
     mainModule: typeof import("./worker/index");
     durableNamespaces:
-      | "ConversationStateDO"
-      | "HandoffRegistryDO"
-      | "DraftOrderDO"
-      | "PromotionControlDO";
+      | "ConversationStateDOV2"
+      | "HandoffRegistryDOV2"
+      | "DraftOrderDOV2"
+      | "PromotionControlDOV2";
   }
   interface Env extends __BaseEnv_Env {}
 }

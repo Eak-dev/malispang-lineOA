@@ -1,0 +1,1042 @@
+diff --git a/PROJECT_CONTROL.md b/PROJECT_CONTROL.md
+index 9d2e4a51f3ac49f93f012343f32bfd9bbc5b54dc..3f620951ce6f71b3dd6b7c8c80f450b70919bcf8 100644
+--- a/PROJECT_CONTROL.md
++++ b/PROJECT_CONTROL.md
+@@ -2,0 +3,10 @@
++## Effective local control — v42 / historical harness repair
++
++Owner approved “อนุมัติซ่อมชุดทดสอบเฉพาะ local” on 2026-09-29, including the necessary control transition, following the local harness repair proposal. MP-OD-2026-09-29-V42 supersedes v41 only for local diagnosis, implementation and validation of historical fixture setup and cleanup in the exact V42_ALLOWED_PATHS. MP-06 / Issue12 remains CURRENT and OPEN. Read-only reconciliation observed Issue9/Issue12 OPEN and MP06 at the exact baseline below; publication of this successor is not authorized.
++
++The baseline is actual PR19 merge a05bab89bc6d5cdf2914581ed658be86dd00b062, with parents 35b67ab87ecd052ab80f450d766c9eabd2991861 and b1ab0d6ce86487c324df291235d53e86ca5da66e, tree 7d3ede2902d545092300171faa83fa403f5d3e1e. V41's single integration grant is CONSUMED; its unchanged historical record cannot authorize another commit, push, PR or merge. This package is an uncommitted local overlay with HEAD fixed at that merge. Current authority comes only from validated v42.
++
++Measure the expensive setup phase before changing it. Preserve every historical assertion, commit/path/hash check, isolated mutable fixture, cleanup and operator guard, the failing case's 5000ms watchdog and zero retries. Allowed changes are the specific test harness/helper/regression paths, minimal control/schema/dispatcher wiring and append-only evidence. Frozen inspectors v38/v39/v40/v41, runtime, workflows, dependencies, model, policy and secrets remain unchanged. Full required local gates and focused positive/negative/cleanup evidence are required; local success is not hosted CI qualification.
++
++No commit, push, publication, PR/Ready/merge, deployment, remote TEST, SQL/storage, LINE/provider call, permission change, Production access or Issue closure. Historical one-use grants, journals, counters, accounting, storage hold and UAT gaps remain unchanged. No U2 request follows this package. Report measured root cause, exact delta and limitations before any separately authorized publication package. All earlier records below remain historical evidence.
++
+diff --git a/config/project/current-work.json b/config/project/current-work.json
+index fb5c4aa6a0e3fa1ee2d4bceef84f644a1ee6bde0..22266b8eb0851d14fbc7062823f9eb3c83e53aea 100644
+--- a/config/project/current-work.json
++++ b/config/project/current-work.json
+@@ -5 +5,26 @@
+-  "roadmapVersion": "2026.09.29-v41",
++  "roadmapVersion": "2026.09.29-v42",
++  "localHarnessRepairV42": {
++    "version": "2026.09.29-v42",
++    "ownerDecision": "MP-OD-2026-09-29-V42",
++    "supersedes": "2026.09.29-v41",
++    "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
++    "baselineTree": "7d3ede2902d545092300171faa83fa403f5d3e1e",
++    "sourceCommit": "b1ab0d6ce86487c324df291235d53e86ca5da66e",
++    "publishedParent": "35b67ab87ecd052ab80f450d766c9eabd2991861",
++    "workId": "MP-06",
++    "githubIssue": 12,
++    "stage": "LOCAL_HISTORICAL_HARNESS_REPAIR_ONLY",
++    "targetEnvironment": "LOCAL_ONLY",
++    "integrationPr": 19,
++    "integrationGrant": "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
++    "localImplementation": true,
++    "commit": false,
++    "publication": false,
++    "remoteExecution": false,
++    "production": false,
++    "watchdogMs": 5000,
++    "retries": 0,
++    "invariants": "HISTORICAL_ASSERTIONS_HASHES_PATHS_CLEANUP_OPERATOR_GUARDS_UNCHANGED",
++    "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
++    "forbidden": "RUNTIME_WORKFLOW_DEPENDENCY_COMMIT_PUSH_PR_MERGE_DEPLOY_REMOTE_TEST_PRODUCTION_ISSUE_CLOSE"
++  },
+diff --git a/config/project/current-work.schema.json b/config/project/current-work.schema.json
+index 2c55740532c08820e948d25296b3a8ecaaef4622..9ed140f9d1e2c48fab6ff0bb4fdbf73b1d70e067 100644
+--- a/config/project/current-work.schema.json
++++ b/config/project/current-work.schema.json
+@@ -7,0 +8 @@
++    "localHarnessRepairV42",
+@@ -70,0 +72,27 @@
++    "localHarnessRepairV42": {
++      "const": {
++        "version": "2026.09.29-v42",
++        "ownerDecision": "MP-OD-2026-09-29-V42",
++        "supersedes": "2026.09.29-v41",
++        "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
++        "baselineTree": "7d3ede2902d545092300171faa83fa403f5d3e1e",
++        "sourceCommit": "b1ab0d6ce86487c324df291235d53e86ca5da66e",
++        "publishedParent": "35b67ab87ecd052ab80f450d766c9eabd2991861",
++        "workId": "MP-06",
++        "githubIssue": 12,
++        "stage": "LOCAL_HISTORICAL_HARNESS_REPAIR_ONLY",
++        "targetEnvironment": "LOCAL_ONLY",
++        "integrationPr": 19,
++        "integrationGrant": "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
++        "localImplementation": true,
++        "commit": false,
++        "publication": false,
++        "remoteExecution": false,
++        "production": false,
++        "watchdogMs": 5000,
++        "retries": 0,
++        "invariants": "HISTORICAL_ASSERTIONS_HASHES_PATHS_CLEANUP_OPERATOR_GUARDS_UNCHANGED",
++        "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
++        "forbidden": "RUNTIME_WORKFLOW_DEPENDENCY_COMMIT_PUSH_PR_MERGE_DEPLOY_REMOTE_TEST_PRODUCTION_ISSUE_CLOSE"
++      }
++    },
+@@ -735 +763 @@
+-    "roadmapVersion": { "const": "2026.09.29-v41" },
++    "roadmapVersion": { "const": "2026.09.29-v42" },
+diff --git a/config/project/roadmap.json b/config/project/roadmap.json
+index 2bc7cfbd1792558e017a64161737269c0a1be6c3..56552e15f2f26c5b21135fc9acf6f1a2af408872 100644
+--- a/config/project/roadmap.json
++++ b/config/project/roadmap.json
+@@ -7 +7 @@
+-  "version": "2026.09.29-v41",
++  "version": "2026.09.29-v42",
+@@ -10 +10 @@
+-    "decisionId": "MP-OD-2026-09-29-V41",
++    "decisionId": "MP-OD-2026-09-29-V42",
+@@ -12 +12 @@
+-    "supersedes": "2026.09.28-v40"
++    "supersedes": "2026.09.29-v41"
+diff --git a/docs/project/EXECUTION_GATES.md b/docs/project/EXECUTION_GATES.md
+index b9627d6e6cf7abb0baaef958e6028230bdd15c22..4cbe1eb74a6e7de2c50689458efb620ee8539ea7 100644
+--- a/docs/project/EXECUTION_GATES.md
++++ b/docs/project/EXECUTION_GATES.md
+@@ -3100,0 +3101,6 @@ After merge verify the actual ordered parents, source tree, current control and
++
++## v42 — local historical harness measurement and repair
++
++Permit only LOCAL_IMPLEMENTATION, LOCAL_VALIDATION and LOCAL_ANALYSIS in V42_ALLOWED_PATHS over exact PR19 merge a05bab89bc6d5cdf2914581ed658be86dd00b062. Check the actual HEAD/parents/tree and every working-tree, staged and untracked changed path; projected manifests must equal the exact v41 baseline and prior documents remain append-only. Historical v41 authority is retained for regression inputs only; the current successor denies all commit/publication/remote actions regardless of supplied old receipts.
++
++Measure operator snapshot, temporary directory, clone and cleanup separately before repair. Preserve historical hashes, commit/path checks, every assertion, isolated mutable fixtures, cleanup/operator guards, 5000ms and zero retries. Require focused positive/negative/cleanup regressions and all required local gates with exact candidate hashes and timing evidence. Do not infer hosted CI reliability from a local pass. A separate publication package is required before commit/push/PR/merge; no TEST, SQL, provider/LINE, Production, U2, hold/grant/history/accounting reset or Issue closure follows local completion.
+diff --git a/docs/project/OWNER_DECISION_LOG.md b/docs/project/OWNER_DECISION_LOG.md
+index 9fb07d2a9395c6773dc215137067f4f5e6641d04..f99843a056d5900b27d0ca86ba0b3835426bf0b4 100644
+--- a/docs/project/OWNER_DECISION_LOG.md
++++ b/docs/project/OWNER_DECISION_LOG.md
+@@ -1188,0 +1189,32 @@ The downstream PR16 stays Draft and review-only. No default merge, runtime/model
++
++## MP-OD-2026-09-29-V42 — local historical harness repair
++
++Owner approved “อนุมัติซ่อมชุดทดสอบเฉพาะ local” after the scoped proposal, including necessary control transition. Only local measurement, harness performance repair and regression validation are authorized. PR19 is already merged at the exact baseline and its single integration grant is consumed. Read-only GitHub reconciliation observed Issue9/Issue12 OPEN and the actual MP06 merge; no external reconciliation write is authorized. Preserve all historical assertions, hashes, paths, operator/cleanup guards, 5000ms and zero retries. No commit, publication, remote TEST, Production or Issue closure.
++
++```json
++{
++  "version": "2026.09.29-v42",
++  "ownerDecision": "MP-OD-2026-09-29-V42",
++  "supersedes": "2026.09.29-v41",
++  "baseline": "a05bab89bc6d5cdf2914581ed658be86dd00b062",
++  "baselineTree": "7d3ede2902d545092300171faa83fa403f5d3e1e",
++  "sourceCommit": "b1ab0d6ce86487c324df291235d53e86ca5da66e",
++  "publishedParent": "35b67ab87ecd052ab80f450d766c9eabd2991861",
++  "workId": "MP-06",
++  "githubIssue": 12,
++  "stage": "LOCAL_HISTORICAL_HARNESS_REPAIR_ONLY",
++  "targetEnvironment": "LOCAL_ONLY",
++  "integrationPr": 19,
++  "integrationGrant": "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
++  "localImplementation": true,
++  "commit": false,
++  "publication": false,
++  "remoteExecution": false,
++  "production": false,
++  "watchdogMs": 5000,
++  "retries": 0,
++  "invariants": "HISTORICAL_ASSERTIONS_HASHES_PATHS_CLEANUP_OPERATOR_GUARDS_UNCHANGED",
++  "storageHold": "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
++  "forbidden": "RUNTIME_WORKFLOW_DEPENDENCY_COMMIT_PUSH_PR_MERGE_DEPLOY_REMOTE_TEST_PRODUCTION_ISSUE_CLOSE"
++}
++```
+diff --git a/docs/project/ROADMAP_CHANGELOG.md b/docs/project/ROADMAP_CHANGELOG.md
+index c8607948f4f9a7f122e0ec285364735ec80035be..a6bbd2b2f92e46cf06aefe9ea2144fd198bb474e 100644
+--- a/docs/project/ROADMAP_CHANGELOG.md
++++ b/docs/project/ROADMAP_CHANGELOG.md
+@@ -758,0 +759,4 @@ No runtime/model/workflow/dependency changes, PR16/default merge, TEST deploy/ac
++
++## 2026-09-29 — v42 local historical harness repair
++
++MP-OD-2026-09-29-V42 records Owner approval for local diagnosis and repair of the historical test fixture setup, including minimal control transition. The baseline is actual PR19 merge a05bab89bc6d5cdf2914581ed658be86dd00b062; v41's integration grant is consumed. MP06/Issue12 remains CURRENT/OPEN. Keep HEAD at that merge with an uncommitted exact-path overlay; preserve all old records and assertions, 5000ms and zero retries. Tests for historical v41 receive pinned b1ab0d6 inputs while exercising the current dispatcher. Frozen inspectors, runtime/workflow/dependency state, holds and accounting remain unchanged. Local qualification does not authorize commit, push, PR, merge, remote TEST, deployment, Production or closure.
+diff --git a/src/project-control-cli.ts b/src/project-control-cli.ts
+index 64dc6cbca377ac1ec64b0d6d4267fc66880bb832..dcb1ca5f9b28a4d37f3d32e67395262e2bd5f186 100644
+--- a/src/project-control-cli.ts
++++ b/src/project-control-cli.ts
+@@ -3,0 +4,4 @@ import { fileURLToPath } from "node:url";
++import {
++  LOCAL_HARNESS_REPAIR_V42,
++  inspectV42Repository,
++} from "./project-control-v42.js";
+@@ -127,0 +132,24 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
++  if (version === LOCAL_HARNESS_REPAIR_V42.version) {
++    if (process.env.GITHUB_EVENT_NAME === "pull_request")
++      throw new Error("V42_LOCAL_ONLY_PR_ADAPTER_DENIED");
++    const errors = [
++      ...validateProjectControl(roadmap, currentWork).errors,
++      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
++    ];
++    if (errors.length)
++      throw new Error(`ROADMAP_UNVERIFIED:${errors.join(",")}`);
++    const inspected = inspectV42Repository(
++      fileURLToPath(root),
++      projectControlGitExecutable(),
++    );
++    console.log(
++      "Project control validation passed: " +
++        JSON.stringify({
++          ...summarizeProjectAuthority(roadmap, currentWork),
++          repositoryInspection: inspected,
++          sourceState:
++            "LOCAL_UNCOMMITTED_OVERLAY_NOT_HOSTED_CI_OR_PUBLICATION_AUTHORITY",
++        }),
++    );
++    return;
++  }
+@@ -677,0 +706,2 @@ export async function runPullRequestControlValidation(
++  if (work.roadmapVersion === LOCAL_HARNESS_REPAIR_V42.version)
++    throw new Error("V42_LOCAL_ONLY_PR_ADAPTER_DENIED");
+diff --git a/src/project-control.ts b/src/project-control.ts
+index d618b0e4a03adec2400e443e7cd8fbec62942b85..b3d70fa863a5851d101e7ac237c9ac7983d3f349 100644
+--- a/src/project-control.ts
++++ b/src/project-control.ts
+@@ -5,0 +6,6 @@ import { channel } from "node:diagnostics_channel";
++import {
++  LOCAL_HARNESS_REPAIR_V42,
++  V42_ALLOWED_ACTIONS,
++  projectV42ToV41,
++  v42AuthoritySummary,
++} from "./project-control-v42.js";
+@@ -1060,0 +1067,2 @@ export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
++  if (isRecord(roadmap) && roadmap.version === LOCAL_HARNESS_REPAIR_V42.version)
++    return v42AuthoritySummary();
+@@ -1088,0 +1097,7 @@ export function evaluateProjectAction(
++  if (isRecord(roadmap) && roadmap.version === LOCAL_HARNESS_REPAIR_V42.version)
++    return (V42_ALLOWED_ACTIONS as readonly string[]).includes(action)
++      ? { allowed: true, reason: "V42_LOCAL_HARNESS_REPAIR_ONLY" }
++      : {
++          allowed: false,
++          reason: "V42_NO_PUBLICATION_REMOTE_OR_INHERITED_GRANT",
++        };
+@@ -8542,0 +8558,23 @@ export function validateProjectControl(
++  if (
++    isRecord(roadmap) &&
++    roadmap.version === LOCAL_HARNESS_REPAIR_V42.version
++  ) {
++    if (!isRecord(work))
++      return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
++    const c = LOCAL_HARNESS_REPAIR_V42;
++    const valid =
++      work.roadmapVersion === c.version &&
++      JSON.stringify(work.localHarnessRepairV42) === JSON.stringify(c) &&
++      JSON.stringify(roadmap.ownerDecision) ===
++        JSON.stringify({
++          decisionId: c.ownerDecision,
++          decidedAt: "2026-09-29",
++          supersedes: c.supersedes,
++        });
++    const r = structuredClone(roadmap),
++      w = structuredClone(work);
++    projectV42ToV41(r, w);
++    const result = validateProjectControl(r, w);
++    if (!valid) result.errors.push("V42_EXACT_LOCAL_HARNESS_CONTROL_INVALID");
++    return result;
++  }
+@@ -8891,0 +8930,21 @@ export function validateSchemaDocuments(
++  if (version === LOCAL_HARNESS_REPAIR_V42.version) {
++    if (
++      !isRecord(schema) ||
++      !isRecord(schema.properties) ||
++      !Array.isArray(schema.required) ||
++      schema.required.filter((key) => key === "localHarnessRepairV42")
++        .length !== 1 ||
++      JSON.stringify(schema.properties.localHarnessRepairV42) !==
++        JSON.stringify({ const: LOCAL_HARNESS_REPAIR_V42 }) ||
++      JSON.stringify(schema.properties.roadmapVersion) !==
++        JSON.stringify({ const: version })
++    )
++      return ["V42_SCHEMA_NOT_CLOSED"];
++    const projected = structuredClone(schema);
++    projectV42ToV41({ version }, {}, projected);
++    return validateSchemaDocuments(
++      roadmapSchema,
++      projected,
++      LOCAL_HARNESS_REPAIR_V42.supersedes,
++    );
++  }
+@@ -9172,0 +9232,21 @@ export function validateWp8fOwnerDecisionRecord(
++  if (version === LOCAL_HARNESS_REPAIR_V42.version) {
++    if (typeof record !== "string") return false;
++    const sections = record.split("## MP-OD-2026-09-29-V42 —");
++    if (sections.length !== 2) return false;
++    try {
++      const json = sections[1]
++        ?.split("\n## ")[0]
++        ?.match(/```json\s*([\s\S]*?)```/u)?.[1];
++      return (
++        json !== undefined &&
++        JSON.stringify(JSON.parse(json)) ===
++          JSON.stringify(LOCAL_HARNESS_REPAIR_V42) &&
++        validateWp8fOwnerDecisionRecord(
++          record,
++          LOCAL_HARNESS_REPAIR_V42.supersedes,
++        )
++      );
++    } catch {
++      return false;
++    }
++  }
+diff --git a/tests/project-control-integration.test.ts b/tests/project-control-integration.test.ts
+index d5c9cce059d7792e6db82d8fc635f22857708c78..558abc424d76a5802ae97bdca1d8229585bd862f 100644
+--- a/tests/project-control-integration.test.ts
++++ b/tests/project-control-integration.test.ts
+@@ -15 +15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
+-import { describe, expect, it, vi } from "vitest";
++import { afterAll, describe, expect, it, vi } from "vitest";
+@@ -46 +46,36 @@ import {
+-const root = new URL("../", import.meta.url);
++// Preserve every v41 assertion on its actual final source inputs while exercising
++// today's imported dispatcher. The successor overlay must not rewrite history.
++const sourceRoot = new URL("../", import.meta.url);
++const historicalRoot = await mkdtemp(join(tmpdir(), "mp06-v41-regression-"));
++afterAll(async () => {
++  await rm(historicalRoot, { recursive: true, force: true });
++});
++try {
++  execFileSync(
++    projectControlGitExecutable(),
++    [
++      "clone",
++      "--quiet",
++      "--shared",
++      "--no-hardlinks",
++      "--no-checkout",
++      fileURLToPath(sourceRoot),
++      historicalRoot,
++    ],
++    { stdio: "pipe" },
++  );
++  execFileSync(
++    projectControlGitExecutable(),
++    [
++      "checkout",
++      "--quiet",
++      "--detach",
++      "b1ab0d6ce86487c324df291235d53e86ca5da66e",
++    ],
++    { cwd: historicalRoot, stdio: "pipe" },
++  );
++} catch (error) {
++  await rm(historicalRoot, { recursive: true, force: true });
++  throw error;
++}
++const root = pathToFileURL(historicalRoot + "/");
+diff --git a/tests/project-control.test.ts b/tests/project-control.test.ts
+index fc8f35e838423596ef68bd37b696047b0c3238db..7a5c2405a10233be36308fc1a6db1e85a73206f9 100644
+--- a/tests/project-control.test.ts
++++ b/tests/project-control.test.ts
+@@ -7733,0 +7734,9 @@ async function v25CreateHistorical(): Promise<string> {
++type V25ChildOptions = {
++  deferCheckout?: boolean;
++  onPhase?: (
++    phase:
++      | "operator_snapshot_complete"
++      | "temporary_directory_created"
++      | "clone_complete",
++  ) => void;
++};
+@@ -7736 +7745,2 @@ async function v25WithChild<T>(
+-  run: (cwd: string) => Promise<T>,
++  run: (cwd: string) => Promise<T> | T,
++  options: V25ChildOptions = {},
+@@ -7738,0 +7749 @@ async function v25WithChild<T>(
++  options.onPhase?.("operator_snapshot_complete");
+@@ -7740,0 +7752 @@ async function v25WithChild<T>(
++    options.onPhase?.("temporary_directory_created");
+@@ -7745,0 +7758 @@ async function v25WithChild<T>(
++      ...(options.deferCheckout ? ["--no-checkout"] : []),
+@@ -7748,0 +7762 @@ async function v25WithChild<T>(
++    options.onPhase?.("clone_complete");
+@@ -9536,0 +9551 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
++    options: Pick<V25ChildOptions, "deferCheckout"> = {},
+@@ -9548,5 +9563,9 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
+-      await v25WithChild(fixture, async (cwd) => {
+-        mark("isolated_fixture_ready");
+-        await work(cwd, mark);
+-        mark("assertions_complete");
+-      });
++      await v25WithChild(
++        fixture,
++        async (cwd) => {
++          mark("isolated_fixture_ready");
++          await work(cwd, mark);
++          mark("assertions_complete");
++        },
++        { ...options, onPhase: mark },
++      );
+@@ -10119 +10138,48 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
+-      timed("historical_failure", async (cwd, mark) => {
++      timed(
++        "historical_failure",
++        async (cwd, mark) => {
++          child = cwd;
++          // Materialize only the pinned revision, without an intermediate checkout.
++          v25Git(
++            cwd,
++            "checkout",
++            "--quiet",
++            "--detach",
++            v27HistoricalV26Commit,
++          );
++          mark("historical_checkout_complete");
++          v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true);
++          expect(() => v27AssertHistoricalV26(cwd, "HEAD")).toThrow(
++            "V27_HISTORICAL_COMMIT_SUBSTITUTED",
++          );
++          await writeFile(join(cwd, "config/project/current-work.json"), "{}");
++          expect(() =>
++            v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true),
++          ).toThrow("V27_HISTORICAL_BYTES_SUBSTITUTED");
++          mark("negative_assertions_complete");
++          throw new Error("SYNTHETIC_V27_FIXTURE_FAILURE");
++        },
++        { deferCheckout: true },
++      ),
++    ).rejects.toThrow("SYNTHETIC_V27_FIXTURE_FAILURE");
++    expect(existsSync(child)).toBe(false);
++    expect(v25OperatorSnapshot()).toBe(operatorBefore);
++  });
++  it("keeps eager child checkout as the default and removes the fixture after success", async () => {
++    let child = "";
++    await v25WithChild(fixture, (cwd) => {
++      child = cwd;
++      expect(existsSync(join(cwd, "PROJECT_CONTROL.md"))).toBe(true);
++      expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(
++        v25Git(fixture, "rev-parse", "HEAD"),
++      );
++      expect(v25Git(cwd, "status", "--porcelain=v1")).toBe("");
++    });
++    expect(existsSync(child)).toBe(false);
++    expect(v25OperatorSnapshot()).toBe(operatorBefore);
++  });
++  it("defers only child materialization while retaining exact historical objects, bytes and cleanup", async () => {
++    let child = "";
++    await v25WithChild(
++      fixture,
++      (cwd) => {
+@@ -10120,0 +10187,4 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
++        expect(existsSync(join(cwd, "PROJECT_CONTROL.md"))).toBe(false);
++        expect(v25Git(cwd, "rev-parse", "HEAD")).toBe(
++          v25Git(fixture, "rev-parse", "HEAD"),
++        );
+@@ -10123,11 +10193,20 @@ describe("v27 exact provider-hang chain with immutable v26 history", () => {
+-        expect(() => v27AssertHistoricalV26(cwd, "HEAD")).toThrow(
+-          "V27_HISTORICAL_COMMIT_SUBSTITUTED",
+-        );
+-        await writeFile(join(cwd, "config/project/current-work.json"), "{}");
+-        expect(() =>
+-          v27AssertHistoricalV26(cwd, v27HistoricalV26Commit, true),
+-        ).toThrow("V27_HISTORICAL_BYTES_SUBSTITUTED");
+-        mark("negative_assertions_complete");
+-        throw new Error("SYNTHETIC_V27_FIXTURE_FAILURE");
+-      }),
+-    ).rejects.toThrow("SYNTHETIC_V27_FIXTURE_FAILURE");
++        expect(v25Git(cwd, "status", "--porcelain=v1")).toBe("");
++      },
++      { deferCheckout: true },
++    );
++    expect(existsSync(child)).toBe(false);
++    expect(v25OperatorSnapshot()).toBe(operatorBefore);
++  });
++  it("preserves deferred child cleanup and operator guards when the callback fails before checkout", async () => {
++    let child = "";
++    await expect(
++      v25WithChild(
++        fixture,
++        (cwd) => {
++          child = cwd;
++          expect(existsSync(join(cwd, "PROJECT_CONTROL.md"))).toBe(false);
++          throw new Error("SYNTHETIC_DEFERRED_CHILD_FAILURE");
++        },
++        { deferCheckout: true },
++      ),
++    ).rejects.toThrow("SYNTHETIC_DEFERRED_CHILD_FAILURE");
+diff --git a/src/project-control-v42.ts b/src/project-control-v42.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..334a0bc94cdf66179eb7a477667d62a70e8ef185
+--- /dev/null
++++ b/src/project-control-v42.ts
+@@ -0,0 +1,260 @@
++import { execFileSync } from "node:child_process";
++import { existsSync, lstatSync, readFileSync } from "node:fs";
++import { join } from "node:path";
++import { isDeepStrictEqual } from "node:util";
++
++export const LOCAL_HARNESS_REPAIR_V42 = {
++  version: "2026.09.29-v42",
++  ownerDecision: "MP-OD-2026-09-29-V42",
++  supersedes: "2026.09.29-v41",
++  baseline: "a05bab89bc6d5cdf2914581ed658be86dd00b062",
++  baselineTree: "7d3ede2902d545092300171faa83fa403f5d3e1e",
++  sourceCommit: "b1ab0d6ce86487c324df291235d53e86ca5da66e",
++  publishedParent: "35b67ab87ecd052ab80f450d766c9eabd2991861",
++  workId: "MP-06",
++  githubIssue: 12,
++  stage: "LOCAL_HISTORICAL_HARNESS_REPAIR_ONLY",
++  targetEnvironment: "LOCAL_ONLY",
++  integrationPr: 19,
++  integrationGrant: "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
++  localImplementation: true,
++  commit: false,
++  publication: false,
++  remoteExecution: false,
++  production: false,
++  watchdogMs: 5000,
++  retries: 0,
++  invariants:
++    "HISTORICAL_ASSERTIONS_HASHES_PATHS_CLEANUP_OPERATOR_GUARDS_UNCHANGED",
++  storageHold: "UNCHANGED_NO_REPLAY_OR_TRANSPORT_BYPASS",
++  forbidden:
++    "RUNTIME_WORKFLOW_DEPENDENCY_COMMIT_PUSH_PR_MERGE_DEPLOY_REMOTE_TEST_PRODUCTION_ISSUE_CLOSE",
++} as const;
++
++export const V42_ALLOWED_PATHS = [
++  "PROJECT_CONTROL.md",
++  "config/project/roadmap.json",
++  "config/project/current-work.json",
++  "config/project/current-work.schema.json",
++  "src/project-control.ts",
++  "src/project-control-cli.ts",
++  "src/project-control-v42.ts",
++  "tests/project-control-v42.test.ts",
++  "tests/project-control-integration.test.ts",
++  "tests/project-control.test.ts",
++  "docs/project/OWNER_DECISION_LOG.md",
++  "docs/project/ROADMAP_CHANGELOG.md",
++  "docs/project/EXECUTION_GATES.md",
++] as const;
++export const V42_ALLOWED_ACTIONS = [
++  "LOCAL_IMPLEMENTATION",
++  "LOCAL_VALIDATION",
++  "LOCAL_ANALYSIS",
++] as const;
++
++const c = LOCAL_HARNESS_REPAIR_V42;
++const controls = [
++  "config/project/roadmap.json",
++  "config/project/current-work.json",
++  "config/project/current-work.schema.json",
++] as const;
++const appendPaths = [
++  "docs/project/OWNER_DECISION_LOG.md",
++  "docs/project/ROADMAP_CHANGELOG.md",
++  "docs/project/EXECUTION_GATES.md",
++] as const;
++function object(value: unknown): Record<string, unknown> {
++  if (value === null || typeof value !== "object" || Array.isArray(value))
++    throw new Error("V42_OBJECT_REQUIRED");
++  return value as Record<string, unknown>;
++}
++export const v42PathsAllowed = (paths: readonly string[]) =>
++  paths.every((path) =>
++    (V42_ALLOWED_PATHS as readonly string[]).includes(path),
++  );
++
++export function projectV42ToV41(
++  roadmap: Record<string, unknown>,
++  work: Record<string, unknown>,
++  schema?: Record<string, unknown>,
++): void {
++  if (roadmap.version !== c.version) return;
++  roadmap.version = c.supersedes;
++  roadmap.ownerDecision = {
++    decisionId: "MP-OD-2026-09-29-V41",
++    decidedAt: "2026-09-29",
++    supersedes: "2026.09.28-v40",
++  };
++  work.roadmapVersion = c.supersedes;
++  delete work.localHarnessRepairV42;
++  if (schema) {
++    schema.required = (schema.required as string[]).filter(
++      (key) => key !== "localHarnessRepairV42",
++    );
++    const properties = object(schema.properties);
++    delete properties.localHarnessRepairV42;
++    properties.roadmapVersion = { const: c.supersedes };
++  }
++}
++
++export function v42AuthoritySummary() {
++  return {
++    status: c.stage,
++    controlVersion: c.version,
++    ownerDecision: c.ownerDecision,
++    allowedActions: [...V42_ALLOWED_ACTIONS],
++    allowedPaths: [...V42_ALLOWED_PATHS],
++    commitAuthorized: false,
++    publicationAuthorized: false,
++    remoteExecutionAuthorized: false,
++    productionAuthorized: false,
++    integrationGrant: c.integrationGrant,
++    storageHold: c.storageHold,
++    toolPermission: "NOT_EVALUATED",
++    uatReadiness: "NOT_VERIFIED",
++    sourceRoles: {
++      publishedControlBaseline: c.baseline,
++      publishedControlVersion: c.supersedes,
++      runtimeCandidate: "1790da58635edcee154b60d76730248e8130c2d3",
++      evidenceHead: "NOT_OBSERVED_BY_PURE_SUMMARY",
++      deployedVersion: "NOT_OBSERVED_BY_PURE_SUMMARY",
++    },
++  } as const;
++}
++
++/** This package permits an uncommitted local overlay at the actual merge only.
++ * It neither alters the historical v41 inspector nor inherits its spent grant. */
++export function inspectV42Repository(cwd: string, git: string) {
++  const run = (...args: string[]) =>
++    execFileSync(
++      git,
++      ["--no-replace-objects", "--no-optional-locks", ...args],
++      {
++        cwd,
++        encoding: "utf8",
++        maxBuffer: 16 * 1024 * 1024,
++      },
++    );
++  if (run("rev-parse", "--is-shallow-repository").trim() !== "false")
++    throw new Error("V42_FULL_HISTORY_REQUIRED");
++  const gitDirectory = run("rev-parse", "--absolute-git-dir").trim();
++  if (
++    [
++      "index.lock",
++      "MERGE_HEAD",
++      "CHERRY_PICK_HEAD",
++      "REVERT_HEAD",
++      "rebase-merge",
++      "rebase-apply",
++      "sequencer",
++      "BISECT_LOG",
++      "info/grafts",
++    ].some((path) => existsSync(join(gitDirectory, path)))
++  )
++    throw new Error("V42_IN_PROGRESS_OR_GRAFT_STATE");
++  if (run("for-each-ref", "--format=%(refname)", "refs/replace").trim())
++    throw new Error("V42_REPLACEMENT_REFS_REJECTED");
++  const head = run("rev-parse", "HEAD").trim();
++  if (head !== c.baseline)
++    throw new Error("V42_EXACT_UNCOMMITTED_BASELINE_REQUIRED");
++  if (
++    run("rev-parse", "HEAD^{tree}").trim() !== c.baselineTree ||
++    !isDeepStrictEqual(
++      run("rev-list", "--parents", "-n", "1", head).trim().split(" ").slice(1),
++      [c.publishedParent, c.sourceCommit],
++    )
++  )
++    throw new Error("V42_BASELINE_IDENTITY_MISMATCH");
++  const split = (value: string) => value.split("\0").filter(Boolean);
++  // Lower-case tags mean assume-unchanged; S means skip-worktree. Either can
++  // conceal protected working bytes from normal diff/status observations.
++  if (
++    split(run("ls-files", "-v", "-z")).some((entry) => /^[a-zS] /u.test(entry))
++  )
++    throw new Error("V42_HIDDEN_INDEX_FLAGS_REJECTED");
++  const changed = [
++    ...new Set([
++      ...split(run("diff", "--no-renames", "--name-only", "-z", head)),
++      ...split(
++        run("diff", "--cached", "--no-renames", "--name-only", "-z", head),
++      ),
++      ...split(run("ls-files", "--others", "--exclude-standard", "-z")),
++    ]),
++  ];
++  if (!v42PathsAllowed(changed)) throw new Error("V42_PATH_OUTSIDE_SCOPE");
++  for (const path of changed) {
++    const parts = path.split("/");
++    for (let length = 1; length <= parts.length; length++) {
++      const stat = lstatSync(join(cwd, ...parts.slice(0, length)));
++      if (length === parts.length ? !stat.isFile() : !stat.isDirectory())
++        throw new Error("V42_NON_REGULAR_PATH");
++    }
++  }
++  if (
++    changed.length &&
++    split(run("ls-files", "--stage", "-z", "--", ...changed)).some(
++      (entry) => !/^(100644|100755) [a-f0-9]+ 0\t/u.test(entry),
++    )
++  )
++    throw new Error("V42_NON_REGULAR_INDEX_PATH");
++  const baseline = new Map<string, string>();
++  for (const path of [...controls, ...appendPaths, "PROJECT_CONTROL.md"])
++    baseline.set(path, run("show", `${head}:${path}`));
++  const original = (path: string) => {
++    const value = baseline.get(path);
++    if (value === undefined) throw new Error("V42_BASELINE_FILE_MISSING");
++    return value;
++  };
++  const check = (read: (path: string) => string, allowBaseline: boolean) => {
++    const documents = controls.map((path) => object(JSON.parse(read(path))));
++    const [r, w, s] = documents;
++    if (!r || !w || !s) throw new Error("V42_CONTROLS_MISSING");
++    if (allowBaseline && r.version === c.supersedes) {
++      for (const path of [...controls, ...appendPaths, "PROJECT_CONTROL.md"])
++        if (read(path) !== original(path))
++          throw new Error("V42_PARTIAL_BASELINE_INDEX_REJECTED");
++      return;
++    }
++    const properties = object(s.properties);
++    if (
++      r.version !== c.version ||
++      w.roadmapVersion !== c.version ||
++      !isDeepStrictEqual(r.ownerDecision, {
++        decisionId: c.ownerDecision,
++        decidedAt: "2026-09-29",
++        supersedes: c.supersedes,
++      }) ||
++      !isDeepStrictEqual(w.localHarnessRepairV42, c) ||
++      !Array.isArray(s.required) ||
++      s.required.filter((key) => key === "localHarnessRepairV42").length !==
++        1 ||
++      !isDeepStrictEqual(properties.localHarnessRepairV42, { const: c }) ||
++      !isDeepStrictEqual(properties.roadmapVersion, { const: c.version })
++    )
++      throw new Error("V42_EXACT_TRANSITION_REQUIRED");
++    projectV42ToV41(r, w, s);
++    for (const [index, path] of controls.entries())
++      if (!isDeepStrictEqual(documents[index], JSON.parse(original(path))))
++        throw new Error("V42_INHERITED_CONTROL_DRIFT");
++    for (const path of appendPaths)
++      if (!read(path).startsWith(original(path)))
++        throw new Error("V42_HISTORY_REWRITTEN");
++    const header = "# MalisPang Project Control\n\n";
++    if (
++      !read("PROJECT_CONTROL.md").startsWith(header) ||
++      !read("PROJECT_CONTROL.md").endsWith(
++        original("PROJECT_CONTROL.md").slice(header.length),
++      )
++    )
++      throw new Error("V42_CONTROL_HISTORY_REWRITTEN");
++  };
++  check((path) => readFileSync(join(cwd, path), "utf8"), false);
++  check((path) => run("show", `:${path}`), true);
++  return {
++    head,
++    mode: "UNCOMMITTED_LOCAL_OVERLAY" as const,
++    changedPaths: changed.sort(),
++    integrationGrant: c.integrationGrant,
++    remoteExecutionAuthorized: false as const,
++  };
++}
+diff --git a/tests/project-control-v42.test.ts b/tests/project-control-v42.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..d8020e08bfa524f1e01e357b228bec326c8511db
+--- /dev/null
++++ b/tests/project-control-v42.test.ts
+@@ -0,0 +1,314 @@
++import { execFileSync } from "node:child_process";
++import { existsSync, readFileSync } from "node:fs";
++import {
++  copyFile,
++  mkdir,
++  mkdtemp,
++  rm,
++  symlink,
++  writeFile,
++} from "node:fs/promises";
++import { dirname, join } from "node:path";
++import { tmpdir } from "node:os";
++import { fileURLToPath } from "node:url";
++import { describe, expect, it } from "vitest";
++import {
++  evaluateProjectAction,
++  projectControlGitExecutable,
++  summarizeProjectAuthority,
++  validateProjectControl,
++  validateSchemaDocuments,
++  validateWp8fOwnerDecisionRecord,
++} from "../src/project-control.js";
++import { runProjectControlValidation } from "../src/project-control-cli.js";
++import {
++  LOCAL_HARNESS_REPAIR_V42,
++  V42_ALLOWED_ACTIONS,
++  V42_ALLOWED_PATHS,
++  inspectV42Repository,
++  projectV42ToV41,
++  v42PathsAllowed,
++} from "../src/project-control-v42.js";
++
++const root = new URL("../", import.meta.url);
++const c = LOCAL_HARNESS_REPAIR_V42;
++const controls = [
++  "config/project/roadmap.json",
++  "config/project/current-work.json",
++  "config/project/current-work.schema.json",
++] as const;
++const read = (path: string) =>
++  JSON.parse(readFileSync(new URL(path, root), "utf8")) as Record<
++    string,
++    unknown
++  >;
++const git = (cwd: string, ...args: string[]) =>
++  execFileSync(
++    projectControlGitExecutable(),
++    [
++      "--no-replace-objects",
++      "--no-optional-locks",
++      "-c",
++      "core.hooksPath=/dev/null",
++      "-c",
++      "protocol.allow=never",
++      "-c",
++      "protocol.file.allow=always",
++      ...args,
++    ],
++    { cwd, encoding: "utf8", stdio: "pipe" },
++  ).trim();
++const inspect = (cwd: string) =>
++  inspectV42Repository(cwd, projectControlGitExecutable());
++
++async function withFixture(run: (cwd: string) => Promise<void> | void) {
++  const cwd = await mkdtemp(join(tmpdir(), "mp06-v42-regression-"));
++  try {
++    git(
++      fileURLToPath(root),
++      "clone",
++      "--quiet",
++      "--shared",
++      "--no-checkout",
++      fileURLToPath(root),
++      cwd,
++    );
++    git(cwd, "checkout", "--quiet", "--detach", c.baseline);
++    for (const path of V42_ALLOWED_PATHS) {
++      if (!existsSync(new URL(path, root))) continue;
++      await mkdir(dirname(join(cwd, path)), { recursive: true });
++      await copyFile(new URL(path, root), join(cwd, path));
++    }
++    await run(cwd);
++  } finally {
++    await rm(cwd, { recursive: true, force: true });
++    expect(existsSync(cwd)).toBe(false);
++  }
++}
++
++describe("v42 local harness repair over consumed PR19 integration", () => {
++  it("validates the uncommitted overlay and exactly preserves the v41 manifests", async () => {
++    const [r, w, s] = controls.map(read);
++    if (!r || !w || !s) throw new Error("missing fixture controls");
++    expect(validateProjectControl(r, w).errors).toEqual([]);
++    expect(
++      validateSchemaDocuments(
++        read("config/project/roadmap.schema.json"),
++        s,
++        c.version,
++      ),
++    ).toEqual([]);
++    expect(
++      validateWp8fOwnerDecisionRecord(
++        readFileSync(
++          new URL("docs/project/OWNER_DECISION_LOG.md", root),
++          "utf8",
++        ),
++        c.version,
++      ),
++    ).toBe(true);
++    await expect(runProjectControlValidation(root)).resolves.toBeUndefined();
++    expect(summarizeProjectAuthority(r, w)).toMatchObject({
++      status: c.stage,
++      allowedActions: V42_ALLOWED_ACTIONS,
++      integrationGrant: "CONSUMED_AT_BASELINE_NO_REPLACEMENT",
++      commitAuthorized: false,
++      publicationAuthorized: false,
++      remoteExecutionAuthorized: false,
++      productionAuthorized: false,
++    });
++    projectV42ToV41(r, w, s);
++    for (const [index, path] of controls.entries())
++      expect([r, w, s][index]).toEqual(
++        JSON.parse(git(fileURLToPath(root), "show", `${c.baseline}:${path}`)),
++      );
++  });
++
++  it("allows only local actions and never inherits old grants or approval receipts", () => {
++    const [r, w] = controls.map(read);
++    for (const action of V42_ALLOWED_ACTIONS)
++      expect(evaluateProjectAction(r, w, action).allowed).toBe(true);
++    for (const action of [
++      "COMMIT",
++      "PUSH_BRANCH",
++      "UPDATE_GITHUB_ROADMAP",
++      "CREATE_DRAFT_PR",
++      "READY_FOR_REVIEW",
++      "MERGE_MP06_POLICY",
++      "DEPLOY_TEST",
++      "QUERY_STORAGE",
++      "QUERY_PRODUCTION",
++      "CLOSE_ISSUE",
++      "UNKNOWN_ACTION",
++    ])
++      expect(
++        evaluateProjectAction(r, w, action, undefined, {
++          approved: true,
++          kind: "LIVE_GITHUB_INTEGRATION",
++          integrationGrant: "UNUSED",
++        }).allowed,
++        action,
++      ).toBe(false);
++    const changed = structuredClone(w!);
++    (changed.localHarnessRepairV42 as Record<string, unknown>).commit = true;
++    expect(validateProjectControl(r, changed).errors).toContain(
++      "V42_EXACT_LOCAL_HARNESS_CONTROL_INVALID",
++    );
++  });
++
++  it("requires a closed successor schema and exact paths", () => {
++    const schema = read(controls[2]);
++    (schema.properties as Record<string, unknown>).localHarnessRepairV42 = {
++      type: "object",
++    };
++    expect(
++      validateSchemaDocuments(
++        read("config/project/roadmap.schema.json"),
++        schema,
++        c.version,
++      ),
++    ).toContain("V42_SCHEMA_NOT_CLOSED");
++    expect(v42PathsAllowed(["tests/project-control.test.ts"])).toBe(true);
++    for (const path of [
++      "../tests/project-control.test.ts",
++      "tests/unknown.ts",
++      "src/project-control-integration.ts",
++      ".github/workflows/ci.yml",
++      "package.json",
++    ])
++      expect(v42PathsAllowed([path]), path).toBe(false);
++  });
++
++  it("permits only the explicit new untracked regression/module paths", async () => {
++    await withFixture(async (cwd) => {
++      const indexBefore = readFileSync(join(cwd, ".git/index"));
++      expect(inspect(cwd).changedPaths).toContain(
++        "tests/project-control-v42.test.ts",
++      );
++      expect(readFileSync(join(cwd, ".git/index"))).toEqual(indexBefore);
++      await writeFile(
++        join(cwd, "tests/unknown.ts"),
++        "// outside this package\n",
++      );
++      expect(() => inspect(cwd)).toThrow("V42_PATH_OUTSIDE_SCOPE");
++    });
++  });
++
++  it.each(["working", "staged"])(
++    "rejects a protected %s edit even when the other view is clean",
++    async (view) => {
++      await withFixture(async (cwd) => {
++        const path = "worker/index.ts",
++          file = join(cwd, path),
++          original = readFileSync(file);
++        await writeFile(
++          file,
++          Buffer.concat([original, Buffer.from("\n// synthetic drift\n")]),
++        );
++        if (view === "staged") {
++          git(cwd, "add", "--", path);
++          await writeFile(file, original);
++        }
++        expect(() => inspect(cwd)).toThrow("V42_PATH_OUTSIDE_SCOPE");
++      });
++    },
++  );
++
++  it.each([
++    "unknown-control",
++    "unknown-schema",
++    "grant",
++    "history",
++    "partial-index",
++  ])("rejects %s drift", async (variant) => {
++    await withFixture(async (cwd) => {
++      const workPath = join(cwd, controls[1]);
++      if (variant === "history") {
++        await writeFile(
++          join(cwd, "docs/project/OWNER_DECISION_LOG.md"),
++          "rewritten history\n",
++        );
++      } else if (variant === "unknown-schema") {
++        const schemaPath = join(cwd, controls[2]);
++        const schema = JSON.parse(readFileSync(schemaPath, "utf8")) as {
++          properties: Record<string, unknown>;
++        };
++        schema.properties.unapprovedField = { type: "boolean" };
++        await writeFile(schemaPath, JSON.stringify(schema));
++      } else if (variant === "partial-index") {
++        git(cwd, "add", "--", controls[1]);
++      } else {
++        const work = JSON.parse(readFileSync(workPath, "utf8")) as Record<
++          string,
++          unknown
++        >;
++        if (variant === "unknown-control") work.unapprovedField = true;
++        else
++          (
++            work.testPolicyIntegrationV41 as Record<string, unknown>
++          ).maximumIntegrationMerges = 2;
++        await writeFile(workPath, JSON.stringify(work));
++      }
++      expect(() => inspect(cwd)).toThrow(
++        variant === "history"
++          ? "V42_HISTORY_REWRITTEN"
++          : variant === "partial-index"
++            ? "V42_PARTIAL_BASELINE_INDEX_REJECTED"
++            : "V42_INHERITED_CONTROL_DRIFT",
++      );
++    });
++  });
++
++  it("rejects a changed HEAD even when the source tree is identical", async () => {
++    await withFixture((cwd) => {
++      git(cwd, "checkout", "--quiet", "--detach", c.sourceCommit);
++      expect(() => inspect(cwd)).toThrow(
++        "V42_EXACT_UNCOMMITTED_BASELINE_REQUIRED",
++      );
++    });
++  });
++
++  it.each(["--assume-unchanged", "--skip-worktree"])(
++    "rejects a protected working edit hidden by %s",
++    async (flag) => {
++      await withFixture(async (cwd) => {
++        const path = "worker/index.ts",
++          file = join(cwd, path);
++        git(cwd, "update-index", flag, "--", path);
++        await writeFile(
++          file,
++          readFileSync(file, "utf8") + "\n// hidden synthetic drift\n",
++        );
++        expect(git(cwd, "diff", "--name-only", "--", path)).toBe("");
++        expect(() => inspect(cwd)).toThrow("V42_HIDDEN_INDEX_FLAGS_REJECTED");
++      });
++    },
++  );
++
++  it.each(["index.lock", "MERGE_HEAD", "rebase-merge"])(
++    "rejects incomplete Git state %s",
++    async (path) => {
++      await withFixture(async (cwd) => {
++        if (path === "rebase-merge") await mkdir(join(cwd, ".git", path));
++        else await writeFile(join(cwd, ".git", path), c.sourceCommit + "\n");
++        expect(() => inspect(cwd)).toThrow("V42_IN_PROGRESS_OR_GRAFT_STATE");
++      });
++    },
++  );
++
++  it("rejects replacement refs even though object reads disable replacement", async () => {
++    await withFixture((cwd) => {
++      git(cwd, "replace", c.baseline, c.sourceCommit);
++      expect(() => inspect(cwd)).toThrow("V42_REPLACEMENT_REFS_REJECTED");
++    });
++  });
++
++  it("rejects a symlink on an allowed path", async () => {
++    await withFixture(async (cwd) => {
++      const file = join(cwd, "tests/project-control-v42.test.ts");
++      await rm(file);
++      await symlink(join(cwd, "worker/index.ts"), file);
++      expect(() => inspect(cwd)).toThrow("V42_NON_REGULAR_PATH");
++    });
++  });
++});
