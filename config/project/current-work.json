@@ -2,7 +2,7 @@
   "$schema": "./current-work.schema.json",
   "schemaVersion": 1,
   "roadmapId": "MP-ROADMAP",
-  "roadmapVersion": "2026.10.04-v61",
+  "roadmapVersion": "2026.10.12-v65",
   "ciHarnessRepairV48": {
     "version": "2026.09.30-v48",
     "ownerDecision": "MP-OD-2026-09-30-V48",
@@ -536,29 +536,18 @@
   },
   "workId": "MP-06",
   "githubIssue": 12,
-  "currentPhase": "WP8F_TEST_ACCEPTANCE_COMPLETION",
-  "status": "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
+  "currentPhase": "POST_MERGE_CONTROL_RECONCILIATION",
+  "status": "MP06_TEST_CLOSED_REPOSITORY_RECONCILIATION",
   "base": {
-    "commit": "1790da58635edcee154b60d76730248e8130c2d3",
+    "commit": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
     "branch": "codex/mp-06-guardrailed-ai"
   },
-  "implementationBranch": "codex/mp-06-guardrailed-ai",
-  "targetEnvironment": "TEST_ONLY",
-  "authorizedWorkPackage": "WP8F",
+  "implementationBranch": "codex/mp06-control-reconcile",
+  "targetEnvironment": "LOCAL_AND_GITHUB_CONTROL_ONLY",
+  "authorizedWorkPackage": "POST_MERGE_CONTROL_RECONCILIATION",
   "allowedScope": [
-    "MP_06_WP8F_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
-    "TEN_EXACT_CONTROL_PATHS_ONLY",
-    "EXACT_FROZEN_V22_CANDIDATE_DEPLOYMENT_ONCE",
-    "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
-    "ONE_FIXED_SUCCESSOR_ACTIVATION_AFTER_POST_DEPLOY_AND_OWNER_AVAILABILITY",
-    "U2_THEN_U3_THEN_STOP_THEN_U4_OWNER_MOBILE_ONLY",
-    "PRESERVE_PRIMARY_U1_GAP_AND_A1_A3_UNRESOLVED",
-    "PRESERVE_ACCOUNTING_HISTORY_CLAIMS_MARKERS_AND_USED_CLARIFICATION",
-    "AUTHENTICATED_STOP_ON_FAILURE_OR_SILENCE",
-    "COMMIT_PUSH_CHECKPOINTS_AND_APPEND_ISSUE9_ISSUE12",
-    "RUNTIME_DEPENDENCIES_MODEL_PROMPT_POLICY_CATALOG_CHECKSUMS_READ_ONLY",
-    "PRODUCTION_NO_GO_MP12_SEPARATE",
-    "GREPTILE_JSON_EXACT_REVIEWER_CONFIG_ONLY_IN_ADDITION_TO_TEN_CONTROL_PATHS"
+    "CONTROL_SCHEMA_VALIDATOR_TESTS_DOCUMENTATION_ONLY",
+    "EXACT_SHARP_SOURCE_MAP_SECURITY_PATCH_ONLY"
   ],
   "forbiddenScope": [
     "CHANGE_WP1_WP3_BEHAVIOR_OUTSIDE_DETERMINISTIC_PRECEDENCE_OR_DELIVERY_CONTRACT",
@@ -641,7 +630,7 @@
     "RETRY_OR_REPLACE_V22_DEPLOYMENT_OR_ACTIVATION"
   ],
   "authorization": {
-    "localImplementation": false,
+    "localImplementation": true,
     "runtimeWp1": false,
     "benchmarkWp2": false,
     "runtimeRemediationWp3": false,
@@ -664,12 +653,12 @@
     "commit": true,
     "pushBranch": true,
     "githubRoadmapUpdate": true,
-    "testDeploymentAuthorization": true,
+    "testDeploymentAuthorization": false,
     "testDeploymentOccurred": true,
     "testDeployment": false,
     "production": false,
-    "testAcceptanceCompletionWp8f": true,
-    "testDeploymentPreparationWp8f": true
+    "testAcceptanceCompletionWp8f": false,
+    "testDeploymentPreparationWp8f": false
   },
   "wp8fExactDeploymentPreparation": {
     "ownerDecision": "MP-OD-2026-09-09-V19",
@@ -1667,14 +1656,14 @@
   "nextWork": {
     "id": "MP-07",
     "githubIssue": 7,
-    "status": "BLOCKED_PENDING_MP_06_COMPLETION_AND_OWNER_PO_REVIEW"
+    "status": "NOT_STARTED_AWAITING_OWNER_AUTHORIZATION"
   },
   "conflicts": [
     {
-      "code": "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
+      "code": "POST_MERGE_CONTROL_DRIFT",
       "blocking": false,
-      "detail": "Owner merged PR #14 with the full feature history into aad8c5e0ef41c5e47df3d93ae462b9122368c15d before final security/release review; this is not deployment or acceptance.",
-      "resolution": "V22 authorizes only exact TEST deployment and successor U2/U3/STOP/U4 after independent gates. No new PR/merge/closure in this round. PR #14 was earlier integration, not acceptance. Primary U1 GAP and A1-A3 UNRESOLVED remain. Production NO_GO; MP-07 blocked."
+      "detail": "Historical: v63 was accepted and PR20 merged while effective control remained v61; CI145/146 failed.",
+      "resolution": "This control records the accepted closure and merge without renewing grants. Publication requires a separately authorized evidence-bound successor; no new TEST action."
     }
   ],
   "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES",
@@ -3055,5 +3044,118 @@
       "providerWideIdempotence": "UNPROVEN",
       "partialOrUnknown": "CONSUMES_SAME_SINGLE_CLI_GRANT_STOP_METADATA_ONLY"
     }
+  },
+  "postMergeV64": {
+    "version": "2026.10.12-v64",
+    "ownerDecision": "MP-OD-2026-10-10-V64",
+    "supersedes": "2026.10.04-v61",
+    "repository": "Eak-dev/malispang-lineOA",
+    "workId": "MP-06",
+    "githubIssue": 12,
+    "stage": "POST_MERGE_CONTROL_RECONCILIATION",
+    "baseline": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+    "baselineTree": "6f0e031fb4d3f1c8bf2ca7c7c4caf3546bea2c71",
+    "mergeParents": [
+      "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+      "1bb977570729740c7c9125b5b8c7c5e6a58c8f42"
+    ],
+    "acceptedSource": "1bb977570729740c7c9125b5b8c7c5e6a58c8f42",
+    "acceptedParent": "6cb1f431fc395888b249d9e631bc7576617ddbcf",
+    "implementationBranch": "codex/mp06-control-reconcile",
+    "targetBranch": "codex/mp-06-guardrailed-ai",
+    "baselineFieldsSha256": "69f4104507d5ed0e065e9c588e17ba18c4fec83168aff9c3d24ad4d20380070c",
+    "acceptance": {
+      "state": "OWNER_ACCEPTED_TEST_CLOSED",
+      "closureComment": 5987341233,
+      "journalComment": 5987310377,
+      "observedAt": "2026-10-05",
+      "liveState": "NOT_RECHECKED",
+      "artifact": {
+        "bytes": 259870,
+        "sha256": "083d6ecd33551d61522b57073b9e3d0dc7d51eb8d70851cf0bf5ab50fb9870ab",
+        "evidence": "CLAUDE_MAC_RECEIPT_NOT_REPRODUCED_BY_THIS_CONTROL"
+      }
+    },
+    "grants": {
+      "originV57": "CONSUMED_UNKNOWN_STOP",
+      "replacement": "CONSUMED_FAILED_10086",
+      "v62": "CONSUMED_2_OF_2",
+      "v63": "CONSUMED_1_OF_1",
+      "remainingDeployments": 0
+    },
+    "residuals": [
+      "SEPTEMBER_CAUSE_UNKNOWN",
+      "HISTORICAL_U1_GAP_RETAINED_FRESH_U1_PASS_SEPARATE",
+      "A1_A3_UNRESOLVED",
+      "HISTORICAL_BILLING_UNKNOWN",
+      "OWNER_HANDOFF_CLOSE_SLOT_CONSUMED",
+      "FOUR_STALE_TOMBSTONES",
+      "TEST_CHANNEL_SECRET_EXPOSURE_SECURITY_FOLLOWUP"
+    ],
+    "ci": {
+      "run145": 37259387018,
+      "run146": 37259456189,
+      "state": "FAILED_CONTROL_VALIDATION_LATER_SECURITY_GATES_NOT_EXECUTED"
+    },
+    "publication": "REVIEW_REQUIRED_NOT_AUTHORIZED_BY_STRUCTURAL_VALIDATION",
+    "defaultIntegration": "PR16_CLOSED_UNMERGED_DEFAULT_88deb90a",
+    "nextWork": "MP07_NOT_STARTED_AWAITING_OWNER",
+    "production": "NO_GO",
+    "remoteExecution": false,
+    "dependencySecurityAmendment": {
+      "decidedAt": "2026-10-11",
+      "ownerQuote": "แก้ได้เลย",
+      "previousUnpublishedDraft": "2026.10.10-v64",
+      "sharp": {
+        "from": "0.35.4",
+        "to": "0.35.5",
+        "miniflareOverride": true
+      },
+      "sourceMapJs": {
+        "from": "1.2.1",
+        "to": "1.2.2",
+        "exactOverride": true
+      },
+      "libvips": {
+        "from": "1.3.3",
+        "to": "1.3.4",
+        "scope": "SHARP_NATIVE_CLOSURE_ONLY"
+      },
+      "priorAudit": "2026-10-10_HIGH_2_FAIL_NOT_RETROACTIVE_PASS",
+      "allOtherDependencies": "FROZEN_TO_MERGE_BASELINE",
+      "lockfileSha256": "3e2f98d071555a86f178d14b460325cf5624b3e263b235e5b50b90f26817735f",
+      "remoteExecution": false
+    },
+    "reviewRemediationAmendment": {
+      "decidedAt": "2026-10-12",
+      "ownerQuote": "คุณจัดการแก้ไข งานต่อได้เลย",
+      "reviewComment": 6113392025,
+      "previousUnpublishedCandidate": "2026.10.11-v64",
+      "previousTree": "f4323c1c7340f54f9d92d2b755b6c6e31fbc1798",
+      "previousDiffSha256": "4d994aa9fea27e18b0b900a8ad15734c1181916dedf3a01931a29d65ac28c89d",
+      "scope": "ROADMAP_VALIDATOR_CLOSURE_REGRESSION_TESTS_STEADY_STATE_DOCS_ONLY",
+      "publication": "F2_PENDING_NEW_ACTION_SPECIFIC_OWNER_CONTROL",
+      "remoteExecution": false
+    }
+  },
+  "publicationV65": {
+    "version": "2026.10.12-v65",
+    "ownerDecision": "MP-OD-2026-10-12-V65",
+    "supersedes": "2026.10.12-v64",
+    "ownerRelayComment": 6120205691,
+    "ownerQuote": "* อนุมัติ publish คือ commit, push branch codex/mp06-control-reconcile และเปิด Draft PR เข้า codex/mp-06-guardrailed-ai\n* อนุมัติ merge แยกต่างหากภายหลัง\n* ผมแนะนำให้อนุมัติเป็นข้อความชัดเจนทีละเรื่อง เพราะคำว่า \"สั่งแก้ไข ได้เลย\" ครอบคลุมการ publish ด้วยหรือไม่ เป็นเรื่องที่คุณต้องตัดสิน ผลรีวิวของผมให้สิทธิ์แทนไม่ได้    อนุมัติทั้งหมด",
+    "repository": "Eak-dev/malispang-lineOA",
+    "baseline": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+    "headBranch": "codex/mp06-control-reconcile",
+    "baseBranch": "codex/mp-06-guardrailed-ai",
+    "maximumCommits": 1,
+    "maximumPushes": 1,
+    "maximumDraftPullRequests": 1,
+    "normalPushOnly": true,
+    "mergedPr20": "COORDINATION_ONLY_NEVER_REOPEN_OR_PUSH",
+    "laterMerge": "SEPARATE_ACTION_CONTROL_AFTER_HOSTED_CI_AND_POSTPUSH_REVIEW",
+    "defaultIntegration": "OUT_OF_SCOPE_PR16_UNCHANGED",
+    "remoteExecution": false,
+    "production": "NO_GO"
   }
 }

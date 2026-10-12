@@ -4,12 +4,12 @@
   "roadmapId": "MP-ROADMAP",
   "githubIssue": 9,
   "repository": "Eak-dev/malispang-lineOA",
-  "version": "2026.10.04-v61",
-  "status": "ACTIVE",
+  "version": "2026.10.12-v65",
+  "status": "AWAITING_OWNER_NEXT_WORK",
   "ownerDecision": {
-    "decisionId": "MP-OD-2026-10-04-V61",
-    "decidedAt": "2026-10-04",
-    "supersedes": "2026.10.04-v60"
+    "decisionId": "MP-OD-2026-10-12-V65",
+    "decidedAt": "2026-10-12",
+    "supersedes": "2026.10.12-v64"
   },
   "sourceOfTruthPrecedence": [
     "OWNER_DECISION_REPOSITORY_RECORD",
@@ -20,13 +20,13 @@
     "CHAT_CONTEXT_ONLY"
   ],
   "verifiedLatestBaseline": {
-    "commit": "1790da58635edcee154b60d76730248e8130c2d3",
+    "commit": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
     "branch": "codex/mp-06-guardrailed-ai",
-    "verifiedAt": "2026-09-10",
+    "verifiedAt": "2026-10-10",
     "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05", "MP-06"]
   },
   "authorization": {
-    "testDeploymentAuthorization": true,
+    "testDeploymentAuthorization": false,
     "testDeploymentOccurred": true,
     "testDeployment": false,
     "productionStatus": "NO_GO",
@@ -73,7 +73,7 @@
       "id": "MP-06",
       "githubIssue": 12,
       "title": "Guardrailed AI Answer Pilot — TEST",
-      "state": "CURRENT",
+      "state": "COMPLETED",
       "benchmark": {
         "piiFree": true,
         "minimumTotal": 5000,
@@ -137,6 +137,6 @@
     "roadmapIssue": 9,
     "authorizedIssue": 12,
     "nextIssue": 7,
-    "lastVerifiedAt": "2026-09-10"
+    "lastVerifiedAt": "2026-10-10"
   }
 }

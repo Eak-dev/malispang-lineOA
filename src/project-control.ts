@@ -1,4 +1,24 @@
 import {
+  PUBLICATION_V65,
+  validateV65Overlay,
+  projectV65ToV64,
+  validateV65Schemas,
+  projectV65Schemas,
+  validateV65OwnerRecord,
+  v65AuthoritySummary,
+  evaluateV65Action,
+} from "./project-control-v65.js";
+import {
+  POST_MERGE_V64,
+  validateV64Overlay,
+  projectV64ToV61,
+  validateV64Schemas,
+  projectV64Schemas,
+  validateV64OwnerRecord,
+  v64AuthoritySummary,
+  evaluateV64Action,
+} from "./project-control-v64.js";
+import {
   TEST_DEPLOYMENT_V61,
   projectV61ToV60,
   v61AuthoritySummary,
@@ -1152,6 +1172,18 @@ function validateProjectControlInherited(
 export function summarizeProjectAuthority(roadmap: unknown, work: unknown) {
   if (
     isRecord(roadmap) &&
+    roadmap.version === PUBLICATION_V65.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v65AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
+    roadmap.version === POST_MERGE_V64.version &&
+    !validateProjectControl(roadmap, work).errors.length
+  )
+    return v64AuthoritySummary();
+  if (
+    isRecord(roadmap) &&
     roadmap.version === TEST_DEPLOYMENT_V61.version &&
     !validateProjectControl(roadmap, work).errors.length
   )
@@ -1270,6 +1302,14 @@ export function evaluateProjectAction(
   executionEvidence?: unknown,
   sealedCheckout?: unknown,
 ): ProjectActionDecision {
+  if (isRecord(roadmap) && roadmap.version === PUBLICATION_V65.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV65Action(action, executionEvidence);
+  if (isRecord(roadmap) && roadmap.version === POST_MERGE_V64.version)
+    return validateProjectControl(roadmap, currentWork).errors.length
+      ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
+      : evaluateV64Action(action);
   if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V61.version)
     return validateProjectControl(roadmap, currentWork).errors.length
       ? { allowed: false, reason: "ROADMAP_UNVERIFIED" }
@@ -8818,6 +8858,30 @@ export function validateProjectControl(
   roadmap: unknown,
   work: unknown,
 ): ProjectControlValidation {
+  if (isRecord(roadmap) && roadmap.version === PUBLICATION_V65.version) {
+    const errors = validateV65Overlay(roadmap, work);
+    if (!isRecord(work)) return { errors, warnings: [] };
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV65ToV64(r, w);
+    const inherited = validateProjectControl(r, w);
+    return {
+      errors: [...errors, ...inherited.errors],
+      warnings: inherited.warnings,
+    };
+  }
+  if (isRecord(roadmap) && roadmap.version === POST_MERGE_V64.version) {
+    const errors = validateV64Overlay(roadmap, work);
+    if (!isRecord(work)) return { errors, warnings: [] };
+    const r = structuredClone(roadmap),
+      w = structuredClone(work);
+    projectV64ToV61(r, w);
+    const inherited = validateProjectControl(r, w);
+    return {
+      errors: [...errors, ...inherited.errors],
+      warnings: inherited.warnings,
+    };
+  }
   if (isRecord(roadmap) && roadmap.version === TEST_DEPLOYMENT_V61.version) {
     if (!isRecord(work))
       return { errors: ["CURRENT_WORK_MISSING_OR_INVALID"], warnings: [] };
@@ -9528,6 +9592,28 @@ export function validateSchemaDocuments(
   schema: unknown,
   version = "2026.09.09-v19",
 ): string[] {
+  if (version === PUBLICATION_V65.version) {
+    const errors = validateV65Schemas(roadmapSchema, schema);
+    if (!isRecord(roadmapSchema) || !isRecord(schema)) return errors;
+    const r = structuredClone(roadmapSchema),
+      w = structuredClone(schema);
+    projectV65Schemas(r, w);
+    return [
+      ...errors,
+      ...validateSchemaDocuments(r, w, PUBLICATION_V65.supersedes),
+    ];
+  }
+  if (version === POST_MERGE_V64.version) {
+    const errors = validateV64Schemas(roadmapSchema, schema);
+    if (!isRecord(roadmapSchema) || !isRecord(schema)) return errors;
+    const r = structuredClone(roadmapSchema),
+      w = structuredClone(schema);
+    projectV64Schemas(r, w);
+    return [
+      ...errors,
+      ...validateSchemaDocuments(r, w, POST_MERGE_V64.supersedes),
+    ];
+  }
   if (version === TEST_DEPLOYMENT_V61.version) {
     if (
       !isRecord(schema) ||
@@ -10155,6 +10241,16 @@ export function validateWp8fOwnerDecisionRecord(
   record: unknown,
   version = "2026.09.09-v19",
 ): boolean {
+  if (version === PUBLICATION_V65.version)
+    return (
+      validateV65OwnerRecord(record) &&
+      validateWp8fOwnerDecisionRecord(record, PUBLICATION_V65.supersedes)
+    );
+  if (version === POST_MERGE_V64.version)
+    return (
+      validateV64OwnerRecord(record) &&
+      validateWp8fOwnerDecisionRecord(record, POST_MERGE_V64.supersedes)
+    );
   if (version === TEST_DEPLOYMENT_V61.version) {
     if (typeof record !== "string") return false;
     const sections = record.split(

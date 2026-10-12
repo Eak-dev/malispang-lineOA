@@ -1,0 +1,428 @@
+{
+  "work": {
+    "currentPhase": "WP8F_TEST_ACCEPTANCE_COMPLETION",
+    "status": "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
+    "targetEnvironment": "TEST_ONLY",
+    "authorizedWorkPackage": "WP8F",
+    "base": {
+      "commit": "1790da58635edcee154b60d76730248e8130c2d3",
+      "branch": "codex/mp-06-guardrailed-ai"
+    },
+    "implementationBranch": "codex/mp-06-guardrailed-ai",
+    "allowedScope": [
+      "MP_06_WP8F_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY",
+      "TEN_EXACT_CONTROL_PATHS_ONLY",
+      "EXACT_FROZEN_V22_CANDIDATE_DEPLOYMENT_ONCE",
+      "AUTHENTICATED_EXACT_TEST_READ_ONLY_OBSERVATION",
+      "ONE_FIXED_SUCCESSOR_ACTIVATION_AFTER_POST_DEPLOY_AND_OWNER_AVAILABILITY",
+      "U2_THEN_U3_THEN_STOP_THEN_U4_OWNER_MOBILE_ONLY",
+      "PRESERVE_PRIMARY_U1_GAP_AND_A1_A3_UNRESOLVED",
+      "PRESERVE_ACCOUNTING_HISTORY_CLAIMS_MARKERS_AND_USED_CLARIFICATION",
+      "AUTHENTICATED_STOP_ON_FAILURE_OR_SILENCE",
+      "COMMIT_PUSH_CHECKPOINTS_AND_APPEND_ISSUE9_ISSUE12",
+      "RUNTIME_DEPENDENCIES_MODEL_PROMPT_POLICY_CATALOG_CHECKSUMS_READ_ONLY",
+      "PRODUCTION_NO_GO_MP12_SEPARATE",
+      "GREPTILE_JSON_EXACT_REVIEWER_CONFIG_ONLY_IN_ADDITION_TO_TEN_CONTROL_PATHS"
+    ],
+    "authorization": {
+      "localImplementation": false,
+      "runtimeWp1": false,
+      "benchmarkWp2": false,
+      "runtimeRemediationWp3": false,
+      "benchmarkCompletionWp4": false,
+      "localClosureRemediationWp5": false,
+      "testReadinessAssessmentWp6": false,
+      "testReadinessConditionClosureWp6": false,
+      "testReadinessConditionsClosedWp6": true,
+      "aiNluImplementationWp7": false,
+      "aiNluLocalAcceptanceCompleteWp7": true,
+      "runtimePilotControlRemediationWp8a": false,
+      "runtimePilotControlsCompleteWp8a": true,
+      "testDeploymentSmokeRollbackWp8": false,
+      "providerAttemptSettlementRemediationWp8b": false,
+      "providerReconciliationControlledRetestWp8c": false,
+      "durableLifecycleDiagnosticsRemediationWp8d": false,
+      "exactStateReconciliationControlledRetestWp8e": false,
+      "policySnapshot": false,
+      "policySnapshotReadOnly": true,
+      "commit": true,
+      "pushBranch": true,
+      "githubRoadmapUpdate": true,
+      "testDeploymentAuthorization": true,
+      "testDeploymentOccurred": true,
+      "testDeployment": false,
+      "production": false,
+      "testAcceptanceCompletionWp8f": true,
+      "testDeploymentPreparationWp8f": true
+    },
+    "nextWork": {
+      "id": "MP-07",
+      "githubIssue": 7,
+      "status": "BLOCKED_PENDING_MP_06_COMPLETION_AND_OWNER_PO_REVIEW"
+    },
+    "conflicts": [
+      {
+        "code": "INTEGRATION_OCCURRED_BEFORE_FINAL_REVIEW",
+        "blocking": false,
+        "detail": "Owner merged PR #14 with the full feature history into aad8c5e0ef41c5e47df3d93ae462b9122368c15d before final security/release review; this is not deployment or acceptance.",
+        "resolution": "V22 authorizes only exact TEST deployment and successor U2/U3/STOP/U4 after independent gates. No new PR/merge/closure in this round. PR #14 was earlier integration, not acceptance. Primary U1 GAP and A1-A3 UNRESOLVED remain. Production NO_GO; MP-07 blocked."
+      }
+    ],
+    "workingTreePolicy": "CLEAN_OR_PRESERVE_OWNER_CHANGES"
+  },
+  "schema": {
+    "currentPhase": {
+      "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
+    },
+    "status": {
+      "const": "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY"
+    },
+    "targetEnvironment": {
+      "const": "TEST_ONLY"
+    },
+    "authorizedWorkPackage": {
+      "const": "WP8F"
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "branch"],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "implementationBranch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowedScope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localImplementation",
+        "runtimeWp1",
+        "benchmarkWp2",
+        "runtimeRemediationWp3",
+        "benchmarkCompletionWp4",
+        "localClosureRemediationWp5",
+        "testReadinessAssessmentWp6",
+        "testReadinessConditionClosureWp6",
+        "testReadinessConditionsClosedWp6",
+        "aiNluImplementationWp7",
+        "aiNluLocalAcceptanceCompleteWp7",
+        "runtimePilotControlRemediationWp8a",
+        "runtimePilotControlsCompleteWp8a",
+        "testDeploymentSmokeRollbackWp8",
+        "providerAttemptSettlementRemediationWp8b",
+        "providerReconciliationControlledRetestWp8c",
+        "durableLifecycleDiagnosticsRemediationWp8d",
+        "exactStateReconciliationControlledRetestWp8e",
+        "testAcceptanceCompletionWp8f",
+        "testDeploymentPreparationWp8f",
+        "policySnapshot",
+        "policySnapshotReadOnly",
+        "commit",
+        "pushBranch",
+        "githubRoadmapUpdate",
+        "testDeploymentAuthorization",
+        "testDeploymentOccurred",
+        "testDeployment",
+        "production"
+      ],
+      "properties": {
+        "localImplementation": {
+          "const": false
+        },
+        "runtimeWp1": {
+          "const": false
+        },
+        "benchmarkWp2": {
+          "const": false
+        },
+        "runtimeRemediationWp3": {
+          "const": false
+        },
+        "benchmarkCompletionWp4": {
+          "const": false
+        },
+        "localClosureRemediationWp5": {
+          "const": false
+        },
+        "testReadinessAssessmentWp6": {
+          "const": false
+        },
+        "testReadinessConditionClosureWp6": {
+          "const": false
+        },
+        "testReadinessConditionsClosedWp6": {
+          "const": true
+        },
+        "aiNluImplementationWp7": {
+          "const": false
+        },
+        "aiNluLocalAcceptanceCompleteWp7": {
+          "const": true
+        },
+        "runtimePilotControlRemediationWp8a": {
+          "const": false
+        },
+        "runtimePilotControlsCompleteWp8a": {
+          "const": true
+        },
+        "testDeploymentSmokeRollbackWp8": {
+          "const": false
+        },
+        "providerAttemptSettlementRemediationWp8b": {
+          "const": false
+        },
+        "providerReconciliationControlledRetestWp8c": {
+          "const": false
+        },
+        "durableLifecycleDiagnosticsRemediationWp8d": {
+          "const": false
+        },
+        "exactStateReconciliationControlledRetestWp8e": {
+          "const": false
+        },
+        "testAcceptanceCompletionWp8f": {
+          "const": true
+        },
+        "testDeploymentPreparationWp8f": {
+          "const": true
+        },
+        "policySnapshot": {
+          "type": "boolean"
+        },
+        "policySnapshotReadOnly": {
+          "type": "boolean"
+        },
+        "commit": {
+          "type": "boolean"
+        },
+        "pushBranch": {
+          "type": "boolean"
+        },
+        "githubRoadmapUpdate": {
+          "type": "boolean"
+        },
+        "testDeploymentAuthorization": {
+          "const": true
+        },
+        "testDeploymentOccurred": {
+          "const": true
+        },
+        "testDeployment": {
+          "const": false
+        },
+        "production": {
+          "type": "boolean"
+        }
+      }
+    },
+    "nextWork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "githubIssue", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^MP-(0[1-9]|1[0-2])$"
+        },
+        "githubIssue": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "blocking", "detail", "resolution"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolution": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "workingTreePolicy": {
+      "const": "CLEAN_OR_PRESERVE_OWNER_CHANGES"
+    }
+  },
+  "roadmap": {
+    "$schema": "./roadmap.schema.json",
+    "schemaVersion": 1,
+    "roadmapId": "MP-ROADMAP",
+    "githubIssue": 9,
+    "repository": "Eak-dev/malispang-lineOA",
+    "version": "2026.10.04-v61",
+    "status": "ACTIVE",
+    "ownerDecision": {
+      "decisionId": "MP-OD-2026-10-04-V61",
+      "decidedAt": "2026-10-04",
+      "supersedes": "2026.10.04-v60"
+    },
+    "sourceOfTruthPrecedence": [
+      "OWNER_DECISION_REPOSITORY_RECORD",
+      "VERSIONED_ROADMAP_MANIFEST",
+      "CURRENT_WORK_MANIFEST",
+      "GITHUB_ROADMAP_AND_AUTHORIZED_ISSUE",
+      "PHASE_DOCUMENTS_AND_MANIFESTS",
+      "CHAT_CONTEXT_ONLY"
+    ],
+    "verifiedLatestBaseline": {
+      "commit": "1790da58635edcee154b60d76730248e8130c2d3",
+      "branch": "codex/mp-06-guardrailed-ai",
+      "verifiedAt": "2026-09-10",
+      "contains": ["MP-01", "MP-02", "MP-03", "MP-04", "MP-05", "MP-06"]
+    },
+    "authorization": {
+      "testDeploymentAuthorization": true,
+      "testDeploymentOccurred": true,
+      "testDeployment": false,
+      "productionStatus": "NO_GO",
+      "productionAuthorizationReference": null
+    },
+    "items": [
+      {
+        "order": 1,
+        "id": "MP-01",
+        "githubIssue": 8,
+        "title": "Approved Knowledge Base",
+        "state": "COMPLETED"
+      },
+      {
+        "order": 2,
+        "id": "MP-02",
+        "githubIssue": 6,
+        "title": "Conversation UX / Thai Intent Routing",
+        "state": "COMPLETED"
+      },
+      {
+        "order": 3,
+        "id": "MP-03",
+        "githubIssue": 2,
+        "title": "Draft Order",
+        "state": "COMPLETED"
+      },
+      {
+        "order": 4,
+        "id": "MP-04",
+        "githubIssue": 10,
+        "title": "Historical Question Taxonomy / Discovery",
+        "state": "COMPLETED_EVIDENCE"
+      },
+      {
+        "order": 5,
+        "id": "MP-05",
+        "githubIssue": 11,
+        "title": "Versioned Roadmap Governance",
+        "state": "COMPLETED"
+      },
+      {
+        "order": 6,
+        "id": "MP-06",
+        "githubIssue": 12,
+        "title": "Guardrailed AI Answer Pilot — TEST",
+        "state": "CURRENT",
+        "benchmark": {
+          "piiFree": true,
+          "minimumTotal": 5000,
+          "minimumFunctional": 3000,
+          "minimumThaiLanguageVariation": 1000,
+          "minimumAdversarialSafety": 1000,
+          "meaningfullyDistinct": true,
+          "minimumAutoCorrectnessPercent": 98,
+          "riskyStaffOnlyOrFailClosedPercent": 100,
+          "maximumUnsupportedClaims": 0,
+          "maximumPiiOrRawChatLeakage": 0,
+          "authorityFailureFailClosedPercent": 100,
+          "confusionMatrixRequired": true,
+          "falseAutoReportRequired": true
+        }
+      },
+      {
+        "order": 7,
+        "id": "MP-07",
+        "githubIssue": 7,
+        "title": "Staff Stock Confirmation",
+        "state": "PLANNED"
+      },
+      {
+        "order": 8,
+        "id": "MP-08",
+        "githubIssue": 3,
+        "title": "Payment Review / Loyalty Isolation",
+        "state": "COMPLETED"
+      },
+      {
+        "order": 9,
+        "id": "MP-09",
+        "githubIssue": 4,
+        "title": "Staff Operations / Auth / Observability",
+        "state": "PLANNED"
+      },
+      {
+        "order": 10,
+        "id": "MP-10",
+        "githubIssue": 1,
+        "title": "Rich Menu 39 บาท — TEST",
+        "state": "COMPLETED"
+      },
+      {
+        "order": 11,
+        "id": "MP-11",
+        "githubIssue": 13,
+        "title": "Admin Copilot & Conversation Context",
+        "state": "PLANNED_BLOCKED"
+      },
+      {
+        "order": 12,
+        "id": "MP-12",
+        "githubIssue": 5,
+        "title": "Production Readiness / Controlled Rollout",
+        "state": "FINAL_BLOCKED"
+      }
+    ],
+    "externalReferences": {
+      "roadmapIssue": 9,
+      "authorizedIssue": 12,
+      "nextIssue": 7,
+      "lastVerifiedAt": "2026-09-10"
+    }
+  }
+}

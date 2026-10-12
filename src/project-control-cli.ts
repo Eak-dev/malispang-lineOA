@@ -1,3 +1,8 @@
+import { POST_MERGE_V64, inspectV64Repository } from "./project-control-v64.js";
+import {
+  PUBLICATION_V65,
+  inspectV65Repository,
+} from "./project-control-v65.js";
 import {
   TEST_DEPLOYMENT_V61,
   inspectV61Repository,
@@ -208,6 +213,51 @@ export async function runProjectControlValidation(root: URL): Promise<void> {
     throw new Error(
       "ROADMAP_UNVERIFIED: explicit versioned Owner record missing or inconsistent",
     );
+  }
+  if (
+    version === POST_MERGE_V64.version ||
+    version === PUBLICATION_V65.version
+  ) {
+    const errors = [
+      ...validateProjectControl(roadmap, currentWork).errors,
+      ...validateSchemaDocuments(roadmapSchema, currentWorkSchema, version),
+    ];
+    if (errors.length) throw Error("ROADMAP_UNVERIFIED:" + errors.join(","));
+    let event: unknown;
+    if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+      if (
+        !process.env.GITHUB_EVENT_PATH ||
+        process.env.GITHUB_REPOSITORY !== POST_MERGE_V64.repository
+      )
+        throw Error("V64_PR_EVENT_REQUIRED");
+      event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, "utf8"));
+    }
+    const inspected = (
+      version === PUBLICATION_V65.version
+        ? inspectV65Repository
+        : inspectV64Repository
+    )(
+      fileURLToPath(root),
+      projectControlGitExecutable(),
+      event,
+      process.env.GITHUB_EVENT_NAME === undefined
+        ? undefined
+        : {
+            eventName: process.env.GITHUB_EVENT_NAME,
+            repository: process.env.GITHUB_REPOSITORY,
+            sha: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+          },
+    );
+    console.log(
+      "Project control validation passed: " +
+        JSON.stringify({
+          ...summarizeProjectAuthority(roadmap, currentWork),
+          repositoryInspection: inspected,
+          sourceState: "STRUCTURAL_VALIDATION_NOT_PUBLICATION_AUTHORITY",
+        }),
+    );
+    return;
   }
   if (version === TEST_DEPLOYMENT_V61.version) {
     const errors = [
@@ -1588,6 +1638,15 @@ export async function runPullRequestControlValidation(
   const work = JSON.parse(
     await readFile(new URL("config/project/current-work.json", root), "utf8"),
   ) as Record<string, unknown>;
+  if (
+    work.roadmapVersion === POST_MERGE_V64.version ||
+    work.roadmapVersion === PUBLICATION_V65.version
+  ) {
+    if (eventPath !== process.env.GITHUB_EVENT_PATH)
+      throw Error("V64_PR_EVENT_PATH_MISMATCH");
+    await runProjectControlValidation(root);
+    return;
+  }
   if (work.roadmapVersion === TEST_DEPLOYMENT_V61.version) {
     if (eventPath !== process.env.GITHUB_EVENT_PATH)
       throw Error("V61_PR_EVENT_PATH_MISMATCH");

@@ -1,5 +1,7 @@
 # Production Safety
 
+Post-merge publication control2026.10.12-v65 inherits the closed v64 roadmap/security repair. Owner relay6120205691 was independently matched to the human-authored cloud message. Only COMMIT/PUSH_BRANCH/CREATE_PULL_REQUEST are conditional: exact final-tree Mac27/audit0/review and fresh authenticated identity/journal gates, one non-merge child of e67b8d9, one ordinary push of codex/mp06-control-reconcile, one Draft PR into codex/mp-06-guardrailed-ai. Never reopen/push mergedPR20, touch PR16/default/claude branches or reuse consumed grants. Later merge requires a separate action-specific control after hostedCI/postpush review; no merge/deployment/native/LINE/provider/Production action is enabled here. Other roadmap state/root fields, working-tree policy, dependencies except approved sharp/source-map pins, runtime/assets/workflow/toolchain remain frozen. Production NO_GO.
+
 Production `มะลิปัง` เป็นระบบใช้งานจริง ห้ามแก้ไข เปิด API, Publish Rich Menu, Deploy, ส่งข้อความ หรือเปลี่ยน configuration โดยไม่มี Owner approval แยกเฉพาะขั้น Production
 
 # Roadmap Discipline
@@ -28,7 +30,7 @@ Production `มะลิปัง` เป็นระบบใช้งานจ
 ต้องรัน `pnpm validate:project-control` และรายงาน Roadmap version, canonical work ID, GitHub Issue, base commit, scope, target environment, deploy/Production authorization, conflicts และ working-tree status ก่อนแก้ไฟล์
 
 - ใช้ `MP-01`–`MP-12` เป็น canonical IDs และเก็บหมายเลข GitHub Issue เป็น immutable external reference
-- ต้องมี `CURRENT` เพียงหนึ่งรายการ และต้องตรงกับ `current-work.json`
+- ระหว่างทำ milestone ต้องมี `CURRENT` เพียงหนึ่งรายการและตรงกับ `current-work.json`; v64 post-closure reconciliation ใช้สถานะ `AWAITING_OWNER_NEXT_WORK` โดยไม่มี CURRENT, MP-06 COMPLETED และ MP-07 PLANNED จน Owner อนุมัติงานถัดไป
 - Roadmap/current-work หาย ล้าสมัย หรือขัดกับ GitHub/Owner decision ให้หยุดด้วย `ROADMAP_UNVERIFIED`
 - deployment ต้องเป็น `false` โดยปริยายจนมี Owner approval แยกเฉพาะขั้น
 - Production ต้องเป็น `NO_GO` จนมี Owner approval แยกเฉพาะ action และ safety gates ผ่าน
