@@ -20,44 +20,79 @@
     "externalReferences"
   ],
   "properties": {
-    "$schema": { "const": "./roadmap.schema.json" },
-    "schemaVersion": { "const": 1 },
-    "roadmapId": { "const": "MP-ROADMAP" },
-    "githubIssue": { "const": 9 },
-    "repository": { "const": "Eak-dev/malispang-lineOA" },
+    "$schema": {
+      "const": "./roadmap.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "roadmapId": {
+      "const": "MP-ROADMAP"
+    },
+    "githubIssue": {
+      "const": 9
+    },
+    "repository": {
+      "const": "Eak-dev/malispang-lineOA"
+    },
     "version": {
       "type": "string",
       "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-v\\d+$"
     },
-    "status": { "const": "ACTIVE" },
+    "status": {
+      "enum": ["ACTIVE", "AWAITING_OWNER_NEXT_WORK"]
+    },
     "ownerDecision": {
       "type": "object",
       "additionalProperties": false,
       "required": ["decisionId", "decidedAt", "supersedes"],
       "properties": {
-        "decisionId": { "type": "string", "minLength": 1 },
-        "decidedAt": { "type": "string", "format": "date" },
-        "supersedes": { "type": ["string", "null"] }
+        "decisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decidedAt": {
+          "type": "string",
+          "format": "date"
+        },
+        "supersedes": {
+          "type": ["string", "null"]
+        }
       }
     },
     "sourceOfTruthPrecedence": {
       "type": "array",
       "minItems": 6,
       "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "verifiedLatestBaseline": {
       "type": "object",
       "additionalProperties": false,
       "required": ["commit", "branch", "verifiedAt", "contains"],
       "properties": {
-        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-        "branch": { "type": "string", "minLength": 1 },
-        "verifiedAt": { "type": "string", "format": "date" },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date"
+        },
         "contains": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" }
+          "items": {
+            "type": "string",
+            "pattern": "^MP-(0[1-9]|1[0-2])$"
+          }
         }
       }
     },
@@ -72,11 +107,21 @@
         "productionAuthorizationReference"
       ],
       "properties": {
-        "testDeploymentAuthorization": { "type": "boolean" },
-        "testDeploymentOccurred": { "const": true },
-        "testDeployment": { "const": false },
-        "productionStatus": { "enum": ["NO_GO", "GO"] },
-        "productionAuthorizationReference": { "type": ["string", "null"] }
+        "testDeploymentAuthorization": {
+          "type": "boolean"
+        },
+        "testDeploymentOccurred": {
+          "const": true
+        },
+        "testDeployment": {
+          "const": false
+        },
+        "productionStatus": {
+          "enum": ["NO_GO", "GO"]
+        },
+        "productionAuthorizationReference": {
+          "type": ["string", "null"]
+        }
       }
     },
     "items": {
@@ -88,10 +133,23 @@
         "additionalProperties": false,
         "required": ["order", "id", "githubIssue", "title", "state"],
         "properties": {
-          "order": { "type": "integer", "minimum": 1, "maximum": 12 },
-          "id": { "type": "string", "pattern": "^MP-(0[1-9]|1[0-2])$" },
-          "githubIssue": { "type": "integer", "minimum": 1 },
-          "title": { "type": "string", "minLength": 1 },
+          "order": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^MP-(0[1-9]|1[0-2])$"
+          },
+          "githubIssue": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
           "state": {
             "enum": [
               "COMPLETED",
@@ -106,7 +164,10 @@
           "blockedBy": {
             "type": "array",
             "uniqueItems": true,
-            "items": { "type": "string", "minLength": 1 }
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           },
           "benchmark": {
             "type": "object",
@@ -127,9 +188,17 @@
               "falseAutoReportRequired"
             ],
             "properties": {
-              "piiFree": { "const": true },
-              "minimumTotal": { "type": "integer", "minimum": 5000 },
-              "minimumFunctional": { "type": "integer", "minimum": 3000 },
+              "piiFree": {
+                "const": true
+              },
+              "minimumTotal": {
+                "type": "integer",
+                "minimum": 5000
+              },
+              "minimumFunctional": {
+                "type": "integer",
+                "minimum": 3000
+              },
               "minimumThaiLanguageVariation": {
                 "type": "integer",
                 "minimum": 1000
@@ -138,18 +207,32 @@
                 "type": "integer",
                 "minimum": 1000
               },
-              "meaningfullyDistinct": { "const": true },
+              "meaningfullyDistinct": {
+                "const": true
+              },
               "minimumAutoCorrectnessPercent": {
                 "type": "number",
                 "minimum": 98,
                 "maximum": 100
               },
-              "riskyStaffOnlyOrFailClosedPercent": { "const": 100 },
-              "maximumUnsupportedClaims": { "const": 0 },
-              "maximumPiiOrRawChatLeakage": { "const": 0 },
-              "authorityFailureFailClosedPercent": { "const": 100 },
-              "confusionMatrixRequired": { "const": true },
-              "falseAutoReportRequired": { "const": true }
+              "riskyStaffOnlyOrFailClosedPercent": {
+                "const": 100
+              },
+              "maximumUnsupportedClaims": {
+                "const": 0
+              },
+              "maximumPiiOrRawChatLeakage": {
+                "const": 0
+              },
+              "authorityFailureFailClosedPercent": {
+                "const": 100
+              },
+              "confusionMatrixRequired": {
+                "const": true
+              },
+              "falseAutoReportRequired": {
+                "const": true
+              }
             }
           }
         }
@@ -165,10 +248,19 @@
         "lastVerifiedAt"
       ],
       "properties": {
-        "roadmapIssue": { "const": 9 },
-        "authorizedIssue": { "const": 12 },
-        "nextIssue": { "const": 7 },
-        "lastVerifiedAt": { "type": "string", "format": "date" }
+        "roadmapIssue": {
+          "const": 9
+        },
+        "authorizedIssue": {
+          "const": 12
+        },
+        "nextIssue": {
+          "const": 7
+        },
+        "lastVerifiedAt": {
+          "type": "string",
+          "format": "date"
+        }
       }
     }
   }

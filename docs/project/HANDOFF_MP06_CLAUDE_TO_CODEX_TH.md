@@ -1,4 +1,24 @@
-# Current v61 timing successor — implementation, NOT qualification
+# Current v65 — qualified publication prerequisites
+
+Owner approved the quoted commit/push/Draft-PR scope and later-separate-merge line with “อนุมัติทั้งหมด” in this project's existing cloud session; human message independently matched PR20relay6120205691. v65 conditionally permits one non-merge child of e67b8d9, one normal push of codex/mp06-control-reconcile and one Draft PR into codex/mp-06-guardrailed-ai only after fresh exact-stage/actual-commit Mac27, audit0 and exact-source reviews. Fresh target/PR20/Owner/full-journal readbacks and source/index stability are required. No fixture is an action receipt; UNKNOWN consumes the attempted action and stops. HostedCI/postpushPASS precede any separately controlled later merge. No deploy/remote/Production/default/PR16/MP07 authority. The v64 local-only sections below are retained history, not competing current authority.
+
+## Retained v64 — post-merge structural repair
+
+Post-merge control2026.10.12-v64 preserves the Owner-approved exact sharp0.35.5/source-map-js1.2.2 security amendment and sharp native closure, with sealed lockfile. All other roadmap items/root fields and working-tree policy are baseline-pinned. Owner instructed “คุณจัดการแก้ไข งานต่อได้เลย” on2026-10-12 for local RES56 validator/tests/docs remediation. Oct10 auditFAIL and prior Mac/cloud receipts remain historical, not qualification of new bytes. No publication, deployment, MP07 or Production authority.
+
+Owner authorized this repair directly on 2026-10-10: “เริ่มแก้ไขได้เลย”, following “สั่งแก้ไข ได้เลย” and REQ54 PR20comment5987957021. Codex writes the local repair; Claude cloud reviews through PR20. Scope: control/schema/validator/tests/docs against merged v63. No current milestone implementation, TEST remote action or Production authority.
+
+MP-06/#12 is closed completed by Owner (#12comment5987341233). Accepted v63 source1bb977570729740c7c9125b5b8c7c5e6a58c8f42, merge e67b8d973f8dca63de17caf0d74e2cec0b691685, tree6f0e031fb4d3f1c8bf2ca7c7c4caf3546bea2c71. PR16/default integration remains incomplete at 2026-10-10 readback. MP07 is not started.
+
+CI145 failed V61_NEW_SOURCE_REQUIRES_SUCCESSOR_CONTROL; CI146 failed V61_BRANCH_MISMATCH. Node1832/benchmark14/Worker318 passed, but later secret/audit/stability were skipped. Current repair qualification is pending until executed. Prior PASS does not qualify this patch.
+
+Origin-v57 UNKNOWN_STOP and failed replacement are consumed, v62 two-step reset2/2 consumed, v63 deploy1/1 consumed. Do not execute historical recipes below. Fresh UAT accepted in #12comment5987310377; backend/serving state has not been freshly queried by this repair. Historical September UNKNOWN/U1 gap/A1–A3/billing remain; fresh U1 PASS is separate evidence.
+
+Owner's single-use close slot is consumed. Runtime close fix, tombstone cleanup and TEST channel-secret rotation are follow-up items needing their own scope; never recover or publish the exposed value. Publication topology must account for PR20 already being merged. All remote actions denied by v64; Production NO_GO.
+
+RES56CHANGES6113392025: F1 requires full roadmap/working-tree-policy closure; F3 requires steady-state wording; F4 becomes permanent regression tests. F2 is a publication-authority gap, not a test failure. The local patch still has COMMIT/PUSH/CREATE_PR/MERGE denied. A separately authorized publication successor is required before any of those phases. Do not assume generic local repair approval or Claude PASS grants publication. No automatic tracking claim: the old cloud session had unsubscribed; Owner permitted one direct wake-up, ACK6113235971. Claude reports re-subscribe success but event delivery on merged PR20 remains UNVERIFIED. Future requests/results stay in PR20; another direct wake-up is not covered by the consumed one-message exception.
+
+## Retained v61 timing successor — historical
 
 Owner timing amendment received verbatim via PR20comment5979969369 on 2026-10-04: “อนุมัติ: ปรับ testTimeout และ hookTimeout เป็น 30 วินาที (v61) ส่วนอื่นคงเดิม แล้วเดินหน้าต่อได้เลย”. Accepted #12comment5980005086 / #9comment5980005256; scoped technical RES44PASS5980008111, not precommit or deploy qualification. MP06/#12 CURRENT/OPEN, Codex sole writer; Production NO_GO.
 

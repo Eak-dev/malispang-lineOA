@@ -2812,3 +2812,142 @@ No pilot/webhook/UAT authority by this timing change. Later reviewed action-spec
   }
 }
 ```
+
+## MP-OD-2026-10-10-V64 — post-merge control reconciliation
+
+Owner direct instructions: “สั่งแก้ไข ได้เลย” (after the 2026-10-05 audit), then “เริ่มแก้ไขได้เลย” (2026-10-10 ICT). REQ54: https://github.com/Eak-dev/malispang-lineOA/pull/20#issuecomment-5987957021. No repeated approval is requested. This is local repair authority; reviewer response/publication qualification remains pending.
+
+Security amendment, Owner direct approval on2026-10-11 ICT verbatim: “แก้ได้เลย”, replying to the exact sharp0.35.4→0.35.5 and source-map-js1.2.1→1.2.2 proposal. Bump the never-published draft from2026.10.10-v64 to2026.10.11-v64; no Git commit amendment. Only sharp native closure (libvips1.3.3→1.3.4), the existing Miniflare override and one exact source-map-js override may change. Lockfile sealed; all other dependencies/toolchain/workflow/runtime/asset bytes remain frozen. Oct10 audit2HIGH and gate27NOT_EXECUTED are retained, not retroactive PASS. Fresh full qualification and publication review required; no live/deploy authority.
+
+Historical Owner decisions retained by reference: v62 PR20comment5985830594; v63 PR20comment5987069349; TEST closure #12comment5987341233; integration decision PR20comment5987562717. Their receipts are reported historical evidence, not fresh TEST observations or renewed grants. PR20 is actually merged; PR16/default remain pending at current readback.
+
+```json
+{
+  "version": "2026.10.12-v64",
+  "ownerDecision": "MP-OD-2026-10-10-V64",
+  "supersedes": "2026.10.04-v61",
+  "repository": "Eak-dev/malispang-lineOA",
+  "workId": "MP-06",
+  "githubIssue": 12,
+  "stage": "POST_MERGE_CONTROL_RECONCILIATION",
+  "baseline": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+  "baselineTree": "6f0e031fb4d3f1c8bf2ca7c7c4caf3546bea2c71",
+  "mergeParents": [
+    "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+    "1bb977570729740c7c9125b5b8c7c5e6a58c8f42"
+  ],
+  "acceptedSource": "1bb977570729740c7c9125b5b8c7c5e6a58c8f42",
+  "acceptedParent": "6cb1f431fc395888b249d9e631bc7576617ddbcf",
+  "implementationBranch": "codex/mp06-control-reconcile",
+  "targetBranch": "codex/mp-06-guardrailed-ai",
+  "baselineFieldsSha256": "69f4104507d5ed0e065e9c588e17ba18c4fec83168aff9c3d24ad4d20380070c",
+  "acceptance": {
+    "state": "OWNER_ACCEPTED_TEST_CLOSED",
+    "closureComment": 5987341233,
+    "journalComment": 5987310377,
+    "observedAt": "2026-10-05",
+    "liveState": "NOT_RECHECKED",
+    "artifact": {
+      "bytes": 259870,
+      "sha256": "083d6ecd33551d61522b57073b9e3d0dc7d51eb8d70851cf0bf5ab50fb9870ab",
+      "evidence": "CLAUDE_MAC_RECEIPT_NOT_REPRODUCED_BY_THIS_CONTROL"
+    }
+  },
+  "grants": {
+    "originV57": "CONSUMED_UNKNOWN_STOP",
+    "replacement": "CONSUMED_FAILED_10086",
+    "v62": "CONSUMED_2_OF_2",
+    "v63": "CONSUMED_1_OF_1",
+    "remainingDeployments": 0
+  },
+  "residuals": [
+    "SEPTEMBER_CAUSE_UNKNOWN",
+    "HISTORICAL_U1_GAP_RETAINED_FRESH_U1_PASS_SEPARATE",
+    "A1_A3_UNRESOLVED",
+    "HISTORICAL_BILLING_UNKNOWN",
+    "OWNER_HANDOFF_CLOSE_SLOT_CONSUMED",
+    "FOUR_STALE_TOMBSTONES",
+    "TEST_CHANNEL_SECRET_EXPOSURE_SECURITY_FOLLOWUP"
+  ],
+  "ci": {
+    "run145": 37259387018,
+    "run146": 37259456189,
+    "state": "FAILED_CONTROL_VALIDATION_LATER_SECURITY_GATES_NOT_EXECUTED"
+  },
+  "publication": "REVIEW_REQUIRED_NOT_AUTHORIZED_BY_STRUCTURAL_VALIDATION",
+  "defaultIntegration": "PR16_CLOSED_UNMERGED_DEFAULT_88deb90a",
+  "nextWork": "MP07_NOT_STARTED_AWAITING_OWNER",
+  "production": "NO_GO",
+  "remoteExecution": false,
+  "dependencySecurityAmendment": {
+    "decidedAt": "2026-10-11",
+    "ownerQuote": "แก้ได้เลย",
+    "previousUnpublishedDraft": "2026.10.10-v64",
+    "sharp": {
+      "from": "0.35.4",
+      "to": "0.35.5",
+      "miniflareOverride": true
+    },
+    "sourceMapJs": {
+      "from": "1.2.1",
+      "to": "1.2.2",
+      "exactOverride": true
+    },
+    "libvips": {
+      "from": "1.3.3",
+      "to": "1.3.4",
+      "scope": "SHARP_NATIVE_CLOSURE_ONLY"
+    },
+    "priorAudit": "2026-10-10_HIGH_2_FAIL_NOT_RETROACTIVE_PASS",
+    "allOtherDependencies": "FROZEN_TO_MERGE_BASELINE",
+    "lockfileSha256": "3e2f98d071555a86f178d14b460325cf5624b3e263b235e5b50b90f26817735f",
+    "remoteExecution": false
+  },
+  "reviewRemediationAmendment": {
+    "decidedAt": "2026-10-12",
+    "ownerQuote": "คุณจัดการแก้ไข งานต่อได้เลย",
+    "reviewComment": 6113392025,
+    "previousUnpublishedCandidate": "2026.10.11-v64",
+    "previousTree": "f4323c1c7340f54f9d92d2b755b6c6e31fbc1798",
+    "previousDiffSha256": "4d994aa9fea27e18b0b900a8ad15734c1181916dedf3a01931a29d65ac28c89d",
+    "scope": "ROADMAP_VALIDATOR_CLOSURE_REGRESSION_TESTS_STEADY_STATE_DOCS_ONLY",
+    "publication": "F2_PENDING_NEW_ACTION_SPECIFIC_OWNER_CONTROL",
+    "remoteExecution": false
+  }
+}
+```
+
+The no-CURRENT state applies only to Owner-closed MP06 while awaiting next-work authorization. Reconciliation remains attached to MP06 without reopening its accepted UAT or starting MP07. All earlier decisions, failed CI and UNKNOWN outcomes remain intact.
+
+Review-remediation amendment2026-10-12, Owner direct words: “คุณจัดการแก้ไข งานต่อได้เลย”. RES56CHANGES6113392025 is technical review, not publication authority. Close the immutable roadmap snapshot and working-tree policy, add permanent negative guards, and use post-merge steady-state wording. The prior2026.10.11-v64 candidate/treef4323c1c/diff4d994aa9 and its Mac27/cloud evidence remain historical; new bytes need fresh qualification/review. F2 remains pending an action-specific publication successor. No commit/push/PR/merge/deploy grant is inferred.
+
+## MP-OD-2026-10-12-V65 — evidence-bound post-merge publication
+
+Owner message in the existing cloud session was independently read as human-authored, and matches PR20 relay6120205691. Preserve the exact words below; Claude interpretation is not additional authority. The approval is for one non-merge child/normal branch push/Draft PR after fresh final-byte Mac27, audit0 and exact-source PASS. The later merge intent is retained for a separate action-specific control after actual hostedCI/postpush review, not a MERGE grant in this publication control. No default/PR16 integration, deploy, credentials/native/LINE/provider, MP07 or Production. All old grants remain consumed.
+
+> - อนุมัติ publish คือ commit, push branch codex/mp06-control-reconcile และเปิด Draft PR เข้า codex/mp-06-guardrailed-ai
+> - อนุมัติ merge แยกต่างหากภายหลัง
+> - ผมแนะนำให้อนุมัติเป็นข้อความชัดเจนทีละเรื่อง เพราะคำว่า "สั่งแก้ไข ได้เลย" ครอบคลุมการ publish ด้วยหรือไม่ เป็นเรื่องที่คุณต้องตัดสิน ผลรีวิวของผมให้สิทธิ์แทนไม่ได้ อนุมัติทั้งหมด
+
+```json
+{
+  "version": "2026.10.12-v65",
+  "ownerDecision": "MP-OD-2026-10-12-V65",
+  "supersedes": "2026.10.12-v64",
+  "ownerRelayComment": 6120205691,
+  "ownerQuote": "* อนุมัติ publish คือ commit, push branch codex/mp06-control-reconcile และเปิด Draft PR เข้า codex/mp-06-guardrailed-ai\n* อนุมัติ merge แยกต่างหากภายหลัง\n* ผมแนะนำให้อนุมัติเป็นข้อความชัดเจนทีละเรื่อง เพราะคำว่า \"สั่งแก้ไข ได้เลย\" ครอบคลุมการ publish ด้วยหรือไม่ เป็นเรื่องที่คุณต้องตัดสิน ผลรีวิวของผมให้สิทธิ์แทนไม่ได้    อนุมัติทั้งหมด",
+  "repository": "Eak-dev/malispang-lineOA",
+  "baseline": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+  "headBranch": "codex/mp06-control-reconcile",
+  "baseBranch": "codex/mp-06-guardrailed-ai",
+  "maximumCommits": 1,
+  "maximumPushes": 1,
+  "maximumDraftPullRequests": 1,
+  "normalPushOnly": true,
+  "mergedPr20": "COORDINATION_ONLY_NEVER_REOPEN_OR_PUSH",
+  "laterMerge": "SEPARATE_ACTION_CONTROL_AFTER_HOSTED_CI_AND_POSTPUSH_REVIEW",
+  "defaultIntegration": "OUT_OF_SCOPE_PR16_UNCHANGED",
+  "remoteExecution": false,
+  "production": "NO_GO"
+}
+```

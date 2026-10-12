@@ -4,7 +4,7 @@ import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   TEST_DEPLOYMENT_V61 as c,
   V61_ALLOWED_PATHS,
@@ -21,7 +21,7 @@ import {
   summarizeProjectAuthority,
 } from "../src/project-control.js";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const operatorRoot = fileURLToPath(new URL("../", import.meta.url));
 const git = (cwd: string, ...args: string[]) =>
   execFileSync(
     "git",
@@ -49,6 +49,63 @@ const git = (cwd: string, ...args: string[]) =>
       stdio: ["pipe", "pipe", "pipe"],
     },
   ).trim();
+// Original v61 assertions run against immutable published v61, never active v64.
+const operatorBefore = {
+  head: git(operatorRoot, "rev-parse", "HEAD"),
+  index: readFileSync(
+    join(git(operatorRoot, "rev-parse", "--absolute-git-dir"), "index"),
+  ),
+  status: git(
+    operatorRoot,
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+  ),
+};
+const root = await mkdtemp(join(tmpdir(), "mp06-v61-published-"));
+afterAll(async () => {
+  await rm(root, { recursive: true, force: true });
+  expect(existsSync(root)).toBe(false);
+  expect(git(operatorRoot, "rev-parse", "HEAD")).toBe(operatorBefore.head);
+  expect(
+    readFileSync(
+      join(git(operatorRoot, "rev-parse", "--absolute-git-dir"), "index"),
+    ),
+  ).toEqual(operatorBefore.index);
+  expect(
+    git(operatorRoot, "status", "--porcelain=v1", "--untracked-files=all"),
+  ).toBe(operatorBefore.status);
+});
+try {
+  git(
+    operatorRoot,
+    "clone",
+    "--quiet",
+    "--shared",
+    "--no-hardlinks",
+    "--no-checkout",
+    operatorRoot,
+    root,
+  );
+  git(
+    root,
+    "checkout",
+    "--quiet",
+    "-B",
+    c.headBranch,
+    "6cb1f431fc395888b249d9e631bc7576617ddbcf",
+  );
+  git(
+    root,
+    "remote",
+    "set-url",
+    "origin",
+    "https://github.com/" + c.repository + ".git",
+  );
+} catch (error) {
+  await rm(root, { recursive: true, force: true });
+  throw error;
+}
 const state = () => ({
   head: git(root, "rev-parse", "HEAD"),
   index: readFileSync(

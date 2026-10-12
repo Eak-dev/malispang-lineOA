@@ -1,5 +1,27 @@
 # MalisPang Project Control
 
+## Effective v65 — evidence-bound post-merge publication
+
+Owner human-authored cloud decision “อนุมัติทั้งหมด”, with the quoted commit/push/Draft-PR and later-separate-merge lines, was independently read and matches PR20relay6120205691. Control2026.10.12-v65 inherits the completed TEST closure and exact security/roadmap repair. COMMIT, PUSH_BRANCH and CREATE_PULL_REQUEST are conditional only: real exact-byte Mac27, zero-all-severity fresh audit, exact-source Claude PASS, stable source/index and fresh target/PR20/Owner/journal readback. Every action is single-use; UNKNOWN stops, never blind replay. One non-merge child of e67b8d9, normal new repair-branch push, Draft PR into the unchanged feature target; no mergedPR20 reuse, default/PR16 or claude branch integration.
+
+Later merge intent is retained, but MERGE/Ready require a separately reviewed action-specific successor after hostedCI all-success and exact postpush PASS. No new approval is fabricated or requested for already accepted local repair/publication. This is a structural prerequisite model, not actual qualification/publication evidence. Deploy/native/credentials/LINE/provider/MP07/Production remain forbidden; all old native grants consumed. Historical v64 sections below retain their former local-only scope and do not override v65.
+
+## Effective post-merge reconciliation — v64
+
+Post-merge control2026.10.12-v64 records accepted closure/merge and Owner's exact security approval “แก้ได้เลย” on2026-10-11: sharp0.35.5 (direct + existing Miniflare override/native libvips1.3.4) and source-map-js1.2.2, with sealed lockfile. Owner's2026-10-12 instruction “คุณจัดการแก้ไข งานต่อได้เลย” covers local RES56 remediation. Pin the complete baseline roadmap with only MP06 COMPLETED, and preserve working-tree policy. All other dependency/runtime/config/workflow/model/caps and tracked assets remain frozen. Historical CI145/146 FAIL, Oct10 auditFAIL and prior qualification receipts stay historical, never inherited by changed bytes. No publication/deploy/Production authority is added.
+
+Owner instructed “สั่งแก้ไข ได้เลย” after the merge audit and “เริ่มแก้ไขได้เลย” on 2026-10-10 ICT. This permits local control/schema/validator/tests/documentation repair. MP-06 TEST acceptance is Owner-closed (#12comment5987341233); no active roadmap milestone is authorized. MP-07 remains PLANNED, awaiting a separate Owner decision.
+
+Accepted v63 source 1bb977570729740c7c9125b5b8c7c5e6a58c8f42 is merged by PR20 as e67b8d973f8dca63de17caf0d74e2cec0b691685, with identical tree 6f0e031fb4d3f1c8bf2ca7c7c4caf3546bea2c71. PR16 remains closed/unmerged and default remains 88deb90a at the 2026-10-10 readback. CI145/146 failed current control validation; later secret/audit/stability checks were NOT_EXECUTED.
+
+v64 freezes every non-allowlisted tracked path to the accepted merge baseline. Historical v61 controls/tests remain immutable evidence, not reusable grants. All original/replacement/v62/v63 deployment rights are consumed. Effective v64 action checks permit local repair/validation/analysis only; publication and integration require exact-source review. Runtime, TEST credentials/state, deployment, pilot, LINE and Production are outside this repair.
+
+The control-drift conflict records a historical failure, not a permanent blocking assertion in the repaired steady state. Source qualification/review still precede any separately authorized publication. F2 remains unresolved by local repair: no conditional publication action is enabled. A future successor must bind at most one non-merge child of e67b8d9, one normal push of codex/mp06-control-reconcile and one Draft PR into codex/mp-06-guardrailed-ai at that exact baseline to real Mac27/audit0 and exact-tree/commit reviews. Target/default/merged-PR20/claude branches, PR16, merge and live operations remain out of scope; do not implement or execute that proposal without action-specific Owner authority.
+
+Fresh U1/U2/U3/STOP/U4 and close acceptance are reported in #12comment5987310377/5987341233, not new live observations. September UNKNOWN, historical U1 GAP, A1–A3 and historical billing unresolved remain historical facts. Owner close slot is consumed; four tombstones and TEST channel-secret exposure require later scoped follow-up. No secret value is retained here. Production NO_GO.
+
+All “Effective”/“Current” headings below describe retained historical controls superseded by v64.
+
 ## Effective Owner test and hook timing amendment — v61
 
 Owner timing amendment received verbatim via PR20comment5979969369 on 2026-10-04: “อนุมัติ: ปรับ testTimeout และ hookTimeout เป็น 30 วินาที (v61) ส่วนอื่นคงเดิม แล้วเดินหน้าต่อได้เลย”. Accepted #12comment5980005086 / #9comment5980005256; scoped technical RES44PASS5980008111, not precommit or deploy qualification. MP06/#12 CURRENT/OPEN, Codex sole writer; Production NO_GO.

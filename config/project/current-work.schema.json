@@ -82,7 +82,9 @@
     "testDeploymentV58",
     "testDeploymentV59",
     "testDeploymentV60",
-    "testDeploymentV61"
+    "testDeploymentV61",
+    "postMergeV64",
+    "publicationV65"
   ],
   "properties": {
     "ciHarnessRepairV48": {
@@ -941,7 +943,7 @@
       "const": "MP-ROADMAP"
     },
     "roadmapVersion": {
-      "const": "2026.10.04-v61"
+      "const": "2026.10.12-v65"
     },
     "workId": {
       "type": "string",
@@ -952,44 +954,31 @@
       "minimum": 1
     },
     "currentPhase": {
-      "const": "WP8F_TEST_ACCEPTANCE_COMPLETION"
+      "const": "POST_MERGE_CONTROL_RECONCILIATION"
     },
     "status": {
-      "const": "AUTHORIZED_EXACT_V22_TEST_DEPLOYMENT_AND_SUCCESSOR_UAT_ONLY"
+      "const": "MP06_TEST_CLOSED_REPOSITORY_RECONCILIATION"
     },
     "base": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["commit", "branch"],
-      "properties": {
-        "commit": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{40}$"
-        },
-        "branch": {
-          "type": "string",
-          "minLength": 1
-        }
+      "const": {
+        "commit": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+        "branch": "codex/mp-06-guardrailed-ai"
       }
     },
     "implementationBranch": {
-      "type": "string",
-      "minLength": 1
+      "const": "codex/mp06-control-reconcile"
     },
     "targetEnvironment": {
-      "const": "TEST_ONLY"
+      "const": "LOCAL_AND_GITHUB_CONTROL_ONLY"
     },
     "authorizedWorkPackage": {
-      "const": "WP8F"
+      "const": "POST_MERGE_CONTROL_RECONCILIATION"
     },
     "allowedScope": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
+      "const": [
+        "CONTROL_SCHEMA_VALIDATOR_TESTS_DOCUMENTATION_ONLY",
+        "EXACT_SHARP_SOURCE_MAP_SECURITY_PATCH_ONLY"
+      ]
     },
     "forbiddenScope": {
       "type": "array",
@@ -1001,127 +990,36 @@
       }
     },
     "authorization": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "localImplementation",
-        "runtimeWp1",
-        "benchmarkWp2",
-        "runtimeRemediationWp3",
-        "benchmarkCompletionWp4",
-        "localClosureRemediationWp5",
-        "testReadinessAssessmentWp6",
-        "testReadinessConditionClosureWp6",
-        "testReadinessConditionsClosedWp6",
-        "aiNluImplementationWp7",
-        "aiNluLocalAcceptanceCompleteWp7",
-        "runtimePilotControlRemediationWp8a",
-        "runtimePilotControlsCompleteWp8a",
-        "testDeploymentSmokeRollbackWp8",
-        "providerAttemptSettlementRemediationWp8b",
-        "providerReconciliationControlledRetestWp8c",
-        "durableLifecycleDiagnosticsRemediationWp8d",
-        "exactStateReconciliationControlledRetestWp8e",
-        "testAcceptanceCompletionWp8f",
-        "testDeploymentPreparationWp8f",
-        "policySnapshot",
-        "policySnapshotReadOnly",
-        "commit",
-        "pushBranch",
-        "githubRoadmapUpdate",
-        "testDeploymentAuthorization",
-        "testDeploymentOccurred",
-        "testDeployment",
-        "production"
-      ],
-      "properties": {
-        "localImplementation": {
-          "const": false
-        },
-        "runtimeWp1": {
-          "const": false
-        },
-        "benchmarkWp2": {
-          "const": false
-        },
-        "runtimeRemediationWp3": {
-          "const": false
-        },
-        "benchmarkCompletionWp4": {
-          "const": false
-        },
-        "localClosureRemediationWp5": {
-          "const": false
-        },
-        "testReadinessAssessmentWp6": {
-          "const": false
-        },
-        "testReadinessConditionClosureWp6": {
-          "const": false
-        },
-        "testReadinessConditionsClosedWp6": {
-          "const": true
-        },
-        "aiNluImplementationWp7": {
-          "const": false
-        },
-        "aiNluLocalAcceptanceCompleteWp7": {
-          "const": true
-        },
-        "runtimePilotControlRemediationWp8a": {
-          "const": false
-        },
-        "runtimePilotControlsCompleteWp8a": {
-          "const": true
-        },
-        "testDeploymentSmokeRollbackWp8": {
-          "const": false
-        },
-        "providerAttemptSettlementRemediationWp8b": {
-          "const": false
-        },
-        "providerReconciliationControlledRetestWp8c": {
-          "const": false
-        },
-        "durableLifecycleDiagnosticsRemediationWp8d": {
-          "const": false
-        },
-        "exactStateReconciliationControlledRetestWp8e": {
-          "const": false
-        },
-        "testAcceptanceCompletionWp8f": {
-          "const": true
-        },
-        "testDeploymentPreparationWp8f": {
-          "const": true
-        },
-        "policySnapshot": {
-          "type": "boolean"
-        },
-        "policySnapshotReadOnly": {
-          "type": "boolean"
-        },
-        "commit": {
-          "type": "boolean"
-        },
-        "pushBranch": {
-          "type": "boolean"
-        },
-        "githubRoadmapUpdate": {
-          "type": "boolean"
-        },
-        "testDeploymentAuthorization": {
-          "const": true
-        },
-        "testDeploymentOccurred": {
-          "const": true
-        },
-        "testDeployment": {
-          "const": false
-        },
-        "production": {
-          "type": "boolean"
-        }
+      "const": {
+        "localImplementation": true,
+        "runtimeWp1": false,
+        "benchmarkWp2": false,
+        "runtimeRemediationWp3": false,
+        "benchmarkCompletionWp4": false,
+        "localClosureRemediationWp5": false,
+        "testReadinessAssessmentWp6": false,
+        "testReadinessConditionClosureWp6": false,
+        "testReadinessConditionsClosedWp6": true,
+        "aiNluImplementationWp7": false,
+        "aiNluLocalAcceptanceCompleteWp7": true,
+        "runtimePilotControlRemediationWp8a": false,
+        "runtimePilotControlsCompleteWp8a": true,
+        "testDeploymentSmokeRollbackWp8": false,
+        "providerAttemptSettlementRemediationWp8b": false,
+        "providerReconciliationControlledRetestWp8c": false,
+        "durableLifecycleDiagnosticsRemediationWp8d": false,
+        "exactStateReconciliationControlledRetestWp8e": false,
+        "policySnapshot": false,
+        "policySnapshotReadOnly": true,
+        "commit": true,
+        "pushBranch": true,
+        "githubRoadmapUpdate": true,
+        "testDeploymentAuthorization": false,
+        "testDeploymentOccurred": true,
+        "testDeployment": false,
+        "production": false,
+        "testAcceptanceCompletionWp8f": false,
+        "testDeploymentPreparationWp8f": false
       }
     },
     "policySnapshotReference": {
@@ -3998,48 +3896,21 @@
       }
     },
     "nextWork": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "githubIssue", "status"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^MP-(0[1-9]|1[0-2])$"
-        },
-        "githubIssue": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "status": {
-          "type": "string",
-          "minLength": 1
-        }
+      "const": {
+        "id": "MP-07",
+        "githubIssue": 7,
+        "status": "NOT_STARTED_AWAITING_OWNER_AUTHORIZATION"
       }
     },
     "conflicts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["code", "blocking", "detail", "resolution"],
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1
-          },
-          "blocking": {
-            "type": "boolean"
-          },
-          "detail": {
-            "type": "string",
-            "minLength": 1
-          },
-          "resolution": {
-            "type": "string",
-            "minLength": 1
-          }
+      "const": [
+        {
+          "code": "POST_MERGE_CONTROL_DRIFT",
+          "blocking": false,
+          "detail": "Historical: v63 was accepted and PR20 merged while effective control remained v61; CI145/146 failed.",
+          "resolution": "This control records the accepted closure and merge without renewing grants. Publication requires a separately authorized evidence-bound successor; no new TEST action."
         }
-      }
+      ]
     },
     "workingTreePolicy": {
       "const": "CLEAN_OR_PRESERVE_OWNER_CHANGES"
@@ -5201,6 +5072,123 @@
           "providerWideIdempotence": "UNPROVEN",
           "partialOrUnknown": "CONSUMES_SAME_SINGLE_CLI_GRANT_STOP_METADATA_ONLY"
         }
+      }
+    },
+    "postMergeV64": {
+      "const": {
+        "version": "2026.10.12-v64",
+        "ownerDecision": "MP-OD-2026-10-10-V64",
+        "supersedes": "2026.10.04-v61",
+        "repository": "Eak-dev/malispang-lineOA",
+        "workId": "MP-06",
+        "githubIssue": 12,
+        "stage": "POST_MERGE_CONTROL_RECONCILIATION",
+        "baseline": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+        "baselineTree": "6f0e031fb4d3f1c8bf2ca7c7c4caf3546bea2c71",
+        "mergeParents": [
+          "a05bab89bc6d5cdf2914581ed658be86dd00b062",
+          "1bb977570729740c7c9125b5b8c7c5e6a58c8f42"
+        ],
+        "acceptedSource": "1bb977570729740c7c9125b5b8c7c5e6a58c8f42",
+        "acceptedParent": "6cb1f431fc395888b249d9e631bc7576617ddbcf",
+        "implementationBranch": "codex/mp06-control-reconcile",
+        "targetBranch": "codex/mp-06-guardrailed-ai",
+        "baselineFieldsSha256": "69f4104507d5ed0e065e9c588e17ba18c4fec83168aff9c3d24ad4d20380070c",
+        "acceptance": {
+          "state": "OWNER_ACCEPTED_TEST_CLOSED",
+          "closureComment": 5987341233,
+          "journalComment": 5987310377,
+          "observedAt": "2026-10-05",
+          "liveState": "NOT_RECHECKED",
+          "artifact": {
+            "bytes": 259870,
+            "sha256": "083d6ecd33551d61522b57073b9e3d0dc7d51eb8d70851cf0bf5ab50fb9870ab",
+            "evidence": "CLAUDE_MAC_RECEIPT_NOT_REPRODUCED_BY_THIS_CONTROL"
+          }
+        },
+        "grants": {
+          "originV57": "CONSUMED_UNKNOWN_STOP",
+          "replacement": "CONSUMED_FAILED_10086",
+          "v62": "CONSUMED_2_OF_2",
+          "v63": "CONSUMED_1_OF_1",
+          "remainingDeployments": 0
+        },
+        "residuals": [
+          "SEPTEMBER_CAUSE_UNKNOWN",
+          "HISTORICAL_U1_GAP_RETAINED_FRESH_U1_PASS_SEPARATE",
+          "A1_A3_UNRESOLVED",
+          "HISTORICAL_BILLING_UNKNOWN",
+          "OWNER_HANDOFF_CLOSE_SLOT_CONSUMED",
+          "FOUR_STALE_TOMBSTONES",
+          "TEST_CHANNEL_SECRET_EXPOSURE_SECURITY_FOLLOWUP"
+        ],
+        "ci": {
+          "run145": 37259387018,
+          "run146": 37259456189,
+          "state": "FAILED_CONTROL_VALIDATION_LATER_SECURITY_GATES_NOT_EXECUTED"
+        },
+        "publication": "REVIEW_REQUIRED_NOT_AUTHORIZED_BY_STRUCTURAL_VALIDATION",
+        "defaultIntegration": "PR16_CLOSED_UNMERGED_DEFAULT_88deb90a",
+        "nextWork": "MP07_NOT_STARTED_AWAITING_OWNER",
+        "production": "NO_GO",
+        "remoteExecution": false,
+        "dependencySecurityAmendment": {
+          "decidedAt": "2026-10-11",
+          "ownerQuote": "แก้ได้เลย",
+          "previousUnpublishedDraft": "2026.10.10-v64",
+          "sharp": {
+            "from": "0.35.4",
+            "to": "0.35.5",
+            "miniflareOverride": true
+          },
+          "sourceMapJs": {
+            "from": "1.2.1",
+            "to": "1.2.2",
+            "exactOverride": true
+          },
+          "libvips": {
+            "from": "1.3.3",
+            "to": "1.3.4",
+            "scope": "SHARP_NATIVE_CLOSURE_ONLY"
+          },
+          "priorAudit": "2026-10-10_HIGH_2_FAIL_NOT_RETROACTIVE_PASS",
+          "allOtherDependencies": "FROZEN_TO_MERGE_BASELINE",
+          "lockfileSha256": "3e2f98d071555a86f178d14b460325cf5624b3e263b235e5b50b90f26817735f",
+          "remoteExecution": false
+        },
+        "reviewRemediationAmendment": {
+          "decidedAt": "2026-10-12",
+          "ownerQuote": "คุณจัดการแก้ไข งานต่อได้เลย",
+          "reviewComment": 6113392025,
+          "previousUnpublishedCandidate": "2026.10.11-v64",
+          "previousTree": "f4323c1c7340f54f9d92d2b755b6c6e31fbc1798",
+          "previousDiffSha256": "4d994aa9fea27e18b0b900a8ad15734c1181916dedf3a01931a29d65ac28c89d",
+          "scope": "ROADMAP_VALIDATOR_CLOSURE_REGRESSION_TESTS_STEADY_STATE_DOCS_ONLY",
+          "publication": "F2_PENDING_NEW_ACTION_SPECIFIC_OWNER_CONTROL",
+          "remoteExecution": false
+        }
+      }
+    },
+    "publicationV65": {
+      "const": {
+        "version": "2026.10.12-v65",
+        "ownerDecision": "MP-OD-2026-10-12-V65",
+        "supersedes": "2026.10.12-v64",
+        "ownerRelayComment": 6120205691,
+        "ownerQuote": "* อนุมัติ publish คือ commit, push branch codex/mp06-control-reconcile และเปิด Draft PR เข้า codex/mp-06-guardrailed-ai\n* อนุมัติ merge แยกต่างหากภายหลัง\n* ผมแนะนำให้อนุมัติเป็นข้อความชัดเจนทีละเรื่อง เพราะคำว่า \"สั่งแก้ไข ได้เลย\" ครอบคลุมการ publish ด้วยหรือไม่ เป็นเรื่องที่คุณต้องตัดสิน ผลรีวิวของผมให้สิทธิ์แทนไม่ได้    อนุมัติทั้งหมด",
+        "repository": "Eak-dev/malispang-lineOA",
+        "baseline": "e67b8d973f8dca63de17caf0d74e2cec0b691685",
+        "headBranch": "codex/mp06-control-reconcile",
+        "baseBranch": "codex/mp-06-guardrailed-ai",
+        "maximumCommits": 1,
+        "maximumPushes": 1,
+        "maximumDraftPullRequests": 1,
+        "normalPushOnly": true,
+        "mergedPr20": "COORDINATION_ONLY_NEVER_REOPEN_OR_PUSH",
+        "laterMerge": "SEPARATE_ACTION_CONTROL_AFTER_HOSTED_CI_AND_POSTPUSH_REVIEW",
+        "defaultIntegration": "OUT_OF_SCOPE_PR16_UNCHANGED",
+        "remoteExecution": false,
+        "production": "NO_GO"
       }
     }
   }
